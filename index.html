@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Déficit</title>
+<meta name="description" content="Registro de comidas por foto, con estimación de calorías y macros.">
+<meta name="theme-color" content="#0e1116">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Déficit">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Déficit</h1>
+  <div class="date-nav">
+    <button id="prevDay" class="icon-btn" title="Día anterior">‹</button>
+    <span id="dateLabel">Hoy</span>
+    <button id="nextDay" class="icon-btn" title="Día siguiente">›</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============ HOY ============ -->
+  <section id="tab-hoy" class="tab active">
+
+    <div class="card ring-card">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 120 120" class="ring">
+          <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+          <circle id="ringFg" class="ring-fg" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="ring-center">
+          <strong id="ringKcal">0</strong>
+          <span id="ringGoal">/ 0 kcal</span>
+        </div>
+      </div>
+      <div class="ring-stats">
+        <div><span id="statRestante">0</span><small>restantes</small></div>
+        <div><span id="statObjetivo">0</span><small>objetivo</small></div>
+        <div><span id="statTdee">0</span><small>gasto est.</small></div>
+      </div>
+    </div>
+
+    <div class="card macros">
+      <div class="macro">
+        <div class="macro-head"><span>Proteínas</span><b id="mProtTxt">0 g</b></div>
+        <div class="bar"><i id="mProtBar" class="prot"></i></div>
+      </div>
+      <div class="macro">
+        <div class="macro-head"><span>Carbohidratos</span><b id="mCarbTxt">0 g</b></div>
+        <div class="bar"><i id="mCarbBar" class="carb"></i></div>
+      </div>
+      <div class="macro">
+        <div class="macro-head"><span>Grasas</span><b id="mGrasTxt">0 g</b></div>
+        <div class="bar"><i id="mGrasBar" class="gras"></i></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btnFoto" class="primary big">📷 Analizar foto</button>
+      <button id="btnManual" class="ghost big">✎ Carga manual</button>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+
+    <div class="card">
+      <div class="card-head"><h2>Comidas del día</h2><span id="comidasCount" class="pill">0</span></div>
+      <ul id="listaComidas" class="lista"></ul>
+      <p id="comidasVacio" class="vacio">Todavía no cargaste nada. Sacá una foto de tu plato.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Peso de hoy</h2></div>
+      <div class="peso-row">
+        <input type="number" id="pesoHoy" step="0.1" inputmode="decimal" placeholder="kg">
+        <button id="btnPeso" class="primary">Guardar</button>
+      </div>
+      <p id="pesoInfo" class="hint"></p>
+    </div>
+
+  </section>
+
+  <!-- ============ HISTORIAL ============ -->
+  <section id="tab-historial" class="tab">
+    <div class="card">
+      <div class="card-head"><h2>Peso</h2><span id="pesoDelta" class="pill"></span></div>
+      <svg id="chartPeso" class="chart" viewBox="0 0 320 120"></svg>
+      <p id="chartVacio" class="vacio">Cargá tu peso unos días para ver la curva.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Últimos días</h2></div>
+      <ul id="listaDias" class="lista dias"></ul>
+      <p id="diasVacio" class="vacio">Sin registros todavía.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Resumen</h2></div>
+      <ul class="kv" id="resumenSemana"></ul>
+    </div>
+  </section>
+
+  <!-- ============ PERFIL ============ -->
+  <section id="tab-perfil" class="tab">
+    <div class="card">
+      <div class="card-head"><h2>Tus datos</h2></div>
+      <div class="form-grid">
+        <label>Sexo
+          <select id="pSexo"><option value="m">Masculino</option><option value="f">Femenino</option></select>
+        </label>
+        <label>Edad
+          <input type="number" id="pEdad" inputmode="numeric" placeholder="años">
+        </label>
+        <label>Altura (cm)
+          <input type="number" id="pAltura" inputmode="numeric" placeholder="cm">
+        </label>
+        <label>Peso actual (kg)
+          <input type="number" id="pPeso" step="0.1" inputmode="decimal" placeholder="kg">
+        </label>
+        <label>Peso objetivo (kg)
+          <input type="number" id="pPesoObj" step="0.1" inputmode="decimal" placeholder="kg">
+        </label>
+        <label>Actividad
+          <select id="pActividad">
+            <option value="1.2">Sedentario (poco o nada)</option>
+            <option value="1.375">Ligera (1-3 días/sem)</option>
+            <option value="1.55">Moderada (3-5 días/sem)</option>
+            <option value="1.725">Alta (6-7 días/sem)</option>
+            <option value="1.9">Muy alta (físico + entreno)</option>
+          </select>
+        </label>
+        <label>Ritmo de pérdida
+          <select id="pRitmo">
+            <option value="0.25">Suave — 0,25 kg/semana</option>
+            <option value="0.5">Estándar — 0,5 kg/semana</option>
+            <option value="0.75">Agresivo — 0,75 kg/semana</option>
+            <option value="1">Muy agresivo — 1 kg/semana</option>
+          </select>
+        </label>
+        <label>Objetivo manual (kcal)
+          <input type="number" id="pManual" inputmode="numeric" placeholder="vacío = calculado">
+        </label>
+      </div>
+      <button id="btnGuardarPerfil" class="primary big">Guardar perfil</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Tu cálculo</h2></div>
+      <ul class="kv" id="calcLista"></ul>
+      <p class="hint" id="calcAviso"></p>
+    </div>
+  </section>
+
+  <!-- ============ AJUSTES ============ -->
+  <section id="tab-ajustes" class="tab">
+    <div class="card" id="cardInstalar" hidden>
+      <div class="card-head"><h2>Instalar</h2></div>
+      <p class="hint" style="margin:0 0 12px">Instalala en el celular y queda como una app más, con su ícono y a pantalla completa.</p>
+      <button id="btnInstalar" class="primary big">Instalar en este dispositivo</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>API de Claude</h2></div>
+      <label class="block">API key
+        <input type="password" id="apiKey" placeholder="sk-ant-...">
+      </label>
+      <label class="block">Modelo
+        <select id="modelo">
+          <option value="claude-opus-5">Opus 5 — mejor precisión</option>
+          <option value="claude-sonnet-5">Sonnet 5 — más barato</option>
+          <option value="claude-haiku-4-5">Haiku 4.5 — el más barato</option>
+        </select>
+      </label>
+      <button id="btnGuardarKey" class="primary">Guardar</button>
+      <p class="hint">La key queda solo en este navegador (localStorage) y se manda únicamente a api.anthropic.com.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Datos</h2></div>
+      <div class="actions-row">
+        <button id="btnExport" class="ghost">Exportar</button>
+        <button id="btnImport" class="ghost">Importar</button>
+        <button id="btnReset" class="danger">Borrar todo</button>
+      </div>
+      <input type="file" id="importInput" accept="application/json" hidden>
+      <p class="hint" id="statsInfo"></p>
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-tab="hoy"><span>🍽️</span>Hoy</button>
+  <button class="tab-btn" data-tab="historial"><span>📈</span>Historial</button>
+  <button class="tab-btn" data-tab="perfil"><span>👤</span>Perfil</button>
+  <button class="tab-btn" data-tab="ajustes"><span>⚙️</span>Ajustes</button>
+</nav>
+
+<!-- ============ MODAL ============ -->
+<div id="modal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalTitle">Analizando…</h2>
+      <button id="modalClose" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="analisisLoading" class="loading">
+        <img id="preview" alt="">
+        <div class="spinner"></div>
+        <p id="loadingTxt">Claude está mirando el plato…</p>
+      </div>
+      <div id="analisisResult" hidden>
+        <p id="resDescripcion" class="desc"></p>
+        <div id="resConfianza"></div>
+        <ul id="resItems" class="items"></ul>
+        <button id="btnAddItem" class="ghost small">+ Agregar alimento</button>
+        <div class="total-row"><span>Total</span><b id="resTotal">0 kcal</b></div>
+        <p id="resNotas" class="hint"></p>
+      </div>
+      <div id="analisisError" hidden class="error-box">
+        <p id="errorTxt"></p>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button id="btnCancelar" class="ghost">Cancelar</button>
+      <button id="btnGuardarComida" class="primary" disabled>Guardar comida</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
