@@ -1,13 +1,23 @@
 # Déficit
 
-App local de déficit calórico con análisis de comidas **por foto** (Claude vision).
+PWA de déficit calórico con análisis de comidas **por foto** (Claude vision).
 
-## Arrancar
+Publicada en <https://fnguerrero.github.io/deficit/>
+
+## En el celular (Android)
+
+Abrí la URL en Chrome → menú `⋮` → **Agregar a la pantalla principal**.
+Queda con ícono propio y a pantalla completa. Dentro de la app, en **Ajustes**
+también aparece el botón *Instalar* cuando Chrome lo ofrece.
+
+Andando como PWA funciona offline salvo el análisis de foto, que necesita internet.
+
+## En la compu
 
 Doble clic en `Deficit.bat` → abre `http://localhost:5599`.
 
-También funciona abriendo `index.html` directo, pero conviene el `.bat` para evitar
-restricciones del navegador con `file://`.
+También funciona abriendo `index.html` directo, pero con `file://` no anda el
+service worker; conviene el `.bat`.
 
 ## Primer uso
 
@@ -39,3 +49,9 @@ En Ajustes hay exportar / importar JSON y borrar todo.
 - `index.html` — estructura y pantallas
 - `styles.css` — estilos (tema oscuro, pensado para celular)
 - `app.js` — cálculo nutricional, persistencia y llamada a la API
+- `sw.js` — service worker (cache del shell; nunca cachea la API)
+- `manifest.json` — manifest de la PWA
+- `tools/gen_iconos.py` — regenera los íconos (`py -3 tools/gen_iconos.py`)
+
+Al cambiar cualquier archivo del shell, subir `VERSION` en `sw.js` para que los
+dispositivos ya instalados tomen la versión nueva.
