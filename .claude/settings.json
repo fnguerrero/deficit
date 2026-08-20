@@ -1,0 +1,31 @@
+{
+  "_comentario": "Permisos para el trabajo nonstop sobre esta app. Repo personal propio en GitHub: commit y push van sin preguntar (pedido explícito de Nico, 19/08/2026); el hook global sigue cubriendo los repos laborales.",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Write(./**)",
+      "Edit(./**)",
+      "Bash(py -3:*)",
+      "Bash(python:*)",
+      "Bash(node:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ],
+    "deny": [
+      "Bash(rm:*)",
+      "Bash(Remove-Item:*)",
+      "Bash(git merge:*)",
+      "Bash(git reset:*)",
+      "Write(//C/Users/nico_/.claude/**)",
+      "Edit(//C/Users/nico_/.claude/**)"
+    ]
+  }
+}
