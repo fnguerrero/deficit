@@ -1,15 +1,15 @@
 /* Service worker — cachea el shell de la app para que ande offline.
    Subir la versión al cambiar cualquier archivo. */
 
-const VERSION = 'deficit-v4';
+const VERSION = 'deficit-v50';
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=4',
-  './core.js?v=4',
-  './claude.js?v=4',
-  './app.js?v=4',
+  './styles.css?v=50',
+  './core.js?v=50',
+  './claude.js?v=50',
+  './app.js?v=50',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -18,9 +18,23 @@ const SHELL = [
   './icons/favicon.png'
 ];
 
+/** Borra todo cache de la app que no sea el de esta versión. */
+async function limpiarCaches() {
+  const claves = await caches.keys();
+  await Promise.all(
+    claves.filter(k => k !== VERSION && /^deficit-v\d+$/.test(k)).map(k => caches.delete(k))
+  );
+}
+
 self.addEventListener('install', (e) => {
-  // sin skipWaiting: la versión nueva espera a que la persona acepte actualizar
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)));
+  // sin skipWaiting: la versión nueva espera a que la persona acepte actualizar.
+  // Igual se limpia acá: si esperara al activate, cada versión sin confirmar
+  // dejaría su cache dando vueltas hasta que alguien toque "Actualizar".
+  e.waitUntil(
+    caches.open(VERSION)
+      .then(c => c.addAll(SHELL))
+      .then(() => limpiarCaches())
+  );
 });
 
 self.addEventListener('message', (e) => {
@@ -28,11 +42,7 @@ self.addEventListener('message', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  e.waitUntil(limpiarCaches().then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', (e) => {
