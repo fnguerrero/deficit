@@ -1,3 +1,4 @@
+/* Paleta oscura: la de siempre y la que se usa por defecto. */
 :root {
   --bg: #0e1116;
   --bg2: #161b22;
@@ -5,15 +6,59 @@
   --card2: #222a35;
   --line: #2c3542;
   --txt: #e6edf3;
-  --dim: #8b98a8;
+  --dim: #99a7b8;
   --acc: #4ade80;
   --acc2: #22c55e;
+  --sobre-acc: #06210f;      /* texto sobre el verde lleno */
   --warn: #fbbf24;
   --bad: #f87171;
   --prot: #60a5fa;
   --carb: #fbbf24;
   --gras: #f472b6;
+  --sombra: none;
   --r: 14px;
+}
+
+/* Paleta clara: mismos roles, colores más oscuros para que el contraste aguante. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema="oscuro"]) {
+    --bg: #f4f6fa;
+    --bg2: #ffffff;
+    --card: #ffffff;
+    --card2: #eef1f7;
+    --line: #d9e0ea;
+    --txt: #16202c;
+    --dim: #5b6878;
+    --acc: #0f6a31;
+    --acc2: #15803d;
+    --sobre-acc: #ffffff;
+    --warn: #a16207;
+    --bad: #c62828;
+    --prot: #1d4ed8;
+    --carb: #a16207;
+    --gras: #be185d;
+    --sombra: 0 1px 2px rgba(20, 30, 45, .06);
+  }
+}
+
+/* Elegido a mano en Ajustes: gana sobre lo que diga el sistema. */
+:root[data-tema="claro"] {
+  --bg: #f4f6fa;
+  --bg2: #ffffff;
+  --card: #ffffff;
+  --card2: #eef1f7;
+  --line: #d9e0ea;
+  --txt: #16202c;
+  --dim: #5b6878;
+  --acc: #0f6a31;
+  --acc2: #15803d;
+  --sobre-acc: #ffffff;
+  --warn: #a16207;
+  --bad: #c62828;
+  --prot: #1d4ed8;
+  --carb: #a16207;
+  --gras: #be185d;
+  --sombra: 0 1px 2px rgba(20, 30, 45, .06);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -69,6 +114,7 @@ main { padding: 0 14px; max-width: 620px; margin: 0 auto; }
 .card {
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--r); padding: 14px; margin-bottom: 12px;
+  box-shadow: var(--sombra);
 }
 .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .card-head h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
@@ -111,7 +157,7 @@ main { padding: 0 14px; max-width: 620px; margin: 0 auto; }
 /* ---------- botones ---------- */
 button { font-family: inherit; font-size: 14px; }
 .primary {
-  background: var(--acc2); color: #06210f; border: 0; border-radius: 11px;
+  background: var(--acc2); color: var(--sobre-acc); border: 0; border-radius: 11px;
   padding: 11px 16px; font-weight: 650; cursor: pointer;
 }
 .primary:active { background: var(--acc); }
@@ -157,7 +203,7 @@ button { font-family: inherit; font-size: 14px; }
 /* ---------- chart ---------- */
 .chart { width: 100%; height: 120px; display: block; }
 .chart .line { fill: none; stroke: var(--acc); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.chart .area { fill: rgba(74, 222, 128, .12); }
+.chart .area { fill: color-mix(in srgb, var(--acc) 14%, transparent); }
 .chart .dot { fill: var(--acc); }
 .chart .goal { stroke: var(--warn); stroke-width: 1; stroke-dasharray: 4 4; }
 .chart text { fill: var(--dim); font-size: 9px; }
@@ -384,7 +430,7 @@ input.invalido, select.invalido { border-color: var(--bad); }
 }
 .banner-update[hidden] { display: none; }
 .banner-update button {
-  background: var(--acc2); color: #06210f; border: 0; border-radius: 9px;
+  background: var(--acc2); color: var(--sobre-acc); border: 0; border-radius: 9px;
   padding: 7px 13px; font-weight: 650; cursor: pointer; white-space: nowrap;
 }
 
@@ -394,9 +440,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
   outline-offset: 2px;
 }
 .tab-btn:focus-visible { outline-offset: -2px; border-radius: 8px; }
-
-/* el gris de los textos secundarios sube de contraste sobre las tarjetas */
-:root { --dim: #99a7b8; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
@@ -410,3 +453,136 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focu
 .cuota .bar i.critico { background: var(--bad); }
 .aviso-cuota { color: var(--warn); }
 .aviso-cuota[hidden] { display: none; }
+
+/* ---------- favoritos ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chips button {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--card2); border: 1px solid var(--line); color: var(--txt);
+  border-radius: 20px; padding: 8px 13px; font-size: 13px; cursor: pointer;
+}
+.chips button:active { background: var(--line); }
+.chips button em { font-style: normal; color: var(--dim); font-size: 11.5px; }
+
+.estrella {
+  background: none; border: 0; cursor: pointer; padding: 4px;
+  font-size: 15px; line-height: 1; filter: grayscale(1); opacity: .45;
+}
+.estrella.on { filter: none; opacity: 1; }
+
+/* ---------- recetas ---------- */
+h3.sub {
+  margin: 0 0 8px; font-size: 12px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .5px; font-weight: 600;
+}
+#bloqueRecetas { margin-bottom: 16px; }
+.acciones-editor { display: flex; gap: 8px; flex-wrap: wrap; }
+.lista .receta-usos { color: var(--dim); font-size: 11px; }
+
+/* ---------- suma rapida ---------- */
+.quick { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.quick input { flex: 1; font-size: 13.5px; padding: 8px 10px; }
+.quick button { white-space: nowrap; }
+
+/* ---------- mover de dia ---------- */
+.fecha-comida { margin: 0 0 12px; }
+.fecha-comida input { font-size: 14px; padding: 8px 10px; }
+
+/* ---------- nota del dia ---------- */
+textarea {
+  background: var(--bg2); border: 1px solid var(--line); color: var(--txt);
+  border-radius: 10px; padding: 10px; font: inherit; font-size: 14px;
+  width: 100%; resize: vertical; min-height: 56px;
+}
+textarea:focus { outline: none; border-color: var(--acc2); }
+
+/* ---------- buscador ---------- */
+.buscador { display: flex; gap: 8px; align-items: center; }
+.buscador input { flex: 1; }
+.buscador input[type=search]::-webkit-search-cancel-button { display: none; }
+.lista .donde { color: var(--acc); font-size: 11px; }
+
+/* ---------- visor de fotos ---------- */
+.visor {
+  position: fixed; inset: 0; z-index: 80;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 20px; background: rgba(0, 0, 0, .92);
+}
+.visor[hidden] { display: none; }
+.visor img {
+  max-width: 100%; max-height: 72vh; border-radius: 12px;
+  object-fit: contain; background: var(--card);
+}
+.visor p { color: var(--dim); font-size: 13px; text-align: center; margin: 0; max-width: 460px; }
+.visor-cerrar {
+  position: absolute; top: 14px; right: 14px;
+  background: var(--card2); border: 1px solid var(--line); color: var(--txt);
+  width: 38px; height: 38px; border-radius: 12px; font-size: 16px; cursor: pointer;
+}
+.lista .thumb { cursor: zoom-in; }
+
+/* ---------- precision del analisis ---------- */
+.bloque-precision { margin-bottom: 14px; }
+.bloque-precision .etiqueta { display: block; font-size: 12px; color: var(--dim); margin-bottom: 6px; }
+.bloque-precision .hint { margin-top: 6px; }
+
+/* ---------- sugerencias ---------- */
+.lista li.sugerencia { flex-direction: column; align-items: stretch; gap: 4px; }
+.sugerencia-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sugerencia-cab b { font-size: 14.5px; }
+.sugerencia-porque { color: var(--acc); font-size: 12px; }
+.sugerencia-items { color: var(--dim); font-size: 12px; }
+
+/* ---------- registro de analisis ---------- */
+.detalle-analisis { margin-top: 12px; }
+.detalle-analisis summary {
+  cursor: pointer; color: var(--dim); font-size: 12.5px;
+  padding: 6px 0; list-style-position: inside;
+}
+.detalle-analisis summary::-webkit-details-marker { color: var(--dim); }
+.lista.analisis li { padding: 8px 0; font-size: 13px; }
+.lista.analisis .cache { color: var(--acc); }
+
+/* ---------- lectura de los datos ---------- */
+.proyeccion {
+  margin: 12px 0 0; padding: 10px 12px; font-size: 13px;
+  background: var(--card2); border-radius: 10px; color: var(--txt);
+}
+.proyeccion[hidden] { display: none; }
+.proyeccion b { color: var(--acc); }
+
+.reparto-fila { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+.reparto-fila .nombre { width: 96px; color: var(--dim); flex: 0 0 auto; }
+.reparto-fila .bar { flex: 1; }
+.reparto-fila .bar i { background: var(--acc2); }
+.reparto-fila .pct { width: 34px; text-align: right; font-weight: 600; }
+
+#bloqueAdherencia, #bloqueReparto, #bloqueSemanas, #bloquePatron { margin-top: 16px; }
+#bloqueAdherencia:first-child { margin-top: 0; }
+
+.aviso-proteina {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(96,165,250,.12); border: 1px solid rgba(96,165,250,.35);
+  color: var(--prot); border-radius: var(--r); padding: 10px 12px;
+  margin-bottom: 12px; font-size: 12.5px;
+}
+.aviso-proteina[hidden] { display: none; }
+
+/* ---------- recordatorios ---------- */
+.switch { flex-direction: row; align-items: center; gap: 10px; color: var(--txt); font-size: 14px; cursor: pointer; }
+.switch input { width: 20px; height: 20px; accent-color: var(--acc2); flex: 0 0 auto; }
+.horarios { display: grid; gap: 8px; margin-top: 12px; }
+.horarios .fila { display: flex; align-items: center; gap: 10px; }
+.horarios .fila span { flex: 1; font-size: 13.5px; }
+.horarios .fila input { width: 118px; font-size: 14px; padding: 7px 9px; }
+
+/* ---------- atajos ---------- */
+.tecla {
+  display: inline-block; min-width: 24px; text-align: center;
+  background: var(--card2); border: 1px solid var(--line); border-radius: 6px;
+  padding: 2px 7px; font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+}
+
+/* ---------- revision de datos ---------- */
+.lista.problemas li { align-items: flex-start; }
+.lista.problemas .info small { color: var(--warn); }

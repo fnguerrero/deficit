@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=50">
 </head>
 <body>
 
@@ -77,18 +77,32 @@
       </div>
     </div>
 
+    <div class="aviso-proteina" id="avisoProteina" hidden>
+      <span id="avisoProteinaTxt"></span>
+    </div>
+
+    <div class="card" id="cardFavoritos" hidden>
+      <div class="card-head"><h2>Favoritos</h2><span class="pill">1 toque</span></div>
+      <div class="chips" id="listaFavoritos"></div>
+    </div>
+
     <div class="actions">
       <button id="btnFoto" class="primary big">📷 Analizar foto</button>
       <button id="btnManual" class="ghost big">✎ Carga manual</button>
       <button id="btnEtiqueta" class="ghost big">🏷️ Leer etiqueta de un envase</button>
       <button id="btnRepetir" class="ghost big">↻ Repetir una comida</button>
+      <button id="btnSugerir" class="ghost big">💡 ¿Qué me como con lo que queda?</button>
     </div>
-    <input type="file" id="fileInput" accept="image/*" hidden>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
 
     <div class="card">
       <div class="card-head"><h2>Comidas del día</h2><span id="comidasCount" class="pill">0</span></div>
       <ul id="listaComidas" class="lista"></ul>
       <p id="comidasVacio" class="vacio">Todavía no cargaste nada. Sacá una foto de tu plato.</p>
+      <div class="quick">
+        <input type="number" id="quickKcal" inputmode="numeric" placeholder="Sumar kcal sueltas" aria-label="Calorías sueltas">
+        <button id="btnQuick" class="ghost small">+ Sumar</button>
+      </div>
     </div>
 
     <div class="card">
@@ -108,6 +122,11 @@
         <button id="btnEjercicio" class="primary">Guardar</button>
       </div>
       <p id="ejercicioInfo" class="hint">Lo que quemes se suma al objetivo del día.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Nota del día</h2><span id="notaPill" class="pill" hidden>✎</span></div>
+      <textarea id="notaDia" rows="2" placeholder="Cómo te sentiste, qué salió distinto, lo que quieras acordarte"></textarea>
     </div>
 
     <div class="card">
@@ -131,6 +150,7 @@
         <i class="l-media"></i> tendencia (7 días)
       </p>
       <p id="chartVacio" class="vacio">Cargá tu peso unos días para ver la curva.</p>
+      <p class="proyeccion" id="cardProyeccion" hidden></p>
       <div id="progresoMeta" hidden>
         <div class="progreso-head"><span>Progreso hacia tu meta</span><b id="progresoPct">0%</b></div>
         <div class="bar"><i id="progresoBar" class="meta"></i></div>
@@ -144,7 +164,42 @@
       <p id="kcalVacio" class="vacio">Cargá algunas comidas para ver la comparación.</p>
     </div>
 
+    <div class="card" id="cardComoVenis" hidden>
+      <div class="card-head"><h2>Cómo venís</h2><span id="adherenciaPill" class="pill"></span></div>
+
+      <div id="bloqueAdherencia" hidden>
+        <div class="progreso-head"><span>Días dentro del objetivo</span><b id="adherenciaPct">0%</b></div>
+        <div class="bar"><i id="adherenciaBar" class="meta"></i></div>
+        <p class="hint" id="adherenciaTxt"></p>
+      </div>
+
+      <div id="bloqueReparto" hidden>
+        <h3 class="sub">Dónde se te van las calorías</h3>
+        <div id="listaReparto"></div>
+      </div>
+
+      <div id="bloqueSemanas" hidden>
+        <h3 class="sub">Esta semana vs la anterior</h3>
+        <ul class="kv" id="comparacionSemanas"></ul>
+      </div>
+
+      <div id="bloquePatron" hidden>
+        <h3 class="sub">Por día de la semana</h3>
+        <p class="hint" id="patronTxt"></p>
+      </div>
+    </div>
+
     <div class="card">
+      <div class="card-head"><h2>Buscar</h2></div>
+      <div class="buscador">
+        <input id="inputBuscar" type="search" placeholder="Buscá un alimento o una comida" aria-label="Buscar en el historial">
+        <button id="btnLimpiarBusqueda" class="icon-btn" aria-label="Limpiar la búsqueda" hidden>✕</button>
+      </div>
+      <p id="resumenBusqueda" class="hint"></p>
+      <ul id="resultadosBusqueda" class="lista"></ul>
+    </div>
+
+    <div class="card" id="cardUltimosDias">
       <div class="card-head"><h2>Últimos días</h2></div>
       <ul id="listaDias" class="lista dias"></ul>
       <p id="diasVacio" class="vacio">Sin registros todavía.</p>
@@ -228,9 +283,62 @@
           <option value="claude-haiku-4-5">Haiku 4.5 — el más barato</option>
         </select>
       </label>
+      <div class="bloque-precision">
+        <span class="etiqueta">Precisión del análisis</span>
+        <div class="momento-sel" id="selPrecision" role="group" aria-label="Precisión del análisis"></div>
+        <p class="hint" id="precisionDetalle"></p>
+      </div>
       <button id="btnGuardarKey" class="primary">Guardar</button>
       <p class="hint">La key queda solo en este navegador (localStorage) y se manda únicamente a api.anthropic.com.</p>
       <p class="hint" id="usoInfo"></p>
+      <details class="detalle-analisis">
+        <summary>Ver el detalle de cada análisis</summary>
+        <ul id="listaAnalisis" class="lista analisis"></ul>
+        <p id="analisisVacio" class="vacio">Todavía no hay análisis registrados.</p>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Recordatorios</h2><span id="recordatoriosPill" class="pill"></span></div>
+      <label class="switch">
+        <input type="checkbox" id="chkRecordatorios">
+        <span>Avisarme si no cargué una comida</span>
+      </label>
+      <div id="horariosRecordatorios" class="horarios" hidden></div>
+      <p class="hint" id="recordatoriosInfo"></p>
+    </div>
+
+    <div class="card" id="cardAtajos" hidden>
+      <div class="card-head"><h2>Atajos de teclado</h2></div>
+      <ul class="kv" id="listaAtajos"></ul>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Apariencia</h2></div>
+      <div class="momento-sel" id="selTema" role="group" aria-label="Tema de la app"></div>
+      <p class="hint" id="temaDetalle"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Diagnóstico</h2><span id="diagPill" class="pill"></span></div>
+      <details>
+        <summary>Ver el estado de la app</summary>
+        <ul class="kv" id="listaDiagnostico"></ul>
+        <div id="bloqueErrores" hidden>
+          <h3 class="sub">Últimos errores</h3>
+          <ul id="listaErrores" class="lista analisis"></ul>
+        </div>
+        <div class="actions-row" style="margin-top:12px">
+          <button id="btnCopiarDiag" class="ghost small">Copiar todo</button>
+          <button id="btnLimpiarErrores" class="ghost small" hidden>Borrar los errores</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="card" id="cardRevision" hidden>
+      <div class="card-head"><h2>Revisión de datos</h2><span id="revisionPill" class="pill"></span></div>
+      <ul id="listaProblemas" class="lista problemas"></ul>
+      <button id="btnArreglar" class="ghost small" hidden>Recalcular los que se pueden</button>
     </div>
 
     <div class="card">
@@ -238,6 +346,7 @@
       <div class="actions-row">
         <button id="btnExport" class="ghost">Exportar JSON</button>
         <button id="btnExportCsv" class="ghost">Exportar CSV</button>
+        <button id="btnInforme" class="ghost">Informe del mes</button>
         <button id="btnImport" class="ghost">Importar</button>
         <button id="btnReset" class="danger">Borrar todo</button>
       </div>
@@ -280,8 +389,14 @@
         <p id="resDescripcion" class="desc"></p>
         <div id="resConfianza"></div>
         <div class="momento-sel" id="selMomento" role="group" aria-label="Momento de la comida"></div>
+        <label class="block fecha-comida" id="cajaFecha" hidden>Día
+          <input type="date" id="fechaComida">
+        </label>
         <ul id="resItems" class="items"></ul>
-        <button id="btnAddItem" class="ghost small">+ Agregar alimento</button>
+        <div class="acciones-editor">
+          <button id="btnAddItem" class="ghost small">+ Agregar alimento</button>
+          <button id="btnGuardarReceta" class="ghost small">★ Guardar como receta</button>
+        </div>
         <div class="total-row"><span>Total</span><b id="resTotal">0 kcal</b></div>
         <p id="resNotas" class="hint"></p>
         <p id="resCosto" class="hint costo"></p>
@@ -291,9 +406,22 @@
         </div>
       </div>
       <div id="analisisRepetir" hidden>
-        <p class="hint" style="margin:0 0 10px">Tocá una comida de los últimos días para volver a cargarla hoy.</p>
+        <div id="bloqueRecetas" hidden>
+          <h3 class="sub">Tus recetas</h3>
+          <ul id="listaRecetas" class="lista"></ul>
+        </div>
+        <div id="bloqueDias" hidden>
+          <h3 class="sub">Copiar un día entero</h3>
+          <ul id="listaDiasCopiar" class="lista"></ul>
+        </div>
+        <h3 class="sub">Comidas recientes</h3>
         <ul id="listaRepetir" class="lista"></ul>
         <p id="repetirVacio" class="vacio">Todavía no tenés comidas guardadas.</p>
+      </div>
+      <div id="analisisSugerencias" hidden>
+        <p class="hint" id="sugerenciasMargen"></p>
+        <ul id="listaSugerencias" class="lista"></ul>
+        <p class="hint costo" id="sugerenciasCosto"></p>
       </div>
       <div id="analisisError" hidden class="error-box">
         <p id="errorTxt"></p>
@@ -369,6 +497,12 @@
   </div>
 </div>
 
+<div id="visorFoto" class="visor" role="dialog" aria-modal="true" aria-label="Foto de la comida" hidden>
+  <button id="visorCerrar" class="visor-cerrar" aria-label="Cerrar la foto">✕</button>
+  <img id="visorImg" alt="">
+  <p id="visorPie"></p>
+</div>
+
 <div id="bannerUpdate" class="banner-update" hidden>
   <span>Hay una versión nueva de la app.</span>
   <button id="btnActualizar">Actualizar</button>
@@ -376,8 +510,8 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="core.js?v=4"></script>
-<script src="claude.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="core.js?v=50"></script>
+<script src="claude.js?v=50"></script>
+<script src="app.js?v=50"></script>
 </body>
 </html>

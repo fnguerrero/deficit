@@ -1,15 +1,12 @@
-# Informe — 33 mejoras a Déficit
+# Informe — 30 mejoras a Déficit (ciclo 2)
 
 ## Qué se construyó
 
-La app pasó de una primera versión funcional a algo usable todos los días. Las 33 mejoras
-(más el andamiaje de tests y un ítem 34 que apareció en el camino) están todas hechas y
-verificadas una por una.
+El ciclo 1 dejó la app completa en registro y seguimiento. Este ciclo atacó tres cosas
+que faltaban: **sacar fricción del uso diario**, **gastar menos API** y **que los datos
+digan algo**, no solo que se muestren.
 
-El cambio estructural más grande: la lógica se separó en tres archivos.
-`core.js` tiene todo lo puro (cálculo, fechas, estado, análisis de la serie, formato),
-`claude.js` toda la conversación con la API con el `fetch` inyectable, y `app.js` quedó
-solo con render y eventos. Eso es lo que hizo posible testear de verdad, sin manos.
+Salieron 31 mejoras: las 30 planeadas más una que apareció verificando.
 
 ### Cómo correrlo
 
@@ -17,91 +14,94 @@ solo con render y eventos. Eso es lo que hizo posible testear de verdad, sin man
 "W:\Working Folder Personal\DeficitCalorico\Deficit.bat"
 ```
 
-Abre `http://localhost:5599`. Los tests están en `http://localhost:5599/tests.html`.
+`http://localhost:5599` para la app, `/tests.html` para la suite.
 
 ## Verificación
 
 | Criterio de aceptación | Resultado |
 |---|---|
-| 1. Tests en verde, 40+ assertions | **148 tests, 0 fallos** |
+| 1. 200+ tests, 0 fallos | **319 tests, 0 fallos** |
 | 2. App sin errores de consola | limpia en tab nuevo |
-| 3. State viejo se abre y queda migrado | conserva datos y suma los campos nuevos |
-| 4. Las 33 mejoras marcadas y verificadas | 34/34 ítems en `[x]`, cada uno con su línea de bitácora |
-| 5. Service worker registrando y cacheando | activo, `deficit-v4` |
-| 6. Exportar → borrar → importar | JSON idéntico byte a byte |
-| 7. App usable sin API key | anillo, historial, carga manual y agua funcionan |
+| 3. State del ciclo anterior migra sin pérdida | conserva perfil, días, fotos, uso y frecuentes; suma los 8 campos nuevos |
+| 4. Las 30 mejoras `[x]` con verificación | 31/31 ítems, cada uno con su línea de bitácora |
+| 5. Cero llamadas reales a la API | todo con `fetch` mockeado, incluido el streaming |
+| 6. Exportar → borrar → importar | JSON idéntico |
+| 7. Usable sin API key y sin conexión | anda sin key; el shell completo responde desde el cache |
+| 8. Contraste AA en los dos temas | mínimo **4,92** en claro y **5,92** en oscuro |
 
 Ningún ítem quedó bloqueado.
 
-## Las 33 mejoras
+## Las 31 mejoras
 
-**Datos y modelo** — migración versionada · alimentos frecuentes con ranking de uso ·
-momentos del día autodetectados · agua según peso corporal · ejercicio que amplía el objetivo.
+**Menos fricción** — favoritos de un toque · recetas reutilizables · copiar un día entero ·
+suma rápida de calorías · mover comidas de momento o de día · nota del día · buscador en el
+historial · visor de la foto en grande.
 
-**Carga de comidas** — editar una comida guardada · deshacer el borrado · repetir una comida
-de otro día · multiplicador de porción · autocompletado desde los frecuentes.
+**Menos API** — cache por huella de imagen (la misma foto no se paga dos veces) · streaming
+con los alimentos apareciendo mientras llegan · varias fotos en un solo análisis · modos
+rápido/normal/preciso · sugerencias de qué comer con lo que queda · registro de cada llamada
+con su costo.
 
-**Análisis con Claude** — reintentos con backoff · cancelar el análisis · contexto del usuario
-en el prompt · corregir la estimación por texto · modo etiqueta de envase · costo por llamada.
+**Datos que dicen algo** — proyección de peso a 4 semanas · adherencia · reparto por momento
+del día · patrón por día de la semana · comparación semana contra semana · aviso de proteína
+corta · informe mensual imprimible.
 
-**Historial** — barras de 14 días · media móvil de peso · racha · progreso hacia la meta ·
-balance semanal · TDEE adaptativo · editar días pasados.
+**Plataforma** — tema claro · recordatorios locales · cambio de día a medianoche · atajos de
+teclado · confirmación al descartar · rendimiento con años de datos.
 
-**Robustez y UX** — la app sin API key · validación del perfil · formato es-AR · onboarding ·
-aviso de versión nueva · accesibilidad · cuota de almacenamiento · CSV · backup automático ·
-versión del service worker.
+**Robustez** — revisión de datos incoherentes · importar fusionando · pantalla de diagnóstico
+· limpieza de caches viejos del service worker.
 
 ## Decisiones tomadas por criterio propio
 
-1. **Cuáles eran las 33 mejoras.** El pedido no traía lista. Prioricé lo que ahorra llamadas
-   a la API (frecuentes, autocompletado, repetir), lo que hoy era imposible y molestaba
-   (editar una comida guardada), lo que da contexto para decidir (media móvil, TDEE real) y
-   robustez ante errores.
+1. **Cuáles eran las 30 mejoras.** Sin lista, prioricé lo que ahorra tiempo todos los días,
+   lo que ahorra plata de API y lo que lleva a una decisión concreta.
 
-2. **Separar `core.js` y `claude.js`.** Un ítem de "tests" sobre el `app.js` monolítico habría
-   sido verificación de mentira: todo tocaba el DOM. La separación es lo que permite que los
-   148 tests corran de verdad, y que la capa de red se pruebe con `fetch` mockeado sin gastar
-   un centavo de API.
+2. **El cache de análisis no se usa en las correcciones.** Corregir es justamente pedir una
+   respuesta distinta: reusar la anterior sería lo contrario de lo que pide el usuario.
 
-3. **TDEE adaptativo con condiciones estrictas.** Se niega a estimar con menos de 10 días o
-   menos del 60% de cobertura. Un promedio sobre datos flojos es peor que no dar el número,
-   porque invita a bajar el objetivo por una medición que no significa nada.
+3. **Los recordatorios prometen solo lo que pueden.** Sin servidor no hay push real, así que
+   la UI dice "con la app abierta o recién usada" en vez de sugerir que llegan siempre.
 
-4. **El multiplicador de porción escala siempre desde el valor base.** Es el bug clásico de
-   esta función: aplicar ×2 dos veces terminando en ×4. Hay un test dedicado a eso.
+4. **La fusión al importar completa, nunca pisa.** El peso, la nota y la configuración del
+   dispositivo mandan; el backup solo llena huecos. Y el gasto de API se suma, porque es
+   historia real de plata gastada.
 
-5. **Umbrales de cuota en 75% y 90%.** El aviso llega antes de que un guardado falle, no
-   después. Las miniaturas son el 90% del volumen, así que el botón de liberar espacio va
-   directo contra ellas.
+5. **La proyección de peso usa regresión lineal sobre toda la serie.** Dos puntos sueltos en
+   el peso son retención de agua, no tendencia.
 
-6. **CSV con `;` y coma decimal.** Es lo que abre bien Excel en español; con `,` como
-   separador se rompe con los números en formato local.
+6. **El TDEE adaptativo y la alerta de proteína se niegan a hablar con pocos datos.** Un
+   número calculado sobre tres días flojos invita a decisiones peores que no tener número.
 
 ## Desvíos de la SPEC
 
-Hubo cuatro, todos por cosas que aparecieron al verificar:
+Cinco, todos por cosas que aparecieron verificando:
 
-1. **El service worker pasó a network-first** (no estaba planeado). Con cache-first servía
-   `app.js` viejo y la app quedaba pegada en una versión anterior: se publicaba un fix y no
-   lo veía nadie. Apareció en el ítem 0 y frenaba toda verificación posterior.
+1. **Ítem 31 agregado al TODO** (no estaba planeado): el service worker limpiaba los caches
+   viejos solo al activarse, y como cada versión espera confirmación, se habían acumulado
+   **34 caches**. Ahora limpia también al instalar.
 
-2. **Ítem 34 agregado al TODO: versionado de assets (`?v=N`).** Aun con network-first, el
-   cache HTTP del propio navegador seguía sirviendo CSS viejo — lo descubrí cuando las reglas
-   de foco no aparecían en `document.styleSheets`. Sin esto, cualquier deploy futuro llega a
-   medias a los dispositivos ya instalados.
+2. **`tools/version.py`** (no estaba planeado): subir la versión a mano en `sw.js` + dos HTML
+   era el paso que más veces se olvidaba, y olvidarlo hacía que el navegador sirviera código
+   viejo y los tests fallaran por una razón falsa. Un comando lo resuelve.
 
-3. **El aviso de versión nueva cambió el comportamiento del SW.** Estaba planeado solo como
-   banner, pero el `skipWaiting()` automático hacía que la actualización se aplicara sola.
-   Se sacó: ahora la versión nueva espera y la persona decide cuándo.
+3. **`proyectarPeso` se reescribió.** El primer cálculo mezclaba un punto crudo con uno
+   suavizado y subestimaba la tendencia: con 1 kg en 14 días daba -0,4 en vez de -0,5. El
+   test estaba bien y el código mal.
 
-4. **Ítems 1 y 13 salieron junto con otros.** La migración versionada (1) quedó resuelta
-   dentro del andamiaje del ítem 0, y el contexto en el prompt (13) dentro de la extracción de
-   `claude.js`. Están verificados igual, con sus tests propios; la bitácora lo dice así en vez
-   de inventarles una iteración separada.
+4. **`tsParaFecha` se partió en dos.** Al copiar un día a *hoy* usaba la hora actual, y un
+   desayuno copiado a la noche quedaba a las 22:00 con momento "desayuno". Se separó
+   `tsEnMomento`, que siempre usa la hora típica.
+
+5. **Dos correcciones de idioma** que los tests no iban a atrapar porque eran de redacción:
+   "los vierness" (los días terminados en -s no pluralizan) y "¿Cargaste el cena?" (cada
+   momento ahora lleva su artículo).
 
 ## Números
 
-- **35 iteraciones** sobre un presupuesto de 45.
-- **34 ítems** completados, 0 bloqueados.
-- **148 tests**, 0 fallos.
-- **4 archivos** de código donde antes había 2 (`core.js`, `claude.js`, `app.js`, `tests.js`).
+- **32 iteraciones** sobre un presupuesto de 40.
+- **31 ítems** completados, 0 bloqueados.
+- **319 tests** (eran 148 al empezar el ciclo), 0 fallos.
+- **0 llamadas reales a la API** en todo el trabajo.
+- La app pasó de 4 a 5 archivos de código (`core.js`, `claude.js`, `app.js`, más
+  `tools/version.py` y `tools/gen_iconos.py`).

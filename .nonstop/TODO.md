@@ -1,95 +1,80 @@
-# TODO — 33 mejoras a Déficit
+# TODO — 30 mejoras a Déficit (ciclo 2)
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-## Andamiaje (primero, sin esto no hay verificación real)
+## Menos fricción en el uso diario
 
-- [x] 0. Suite de tests headless: `tests.js` + `tests.html`, runner propio, y refactor
-      mínimo de `app.js` para exponer las funciones puras en `window.__deficit`
-      · verif: abrir tests.html y leer `window.__resultados` con 0 fallos
+- [x] 1. Favoritos: marcar alimentos y cargarlos desde Hoy en un toque
+      · verif: test del toggle y del orden; en la app, un favorito carga la comida entera
+- [x] 2. Recetas: guardar un conjunto de alimentos como plantilla con nombre
+      · verif: test de crear/aplicar receta; aplicar una deja los mismos items y kcal
+- [x] 3. Copiar un día entero a otro
+      · verif: copiar ayer a hoy deja las mismas comidas y no toca el original
+- [x] 4. Suma rápida: cargar kcal sueltas sin nombre ni desglose
+      · verif: sumar 150 kcal por DOM y ver el anillo moverse
+- [x] 5. Mover una comida a otro momento o a otro día
+      · verif: mover del almuerzo a la cena y de hoy a ayer, con los totales siguiendo
+- [x] 6. Nota del día, con indicador cuando hay algo escrito
+      · verif: escribir, recargar y comprobar que persiste
+- [x] 7. Buscador en el historial por alimento o comida
+      · verif: test de la función de búsqueda; buscar "pizza" lista los días que la tienen
+- [x] 8. Ver la foto original en grande al tocar la miniatura
+      · verif: comprobar que abre el visor y que se cierra
 
-## Datos y modelo
+## Gastar menos API
 
-- [x] 1. Migración de estado versionada (`schema`), con defaults para campos nuevos
-      · verif: test que carga un state viejo y comprueba los campos nuevos
-- [x] 2. Alimentos frecuentes: se guardan los usados, con contador de uso
-      · verif: test que agrega 2 comidas y comprueba el ranking de frecuentes
-- [x] 3. Momento de la comida (desayuno/almuerzo/merienda/cena/snack) autodetectado por hora
-      · verif: test de la función hora→momento en los 5 rangos
-- [x] 4. Agua del día: contador de vasos con objetivo
-      · verif: sumar/restar vasos en el DOM y comprobar persistencia
-- [x] 5. Ejercicio del día: kcal quemadas que amplían el objetivo
-      · verif: test de objetivo efectivo = objetivo + quemadas
+- [x] 9. Cache de análisis por huella de la imagen: la misma foto no se paga dos veces
+      · verif: test que analiza dos veces y comprueba una sola llamada
+- [x] 10. Respuesta en streaming, con el texto apareciendo mientras llega
+      · verif: test con un stream SSE mockeado que reconstruye el JSON final
+- [x] 11. Varias fotos en un mismo análisis (plato + bebida + postre)
+      · verif: test que arma el body con 3 imágenes en un solo mensaje
+- [x] 12. Selector de precisión por análisis (rápido / preciso) que cambia effort y modelo
+      · verif: test que comprueba el body de cada modo
+- [x] 13. Sugerencia de qué comer con las calorías que quedan del día
+      · verif: test del prompt con el margen y los macros restantes
+- [x] 14. Registro de análisis: qué se pidió, qué costó y con qué modelo
+      · verif: test del registro acotado a N entradas; visible en Ajustes
 
-## Carga de comidas
+## Que los datos digan algo
 
-- [x] 6. Editar una comida ya guardada (hoy solo se puede borrar)
-      · verif: editar por DOM y comprobar que cambian los totales del día
-- [x] 7. Deshacer el borrado de una comida desde el toast
-      · verif: borrar, deshacer y comprobar que vuelve idéntica
-- [x] 8. Repetir una comida de otro día con un toque
-      · verif: repetir y comprobar que aparece en hoy con la misma kcal
-- [x] 9. Multiplicador de porción (×0.5 / ×1 / ×1.5 / ×2) que reescala kcal y macros
-      · verif: test que escala un ítem y comprueba los 4 valores
-- [x] 10. Buscador de alimentos frecuentes en la carga manual, con autocompletado
-      · verif: escribir 3 letras por DOM y comprobar las sugerencias
+- [x] 15. Proyección de peso a 4 semanas según la tendencia real
+      · verif: test con serie conocida; el número coincide con el cálculo a mano
+- [x] 16. Adherencia: porcentaje de días dentro del objetivo
+      · verif: test con 10 días, 7 dentro → 70%
+- [x] 17. Dónde se te va el déficit: reparto de calorías por momento del día
+      · verif: test del reparto con comidas conocidas
+- [x] 18. Patrón por día de la semana (los findes se comen distinto)
+      · verif: test que promedia por día de semana con una serie armada
+- [x] 19. Comparar esta semana contra la anterior
+      · verif: test con dos semanas distintas y el delta correcto
+- [x] 20. Aviso de proteína corta, que es lo que más se descuida en déficit
+      · verif: test del umbral (menos del 80% del objetivo, 3 días seguidos)
+- [x] 21. Informe imprimible del mes, en una página
+      · verif: generar el HTML y comprobar secciones y totales
 
-## Análisis con Claude
+## Plataforma
 
-- [x] 11. Reintento automático con backoff ante 429 y 5xx
-      · verif: test con fetch mockeado que falla 2 veces y a la 3ra anda
-- [x] 12. Cancelar el análisis en curso (AbortController) desde el modal
-      · verif: iniciar, cancelar y comprobar que el modal cierra sin error
-- [x] 13. Contexto del usuario en el prompt (objetivo, momento del día, frecuentes)
-      · verif: test que arma el body y busca esos datos en el prompt
-- [x] 14. Corregir la estimación por texto y re-analizar sin sacar otra foto
-      · verif: test que arma el body de corrección con la respuesta previa
-- [x] 15. Modo etiqueta: leer la tabla nutricional de un envase
-      · verif: test del prompt de etiqueta + campo porciones por envase
-- [x] 16. Registrar tokens y costo estimado de cada análisis
-      · verif: test del cálculo de costo por modelo con usage conocido
+- [x] 22. Tema claro: respeta el sistema y se puede forzar desde Ajustes
+      · verif: cambiar el tema y medir contraste de los textos principales
+- [x] 23. Recordatorios para cargar las comidas, con permiso pedido a demanda
+      · verif: comprobar el agendado y que no pide permiso solo al abrir
+- [x] 24. Cambio de día a medianoche con la app abierta
+      · verif: simular el cruce de medianoche y comprobar que la vista pasa al día nuevo
+- [x] 25. Atajos de teclado en la compu (nueva comida, tabs, cerrar modal)
+      · verif: disparar los eventos de teclado y comprobar el efecto
+- [x] 26. Confirmar antes de descartar un análisis sin guardar
+      · verif: cerrar con datos cargados pide confirmación; sin datos, no
+- [x] 27. Que no se ponga lenta con años de datos
+      · verif: cargar 400 días y medir que el render de Historial baje de 150 ms
 
-## Historial y análisis de datos
+## Robustez
 
-- [x] 17. Gráfico de barras de calorías de los últimos 14 días con línea de objetivo
-      · verif: comprobar que se dibujan 14 barras y la línea
-- [x] 18. Media móvil de 7 días sobre la curva de peso
-      · verif: test de la función de media móvil con serie conocida
-- [x] 19. Racha de días registrados seguidos
-      · verif: test de racha con huecos y sin huecos
-- [x] 20. Progreso hacia el peso objetivo en porcentaje
-      · verif: test con peso inicial, actual y meta
-- [x] 21. Balance semanal acumulado (déficit real de la semana en kcal y en kg)
-      · verif: test con 7 días cargados
-- [x] 22. TDEE adaptativo: estimar el gasto real según peso perdido vs consumido
-      · verif: test con serie de 14 días donde el peso baja menos de lo previsto
-- [x] 23. Editar días pasados desde el historial (peso y comidas)
-      · verif: navegar a un día pasado y comprobar que se puede cargar
-
-## Robustez y UX
-
-- [x] 24. Sin API key la app avisa una sola vez y el resto sigue funcionando
-      · verif: borrar key y comprobar que no hay errores de consola
-- [x] 25. Validación del perfil con mensajes claros por campo
-      · verif: test de la función de validación con 6 casos inválidos
-- [x] 26. Números formateados en es-AR (miles y decimales)
-      · verif: test de formateo con 5 valores
-- [x] 27. Onboarding de 3 pasos la primera vez que se abre
-      · verif: con state vacío comprobar que aparece, y que no vuelve tras cerrarlo
-- [x] 28. Aviso de versión nueva del service worker con botón de actualizar
-      · verif: comprobar el listener de updatefound y el botón en el DOM
-- [x] 29. Accesibilidad: aria-labels, foco visible, contraste de los botones de ícono
-      · verif: comprobar aria-label en todos los botones sin texto
-- [x] 30. Aviso de cuota de localStorage cerca del límite
-      · verif: test de la función de uso con un state grande simulado
-
-## Cierre
-
-- [x] 31. Exportar a CSV además de JSON
-      · verif: generar el CSV y comprobar cabecera y cantidad de filas
-- [x] 32. Backup automático del state en cada cambio (última copia buena)
-      · verif: corromper el state principal y comprobar que restaura del backup
-- [x] 34. Versionado de assets (?v=N) en HTML y shell del SW — detectado en el camino: el navegador servia CSS/JS viejo de su propio cache HTTP aunque el SW fuera network-first
-      · verif: tras versionar, las reglas nuevas de CSS aparecen en document.styleSheets
-- [x] 33. Subir VERSION del service worker y actualizar README con lo nuevo
-      · verif: comprobar que el cache viejo se borra al activar la versión nueva
+- [x] 28. Revisar datos incoherentes (kcal que no cierran con los macros) y ofrecer arreglo
+      · verif: test de detección con casos límite; la app lista los problemas
+- [x] 29. Importar fusionando en vez de reemplazar, sin duplicar comidas
+      · verif: test de merge con solapamiento parcial
+- [x] 30. Pantalla de diagnóstico: versión, service worker, cuota y últimos errores
+      · verif: provocar un error y comprobar que queda registrado y visible
+- [x] 31. El service worker limpia los caches viejos al instalar, no solo al activar — detectado en el camino: quedaron 34 caches acumulados porque cada version nueva espera confirmacion
+      · verif: con varios caches viejos sembrados, instalar deja solo el actual

@@ -400,6 +400,403 @@ test('armarCSV sin datos devuelve solo la cabecera', () => {
 });
 
 /* ============================================================
+   Diagnóstico y errores
+   ============================================================ */
+
+test('registrarError deja lo último arriba', () => {
+  let e = registrarError([], { ts: 1000, mensaje: 'Primero' });
+  e = registrarError(e, { ts: 20000, mensaje: 'Segundo' });
+  esperar(e[0].mensaje, 'Segundo');
+  esperar(e.length, 2);
+});
+
+test('registrarError no repite el mismo error en ráfaga', () => {
+  let e = registrarError([], { ts: 1000, mensaje: 'Falló algo' });
+  e = registrarError(e, { ts: 2000, mensaje: 'Falló algo' });
+  esperar(e.length, 1, 'el mismo error dos segundos después no se anota de nuevo');
+
+  e = registrarError(e, { ts: 30000, mensaje: 'Falló algo' });
+  esperar(e.length, 2, 'pero medio minuto después sí');
+});
+
+test('registrarError corta los mensajes larguísimos', () => {
+  const [e] = registrarError([], { ts: 1000, mensaje: 'x'.repeat(1000) });
+  esperar(e.mensaje.length, 300);
+});
+
+test('registrarError completa lo que falta', () => {
+  const [e] = registrarError([], { ts: 1000 });
+  esperar(e.mensaje, 'Error sin mensaje');
+  esperar(e.linea, 0);
+});
+
+test('registrarError respeta el tope', () => {
+  let e = [];
+  for (let i = 0; i < MAX_ERRORES + 5; i++) e = registrarError(e, { ts: 1000 + i * 10000, mensaje: 'error ' + i });
+  esperar(e.length, MAX_ERRORES);
+});
+
+test('armarDiagnostico resume el estado', () => {
+  const st = stateDePrueba();
+  st.errores = [{ ts: 1000, mensaje: 'algo' }];
+  const d = armarDiagnostico({ version: 'deficit-v46', sw: 'activo', online: true, state: st,
+    cuota: { kb: 120, pct: 3 }, pantalla: '375×812', agente: 'Chrome' });
+
+  esperar(d.version, 'deficit-v46');
+  esperar(d.dias, 4);
+  esperar(d.comidas, 4);
+  esperar(d.conexion, 'con conexión');
+  esperar(d.almacenamiento, '120 KB (3%)');
+  esperar(d.errores, 1);
+  esperar(d.apiKey, 'sin cargar');
+});
+
+test('armarDiagnostico no rompe con un estado pelado', () => {
+  const d = armarDiagnostico({ state: {}, online: false });
+  esperar(d.dias, 0);
+  esperar(d.comidas, 0);
+  esperar(d.conexion, 'sin conexión');
+  esperar(d.version, '—');
+});
+
+test('armarDiagnostico recorta el user agent', () => {
+  const d = armarDiagnostico({ state: {}, agente: 'x'.repeat(500) });
+  esperar(d.agente.length, 120);
+});
+
+test('diagnosticoATexto arma algo pegable', () => {
+  const d = armarDiagnostico({ version: 'deficit-v46', state: stateDePrueba(), online: true });
+  const txt = diagnosticoATexto(d, [{ ts: Date.parse('2026-08-20T12:00:00'), mensaje: 'Se rompió algo', origen: 'app.js', linea: 42 }]);
+
+  esperarQue(txt.startsWith('Déficit — diagnóstico'), 'dio: ' + txt.slice(0, 40));
+  esperarQue(txt.includes('deficit-v46'), 'falta la versión');
+  esperarQue(txt.includes('Se rompió algo'), 'falta el error');
+  esperarQue(txt.includes('app.js:42'), 'falta dónde pasó');
+});
+
+test('diagnosticoATexto sin errores no inventa la sección', () => {
+  const txt = diagnosticoATexto(armarDiagnostico({ state: {} }), []);
+  esperarQue(!txt.includes('Últimos errores'));
+});
+
+test('migrar conserva los errores y descarta los rotos', () => {
+  const s = migrar({ errores: [{ ts: 1000, mensaje: 'ok' }, { mensaje: 'sin fecha' }, null] });
+  esperar(s.errores.length, 1);
+});
+
+/* ============================================================
+   Fusión al importar
+   ============================================================ */
+
+function estadoCon(dias, extra = {}) {
+  return migrar({ dias, ...extra });
+}
+
+const COMIDA_A = { id: 'a', ts: new Date(2026, 7, 19, 13, 0).getTime(), momento: 'almuerzo', titulo: 'Milanesa', items: [], kcal: 430, prot: 32, carb: 22, gras: 23 };
+const COMIDA_B = { id: 'b', ts: new Date(2026, 7, 19, 21, 0).getTime(), momento: 'cena', titulo: 'Sopa', items: [], kcal: 200, prot: 10, carb: 20, gras: 5 };
+const COMIDA_C = { id: 'c', ts: new Date(2026, 7, 18, 13, 0).getTime(), momento: 'almuerzo', titulo: 'Guiso', items: [], kcal: 700, prot: 35, carb: 80, gras: 22 };
+
+test('fusionar trae los días que no estaban', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+  const backup = estadoCon({ '2026-08-18': { comidas: [COMIDA_C] } });
+
+  const { estado, resumen } = fusionarEstados(actual, backup);
+  esperar(Object.keys(estado.dias).sort(), ['2026-08-18', '2026-08-19']);
+  esperar(resumen.diasNuevos, 1);
+  esperar(resumen.comidasNuevas, 1);
+});
+
+test('fusionar suma las comidas nuevas de un día que ya existía', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+  const backup = estadoCon({ '2026-08-19': { comidas: [COMIDA_B] } });
+
+  const { estado, resumen } = fusionarEstados(actual, backup);
+  esperar(estado.dias['2026-08-19'].comidas.length, 2);
+  esperar(resumen.comidasNuevas, 1);
+  esperar(resumen.comidasRepetidas, 0);
+});
+
+test('fusionar no duplica la misma comida', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+  const backup = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+
+  const { estado, resumen } = fusionarEstados(actual, backup);
+  esperar(estado.dias['2026-08-19'].comidas.length, 1);
+  esperar(resumen.comidasRepetidas, 1);
+});
+
+test('fusionar reconoce la misma comida con otro id', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+  const backup = estadoCon({ '2026-08-19': { comidas: [{ ...COMIDA_A, id: 'otro-id' }] } });
+
+  const { estado } = fusionarEstados(actual, backup);
+  esperar(estado.dias['2026-08-19'].comidas.length, 1, 'mismo horario, título y kcal: es la misma');
+});
+
+test('fusionar deja las comidas ordenadas por hora', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_B] } });
+  const backup = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+
+  const { estado } = fusionarEstados(actual, backup);
+  esperar(estado.dias['2026-08-19'].comidas.map(c => c.titulo), ['Milanesa', 'Sopa']);
+});
+
+test('fusionar completa los huecos sin pisar lo que hay', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_A], peso: 92, agua: 0, nota: '' } });
+  const backup = estadoCon({ '2026-08-19': { comidas: [COMIDA_A], peso: 85, agua: 6, nota: 'del backup' } });
+
+  const { estado } = fusionarEstados(actual, backup);
+  const d = estado.dias['2026-08-19'];
+  esperar(d.peso, 92, 'el peso de acá no se pisa');
+  esperar(d.agua, 6, 'pero el agua que faltaba se completa');
+  esperar(d.nota, 'del backup');
+});
+
+test('fusionar suma los usos de los alimentos frecuentes', () => {
+  const actual = estadoCon({}, { frecuentes: [{ nombre: 'Pan', calorias: 200, usos: 3, ultimoUso: 1000 }] });
+  const backup = estadoCon({}, { frecuentes: [{ nombre: 'pan', calorias: 220, usos: 5, ultimoUso: 2000 }] });
+
+  const { estado } = fusionarEstados(actual, backup);
+  esperar(estado.frecuentes.length, 1, 'no duplica por mayúsculas');
+  esperar(estado.frecuentes[0].usos, 8);
+  esperar(estado.frecuentes[0].calorias, 220, 'gana el valor más reciente');
+});
+
+test('fusionar conserva el favorito de cualquiera de los dos', () => {
+  const actual = estadoCon({}, { frecuentes: [{ nombre: 'Pan', calorias: 200, usos: 1, favorito: false }] });
+  const backup = estadoCon({}, { frecuentes: [{ nombre: 'Pan', calorias: 200, usos: 1, favorito: true }] });
+  esperarQue(fusionarEstados(actual, backup).estado.frecuentes[0].favorito);
+});
+
+test('fusionar trae las recetas que faltan y no duplica', () => {
+  const receta = { id: 'r1', nombre: 'Desayuno', items: [{ nombre: 'Avena', calorias: 230 }], kcal: 230, usos: 2 };
+  const actual = estadoCon({}, { recetas: [] });
+  const backup = estadoCon({}, { recetas: [receta] });
+
+  const { estado, resumen } = fusionarEstados(actual, backup);
+  esperar(estado.recetas.length, 1);
+  esperar(resumen.recetasNuevas, 1);
+
+  const otraVez = fusionarEstados(estado, backup);
+  esperar(otraVez.estado.recetas.length, 1, 'importar dos veces no la duplica');
+});
+
+test('fusionar completa el perfil solo donde falta', () => {
+  const actual = estadoCon({}, { perfil: { edad: 38, altura: null, peso: null } });
+  const backup = estadoCon({}, { perfil: { edad: 50, altura: 178, peso: 92 } });
+
+  const { estado } = fusionarEstados(actual, backup);
+  esperar(estado.perfil.edad, 38, 'la edad de acá manda');
+  esperar(estado.perfil.altura, 178, 'la altura que faltaba se completa');
+});
+
+test('fusionar suma el gasto de API de los dos', () => {
+  const actual = estadoCon({}, { uso: { llamadas: 3, costo: 0.05, tokens: 5000 } });
+  const backup = estadoCon({}, { uso: { llamadas: 2, costo: 0.02, tokens: 3000 } });
+
+  const { estado } = fusionarEstados(actual, backup);
+  esperar(estado.uso.llamadas, 5);
+  cerca(estado.uso.costo, 0.07, 0.000001);
+  esperar(estado.uso.tokens, 8000);
+});
+
+test('fusionar es idempotente', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+  const backup = estadoCon({ '2026-08-18': { comidas: [COMIDA_C] } });
+
+  const una = fusionarEstados(actual, backup).estado;
+  const dos = fusionarEstados(una, backup).estado;
+  esperar(dos.dias, una.dias, 'fusionar el mismo backup dos veces no cambia nada');
+});
+
+test('fusionar no toca el estado que recibe', () => {
+  const actual = estadoCon({ '2026-08-19': { comidas: [COMIDA_A] } });
+  const copia = clonar(actual);
+  fusionarEstados(actual, estadoCon({ '2026-08-18': { comidas: [COMIDA_C] } }));
+  esperar(actual.dias, copia.dias);
+});
+
+test('mismaComida distingue comidas parecidas pero distintas', () => {
+  esperarQue(mismaComida(COMIDA_A, { ...COMIDA_A, id: 'x' }));
+  esperarQue(!mismaComida(COMIDA_A, { ...COMIDA_A, kcal: 500 }), 'otras calorías, otra comida');
+  esperarQue(!mismaComida(COMIDA_A, { ...COMIDA_A, titulo: 'Otra cosa' }));
+  esperarQue(!mismaComida(COMIDA_A, { ...COMIDA_A, ts: COMIDA_A.ts + 3600000 }), 'una hora después es otra');
+});
+
+/* ============================================================
+   Revisión de datos
+   ============================================================ */
+
+function comida(id, campos) {
+  return { id, ts: Date.now(), momento: 'almuerzo', titulo: 'Comida ' + id, items: [], kcal: 0, prot: 0, carb: 0, gras: 0, ...campos };
+}
+
+test('kcalDeMacros usa 4/4/9', () => {
+  esperar(kcalDeMacros(30, 20, 10), 30 * 4 + 20 * 4 + 10 * 9);
+  esperar(kcalDeMacros(0, 0, 0), 0);
+  esperar(kcalDeMacros(null, undefined, 'x'), 0);
+});
+
+test('revisarDatos no se queja de una comida coherente', () => {
+  const dias = { '2026-08-19': { comidas: [comida('a', { kcal: 430, prot: 32, carb: 22, gras: 23 })] } };
+  esperar(revisarDatos(dias, '2026-08-20'), []);
+});
+
+test('revisarDatos encuentra las kcal que no cierran', () => {
+  // macros dan 630, pero dice 200
+  const dias = { '2026-08-19': { comidas: [comida('a', { kcal: 200, prot: 50, carb: 50, gras: 25 })] } };
+  const p = revisarDatos(dias, '2026-08-20');
+  esperar(p.length, 1);
+  esperar(p[0].tipo, 'no-cierra');
+  esperar(p[0].sugerido, 625);
+  esperarQue(p[0].arreglable);
+});
+
+test('revisarDatos tolera diferencias chicas', () => {
+  // el redondeo de cada macro no puede disparar un aviso
+  const dias = { '2026-08-19': { comidas: [comida('a', { kcal: 430, prot: 32, carb: 22, gras: 22 })] } };
+  esperar(revisarDatos(dias, '2026-08-20'), []);
+});
+
+test('revisarDatos marca las comidas sin kcal pero con macros', () => {
+  const dias = { '2026-08-19': { comidas: [comida('a', { kcal: 0, prot: 20, carb: 30, gras: 10 })] } };
+  const p = revisarDatos(dias, '2026-08-20');
+  esperar(p[0].tipo, 'sin-kcal');
+  esperar(p[0].sugerido, 290);
+});
+
+test('revisarDatos ignora las comidas sin macros', () => {
+  // una suma rápida no tiene desglose: no hay con qué comparar
+  const dias = { '2026-08-19': { comidas: [comida('a', { kcal: 250 })] } };
+  esperar(revisarDatos(dias, '2026-08-20'), []);
+});
+
+test('revisarDatos detecta valores negativos y exagerados', () => {
+  const dias = { '2026-08-19': { comidas: [
+    comida('a', { kcal: -100, prot: 10, carb: 10, gras: 10 }),
+    comida('b', { kcal: 9000, prot: 100, carb: 100, gras: 100 })
+  ] } };
+  const tipos = revisarDatos(dias, '2026-08-20').map(p => p.tipo);
+  esperar(tipos, ['negativo', 'exagerado']);
+});
+
+test('revisarDatos avisa de fechas futuras', () => {
+  const dias = { '2026-09-01': { comidas: [comida('a', { kcal: 400, prot: 25, carb: 25, gras: 11 })] } };
+  const p = revisarDatos(dias, '2026-08-20');
+  esperar(p[0].tipo, 'fecha-futura');
+  esperarQue(!p[0].arreglable, 'eso no se arregla solo');
+});
+
+test('arreglarDatos recalcula solo lo arreglable', () => {
+  const dias = {
+    '2026-08-19': { comidas: [
+      comida('a', { kcal: 200, prot: 50, carb: 50, gras: 25 }),
+      comida('b', { kcal: -100, prot: 10, carb: 10, gras: 10 })
+    ] }
+  };
+  const problemas = revisarDatos(dias, '2026-08-20');
+  const r = arreglarDatos(dias, problemas);
+
+  esperar(r.arreglados, 1);
+  esperar(r.dias['2026-08-19'].comidas[0].kcal, 625);
+  esperar(r.dias['2026-08-19'].comidas[1].kcal, -100, 'lo que no es arreglable queda igual');
+});
+
+test('arreglarDatos no toca los días originales', () => {
+  const dias = { '2026-08-19': { comidas: [comida('a', { kcal: 200, prot: 50, carb: 50, gras: 25 })] } };
+  const copia = clonar(dias);
+  arreglarDatos(dias, revisarDatos(dias, '2026-08-20'));
+  esperar(dias, copia);
+});
+
+test('arreglar deja los datos limpios', () => {
+  const dias = { '2026-08-19': { comidas: [comida('a', { kcal: 200, prot: 50, carb: 50, gras: 25 })] } };
+  const r = arreglarDatos(dias, revisarDatos(dias, '2026-08-20'));
+  esperar(revisarDatos(r.dias, '2026-08-20'), [], 'después de arreglar no queda nada por avisar');
+});
+
+/* ============================================================
+   Informe del mes
+   ============================================================ */
+
+function stateDePrueba() {
+  return {
+    perfil: { sexo: 'm', edad: 38, altura: 178, peso: 91, pesoObj: 82, actividad: 1.375, ritmo: 0.5, manual: null },
+    dias: {
+      '2026-07-31': { nota: '', agua: 0, ejercicio: 0, peso: 93, comidas: [{ id: 'x', ts: tsEnMomento('2026-07-31', 'cena'), momento: 'cena', kcal: 2000, prot: 100, carb: 0, gras: 0, items: [] }] },
+      '2026-08-01': { nota: 'Arranqué bien', agua: 8, ejercicio: 300, peso: 92, comidas: [
+        { id: 'a', ts: tsEnMomento('2026-08-01', 'desayuno'), momento: 'desayuno', kcal: 400, prot: 20, carb: 40, gras: 12, items: [] },
+        { id: 'b', ts: tsEnMomento('2026-08-01', 'cena'), momento: 'cena', kcal: 1200, prot: 60, carb: 90, gras: 40, items: [] }
+      ] },
+      '2026-08-02': { nota: '', agua: 5, ejercicio: 0, peso: 91.5, comidas: [
+        { id: 'c', ts: tsEnMomento('2026-08-02', 'almuerzo'), momento: 'almuerzo', kcal: 2400, prot: 90, carb: 200, gras: 80, items: [] }
+      ] },
+      '2026-08-03': { nota: '', agua: 0, ejercicio: 0, peso: null, comidas: [] }
+    },
+    frecuentes: [], recetas: [], cacheAnalisis: {}, historialAnalisis: [],
+    uso: { llamadas: 0, costo: 0, tokens: 0 }, cfg: {}
+  };
+}
+
+test('datosDelMes toma solo los días de ese mes', () => {
+  const d = datosDelMes(stateDePrueba(), '2026-08');
+  esperar(d.dias, 2, 'el 31 de julio no cuenta y el 3 no tiene comidas');
+  esperar(d.filas.map(f => f.dia), [1, 2]);
+});
+
+test('datosDelMes calcula promedios y peso', () => {
+  const d = datosDelMes(stateDePrueba(), '2026-08');
+  esperar(d.promedio, 2000, '(1600 + 2400) / 2');
+  esperar(d.promedioProt, 85);
+  esperar(d.pesoInicial, 92);
+  esperar(d.pesoFinal, 91.5);
+  esperar(d.deltaPeso, -0.5);
+});
+
+test('datosDelMes marca la diferencia contra el objetivo', () => {
+  const d = datosDelMes(stateDePrueba(), '2026-08');
+  esperar(d.filas[0].diferencia, 1600 - d.objetivo);
+  esperarQue(d.filas[1].diferencia > 0, 'el día de 2400 se pasó');
+});
+
+test('armarInforme arma el HTML con todas las secciones', () => {
+  const html = armarInforme(stateDePrueba(), '2026-08');
+  esperarQue(html.startsWith('<!DOCTYPE html>'), 'tiene que ser un documento entero');
+  esperarQue(html.includes('agosto de 2026'), 'falta el nombre del mes');
+  esperarQue(html.includes('Días registrados'), 'faltan las tarjetas');
+  esperarQue(html.includes('Día por día'), 'falta la tabla');
+  esperarQue(html.includes('Dónde se fueron las calorías'), 'falta el reparto');
+  esperarQue(html.includes('@media print'), 'falta el estilo de impresión');
+});
+
+test('el informe trae una fila por día con datos', () => {
+  const html = armarInforme(stateDePrueba(), '2026-08');
+  const filas = html.split('<tr>').length - 2;   // menos la del encabezado
+  esperar(filas, 2);
+});
+
+test('el informe muestra las notas del día', () => {
+  esperarQue(armarInforme(stateDePrueba(), '2026-08').includes('Arranqué bien'));
+});
+
+test('el informe escapa el HTML de las notas', () => {
+  const s = stateDePrueba();
+  s.dias['2026-08-01'].nota = '<script>alert(1)</script>';
+  const html = armarInforme(s, '2026-08');
+  esperarQue(!html.includes('<script>alert(1)</script>'), 'no puede quedar el script crudo');
+  esperarQue(html.includes('&lt;script&gt;'), 'tiene que quedar escapado');
+});
+
+test('armarInforme devuelve null si el mes está vacío', () => {
+  esperar(armarInforme(stateDePrueba(), '2026-12'), null);
+});
+
+test('escaparHTML cubre los caracteres peligrosos', () => {
+  esperar(escaparHTML('<b>"x" & y</b>'), '&lt;b&gt;&quot;x&quot; &amp; y&lt;/b&gt;');
+  esperar(escaparHTML(null), '');
+});
+
+/* ============================================================
    Formato de números
    ============================================================ */
 
@@ -484,6 +881,26 @@ test('mediaMovil aplana el ruido diario', () => {
   const serie = Array.from({ length: 8 }, (_, i) => ({ f: sumarDias('2026-08-01', i), kg: i % 2 ? 92 : 88 }));
   const m = mediaMovil(serie, 7);
   cerca(m.at(-1).kg, 90, 0.6, 'la media tiene que quedar cerca del centro');
+});
+
+test('recortarSerie deja la serie corta como está', () => {
+  const serie = Array.from({ length: 30 }, (_, i) => ({ f: sumarDias('2026-08-20', -29 + i), kg: 90 + i }));
+  esperar(recortarSerie(serie, 120), serie);
+});
+
+test('recortarSerie submuestrea las series largas', () => {
+  const serie = Array.from({ length: 400 }, (_, i) => ({ f: sumarDias('2026-08-20', -399 + i), kg: 90 + i * 0.01 }));
+  const r = recortarSerie(serie, 120);
+  esperar(r.length, 120);
+  esperar(r[0].f, serie[0].f, 'el primero se conserva');
+  esperar(r.at(-1).f, serie.at(-1).f, 'y el último también');
+});
+
+test('recortarSerie mantiene el orden', () => {
+  const serie = Array.from({ length: 300 }, (_, i) => ({ f: sumarDias('2026-08-20', -299 + i), kg: 90 }));
+  const r = recortarSerie(serie, 50);
+  const ordenada = [...r].sort((a, b) => a.f.localeCompare(b.f));
+  esperar(r.map(x => x.f), ordenada.map(x => x.f));
 });
 
 test('mediaMovil con serie vacía', () => {
@@ -592,6 +1009,197 @@ test('tdeeAdaptativo necesita al menos dos pesos', () => {
 });
 
 /* ============================================================
+   Lectura de los datos
+   ============================================================ */
+
+/** Días armados a medida para los tests de análisis. */
+function diasArmados({ hasta = '2026-08-20', cantidad = 14, kcal = 2000, prot = 100,
+                       pesoInicial = null, deltaDiario = 0, momento = 'almuerzo', huecos = [] } = {}) {
+  const dias = {};
+  for (let i = 0; i < cantidad; i++) {
+    if (huecos.includes(i)) continue;
+    const f = sumarDias(hasta, -i);
+    const valor = typeof kcal === 'function' ? kcal(i, f) : kcal;
+    dias[f] = {
+      nota: '', agua: 0, ejercicio: 0,
+      peso: pesoInicial == null ? null : +(pesoInicial + deltaDiario * i).toFixed(2),
+      comidas: [{
+        id: 'c' + i, ts: tsEnMomento(f, momento), momento, titulo: 'Día', items: [],
+        kcal: valor, prot, carb: 0, gras: 0
+      }]
+    };
+  }
+  return dias;
+}
+
+/* ---- proyección de peso ---- */
+
+test('proyectarPeso usa la tendencia, no el último dato', () => {
+  // baja 1 kg en 14 días -> medio kilo por semana
+  const dias = diasArmados({ cantidad: 15, pesoInicial: 91, deltaDiario: 1 / 14 });
+  const p = proyectarPeso(dias, 4);
+  cerca(p.kgPorSemana, -0.5, 0.08);
+  cerca(p.proyectado, p.actual - 2, 0.4, 'en 4 semanas baja cerca de 2 kg');
+});
+
+test('proyectarPeso avisa cuando el peso sube', () => {
+  const dias = diasArmados({ cantidad: 15, pesoInicial: 90, deltaDiario: -1 / 14 });
+  esperarQue(proyectarPeso(dias).kgPorSemana > 0, 'tiene que dar positivo si sube');
+});
+
+test('proyectarPeso pide serie suficiente', () => {
+  esperar(proyectarPeso({}), null);
+  esperar(proyectarPeso(diasArmados({ cantidad: 3, pesoInicial: 90, deltaDiario: 0.1 })), null);
+});
+
+test('proyectarPeso informa sobre cuántos días midió', () => {
+  const dias = diasArmados({ cantidad: 15, pesoInicial: 91, deltaDiario: 1 / 14 });
+  esperar(proyectarPeso(dias).diasDeDatos, 14);
+});
+
+/* ---- adherencia ---- */
+
+test('adherencia cuenta los días dentro del objetivo', () => {
+  const dias = diasArmados({ cantidad: 10, kcal: (i) => (i < 7 ? 1900 : 2400) });
+  const a = adherencia(dias, 2000);
+  esperar(a.dias, 10);
+  esperar(a.dentro, 7);
+  esperar(a.excedidos, 3);
+  esperar(a.pct, 70);
+});
+
+test('adherencia marca aparte los días de comer muy poco', () => {
+  const dias = diasArmados({ cantidad: 4, kcal: (i) => (i === 0 ? 900 : 1900) });
+  const a = adherencia(dias, 2000);
+  esperar(a.muyPorDebajo, 1, 'comer 900 con objetivo 2000 no es adherencia');
+  esperar(a.dentro, 3);
+});
+
+test('adherencia suma el ejercicio al objetivo del día', () => {
+  const dias = diasArmados({ cantidad: 3, kcal: 2300 });
+  Object.values(dias).forEach(d => { d.ejercicio = 400; });
+  esperar(adherencia(dias, 2000).dentro, 3, '2300 entra si quemaste 400');
+});
+
+test('adherencia sin datos o sin objetivo devuelve null', () => {
+  esperar(adherencia({}, 2000), null);
+  esperar(adherencia(diasArmados({ cantidad: 3 }), 0), null);
+});
+
+/* ---- reparto por momento ---- */
+
+test('repartoPorMomento reparte el total en porcentajes', () => {
+  const dias = {
+    '2026-08-20': { nota: '', comidas: [
+      { id: 'a', ts: tsEnMomento('2026-08-20', 'desayuno'), momento: 'desayuno', kcal: 300 },
+      { id: 'b', ts: tsEnMomento('2026-08-20', 'almuerzo'), momento: 'almuerzo', kcal: 500 },
+      { id: 'c', ts: tsEnMomento('2026-08-20', 'cena'), momento: 'cena', kcal: 1200 }
+    ] }
+  };
+  const r = repartoPorMomento(dias);
+  esperar(r.map(x => x.id), ['desayuno', 'almuerzo', 'cena'], 'en orden del día');
+  esperar(r.find(x => x.id === 'cena').pct, 60);
+  esperar(r.find(x => x.id === 'desayuno').pct, 15);
+});
+
+test('repartoPorMomento ignora los momentos sin comidas', () => {
+  const dias = { '2026-08-20': { comidas: [{ id: 'a', ts: tsEnMomento('2026-08-20', 'cena'), momento: 'cena', kcal: 800 }] } };
+  const r = repartoPorMomento(dias);
+  esperar(r.length, 1);
+  esperar(r[0].pct, 100);
+});
+
+test('repartoPorMomento sin datos devuelve vacío', () => {
+  esperar(repartoPorMomento({}), []);
+});
+
+/* ---- patrón semanal ---- */
+
+test('patronSemanal encuentra el día más flojo', () => {
+  // 2026-08-20 es jueves; los sábados come 3000 y el resto 1800
+  const dias = {};
+  for (let i = 0; i < 28; i++) {
+    const f = sumarDias('2026-08-20', -i);
+    const [y, m, d] = f.split('-').map(Number);
+    const esSabado = new Date(y, m - 1, d).getDay() === 6;
+    dias[f] = { nota: '', comidas: [{ id: 'c' + i, ts: tsEnMomento(f, 'almuerzo'), momento: 'almuerzo', kcal: esSabado ? 3000 : 1800 }] };
+  }
+  const p = patronSemanal(dias, '2026-08-20');
+  esperar(p.peor.nombre, 'Sábado');
+  esperar(p.peor.promedio, 3000);
+  esperar(p.mejor.promedio, 1800);
+});
+
+test('pluralDia respeta los días que ya terminan en s', () => {
+  esperar(pluralDia('Lunes'), 'lunes');
+  esperar(pluralDia('Viernes'), 'viernes');
+  esperar(pluralDia('Sábado'), 'sábados');
+  esperar(pluralDia('Domingo'), 'domingos');
+});
+
+test('patronSemanal necesita al menos dos días distintos', () => {
+  const dias = { '2026-08-20': { comidas: [{ id: 'a', ts: Date.now(), kcal: 2000 }] } };
+  esperar(patronSemanal(dias, '2026-08-20'), null);
+});
+
+/* ---- comparar semanas ---- */
+
+test('compararSemanas mide el cambio de promedio', () => {
+  const dias = diasArmados({ cantidad: 14, kcal: (i) => (i < 7 ? 1800 : 2200) });
+  const c = compararSemanas(dias, '2026-08-20');
+  esperar(c.actual.promedio, 1800);
+  esperar(c.anterior.promedio, 2200);
+  esperar(c.deltaPromedio, -400, 'esta semana comió 400 menos por día');
+});
+
+test('compararSemanas también compara el peso', () => {
+  const dias = diasArmados({ cantidad: 14, pesoInicial: 90, deltaDiario: 0.1 });
+  const c = compararSemanas(dias, '2026-08-20');
+  esperarQue(c.deltaPeso < 0, 'el peso promedio bajó');
+});
+
+test('compararSemanas cuenta los días cargados de cada una', () => {
+  const dias = diasArmados({ cantidad: 14, huecos: [0, 1, 2] });
+  const c = compararSemanas(dias, '2026-08-20');
+  esperar(c.actual.dias, 4);
+  esperar(c.anterior.dias, 7);
+  esperar(c.deltaDias, -3);
+});
+
+test('compararSemanas sin una de las dos semanas devuelve null', () => {
+  esperar(compararSemanas(diasArmados({ cantidad: 5 }), '2026-08-20'), null);
+  esperar(compararSemanas({}, '2026-08-20'), null);
+});
+
+/* ---- alerta de proteína ---- */
+
+test('alertaProteina salta con tres días cortos seguidos', () => {
+  const dias = diasArmados({ cantidad: 5, prot: 60 });
+  const a = alertaProteina(dias, 150);
+  esperar(a.dias, 3);
+  esperar(a.promedio, 60);
+  esperar(a.falta, 90);
+  esperar(a.pct, 40);
+});
+
+test('alertaProteina no salta si llega al 80%', () => {
+  esperar(alertaProteina(diasArmados({ cantidad: 5, prot: 130 }), 150), null);
+});
+
+test('alertaProteina no salta con un solo día flojo', () => {
+  const dias = diasArmados({ cantidad: 5, prot: 150 });
+  const hoy = '2026-08-20';
+  dias[hoy].comidas[0].prot = 30;
+  esperar(alertaProteina(dias, 150, hoy), null, 'un día no hace patrón');
+});
+
+test('alertaProteina pide tres días cargados', () => {
+  esperar(alertaProteina(diasArmados({ cantidad: 2, prot: 20 }), 150), null);
+  esperar(alertaProteina({}, 150), null);
+  esperar(alertaProteina(diasArmados({ cantidad: 5, prot: 20 }), 0), null);
+});
+
+/* ============================================================
    Porciones
    ============================================================ */
 
@@ -692,6 +1300,506 @@ test('migrar conserva agua y ejercicio ya cargados', () => {
   const s = migrar({ dias: { '2026-08-19': { agua: 5, ejercicio: 320, comidas: [] } } });
   esperar(s.dias['2026-08-19'].agua, 5);
   esperar(s.dias['2026-08-19'].ejercicio, 320);
+});
+
+/* ============================================================
+   Registro de análisis
+   ============================================================ */
+
+test('registrarAnalisis pone lo último arriba', () => {
+  let h = registrarAnalisis([], { ts: 1000, titulo: 'Primera', costo: 0.01, tokens: 100 });
+  h = registrarAnalisis(h, { ts: 2000, titulo: 'Segunda', costo: 0.02, tokens: 200 });
+  esperar(h[0].titulo, 'Segunda');
+  esperar(h.length, 2);
+});
+
+test('registrarAnalisis completa lo que falta', () => {
+  const [a] = registrarAnalisis([], { ts: 1000 });
+  esperar(a.tipo, 'foto');
+  esperar(a.costo, 0);
+  esperar(a.precision, 'normal');
+  esperar(a.deCache, false);
+});
+
+test('registrarAnalisis respeta el tope', () => {
+  let h = [];
+  for (let i = 0; i < MAX_HISTORIAL_ANALISIS + 10; i++) h = registrarAnalisis(h, { ts: 1000 + i, titulo: 't' + i });
+  esperar(h.length, MAX_HISTORIAL_ANALISIS);
+  esperar(h[0].titulo, 't' + (MAX_HISTORIAL_ANALISIS + 9), 'queda el más nuevo');
+});
+
+test('resumenAnalisis separa lo pagado de lo que salió del cache', () => {
+  let h = [];
+  h = registrarAnalisis(h, { ts: 1, costo: 0.02, tokens: 2000 });
+  h = registrarAnalisis(h, { ts: 2, costo: 0.03, tokens: 3000 });
+  h = registrarAnalisis(h, { ts: 3, costo: 0, tokens: 0, deCache: true });
+
+  const r = resumenAnalisis(h);
+  esperar(r.total, 3);
+  esperar(r.pagados, 2);
+  esperar(r.ahorrados, 1);
+  cerca(r.costo, 0.05, 0.00001);
+  esperar(r.tokens, 5000);
+});
+
+test('resumenAnalisis con historial vacío', () => {
+  esperar(resumenAnalisis([]), { total: 0, pagados: 0, ahorrados: 0, costo: 0, tokens: 0 });
+  esperar(resumenAnalisis(null).total, 0);
+});
+
+test('migrar conserva el registro y descarta filas rotas', () => {
+  const s = migrar({ historialAnalisis: [{ ts: 1000, titulo: 'Buena' }, { titulo: 'Sin fecha' }, null] });
+  esperar(s.historialAnalisis.length, 1);
+  esperar(s.historialAnalisis[0].titulo, 'Buena');
+});
+
+/* ============================================================
+   Búsqueda en el historial
+   ============================================================ */
+
+const DIAS_BUSQUEDA = {
+  '2026-08-18': {
+    nota: 'Día tranquilo', agua: 0, ejercicio: 0, peso: null,
+    comidas: [
+      { id: '1', ts: new Date(2026, 7, 18, 21, 0).getTime(), momento: 'cena', titulo: 'Pizza con amigos', kcal: 900, prot: 40, carb: 100, gras: 35,
+        items: [{ nombre: 'Pizza muzzarella', calorias: 850 }, { nombre: 'Cerveza', calorias: 150 }] }
+    ]
+  },
+  '2026-08-19': {
+    nota: 'Me acordé de la pizza de ayer', agua: 0, ejercicio: 0, peso: null,
+    comidas: [
+      { id: '2', ts: new Date(2026, 7, 19, 13, 0).getTime(), momento: 'almuerzo', titulo: 'Ensalada', kcal: 300, prot: 10, carb: 20, gras: 15,
+        items: [{ nombre: 'Lechuga', calorias: 20 }, { nombre: 'Pollo', calorias: 200 }] }
+    ]
+  },
+  '2026-08-20': {
+    nota: '', agua: 0, ejercicio: 0, peso: null,
+    comidas: [
+      { id: '3', ts: new Date(2026, 7, 20, 21, 0).getTime(), momento: 'cena', titulo: 'Pizza casera', kcal: 700, prot: 35, carb: 80, gras: 25,
+        items: [{ nombre: 'Pizza integral', calorias: 700 }] }
+    ]
+  }
+};
+
+test('buscarEnHistorial encuentra por título', () => {
+  const r = buscarEnHistorial(DIAS_BUSQUEDA, 'pizza');
+  esperar(r.length, 3, 'dos títulos con pizza y una nota que la menciona');
+  esperar(r[0].fecha, '2026-08-20', 'primero lo más reciente');
+});
+
+test('buscarEnHistorial encuentra por alimento', () => {
+  const r = buscarEnHistorial(DIAS_BUSQUEDA, 'pollo');
+  esperar(r.length, 1);
+  esperar(r[0].donde, 'alimento');
+  esperar(r[0].alimentos, ['Pollo']);
+});
+
+test('buscarEnHistorial encuentra por nota del día', () => {
+  const r = buscarEnHistorial(DIAS_BUSQUEDA, 'tranquilo');
+  esperar(r.length, 1);
+  esperar(r[0].donde, 'nota');
+});
+
+test('buscarEnHistorial ignora acentos y mayúsculas', () => {
+  esperar(buscarEnHistorial(DIAS_BUSQUEDA, 'PIZZA').length, 3);
+  esperar(buscarEnHistorial(DIAS_BUSQUEDA, 'ensalada').length, 1);
+});
+
+test('buscarEnHistorial pide al menos dos letras', () => {
+  esperar(buscarEnHistorial(DIAS_BUSQUEDA, 'p'), []);
+  esperar(buscarEnHistorial(DIAS_BUSQUEDA, ''), []);
+  esperar(buscarEnHistorial(DIAS_BUSQUEDA, '  '), []);
+});
+
+test('buscarEnHistorial sin coincidencias devuelve vacío', () => {
+  esperar(buscarEnHistorial(DIAS_BUSQUEDA, 'sushi'), []);
+});
+
+test('buscarEnHistorial respeta el límite', () => {
+  const dias = {};
+  for (let i = 0; i < 60; i++) {
+    dias[sumarDias('2026-08-20', -i)] = { nota: '', comidas: [{ id: 'x' + i, ts: Date.now(), titulo: 'Pizza', kcal: 100, items: [] }] };
+  }
+  esperar(buscarEnHistorial(dias, 'pizza', 10).length, 10);
+});
+
+test('resumenBusqueda suma veces, días y calorías', () => {
+  const r = buscarEnHistorial(DIAS_BUSQUEDA, 'pizza');
+  const res = resumenBusqueda(r);
+  esperar(res.veces, 3);
+  esperar(res.dias, 3);
+  esperar(res.kcal, 900 + 300 + 700);
+  esperar(res.promedio, Math.round(1900 / 3));
+});
+
+test('resumenBusqueda con lista vacía no divide por cero', () => {
+  esperar(resumenBusqueda([]), { veces: 0, dias: 0, kcal: 0, promedio: 0 });
+});
+
+/* ============================================================
+   Copiar días
+   ============================================================ */
+
+const COMIDAS_DIA = [
+  { id: 'a', ts: new Date(2026, 7, 18, 8, 30).getTime(), momento: 'desayuno', titulo: 'Café', items: [], kcal: 200, prot: 5, carb: 20, gras: 8 },
+  { id: 'b', ts: new Date(2026, 7, 18, 13, 0).getTime(), momento: 'almuerzo', titulo: 'Guiso', items: [], kcal: 700, prot: 35, carb: 80, gras: 22 }
+];
+
+test('comidasCopiadas mantiene el contenido', () => {
+  const copias = comidasCopiadas(COMIDAS_DIA, '2026-08-20', new Date(2026, 7, 20, 22, 0).getTime());
+  esperar(copias.length, 2);
+  esperar(copias[0].titulo, 'Café');
+  esperar(copias[1].kcal, 700);
+  esperar(sumarComidas(copias).kcal, sumarComidas(COMIDAS_DIA).kcal);
+});
+
+test('comidasCopiadas les da ids nuevos', () => {
+  const copias = comidasCopiadas(COMIDAS_DIA, '2026-08-20');
+  esperarQue(copias[0].id !== 'a' && copias[1].id !== 'b', 'los ids no se pueden repetir');
+  esperarQue(copias[0].id !== copias[1].id, 'ni entre ellas');
+});
+
+test('comidasCopiadas mueve la fecha pero respeta el momento', () => {
+  const copias = comidasCopiadas(COMIDAS_DIA, '2026-08-20', new Date(2026, 7, 20, 22, 0).getTime());
+  const d0 = new Date(copias[0].ts), d1 = new Date(copias[1].ts);
+  esperar(hoyISO(d0), '2026-08-20');
+  esperar(hoyISO(d1), '2026-08-20');
+  esperar(d0.getHours(), 8, 'el desayuno sigue siendo a la mañana');
+  esperar(d1.getHours(), 13, 'y el almuerzo al mediodía');
+  esperar(copias[0].momento, 'desayuno');
+});
+
+test('comidasCopiadas no toca el original', () => {
+  const original = clonar(COMIDAS_DIA);
+  const copias = comidasCopiadas(COMIDAS_DIA, '2026-08-20');
+  copias[0].kcal = 9999;
+  esperar(COMIDAS_DIA, original);
+});
+
+test('comidasCopiadas con lista vacía', () => {
+  esperar(comidasCopiadas([], '2026-08-20'), []);
+  esperar(comidasCopiadas(null, '2026-08-20'), []);
+});
+
+test('diasConComidas lista del más nuevo al más viejo', () => {
+  const dias = {
+    '2026-08-18': { comidas: [{ kcal: 500 }] },
+    '2026-08-20': { comidas: [{ kcal: 800 }, { kcal: 200 }] },
+    '2026-08-19': { comidas: [] }
+  };
+  const lista = diasConComidas(dias);
+  esperar(lista.map(d => d.fecha), ['2026-08-20', '2026-08-18'], 'el día vacío no aparece');
+  esperar(lista[0].kcal, 1000);
+  esperar(lista[0].comidas, 2);
+});
+
+test('diasConComidas excluye el día pedido', () => {
+  const dias = {
+    '2026-08-19': { comidas: [{ kcal: 100 }] },
+    '2026-08-20': { comidas: [{ kcal: 200 }] }
+  };
+  esperar(diasConComidas(dias, '2026-08-20').map(d => d.fecha), ['2026-08-19']);
+});
+
+test('diasConComidas respeta el límite', () => {
+  const dias = {};
+  for (let i = 0; i < 40; i++) dias[sumarDias('2026-08-20', -i)] = { comidas: [{ kcal: 100 }] };
+  esperar(diasConComidas(dias, null, 10).length, 10);
+});
+
+/* ============================================================
+   Recetas
+   ============================================================ */
+
+const ITEMS_RECETA = [
+  { nombre: 'Avena', porcion: '60 g', calorias: 230, proteinas: 8, carbohidratos: 40, grasas: 4 },
+  { nombre: 'Banana', porcion: '1 unidad', calorias: 105, proteinas: 1, carbohidratos: 27, grasas: 0 },
+  { nombre: 'Leche', porcion: '200 ml', calorias: 90, proteinas: 7, carbohidratos: 10, grasas: 3 }
+];
+
+test('guardarReceta calcula el total de la plantilla', () => {
+  const [r] = guardarReceta([], 'Desayuno de siempre', ITEMS_RECETA, 1000);
+  esperar(r.nombre, 'Desayuno de siempre');
+  esperar(r.items.length, 3);
+  esperar(r.kcal, 425);
+  esperar(r.prot, 16);
+  esperar(r.carb, 77);
+  esperar(r.gras, 7);
+  esperar(r.usos, 0);
+});
+
+test('guardarReceta exige nombre y alimentos', () => {
+  let e1 = '', e2 = '';
+  try { guardarReceta([], '   ', ITEMS_RECETA); } catch (e) { e1 = e.message; }
+  try { guardarReceta([], 'Vacía', []); } catch (e) { e2 = e.message; }
+  esperarQue(/nombre/.test(e1), 'dio: ' + e1);
+  esperarQue(/alimento/.test(e2), 'dio: ' + e2);
+});
+
+test('guardarReceta descarta los alimentos sin nombre', () => {
+  const [r] = guardarReceta([], 'Mix', [...ITEMS_RECETA, { nombre: '  ', calorias: 500 }], 1000);
+  esperar(r.items.length, 3);
+  esperar(r.kcal, 425, 'el item basura no suma');
+});
+
+test('guardarReceta reemplaza en vez de duplicar el mismo nombre', () => {
+  let recetas = guardarReceta([], 'Desayuno', ITEMS_RECETA, 1000);
+  recetas = guardarReceta(recetas, 'DESAYUNO', [ITEMS_RECETA[0]], 2000);
+  esperar(recetas.length, 1, 'no debería duplicar por mayúsculas');
+  esperar(recetas[0].items.length, 1, 'queda la versión nueva');
+});
+
+test('reemplazar una receta conserva sus usos', () => {
+  let recetas = guardarReceta([], 'Desayuno', ITEMS_RECETA, 1000);
+  recetas = aplicarReceta(recetas, recetas[0].id).recetas;
+  recetas = aplicarReceta(recetas, recetas[0].id).recetas;
+  recetas = guardarReceta(recetas, 'Desayuno', [ITEMS_RECETA[0]], 3000);
+  esperar(recetas[0].usos, 2, 'la historia de uso no se pierde al editarla');
+});
+
+test('guardarReceta no guarda el andamiaje del editor', () => {
+  const [r] = guardarReceta([], 'Con factor', [{ ...ITEMS_RECETA[0], factor: 2, base: { calorias: 115 } }], 1000);
+  esperarQue(!('factor' in r.items[0]) && !('base' in r.items[0]), 'no van los campos internos');
+});
+
+test('aplicarReceta devuelve copias, no referencias', () => {
+  const recetas = guardarReceta([], 'Desayuno', ITEMS_RECETA, 1000);
+  const aplicada = aplicarReceta(recetas, recetas[0].id);
+  aplicada.items[0].calorias = 9999;
+  esperar(recetas[0].items[0].calorias, 230, 'editar lo aplicado no toca la receta');
+});
+
+test('aplicarReceta suma un uso', () => {
+  const recetas = guardarReceta([], 'Desayuno', ITEMS_RECETA, 1000);
+  const aplicada = aplicarReceta(recetas, recetas[0].id);
+  esperar(aplicada.recetas[0].usos, 1);
+  esperar(aplicada.titulo, 'Desayuno');
+});
+
+test('aplicarReceta con un id inexistente devuelve null', () => {
+  esperar(aplicarReceta([], 'no-existe'), null);
+});
+
+test('borrarReceta saca solo la pedida', () => {
+  let recetas = guardarReceta([], 'A', ITEMS_RECETA, 1000);
+  recetas = guardarReceta(recetas, 'B', ITEMS_RECETA, 2000);
+  const restantes = borrarReceta(recetas, recetas[0].id);
+  esperar(restantes.length, 1);
+  esperarQue(restantes[0].nombre !== recetas[0].nombre);
+});
+
+test('recetasOrdenadas pone primero las más usadas', () => {
+  let recetas = guardarReceta([], 'Poco usada', ITEMS_RECETA, 1000);
+  recetas = guardarReceta(recetas, 'Muy usada', ITEMS_RECETA, 2000);
+  const id = recetas.find(r => r.nombre === 'Muy usada').id;
+  recetas = aplicarReceta(recetas, id).recetas;
+  recetas = aplicarReceta(recetas, id).recetas;
+  esperar(recetasOrdenadas(recetas)[0].nombre, 'Muy usada');
+});
+
+test('las recetas tienen tope', () => {
+  let recetas = [];
+  for (let i = 0; i < MAX_RECETAS + 10; i++) recetas = guardarReceta(recetas, 'receta ' + i, ITEMS_RECETA, 1000 + i);
+  esperar(recetas.length, MAX_RECETAS);
+});
+
+test('migrar conserva las recetas y descarta las rotas', () => {
+  const s = migrar({ recetas: [
+    { id: 'r1', nombre: 'Buena', items: [{ nombre: 'Pan', calorias: 100 }], kcal: 100, usos: 3 },
+    { nombre: 'Sin items' },
+    null
+  ] });
+  esperar(s.recetas.length, 1);
+  esperar(s.recetas[0].usos, 3);
+});
+
+/* ============================================================
+   Favoritos
+   ============================================================ */
+
+function frecuentesDePrueba() {
+  return registrarFrecuentes([], [
+    { nombre: 'Café con leche', porcion: '1 taza', calorias: 80, proteinas: 4, carbohidratos: 8, grasas: 3 },
+    { nombre: 'Milanesa', porcion: '180 g', calorias: 430, proteinas: 32, carbohidratos: 22, grasas: 23 },
+    { nombre: 'Manzana', porcion: '1 unidad', calorias: 90, proteinas: 0, carbohidratos: 24, grasas: 0 }
+  ], 1000);
+}
+
+test('los alimentos nuevos no nacen favoritos', () => {
+  esperar(favoritos(frecuentesDePrueba()).length, 0);
+});
+
+test('alternarFavorito marca y desmarca', () => {
+  let f = frecuentesDePrueba();
+  f = alternarFavorito(f, 'Milanesa');
+  esperarQue(esFavorito(f, 'Milanesa'), 'debería quedar marcado');
+  f = alternarFavorito(f, 'Milanesa');
+  esperarQue(!esFavorito(f, 'Milanesa'), 'debería quedar desmarcado');
+});
+
+test('alternarFavorito ignora acentos y mayúsculas', () => {
+  const f = alternarFavorito(frecuentesDePrueba(), 'CAFÉ CON LECHE');
+  esperarQue(esFavorito(f, 'cafe con leche'), 'tiene que encontrarlo igual');
+});
+
+test('alternarFavorito no muta el array original', () => {
+  const original = frecuentesDePrueba();
+  const copia = clonar(original);
+  alternarFavorito(original, 'Milanesa');
+  esperar(original, copia);
+});
+
+test('alternarFavorito con un nombre que no existe no rompe', () => {
+  const f = alternarFavorito(frecuentesDePrueba(), 'Sushi');
+  esperar(f.length, 3);
+  esperar(favoritos(f).length, 0);
+});
+
+test('favoritos devuelve solo los marcados, por uso', () => {
+  let f = frecuentesDePrueba();
+  f = alternarFavorito(f, 'Milanesa');
+  f = alternarFavorito(f, 'Manzana');
+  // la manzana se usa dos veces más
+  f = registrarFrecuentes(f, [{ nombre: 'Manzana', calorias: 90 }], 2000);
+  f = registrarFrecuentes(f, [{ nombre: 'Manzana', calorias: 90 }], 3000);
+
+  const lista = favoritos(f);
+  esperar(lista.length, 2);
+  esperar(lista[0].nombre, 'Manzana', 'el más usado va primero');
+});
+
+test('registrarFrecuentes no pisa el favorito al actualizar el alimento', () => {
+  let f = alternarFavorito(frecuentesDePrueba(), 'Milanesa');
+  f = registrarFrecuentes(f, [{ nombre: 'Milanesa', calorias: 500 }], 4000);
+  esperarQue(esFavorito(f, 'Milanesa'), 'usarlo de nuevo no lo desmarca');
+  esperar(f.find(x => x.nombre === 'Milanesa').calorias, 500, 'y sí actualiza el valor');
+});
+
+test('favoritos respeta el límite', () => {
+  let f = registrarFrecuentes([], Array.from({ length: 20 }, (_, i) => ({ nombre: 'a' + i, calorias: 10 })), 1000);
+  for (let i = 0; i < 20; i++) f = alternarFavorito(f, 'a' + i);
+  esperar(favoritos(f, 5).length, 5);
+});
+
+test('migrar conserva el flag de favorito', () => {
+  const s = migrar({ frecuentes: [{ nombre: 'Pan', calorias: 200, favorito: true }, { nombre: 'Queso', calorias: 100 }] });
+  esperarQue(esFavorito(s.frecuentes, 'Pan'), 'el favorito tiene que sobrevivir');
+  esperarQue(!esFavorito(s.frecuentes, 'Queso'));
+});
+
+/* ============================================================
+   Cambio de día
+   ============================================================ */
+
+test('msHastaMedianoche cuenta lo que falta', () => {
+  const casiMedianoche = new Date(2026, 7, 20, 23, 59, 0);
+  esperar(msHastaMedianoche(casiMedianoche, 0), 60000, 'falta un minuto');
+
+  const mediodia = new Date(2026, 7, 20, 12, 0, 0);
+  esperar(msHastaMedianoche(mediodia, 0), 12 * 3600000);
+});
+
+test('msHastaMedianoche agrega el margen', () => {
+  const casi = new Date(2026, 7, 20, 23, 59, 59);
+  esperar(msHastaMedianoche(casi, 2000), 1000 + 2000, 'cae después de las 00:00, no justo');
+});
+
+test('msHastaMedianoche cruza fin de mes sin romperse', () => {
+  const finDeMes = new Date(2026, 7, 31, 22, 0, 0);
+  esperar(msHastaMedianoche(finDeMes, 0), 2 * 3600000);
+});
+
+test('msHastaMedianoche siempre es positivo', () => {
+  for (const h of [0, 1, 12, 23]) {
+    esperarQue(msHastaMedianoche(new Date(2026, 7, 20, h, 30)) > 0, 'a las ' + h);
+  }
+});
+
+/* ============================================================
+   Recordatorios
+   ============================================================ */
+
+const HORARIOS = [
+  { momento: 'desayuno', hora: '09:00' },
+  { momento: 'almuerzo', hora: '13:30' },
+  { momento: 'cena', hora: '21:30' }
+];
+
+test('minutosDeHora convierte y rechaza lo inválido', () => {
+  esperar(minutosDeHora('09:00'), 540);
+  esperar(minutosDeHora('13:30'), 810);
+  esperar(minutosDeHora('00:00'), 0);
+  esperar(minutosDeHora('25:00'), null);
+  esperar(minutosDeHora('12:99'), null);
+  esperar(minutosDeHora('nada'), null);
+  esperar(minutosDeHora(''), null);
+});
+
+test('proximosRecordatorios devuelve solo los que faltan hoy', () => {
+  const alMediodia = new Date(2026, 7, 20, 12, 0);
+  const r = proximosRecordatorios(HORARIOS, alMediodia);
+  esperar(r.map(x => x.momento), ['almuerzo', 'cena'], 'el desayuno ya pasó');
+});
+
+test('proximosRecordatorios calcula cuánto falta', () => {
+  const alMediodia = new Date(2026, 7, 20, 12, 0);
+  const r = proximosRecordatorios(HORARIOS, alMediodia);
+  esperar(r[0].enMs, 90 * 60000, 'del mediodía a las 13:30 hay 90 minutos');
+});
+
+test('proximosRecordatorios saltea los momentos ya cargados', () => {
+  const alMediodia = new Date(2026, 7, 20, 12, 0);
+  const r = proximosRecordatorios(HORARIOS, alMediodia, ['almuerzo']);
+  esperar(r.map(x => x.momento), ['cena']);
+});
+
+test('proximosRecordatorios de noche no devuelve nada', () => {
+  esperar(proximosRecordatorios(HORARIOS, new Date(2026, 7, 20, 23, 0)), []);
+});
+
+test('proximosRecordatorios ordena por hora', () => {
+  const desordenados = [
+    { momento: 'cena', hora: '21:30' },
+    { momento: 'desayuno', hora: '09:00' },
+    { momento: 'almuerzo', hora: '13:30' }
+  ];
+  const r = proximosRecordatorios(desordenados, new Date(2026, 7, 20, 7, 0));
+  esperar(r.map(x => x.momento), ['desayuno', 'almuerzo', 'cena']);
+});
+
+test('proximosRecordatorios ignora horarios rotos', () => {
+  const conBasura = [...HORARIOS, { momento: 'snack', hora: '99:99' }];
+  esperar(proximosRecordatorios(conBasura, new Date(2026, 7, 20, 7, 0)).length, 3);
+  esperar(proximosRecordatorios(null, new Date()), []);
+});
+
+test('conArticulo usa el género correcto', () => {
+  esperar(conArticulo('almuerzo'), 'el almuerzo');
+  esperar(conArticulo('cena'), 'la cena');
+  esperar(conArticulo('merienda'), 'la merienda');
+  esperar(conArticulo('inventado'), 'la comida');
+});
+
+test('textoRecordatorio menciona la comida y lo que queda', () => {
+  const conMargen = textoRecordatorio('almuerzo', 850);
+  esperarQue(conMargen.includes('el almuerzo'), 'dio: ' + conMargen);
+  esperarQue(conMargen.includes('850'), 'dio: ' + conMargen);
+
+  const sinMargen = textoRecordatorio('cena', 0);
+  esperarQue(sinMargen.includes('la cena') && !sinMargen.includes('kcal'), 'dio: ' + sinMargen);
+  esperarQue(!textoRecordatorio('desayuno').includes('null'), 'sin margen no imprime null');
+});
+
+test('migrar deja los horarios por defecto si no hay', () => {
+  const s = migrar({});
+  esperar(s.cfg.horarios.length, 3);
+  esperar(s.cfg.recordatorios, false, 'nunca arrancan activados');
+});
+
+test('migrar respeta los horarios que ya configuró', () => {
+  const s = migrar({ cfg: { horarios: [{ momento: 'cena', hora: '20:00' }] } });
+  esperar(s.cfg.horarios.length, 1);
+  esperar(s.cfg.horarios[0].hora, '20:00');
 });
 
 /* ============================================================
@@ -1112,6 +2220,407 @@ testAsync('si el modelo rechaza el schema, reintenta sin él', async () => {
   esperarQue(!!bodies[0].output_config.format, 'el primer intento va con schema');
   esperarQue(!bodies[1].output_config.format, 'el segundo va sin schema');
   esperar(r.titulo, 'Milanesa con puré');
+});
+
+/* ---- sugerencias ---- */
+
+const MARGEN = { kcal: 620, prot: 45, carb: 60, gras: 18 };
+
+const SUGERENCIAS_OK = {
+  opciones: [
+    { titulo: 'Pollo con ensalada', porque: 'Cubre la proteína que te falta', items: [
+      { nombre: 'Pechuga de pollo', porcion: '180 g', calorias: 300, proteinas: 55, carbohidratos: 0, grasas: 7 },
+      { nombre: 'Ensalada mixta', porcion: '1 plato', calorias: 120, proteinas: 3, carbohidratos: 12, grasas: 7 }
+    ] },
+    { titulo: 'Omelette de claras', porque: 'Liviano y con proteína', items: [
+      { nombre: 'Omelette', porcion: '4 claras', calorias: 200, proteinas: 28, carbohidratos: 2, grasas: 4 }
+    ] }
+  ]
+};
+
+test('el prompt de sugerencias lleva el margen real', () => {
+  const p = promptSugerencias({ margen: MARGEN, momento: 'la cena' });
+  esperarQue(p.includes('620 kcal'), 'faltan las calorías');
+  esperarQue(p.includes('45 g de proteína'), 'faltan los macros');
+  esperarQue(p.includes('la cena'), 'falta el momento');
+  esperarQue(/nunca pasarse/i.test(p), 'tiene que pedir no pasarse');
+});
+
+test('el prompt prioriza proteína cuando falta', () => {
+  const conFalta = promptSugerencias({ margen: MARGEN, momento: 'la cena', faltaProteina: true });
+  const sinFalta = promptSugerencias({ margen: MARGEN, momento: 'la cena', faltaProteina: false });
+  esperarQue(/Priorizá proteína/.test(conFalta), 'debería priorizarla');
+  esperarQue(!/Priorizá proteína/.test(sinFalta), 'y si no falta, no');
+});
+
+test('el prompt usa los alimentos que ya come', () => {
+  const p = promptSugerencias({ margen: MARGEN, momento: 'la cena', frecuentes: ['Pollo', 'Arroz'] });
+  esperarQue(p.includes('Pollo, Arroz'), 'dio: ' + p.slice(-200));
+});
+
+testAsync('sugerirComida devuelve las opciones normalizadas', async () => {
+  const fetchFn = async () => respuestaOk(SUGERENCIAS_OK, { input_tokens: 800, output_tokens: 400 });
+  const r = await sugerirComida({ fetchFn, apiKey: 'k', margen: MARGEN });
+
+  esperar(r.opciones.length, 2);
+  esperar(r.opciones[0].titulo, 'Pollo con ensalada');
+  esperar(r.opciones[0].items.length, 2);
+  esperar(r.opciones[0].items[0].calorias, 300);
+  cerca(r.costo, 800 / 1e6 * 5 + 400 / 1e6 * 25, 0.000001);
+});
+
+testAsync('sugerirComida manda el schema correcto', async () => {
+  let body = null;
+  const fetchFn = async (url, opts) => { body = JSON.parse(opts.body); return respuestaOk(SUGERENCIAS_OK); };
+  await sugerirComida({ fetchFn, apiKey: 'k', margen: MARGEN });
+  esperar(body.output_config.format.schema.required, ['opciones']);
+  esperarQue(!body.messages[0].content.some(c => c.type === 'image'), 'no hace falta mandar fotos acá');
+});
+
+testAsync('sugerirComida no pregunta si casi no quedan calorías', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(SUGERENCIAS_OK); };
+  let msg = '';
+  try {
+    await sugerirComida({ fetchFn, apiKey: 'k', margen: { kcal: 40, prot: 0, carb: 0, gras: 0 } });
+  } catch (e) { msg = e.message; }
+  esperarQue(/pocas calorías/.test(msg), 'dio: ' + msg);
+  esperar(llamadas, 0, 'no gasta API para decir eso');
+});
+
+testAsync('sugerirComida descarta opciones vacías', async () => {
+  const fetchFn = async () => respuestaOk({ opciones: [{ titulo: 'Vacía', porque: '', items: [] }, SUGERENCIAS_OK.opciones[0]] });
+  const r = await sugerirComida({ fetchFn, apiKey: 'k', margen: MARGEN });
+  esperar(r.opciones.length, 1);
+  esperar(r.opciones[0].titulo, 'Pollo con ensalada');
+});
+
+testAsync('sugerirComida avisa si no entiende la respuesta', async () => {
+  const fetchFn = async () => respuestaOk({ opciones: [] });
+  let msg = '';
+  try { await sugerirComida({ fetchFn, apiKey: 'k', margen: MARGEN }); } catch (e) { msg = e.message; }
+  esperarQue(/No pude leer/.test(msg), 'dio: ' + msg);
+});
+
+/* ---- precisión ---- */
+
+test('resolverPrecision elige modelo y esfuerzo', () => {
+  esperar(resolverPrecision('rapido', 'claude-opus-5'), { modelo: 'claude-haiku-4-5', effort: null });
+  esperar(resolverPrecision('normal', 'claude-opus-5'), { modelo: 'claude-opus-5', effort: 'medium' });
+  esperar(resolverPrecision('preciso', 'claude-opus-5'), { modelo: 'claude-opus-5', effort: 'high' });
+});
+
+test('resolverPrecision con un valor raro cae en normal', () => {
+  esperar(resolverPrecision('inventado', 'claude-opus-5').effort, 'medium');
+  esperar(resolverPrecision(undefined, 'claude-sonnet-5').modelo, 'claude-sonnet-5');
+});
+
+testAsync('el modo rápido usa Haiku y no manda effort', async () => {
+  let body = null;
+  const fetchFn = async (url, opts) => { body = JSON.parse(opts.body); return respuestaOk(COMIDA_OK); };
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', modelo: 'claude-opus-5', precision: 'rapido' });
+  esperar(body.model, 'claude-haiku-4-5');
+  esperarQue(body.output_config.effort === undefined, 'Haiku rechaza effort');
+});
+
+testAsync('el modo preciso sube el esfuerzo', async () => {
+  let body = null;
+  const fetchFn = async (url, opts) => { body = JSON.parse(opts.body); return respuestaOk(COMIDA_OK); };
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', modelo: 'claude-opus-5', precision: 'preciso' });
+  esperar(body.model, 'claude-opus-5');
+  esperar(body.output_config.effort, 'high');
+});
+
+testAsync('el modo rápido sale más barato con los mismos tokens', async () => {
+  const usage = { input_tokens: 2000, output_tokens: 400 };
+  const fetchFn = async () => respuestaOk(COMIDA_OK, usage);
+
+  const rapido = await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', precision: 'rapido' });
+  const normal = await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', precision: 'normal' });
+  esperarQue(rapido.costo < normal.costo, `rápido ${rapido.costo} debería ser menor que normal ${normal.costo}`);
+});
+
+testAsync('cambiar de precisión no reusa el resultado cacheado', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(COMIDA_OK); };
+  const cache = cacheDePrueba();
+  const imagen = 'la-foto'.repeat(50);
+
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache, precision: 'rapido' });
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache, precision: 'preciso' });
+  esperar(llamadas, 2, 'pedir más precisión tiene que volver a preguntar');
+
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache, precision: 'preciso' });
+  esperar(llamadas, 2, 'pero repetir la misma precisión sí usa el cache');
+});
+
+/* ---- varias fotos ---- */
+
+test('armarBody manda todas las imágenes en un solo mensaje', () => {
+  const body = armarBody({ modelo: 'claude-opus-5', imagenes: ['A', 'B', 'C'], prompt: 'p' });
+  esperar(body.messages.length, 1, 'una sola comida, un solo mensaje');
+
+  const contenido = body.messages[0].content;
+  const fotos = contenido.filter(c => c.type === 'image');
+  esperar(fotos.length, 3);
+  esperar(fotos.map(f => f.source.data), ['A', 'B', 'C']);
+  esperar(contenido.at(-1).type, 'text', 'el texto va al final');
+});
+
+test('armarBody sigue aceptando una sola imagen', () => {
+  const body = armarBody({ modelo: 'claude-opus-5', imagen: 'UNA', prompt: 'p' });
+  esperar(body.messages[0].content.filter(c => c.type === 'image').length, 1);
+});
+
+test('armarBody sin imágenes manda solo el texto', () => {
+  const body = armarBody({ modelo: 'claude-opus-5', prompt: 'p' });
+  esperar(body.messages[0].content.length, 1);
+  esperar(body.messages[0].content[0].type, 'text');
+});
+
+test('con varias fotos el prompt aclara que son la misma comida', () => {
+  const p = construirPrompt({ cantidadFotos: 3 });
+  esperarQue(p.includes('3 fotos'), 'falta la cantidad');
+  esperarQue(/MISMA comida/i.test(p), 'tiene que decir que son la misma comida');
+  esperarQue(/sin contar dos veces/i.test(p), 'y avisar de no duplicar');
+});
+
+test('con una sola foto el prompt no dice nada de eso', () => {
+  esperarQue(!construirPrompt({ cantidadFotos: 1 }).includes('MISMA comida'));
+});
+
+testAsync('analizarImagen acepta varias fotos', async () => {
+  let body = null;
+  const fetchFn = async (url, opts) => { body = JSON.parse(opts.body); return respuestaOk(COMIDA_OK); };
+  await analizarImagen({ fetchFn, apiKey: 'k', imagenes: ['foto1', 'foto2'] });
+  esperar(body.messages[0].content.filter(c => c.type === 'image').length, 2);
+});
+
+testAsync('el cache distingue un set de fotos de otro', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(COMIDA_OK); };
+  const cache = cacheDePrueba();
+
+  await analizarImagen({ fetchFn, apiKey: 'k', imagenes: ['a'.repeat(100), 'b'.repeat(100)], cache });
+  await analizarImagen({ fetchFn, apiKey: 'k', imagenes: ['a'.repeat(100), 'b'.repeat(100)], cache });
+  esperar(llamadas, 1, 'el mismo set sale del cache');
+
+  await analizarImagen({ fetchFn, apiKey: 'k', imagenes: ['a'.repeat(100)], cache });
+  esperar(llamadas, 2, 'una foto menos ya es otra consulta');
+});
+
+/* ---- streaming ---- */
+
+/** Respuesta SSE falsa: emite los chunks que se le pasen. */
+function respuestaStream(chunks, usage) {
+  const encoder = new TextEncoder();
+  let i = 0;
+  return {
+    ok: true, status: 200,
+    clone() { return this; },
+    headers: { get: () => null },
+    body: {
+      getReader: () => ({
+        read: async () => {
+          if (i >= chunks.length) return { done: true, value: undefined };
+          return { done: false, value: encoder.encode(chunks[i++]) };
+        }
+      })
+    }
+  };
+}
+
+/** Arma los eventos SSE de un JSON partido en pedazos. */
+function chunksDe(json, pedazos = 4, usage = { input_tokens: 1200, output_tokens: 300 }) {
+  const texto = JSON.stringify(json);
+  const largo = Math.ceil(texto.length / pedazos);
+
+  const eventos = [
+    `event: message_start\ndata: ${JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: usage.input_tokens } } })}\n\n`
+  ];
+
+  for (let i = 0; i < texto.length; i += largo) {
+    const trozo = texto.slice(i, i + largo);
+    eventos.push(`event: content_block_delta\ndata: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: trozo } })}\n\n`);
+  }
+
+  eventos.push(`event: message_delta\ndata: ${JSON.stringify({ type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: usage.output_tokens } })}\n\n`);
+  return eventos;
+}
+
+testAsync('leerStream reconstruye el mensaje completo', async () => {
+  const res = respuestaStream(chunksDe(COMIDA_OK));
+  const data = await leerStream(res, null);
+  esperar(JSON.parse(data.content[0].text).titulo, 'Milanesa con puré');
+  esperar(data.stop_reason, 'end_turn');
+  esperar(data.usage, { input_tokens: 1200, output_tokens: 300 });
+});
+
+testAsync('leerStream avisa el avance a medida que llega', async () => {
+  const avances = [];
+  const res = respuestaStream(chunksDe(COMIDA_OK, 5));
+  await leerStream(res, (txt) => avances.push(txt.length));
+  esperarQue(avances.length >= 4, 'debería haber avisado varias veces, dio ' + avances.length);
+  esperarQue(avances[0] < avances.at(-1), 'el texto tiene que ir creciendo');
+});
+
+testAsync('leerStream tolera un evento partido entre dos chunks', async () => {
+  // el corte cae justo en el medio de una línea data:
+  const completos = chunksDe(COMIDA_OK, 2).join('');
+  const corte = Math.floor(completos.length / 2);
+  const res = respuestaStream([completos.slice(0, corte), completos.slice(corte)]);
+  const data = await leerStream(res, null);
+  esperar(JSON.parse(data.content[0].text).titulo, 'Milanesa con puré');
+});
+
+testAsync('leerStream ignora líneas basura y [DONE]', async () => {
+  const chunks = [...chunksDe(COMIDA_OK, 2), 'data: [DONE]\n\n', ': ping\n\n', 'data: {no soy json}\n\n'];
+  const data = await leerStream(respuestaStream(chunks), null);
+  esperarQue(!!JSON.parse(data.content[0].text).titulo, 'igual tiene que salir el JSON bueno');
+});
+
+testAsync('analizarImagen en streaming devuelve lo mismo que sin streaming', async () => {
+  let body = null;
+  const fetchFn = async (url, opts) => { body = JSON.parse(opts.body); return respuestaStream(chunksDe(COMIDA_OK)); };
+  const avances = [];
+
+  const r = await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', onProgreso: (t) => avances.push(t) });
+
+  esperar(body.stream, true, 'tiene que pedir streaming');
+  esperar(r.titulo, 'Milanesa con puré');
+  esperar(r.items.length, 1);
+  cerca(r.costo, 1200 / 1e6 * 5 + 300 / 1e6 * 25, 0.000001, 'el costo se calcula igual');
+  esperarQue(avances.length > 0, 'y el avance llegó');
+});
+
+test('sin onProgreso el body no pide streaming', () => {
+  const body = armarBody({ modelo: 'claude-opus-5', imagen: 'x', prompt: 'p' });
+  esperarQue(body.stream === undefined, 'no debería mandar stream');
+});
+
+test('alimentosParciales lee los nombres del JSON incompleto', () => {
+  const parcial = '{"titulo":"Plato","items":[{"nombre":"Milanesa","calorias":430},{"nombre":"Pur';
+  esperar(alimentosParciales(parcial), ['Milanesa']);
+});
+
+test('alimentosParciales devuelve todos los que ya están', () => {
+  const parcial = JSON.stringify({ items: [{ nombre: 'Arroz' }, { nombre: 'Pollo' }] });
+  esperar(alimentosParciales(parcial), ['Arroz', 'Pollo']);
+});
+
+test('alimentosParciales con texto vacío no rompe', () => {
+  esperar(alimentosParciales(''), []);
+  esperar(alimentosParciales(null), []);
+});
+
+/* ---- cache de análisis ---- */
+
+/** Cache de prueba: mismo contrato que el real, pero en memoria. */
+function cacheDePrueba() {
+  let datos = {};
+  return {
+    huella: (imagen, modo) => huellaImagen(imagen) + ':' + modo,
+    leer: (h) => leerDeCache(datos, h),
+    guardar: (h, valor) => { datos = guardarEnCache(datos, h, valor); },
+    contenido: () => datos
+  };
+}
+
+test('huellaImagen es estable y distingue imágenes', () => {
+  const a = 'x'.repeat(5000);
+  const b = 'x'.repeat(5000) + 'y';
+  esperar(huellaImagen(a), huellaImagen(a), 'la misma imagen da la misma huella');
+  esperarQue(huellaImagen(a) !== huellaImagen(b), 'imágenes distintas, huellas distintas');
+  esperar(huellaImagen(''), '');
+});
+
+test('huellaImagen detecta un cambio en el medio de la imagen', () => {
+  const base = 'abcdefghij'.repeat(500);
+  const cambiada = base.slice(0, 2500) + 'Z' + base.slice(2501);
+  esperarQue(huellaImagen(base) !== huellaImagen(cambiada), 'un byte distinto tiene que notarse');
+});
+
+test('guardarEnCache y leerDeCache van y vuelven', () => {
+  const c = guardarEnCache({}, 'h1', { titulo: 'Pizza' }, 1000);
+  esperar(leerDeCache(c, 'h1', 1000).titulo, 'Pizza');
+  esperar(leerDeCache(c, 'no-esta', 1000), null);
+});
+
+test('el cache ignora las entradas viejas', () => {
+  const c = guardarEnCache({}, 'h1', { titulo: 'Pizza' }, 0);
+  const treintaYUnDias = 31 * 86400000;
+  esperar(leerDeCache(c, 'h1', treintaYUnDias), null, 'a los 31 días ya no vale');
+  esperarQue(!!leerDeCache(c, 'h1', 29 * 86400000), 'a los 29 sí');
+});
+
+test('el cache guarda copias, no referencias', () => {
+  const valor = { titulo: 'Pizza', items: [{ nombre: 'Pizza' }] };
+  const c = guardarEnCache({}, 'h1', valor, 1000);
+  valor.items[0].nombre = 'Otra cosa';
+  esperar(leerDeCache(c, 'h1', 1000).items[0].nombre, 'Pizza');
+});
+
+test('el cache tiene tope y tira lo más viejo', () => {
+  let c = {};
+  for (let i = 0; i < MAX_CACHE + 5; i++) c = guardarEnCache(c, 'h' + i, { n: i }, 1000 + i);
+  esperar(Object.keys(c).length, MAX_CACHE);
+  esperar(leerDeCache(c, 'h0', 2000), null, 'la primera ya no está');
+  esperarQue(!!leerDeCache(c, 'h' + (MAX_CACHE + 4), 2000), 'la última sí');
+});
+
+testAsync('la misma foto no se paga dos veces', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(COMIDA_OK); };
+  const cache = cacheDePrueba();
+  const imagen = 'BASE64-DE-LA-FOTO'.repeat(100);
+
+  const primera = await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache });
+  const segunda = await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache });
+
+  esperar(llamadas, 1, 'la segunda vez sale del cache');
+  esperar(segunda.titulo, primera.titulo);
+  esperar(segunda.deCache, true);
+  esperar(segunda.costo, 0, 'lo cacheado no cuesta nada');
+});
+
+testAsync('una foto distinta sí llama a la API', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(COMIDA_OK); };
+  const cache = cacheDePrueba();
+
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'foto-uno'.repeat(50), cache });
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'foto-dos'.repeat(50), cache });
+  esperar(llamadas, 2);
+});
+
+testAsync('el modo etiqueta no reusa el análisis de plato', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(COMIDA_OK); };
+  const cache = cacheDePrueba();
+  const imagen = 'la-misma-foto'.repeat(50);
+
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache, modo: 'plato' });
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache, modo: 'etiqueta' });
+  esperar(llamadas, 2, 'la misma foto leída como etiqueta es otra pregunta');
+});
+
+testAsync('una corrección siempre vuelve a preguntar', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(COMIDA_OK); };
+  const cache = cacheDePrueba();
+  const imagen = 'foto'.repeat(100);
+
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache });
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen, cache, correccion: 'era el doble', previo: COMIDA_OK });
+  esperar(llamadas, 2, 'corregir pide justamente una respuesta distinta');
+});
+
+testAsync('sin cache configurado todo sigue funcionando', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOk(COMIDA_OK); };
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x' });
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x' });
+  esperar(llamadas, 2);
 });
 
 /* ---- interpretación ---- */
