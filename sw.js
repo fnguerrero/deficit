@@ -1,15 +1,29 @@
 /* Service worker — cachea el shell de la app para que ande offline.
    Subir la versión al cambiar cualquier archivo. */
 
-const VERSION = 'deficit-v50';
+const VERSION = 'deficit-v79';
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=50',
-  './core.js?v=50',
-  './claude.js?v=50',
-  './app.js?v=50',
+  './styles.css?v=79',
+  './core.js?v=79',
+  './analisis.js?v=79',
+  './claude.js?v=79',
+  './productos.js?v=79',
+  './sync.js?v=79',
+  './app.js?v=79',
+  './ui/general.js?v=79',
+  './ui/hoy.js?v=79',
+  './ui/comidas.js?v=79',
+  './ui/escaner.js?v=79',
+  './ui/asistente.js?v=79',
+  './ui/historial.js?v=79',
+  './ui/perfil.js?v=79',
+  './ui/sincronizacion.js?v=79',
+  './ui/calibracion.js?v=79',
+  './ui/ajustes.js?v=79',
+  './arranque.js?v=79',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

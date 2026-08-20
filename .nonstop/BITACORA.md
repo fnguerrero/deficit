@@ -1,69 +1,49 @@
-# Bitácora — 30 mejoras a Déficit (ciclo 2)
+# Bitácora — lo que le faltaba a Déficit (ciclo 3)
 
 Formato: `#N — qué se hizo — cómo se verificó`
 
-#0 — Bootstrap del ciclo 2: ciclo 1 archivado en .nonstop/ciclo-1, SPEC con 8 criterios y TODO con 30 items; el andamiaje de tests ya existe del ciclo anterior — verificado: 148 tests en verde y la app publicada andando antes de tocar nada
+#0 — Bootstrap del ciclo 3: ciclos 1 y 2 archivados, SPEC con 10 criterios y TODO con 22 items sobre los huecos de fondo (calibracion de la IA, sincronizacion, codigo de barras, tope de gasto, nutrientes y partir app.js). Nico eligio Supabase dejandolo listo para pegar credenciales — verificado: 319 tests en verde y la app publicada andando antes de tocar nada
 
-#1 — Favoritos: estrella por alimento en el editor y tarjeta en Hoy que carga la comida entera de un toque, con deshacer. Ademas tools/version.py para subir la version de assets en un comando — verificado: 9 tests nuevos (157 total) y en la app marcar Milanesa dejo el chip, un toque sumo 430 kcal con sus macros y deshacer lo saco
+#1 — app.js partido: de 2.785 lineas a 129, con 7 modulos en ui/ (general, hoy, comidas, asistente, historial, perfil, ajustes) mas arranque.js al final; sin cambiar una linea de logica — verificado: los 319 tests siguen en verde, cero errores de consola, las 30 funciones clave definidas y un recorrido funcional completo (carga manual, favorito de un toque, suma rapida, agua, ejercicio, nota, peso y las 4 pantallas)
 
-#2 — Recetas: guardar la comida del editor como plantilla con nombre (reemplaza en vez de duplicar y conserva los usos) y aplicarla desde el panel de repetir — verificado: 13 tests nuevos (170 total) y en la app guarde un desayuno de 3 alimentos, lo apliqué y sumó 425 kcal sin tocar la receta original
+#2 — tools/tamanos.py: chequeo de tamaño por archivo con limite propio, aviso al 85% y salida con codigo 1 si algo se paso — verificado: con los archivos actuales sale 0 y avisa que core.js viene cerca; sembrando un archivo de 800 lineas salio 1 nombrandolo
 
-#3 — Copiar un dia entero desde el panel de repetir, con ids nuevos y deshacer. El test marco un error real: tsParaFecha usaba la hora actual cuando el destino era hoy, y un desayuno copiado quedaba a las 22 — se separo tsEnMomento y ahora la copia respeta la hora del momento — verificado: 8 tests nuevos (178 total) y copiar ayer dejo 900 kcal con las comidas a las 8:00 y 13:01, ayer intacto
+#3 — Banco de calibracion: fotos con su valor real conocido, corrida contra la API y error promedio con veredicto accionable. El primer intento fallo porque agregarReferencia descartaba la foto de analisis (bug real, corregido) y se bajo a 768 px con tope de 8 para cuidar la cuota — verificado: 13 tests nuevos (332 total) y una corrida simulada con 18% de subestimacion pareja dio 18,0% de error, veredicto 'aceptable' y solo 16 KB de peso
 
-#4 — Suma rapida: cargar kcal sueltas sin desglose desde la tarjeta del dia, con Enter y deshacer — verificado: 250 movio el anillo a 250 y limpio el input, 0 y 99999 fueron rechazados, Enter sumo 150 mas y deshacer volvio a 250
+#4 — Cada correccion a mano de una estimacion de la IA queda anotada como medicion de sesgo (se ignora lo que sea menos del 5%, que es redondeo). El primer intento no inserto el bloque en core.js y mi chequeo lo dio por bueno porque el nombre ya estaba en el export: se corrigio y ahora verifico contra la declaracion — verificado: 9 tests nuevos (341 total) y en la app 5 comidas corregidas dejaron 5 registros de -20%
 
-#5 — Mover una comida de momento o de dia desde el editor (selector de fecha que solo aparece al editar), con la hora acompañando al momento nuevo — verificado: pasar de almuerzo a cena la puso en el grupo Cena a las 21, y moverla a ayer dejo hoy en 0 kcal con la comida fechada correctamente en ayer
+#5 — Aviso de sesgo sistematico en Ajustes: salta con 5 correcciones consistentes de 15% o mas para el mismo lado — verificado: con -20% pareja mostro 'estimando 20,0% de menos de forma pareja'; al corregir despues para el otro lado el sesgo cayo a 2,5%, dejo de ser consistente y el aviso se apago solo
 
-#6 — Nota del dia con guardado automatico e indicador cuando hay texto — verificado: escribir y salir del campo dejo la nota en el state y en localStorage, y cambiar de dia mostro el campo vacio sin arrastrarla
+#6 — README con la seccion 'Antes que nada: probá que la estimación sirve': tres tipos de comida que sirven de referencia, los 4 pasos exactos y la tabla de que significa cada nivel de error — verificado: los nombres del README coinciden literalmente con los de la UI ('Calibrar la estimación', 'Agregar una foto', 'Correr la prueba') y los umbrales de la tabla con los de veredictoCalibracion
 
-#7 — Buscador en el historial por titulo, alimento o nota del dia, con resumen de veces/dias/kcal y la lista de dias que se oculta mientras buscas — verificado: 9 tests nuevos (187 total) y buscar pizza en la app dio 2 resultados con 1.600 kcal totales y 800 de promedio
+#7 — sync.js: cliente REST de Supabase con fetch inyectable, cabeceras apikey/Bearer, upsert con merge-duplicates y errores traducidos (401 'revisá la anon key', 404 'corriste el SQL') — verificado: 12 tests con un Supabase simulado, incluyendo sin conexion y tabla faltante
 
-#8 — Visor de fotos: se guarda una version de 384 px ademas de la miniatura y tocar el thumb la abre en grande con titulo, kcal y notas; la purga por cuota suelta primero esas fotos — verificado: el flujo completo dejo thumb de 1 KB y foto de 3 KB, el visor abrio con la grande y sin ella cae a la miniatura avisando
+#8 — Llave de sincronizacion de 32 caracteres sin l/o/0/1 (se confunden al copiarlas a mano), con validacion y formato legible en bloques — verificado: 5 tests, incluyendo 50 llaves generadas sin repetir y sin caracteres ambiguos
 
-#9 — Cache de analisis por huella de imagen (FNV-1a muestreado, tope 24, 30 dias, distinto por modo y sin usarlo en correcciones) guardado en el state — verificado: 11 tests nuevos (198 total) y en la app la misma foto dos veces dejo 1 sola llamada, costo sin cambios y aviso de que no gasto API
+#9 — Subida de cambios locales: solo lo modificado desde el ultimo sync, comidas, dias y tumbas, sin mandar las fotos (pesan y son del dispositivo) — verificado: 6 tests, la segunda corrida no vuelve a subir lo mismo
 
-#10 — Streaming SSE con avance real: leerStream reconstruye el mensaje y alimentosParciales saca los nombres del JSON incompleto para mostrarlos mientras llegan — verificado: 9 tests nuevos (207 total, incluye evento partido entre chunks) y en la app el cartel paso de la frase generica a 'Bife de chorizo' y despues '· Ensalada mixta'
+#10 — Bajada y fusion: se corrigio un error de diseño que encontraron los tests — se subia antes de bajar y la version vieja de este dispositivo pisaba en el servidor la edicion mas nueva del otro. Ahora baja, fusiona y recien despues sube. Ademas el filtro pasa a 'cuando llego al servidor' en vez de 'cuando se modifico', porque una comida vieja subida tarde no llegaba nunca — verificado: el celular recibe las 2 comidas de la compu, no duplica al repetir y la foto local sobrevive
 
-#11 — Varias fotos en un mismo analisis (hasta 4) en un unico mensaje, con el prompt aclarando que son la misma comida y sin contar dos veces; el cache distingue el set — verificado: 7 tests nuevos (214 total) y en la app 3 fotos distintas viajaron en 1 mensaje y dieron una comida de 640 kcal
+#11 — Conflictos por comida: gana la edicion mas reciente comparando el campo act — verificado: la misma comida editada en dos dispositivos converge al valor del que la toco despues, y lo viejo no pisa lo nuevo (queda como ignorada)
 
-#12 — Modos de precision (Rapido con Haiku sin effort / Normal medium / Preciso high) elegibles en Ajustes, con el cache separado por modo — verificado: 6 tests nuevos (220 total) confirmando modelo, effort y que rapido sale mas barato; en la app la eleccion quedo persistida
+#12 — Tumbas: lo borrado en un dispositivo desaparece en el otro y no revive aunque se sincronice varias veces; si el borrado local es posterior, la fila remota vieja no la resucita — verificado: 3 tests del borrado mas convergencia de 3 dispositivos al mismo estado
 
-#13 — Sugerencias de que comer con lo que queda: schema propio, prompt con el margen real y prioridad a la proteina, 3 opciones tocables que precargan el editor — verificado: 8 tests nuevos (228 total) y en la app con 791 kcal de margen devolvio 2 opciones, elegir una cargo 420 kcal al dia
+#13 — Pantalla de sincronizacion en Ajustes: URL y anon key con validacion, llave propia generada sola y mostrada en bloques, copiar/pegar llave y sincronizar a mano con estado — verificado: contra un Supabase simulado subio 3 filas, bajo la comida del otro dispositivo, conservo la foto local y con un 401 mostro el mensaje traducido y lo dejo anotado en el diagnostico
 
-#14 — Registro de analisis en Ajustes: cada llamada queda anotada con tipo, modelo, tokens y costo, marcando cuales salieron del cache — verificado: 6 tests nuevos (234 total) y en la app las dos subidas de la misma foto quedaron como una pagada (US$ 0,014) y una 'del cache'
+#14 — supabase.sql listo para pegar: tablas comidas y dias con act (resuelve conflictos) y subido (filtra la bajada), claves primarias por llave, indices para la bajada, RLS con politicas y explicacion de por que la llave es lo que protege — verificado: comprobado por script que todas las columnas que manda el cliente existen en el SQL y que las dos que se usan como filtro estan indexadas
 
-#15 — Proyeccion de peso a 4 semanas. El test detecto que el calculo original mezclaba un punto crudo con uno suavizado y subestimaba la tendencia: se reemplazo por regresion lineal sobre toda la serie — verificado: con 1 kg en 14 dias da -0,5 kg/semana exacto, y en la app muestra la fecha y el peso proyectado
+#15 — Respaldo: aviso cuando nunca exportaste con 3+ dias cargados o cuando pasaron 14 dias, marca de ultimo respaldo al exportar, y almacenamiento persistente pedido recien al guardar una comida (nunca al abrir) — verificado: 7 tests nuevos (384 total) y en la app el aviso aparecio con 6 dias sin exportar, se apago al exportar, volvio a los 20 dias y la persistencia no se pidio al renderizar
 
-#16 — Adherencia: porcentaje de dias dentro del objetivo, contando aparte los excedidos y los de comer muy por debajo, y sumando el ejercicio al objetivo del dia — verificado: 4 tests (7 de 10 dentro = 70%) y en la app 28 dias dieron 86% con 24 dentro y 4 por encima
+#16 — productos.js: cliente de Open Food Facts (gratis, sin API key) con normalizacion de la respuesta real, conversion de kJ a kcal y de sal a sodio, cache local de 300 productos por 90 dias y errores utiles — verificado: 24 tests nuevos (408 total) con fixtures de respuestas reales
 
-#17 — Reparto de calorias por momento del dia con barras — verificado: 3 tests (cena 60% con 1200 de 2000) y en la app desayuno 20% / almuerzo 35% / cena 45%
+#17 — Escaner de codigo de barras con BarcodeDetector y camara trasera, con carga a mano como alternativa cuando el navegador no lo soporta o no hay permiso; cerrar el modal apaga la camara — verificado: en un navegador sin BarcodeDetector el panel explico la situacion y el codigo a mano trajo el producto igual
 
-#18 — Patron por dia de la semana, con el dia mas alto y el mas bajo; se corrigio el plural de los dias terminados en s ('los vierness') — verificado: 3 tests y en la app detecto que los sabados son 2.900 kcal contra 1.900 del resto
+#18 — Del producto a la comida: porciones sugeridas (la del envase, 100 g y el envase entero), gramos editables con el total recalculando, y pasaje al editor para ajustar antes de guardar — verificado: el yogur de 160 g dio 155 kcal, cambiar a 100 g dio 97, se guardo como comida y el segundo escaneo salio del cache con 1 sola llamada de red
 
-#19 — Comparacion de esta semana contra la anterior en promedio, dias cargados y peso — verificado: 4 tests (1800 vs 2200 = -400) y en la app mostro las 3 filas con sus deltas
+#19 — Tope mensual de gasto que frena de verdad: se chequea antes de cada llamada paga (foto, etiqueta, correccion, sugerencias y calibracion) y con el tope alcanzado no se abre el analisis — verificado: 10 tests nuevos y en la app con 5,20 gastados sobre un tope de 5 el boton de foto no abrio el modal, mientras la carga manual siguio andando
 
-#20 — Aviso de proteina corta en la pantalla Hoy (3 dias seguidos por debajo del 80% del objetivo) — verificado: 4 tests y en la app con 55 g de 148 g aviso cuanto sumar por dia
+#20 — Gasto del mes a la vista con barra y aviso al 80%, tope editable y opcion de apagarlo (cero = sin freno) — verificado: al 84% aviso sin frenar, al 100% bloqueo con el texto de que hacer, subir el tope destrabo y ponerlo en cero dejo pasar todo
 
-#21 — Informe del mes imprimible en una pagina (tarjetas, reparto y tabla dia por dia con notas), con escapado de HTML y descarga si el navegador bloquea la ventana — verificado: 9 tests nuevos (265 total, incluye intento de script en una nota) y en la app genero 8 KB con las 5 secciones y 20 filas
+#21 — Fibra, azucar y sodio en el modelo, en el schema del analisis (con instruccion de poner 0 antes que inventar) y en el codigo de barras, con migracion que deja en cero lo ya guardado — verificado: 12 tests nuevos y las comidas viejas siguen intactas con los tres campos en cero
 
-#22 — Tema claro completo (auto por prefers-color-scheme, o forzado desde Ajustes) con tokens propios y theme-color acompañando; se oscurecio el verde porque el blanco encima daba 3,3 — verificado: contraste medido en los 7 pares principales, minimo 4,92 en claro y 5,92 en oscuro, ambos cumplen AA
-
-#23 — Recordatorios locales con horarios editables por comida, permiso pedido solo al activarlos y sin avisar de lo ya cargado; se agrego el articulo por momento porque decia 'el cena' — verificado: 11 tests nuevos (276 total), 0 permisos pedidos al abrir y 1 al activar, y el navegador con notificaciones bloqueadas muestra el aviso correcto
-
-#24 — Cambio de dia a medianoche con la app abierta, mas revision al volver de una pestaña dormida; si estabas mirando un dia viejo a proposito no te lo mueve — verificado: 4 tests de msHastaMedianoche (incluye fin de mes) y simular el cruce paso la vista de Ayer a Hoy con el anillo en 0
-
-#25 — Atajos de teclado (F/M/E/R/Q, 1-4, flechas, / y Escape) que no se disparan mientras escribis ni con un modal abierto, con la ayuda listada en Ajustes solo en pantallas con teclado — verificado: 13 comprobaciones por DOM, todas correctas, incluyendo que Escape cierra el modal y saca el foco del campo
-
-#26 — Confirmacion al descartar un analisis con datos cargados, con forzado en los cierres que vienen despues de guardar — verificado: el modal vacio y el panel de repetir cierran sin preguntar, con datos pregunta y cancelar lo deja abierto, y guardar no pregunta
-
-#27 — Rendimiento con años de datos: medido con 400 dias y 1.600 comidas, el Historial rinde 16,3 ms (criterio: menos de 150). Ademas la curva de peso pasa a 120 puntos submuestreados en vez de 400, que en 320 px eran una mancha — verificado: 3 tests de recortarSerie y la medicion real con la leyenda avisando los 400 registros
-
-#28 — Revision de datos: detecta kcal que no cierran con los macros, comidas sin kcal, negativos, exagerados y fechas futuras, con recalculo automatico de lo deducible — verificado: 11 tests nuevos (294 total) y en la app encontro los 2 casos sembrados, los recalculo a 625 y 290 y dejo la revision limpia
-
-#29 — Importar fusionando: junta el backup con lo que ya hay sin duplicar (por id o por hora+titulo+kcal), completa huecos sin pisar, suma usos de frecuentes y gasto de API, y deja la opcion de reemplazar — verificado: 14 tests nuevos (308 total) y en la app la fusion sumo 2 comidas y detecto 1 repetida, la segunda importacion no cambio nada
-
-#30 — Pantalla de diagnostico: version, service worker, cuota, contadores y ultimos errores (de JS y de promesas) capturados y persistidos, con copiar al portapapeles y limpiar — verificado: 11 tests nuevos (319 total) y en la app un error provocado quedo anotado, persistido y copiado en el texto
-
-#31 — Item nuevo (31): el service worker limpia los caches viejos al instalar y no solo al activar, porque cada version que espera confirmacion dejaba su cache dando vueltas (se habian juntado 34) — verificado: con deficit-v10/v20/v30 sembrados mas uno de otra app, instalar dejo solo deficit-v50 y respeto el ajeno
-
-#32 — 3/4 del presupuesto: 31 items hechos en 31 iteraciones de 40, sin bloqueados. Queda solo el cierre: verificacion final contra los 8 criterios, informe y commit
+#22 — Los tres nutrientes se muestran en Hoy solo si hay datos, con objetivo por calorias (14 g de fibra cada 1.000 kcal, 10% de azucar, 2.000 mg de sodio de la OMS) y marca cuando te pasas; en el informe del mes aparecen como promedios — verificado: sin datos la fila queda oculta, con lentejas mostro los tres y con 2.600 mg de sodio marco el exceso

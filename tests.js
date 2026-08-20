@@ -155,8 +155,10 @@ test('los macros suman el total de calorías', () => {
    ============================================================ */
 
 test('sumarComidas con lista vacía da todo en cero', () => {
-  esperar(sumarComidas([]), { kcal: 0, prot: 0, carb: 0, gras: 0 });
-  esperar(sumarComidas(null), { kcal: 0, prot: 0, carb: 0, gras: 0 });
+  for (const entrada of [[], null]) {
+    const r = sumarComidas(entrada);
+    esperarQue(Object.values(r).every(v => v === 0), 'todo tiene que ser cero, dio: ' + JSON.stringify(r));
+  }
 });
 
 test('sumarComidas acumula y redondea', () => {
@@ -164,12 +166,14 @@ test('sumarComidas acumula y redondea', () => {
     { kcal: 430.4, prot: 32.2, carb: 22, gras: 23 },
     { kcal: 180.2, prot: 4, carb: 30.4, gras: 5 }
   ]);
-  esperar(r, { kcal: 611, prot: 36, carb: 52, gras: 28 });
+  esperar({ kcal: r.kcal, prot: r.prot, carb: r.carb, gras: r.gras },
+          { kcal: 611, prot: 36, carb: 52, gras: 28 });
 });
 
 test('sumarComidas ignora basura en los campos', () => {
   const r = sumarComidas([{ kcal: 'no soy número', prot: null, carb: undefined, gras: 10 }]);
-  esperar(r, { kcal: 0, prot: 0, carb: 0, gras: 10 });
+  esperar({ kcal: r.kcal, prot: r.prot, carb: r.carb, gras: r.gras },
+          { kcal: 0, prot: 0, carb: 0, gras: 10 });
 });
 
 /* ============================================================
@@ -397,6 +401,198 @@ test('armarCSV ordena por fecha', () => {
 test('armarCSV sin datos devuelve solo la cabecera', () => {
   esperar(armarCSV({}).split('\r\n').length, 1);
   esperar(armarCSV(null).split('\r\n').length, 1);
+});
+
+/* ============================================================
+   Calibración de la estimación
+   ============================================================ */
+
+const FOTO_FALSA = 'data:image/jpeg;base64,AAAA';
+
+function refsConEstimacion(pares) {
+  // pares: [[real, estimado], ...]
+  let refs = [];
+  pares.forEach(([real], i) => {
+    refs = agregarReferencia(refs, { nombre: 'Ref ' + i, kcalReal: real, foto: FOTO_FALSA }, 1000 + i);
+  });
+  // agregarReferencia mete al principio, así que se invierte para emparejar
+  const ids = refs.map(r => r.id).reverse();
+  pares.forEach(([, estimado], i) => {
+    refs = anotarEstimacion(refs, ids[i], { kcal: estimado, modelo: 'claude-opus-5' }, 2000);
+  });
+  return refs;
+}
+
+test('agregarReferencia exige nombre, calorías reales y foto', () => {
+  const casos = [
+    [{ kcalReal: 300, foto: FOTO_FALSA }, /nombre/],
+    [{ nombre: 'Yogur', foto: FOTO_FALSA }, /calorías reales/],
+    [{ nombre: 'Yogur', kcalReal: 300 }, /foto/]
+  ];
+  for (const [entrada, patron] of casos) {
+    let msg = '';
+    try { agregarReferencia([], entrada); } catch (e) { msg = e.message; }
+    esperarQue(patron.test(msg), 'dio: ' + msg);
+  }
+});
+
+test('agregarReferencia guarda lo necesario', () => {
+  const [r] = agregarReferencia([], { nombre: 'Yogur', kcalReal: 120, protReal: 10, foto: FOTO_FALSA }, 1000);
+  esperar(r.nombre, 'Yogur');
+  esperar(r.kcalReal, 120);
+  esperar(r.protReal, 10);
+  esperar(r.ultima, null, 'todavía no se corrió');
+});
+
+test('agregarReferencia respeta el tope', () => {
+  let refs = [];
+  for (let i = 0; i < MAX_REFERENCIAS + 4; i++) {
+    refs = agregarReferencia(refs, { nombre: 'r' + i, kcalReal: 100, foto: FOTO_FALSA }, 1000 + i);
+  }
+  esperar(refs.length, MAX_REFERENCIAS);
+});
+
+test('borrarReferencia saca solo la pedida', () => {
+  let refs = agregarReferencia([], { nombre: 'A', kcalReal: 100, foto: FOTO_FALSA }, 1000);
+  refs = agregarReferencia(refs, { nombre: 'B', kcalReal: 200, foto: FOTO_FALSA }, 2000);
+  const quedan = borrarReferencia(refs, refs[0].id);
+  esperar(quedan.length, 1);
+  esperar(quedan[0].nombre, 'A');
+});
+
+test('medirCalibracion sin corridas devuelve null', () => {
+  const refs = agregarReferencia([], { nombre: 'A', kcalReal: 100, foto: FOTO_FALSA }, 1000);
+  esperar(medirCalibracion(refs), null);
+  esperar(medirCalibracion([]), null);
+});
+
+test('medirCalibracion calcula el error promedio', () => {
+  // 100→110 (+10%), 200→180 (-10%), 300→300 (0%)
+  const m = medirCalibracion(refsConEstimacion([[100, 110], [200, 180], [300, 300]]));
+  esperar(m.n, 3);
+  cerca(m.errorPromedio, 6.7, 0.1, 'promedio de 10, 10 y 0');
+  cerca(m.sesgo, 0, 0.1, 'se compensan: no hay sesgo');
+});
+
+test('medirCalibracion detecta que subestima siempre', () => {
+  const m = medirCalibracion(refsConEstimacion([[500, 400], [1000, 800], [300, 240]]));
+  esperar(m.sesgo, -20, 'las tres quedan 20% cortas');
+  esperar(m.errorPromedio, 20);
+});
+
+test('medirCalibracion marca la peor y la mejor', () => {
+  // 100→105 es +5%, 200→400 es +100%, 300→290 es -3,3%
+  const m = medirCalibracion(refsConEstimacion([[100, 105], [200, 400], [300, 290]]));
+  esperar(m.peor.real, 200, 'la que se fue al doble');
+  esperar(m.mejor.real, 300, 'la mejor es la de menor error absoluto, aunque se quede corta');
+});
+
+test('medirCalibracion ignora las referencias sin estimación', () => {
+  let refs = refsConEstimacion([[100, 110]]);
+  refs = agregarReferencia(refs, { nombre: 'Sin correr', kcalReal: 500, foto: FOTO_FALSA }, 3000);
+  esperar(medirCalibracion(refs).n, 1);
+});
+
+test('el veredicto cambia según el error', () => {
+  esperar(veredictoCalibracion(6).nivel, 'bueno');
+  esperar(veredictoCalibracion(10).nivel, 'bueno');
+  esperar(veredictoCalibracion(15).nivel, 'aceptable');
+  esperar(veredictoCalibracion(35).nivel, 'flojo');
+  esperarQue(/Preciso/.test(veredictoCalibracion(35).texto), 'el veredicto flojo tiene que sugerir qué hacer');
+});
+
+test('textoSesgo dice para qué lado se equivoca', () => {
+  esperarQue(/por debajo/.test(textoSesgo(-18)), 'dio: ' + textoSesgo(-18));
+  esperarQue(/por encima/.test(textoSesgo(18)), 'dio: ' + textoSesgo(18));
+  esperarQue(/ningún lado/.test(textoSesgo(2)), 'dio: ' + textoSesgo(2));
+});
+
+test('anotarEstimacion solo toca la referencia pedida', () => {
+  let refs = agregarReferencia([], { nombre: 'A', kcalReal: 100, foto: FOTO_FALSA }, 1000);
+  refs = agregarReferencia(refs, { nombre: 'B', kcalReal: 200, foto: FOTO_FALSA }, 2000);
+  const id = refs.find(r => r.nombre === 'A').id;
+  refs = anotarEstimacion(refs, id, { kcal: 110, modelo: 'x' }, 3000);
+  esperar(refs.find(r => r.nombre === 'A').ultima.kcal, 110);
+  esperar(refs.find(r => r.nombre === 'B').ultima, null);
+});
+
+/* ---- sesgo aprendido de las correcciones ---- */
+
+function correcciones(pares) {
+  // pares: [[estimado, corregido], ...]
+  let lista = [];
+  pares.forEach(([e, c], i) => { lista = registrarCorreccion(lista, e, c, 1000 + i); });
+  return lista;
+}
+
+test('registrarCorreccion anota la diferencia en porcentaje', () => {
+  const [c] = registrarCorreccion([], 400, 500, 1000);
+  esperar(c.estimado, 400);
+  esperar(c.corregido, 500);
+  esperar(c.pct, -20, 'estimó 20% menos de lo que era');
+});
+
+test('registrarCorreccion ignora los ajustes chicos', () => {
+  esperar(registrarCorreccion([], 500, 505, 1000).length, 0, '1% es redondeo, no corrección');
+  esperar(registrarCorreccion([], 500, 600, 1000).length, 1);
+});
+
+test('registrarCorreccion ignora valores imposibles', () => {
+  esperar(registrarCorreccion([], 0, 500, 1000).length, 0);
+  esperar(registrarCorreccion([], 500, 0, 1000).length, 0);
+});
+
+test('registrarCorreccion respeta el tope', () => {
+  let lista = [];
+  for (let i = 0; i < MAX_CORRECCIONES + 8; i++) lista = registrarCorreccion(lista, 400, 500, 1000 + i);
+  esperar(lista.length, MAX_CORRECCIONES);
+});
+
+test('sesgoAprendido pide un mínimo de muestras', () => {
+  esperar(sesgoAprendido(correcciones([[400, 500], [300, 380]])), null, 'dos no alcanzan');
+  esperar(sesgoAprendido([]), null);
+  esperarQue(!!sesgoAprendido(correcciones([[400, 500], [300, 380], [200, 250], [800, 950], [600, 720]])));
+});
+
+test('sesgoAprendido detecta que subestima siempre', () => {
+  const s = sesgoAprendido(correcciones([[400, 500], [320, 400], [800, 1000], [160, 200], [240, 300]]));
+  esperar(s.n, 5);
+  esperar(s.sesgo, -20);
+  esperarQue(s.consistente, 'las cinco para el mismo lado');
+  esperarQue(s.avisar, 'un 20% sistemático merece aviso');
+  esperar(s.lado, 'de menos');
+});
+
+test('sesgoAprendido no avisa si las correcciones se compensan', () => {
+  const s = sesgoAprendido(correcciones([[500, 400], [400, 500], [600, 500], [500, 600], [700, 600]]));
+  esperarQue(!s.avisar, 'sin un lado dominante no hay nada que avisar');
+  esperarQue(s.error > 0, 'aunque el error individual exista');
+});
+
+test('sesgoAprendido no avisa por diferencias chicas', () => {
+  const s = sesgoAprendido(correcciones([[470, 500], [280, 300], [190, 200], [940, 1000], [750, 800]]));
+  esperar(s.sesgo, -6, 'un 6% pareja');
+  esperarQue(s.consistente);
+  esperarQue(!s.avisar, 'por debajo del 15% no vale la pena molestar');
+});
+
+test('migrar conserva las correcciones y descarta las rotas', () => {
+  const s = migrar({ correcciones: [
+    { ts: 1000, estimado: 400, corregido: 500, pct: -20 },
+    { ts: 2000, estimado: 0, corregido: 500 },
+    null
+  ] });
+  esperar(s.correcciones.length, 1);
+});
+
+test('migrar conserva las referencias y descarta las rotas', () => {
+  const s = migrar({ referencias: [
+    { id: 'r1', nombre: 'Buena', kcalReal: 300, foto: FOTO_FALSA },
+    { id: 'r2', nombre: 'Sin kcal', kcalReal: 0 },
+    null
+  ] });
+  esperar(s.referencias.length, 1);
+  esperar(s.referencias[0].nombre, 'Buena');
 });
 
 /* ============================================================
@@ -2723,6 +2919,967 @@ test('mensajeDeError traduce los códigos conocidos', () => {
   esperarQue(/problemas/.test(mensajeDeError(500)), '500');
   esperarQue(/saldo/.test(mensajeDeError(400, 'credit balance is too low')), 'saldo');
   esperarQue(/Error 418/.test(mensajeDeError(418, 'raro')), 'desconocido');
+});
+
+/* ============================================================
+   Fibra, azúcar y sodio
+   ============================================================ */
+
+test('sumarComidas acumula los tres nutrientes nuevos', () => {
+  const r = sumarComidas([
+    { kcal: 300, prot: 10, carb: 40, gras: 8, fibra: 4, azucar: 12, sodio: 200 },
+    { kcal: 200, prot: 5, carb: 20, gras: 6, fibra: 2, azucar: 8, sodio: 350 }
+  ]);
+  esperar(r.fibra, 6);
+  esperar(r.azucar, 20);
+  esperar(r.sodio, 550);
+});
+
+test('sumarComidas con comidas viejas los deja en cero', () => {
+  const r = sumarComidas([{ kcal: 400, prot: 20, carb: 40, gras: 12 }]);
+  esperar(r.fibra, 0);
+  esperar(r.azucar, 0);
+  esperar(r.sodio, 0);
+  esperar(r.kcal, 400, 'y lo de siempre no cambia');
+});
+
+test('sumarItems también los acumula', () => {
+  const r = sumarItems([
+    { calorias: 100, proteinas: 5, carbohidratos: 10, grasas: 2, fibra: 3, azucar: 5, sodio: 100 },
+    { calorias: 150, proteinas: 8, carbohidratos: 12, grasas: 4 }
+  ]);
+  esperar(r.fibra, 3);
+  esperar(r.sodio, 100);
+});
+
+test('migrar deja los nutrientes en cero para lo ya guardado', () => {
+  const s = migrar({ dias: { '2026-08-19': { comidas: [
+    { id: 'v', ts: Date.now(), titulo: 'Vieja', kcal: 500, prot: 30, carb: 50, gras: 15 }
+  ] } } });
+  const c = s.dias['2026-08-19'].comidas[0];
+  esperar(c.fibra, 0);
+  esperar(c.azucar, 0);
+  esperar(c.sodio, 0);
+  esperar(c.kcal, 500, 'sin perder lo que había');
+});
+
+test('migrar conserva los nutrientes ya cargados', () => {
+  const s = migrar({ dias: { '2026-08-19': { comidas: [
+    { id: 'n', ts: Date.now(), titulo: 'Nueva', kcal: 300, prot: 10, carb: 40, gras: 8, fibra: 5, azucar: 12, sodio: 240 }
+  ] } } });
+  const c = s.dias['2026-08-19'].comidas[0];
+  esperar(c.fibra, 5);
+  esperar(c.sodio, 240);
+});
+
+test('nutrientesConDatos devuelve solo los que tienen algo', () => {
+  esperar(nutrientesConDatos({ fibra: 0, azucar: 0, sodio: 0 }), []);
+  esperar(nutrientesConDatos({ fibra: 5, azucar: 0, sodio: 300 }).map(n => n.id), ['fibra', 'sodio']);
+});
+
+test('los objetivos salen de las calorías del día', () => {
+  const o = objetivosNutrientes(2000);
+  esperar(o.fibra, 28, '14 g cada 1.000 kcal');
+  esperar(o.azucar, 50, '10% de las calorías, en gramos');
+  esperar(o.sodio, 2000, 'lo que recomienda la OMS');
+});
+
+test('el schema del análisis pide los tres', () => {
+  const props = SCHEMA_COMIDA.properties.items.items;
+  for (const campo of ['fibra', 'azucar', 'sodio']) {
+    esperarQue(!!props.properties[campo], 'falta ' + campo);
+    esperarQue(props.required.includes(campo), campo + ' tiene que estar en required');
+  }
+});
+
+test('el prompt le dice al modelo qué hacer si no puede estimarlos', () => {
+  const p = construirPrompt({});
+  esperarQue(/poné 0/.test(p), 'tiene que poder decir que no sabe, dio: ' + p.slice(-300));
+});
+
+testAsync('interpretarRespuesta completa los nutrientes que falten', async () => {
+  const sinNutrientes = {
+    titulo: 'Plato', confianza: 'alta', notas: '',
+    items: [{ nombre: 'Arroz', porcion: '100 g', calorias: 130, proteinas: 3, carbohidratos: 28, grasas: 0 }]
+  };
+  const r = await analizarImagen({ fetchFn: async () => respuestaOk(sinNutrientes), apiKey: 'k', imagen: 'x' });
+  esperar(r.items[0].fibra, 0);
+  esperar(r.items[0].sodio, 0);
+});
+
+testAsync('interpretarRespuesta conserva los nutrientes que sí vienen', async () => {
+  const conNutrientes = {
+    titulo: 'Plato', confianza: 'alta', notas: '',
+    items: [{ nombre: 'Lentejas', porcion: '200 g', calorias: 230, proteinas: 18, carbohidratos: 40, grasas: 1, fibra: 16, azucar: 2, sodio: 8 }]
+  };
+  const r = await analizarImagen({ fetchFn: async () => respuestaOk(conNutrientes), apiKey: 'k', imagen: 'x' });
+  esperar(r.items[0].fibra, 16);
+  esperar(r.items[0].sodio, 8);
+});
+
+test('el informe suma los nutrientes solo si hay datos', () => {
+  const s = stateDePrueba();
+  const sinDatos = armarInforme(s, '2026-08');
+  esperarQue(!sinDatos.includes('Fibra promedio'), 'sin datos no ensucia el informe');
+
+  s.dias['2026-08-01'].comidas[0].fibra = 8;
+  s.dias['2026-08-01'].comidas[0].azucar = 20;
+  s.dias['2026-08-01'].comidas[0].sodio = 400;
+  const conDatos = armarInforme(s, '2026-08');
+  esperarQue(conDatos.includes('Fibra promedio'), 'con datos sí aparece');
+  esperarQue(conDatos.includes('Sodio promedio'));
+});
+
+/* ============================================================
+   Tope de gasto
+   ============================================================ */
+
+function historialGasto(costos, mes = hoyISO().slice(0, 7)) {
+  return costos.map((costo, i) => ({
+    ts: Date.parse(`${mes}-1${i % 9}T12:00:00`),
+    costo: typeof costo === 'number' ? costo : costo.costo,
+    deCache: typeof costo === 'number' ? false : !!costo.deCache,
+    tipo: 'foto', titulo: '', modelo: '', precision: 'normal', tokens: 1000
+  }));
+}
+
+test('gastoDelMes suma solo lo pagado de ese mes', () => {
+  const mes = hoyISO().slice(0, 7);
+  const historial = [
+    ...historialGasto([0.02, 0.03, { costo: 0, deCache: true }], mes),
+    { ts: Date.parse('2020-01-15T12:00:00'), costo: 5, deCache: false }
+  ];
+  cerca(gastoDelMes(historial, mes), 0.05, 0.00001, 'lo del cache no cuesta y lo de 2020 es otro mes');
+});
+
+test('gastoDelMes con historial vacío da cero', () => {
+  esperar(gastoDelMes([], '2026-08'), 0);
+  esperar(gastoDelMes(null, '2026-08'), 0);
+});
+
+test('estadoGasto calcula el porcentaje contra el tope', () => {
+  const e = estadoGasto(historialGasto([1, 1]), { tope: 5 });
+  esperar(e.gastado, 2);
+  esperar(e.pct, 40);
+  esperarQue(!e.avisar && !e.bloqueado);
+  esperar(e.restante, 3);
+});
+
+test('estadoGasto avisa al 80%', () => {
+  const e = estadoGasto(historialGasto([4.2]), { tope: 5 });
+  esperar(e.pct, 84);
+  esperarQue(e.avisar, 'tiene que avisar');
+  esperarQue(!e.bloqueado, 'pero todavía no frenar');
+});
+
+test('estadoGasto bloquea al llegar al tope', () => {
+  const e = estadoGasto(historialGasto([5]), { tope: 5 });
+  esperarQue(e.bloqueado);
+  esperarQue(!e.avisar, 'ya no avisa: directamente frena');
+});
+
+test('estadoGasto pasado del tope sigue bloqueado', () => {
+  const e = estadoGasto(historialGasto([7]), { tope: 5 });
+  esperarQue(e.bloqueado);
+  esperar(e.restante, -2);
+});
+
+test('estadoGasto con tope en cero no frena nunca', () => {
+  const e = estadoGasto(historialGasto([100]), { tope: 0 });
+  esperarQue(!e.bloqueado, 'sin tope no hay freno');
+  esperar(e.restante, Infinity);
+});
+
+test('el texto del tope dice qué hacer', () => {
+  const bloqueado = textoTope(estadoGasto(historialGasto([5]), { tope: 5 }));
+  esperarQue(/subirlo en Ajustes/.test(bloqueado), 'dio: ' + bloqueado);
+  esperarQue(/codigo de barras|código de barras/.test(bloqueado), 'tiene que aclarar qué sigue andando');
+
+  const avisando = textoTope(estadoGasto(historialGasto([4.2]), { tope: 5 }));
+  esperarQue(/84%/.test(avisando), 'dio: ' + avisando);
+
+  esperar(textoTope(estadoGasto(historialGasto([1]), { tope: 5 })), '', 'sin problema, sin texto');
+});
+
+test('el mes anterior no cuenta para el tope de este', () => {
+  const anterior = sumarDias(hoyISO(), -40).slice(0, 7);
+  const e = estadoGasto(historialGasto([10], anterior), { tope: 5 });
+  esperar(e.gastado, 0);
+  esperarQue(!e.bloqueado, 'el gasto del mes pasado no bloquea este');
+});
+
+test('el tope por defecto queda configurado al migrar', () => {
+  esperar(migrar({}).cfg.topeGasto, TOPE_DEFECTO);
+  esperar(migrar({ cfg: { topeGasto: 0 } }).cfg.topeGasto, 0, 'el que lo apagó a propósito sigue apagado');
+});
+
+/* ============================================================
+   Respaldo
+   ============================================================ */
+
+const DIA_MS = 86400000;
+
+test('diasSinRespaldo cuenta bien', () => {
+  const ahora = Date.parse('2026-08-20T12:00:00');
+  esperar(diasSinRespaldo(ahora - 3 * DIA_MS, ahora), 3);
+  esperar(diasSinRespaldo(ahora, ahora), 0);
+  esperar(diasSinRespaldo(null, ahora), null, 'nunca respaldó');
+});
+
+test('estadoRespaldo no molesta si no hay datos', () => {
+  const r = estadoRespaldo({ ultimoRespaldo: null, dias: {}, ahora: 1000 });
+  esperarQue(!r.avisar);
+  esperar(r.texto, '');
+});
+
+test('estadoRespaldo avisa si nunca respaldó y ya hay historial', () => {
+  const dias = {};
+  for (let i = 0; i < 5; i++) dias['2026-08-0' + (i + 1)] = { comidas: [] };
+
+  const r = estadoRespaldo({ ultimoRespaldo: null, dias, ahora: 1000 });
+  esperarQue(r.avisar);
+  esperarQue(/nunca/.test(r.texto), 'dio: ' + r.texto);
+  esperarQue(/se pierden/.test(r.texto), 'tiene que decir qué está en juego');
+});
+
+test('estadoRespaldo con dos días no molesta todavía', () => {
+  const dias = { '2026-08-01': { comidas: [] }, '2026-08-02': { comidas: [] } };
+  esperarQue(!estadoRespaldo({ ultimoRespaldo: null, dias, ahora: 1000 }).avisar);
+});
+
+test('estadoRespaldo suaviza el aviso si el navegador prometió no borrar', () => {
+  const dias = { a: { comidas: [] }, b: { comidas: [] }, c: { comidas: [] } };
+  const conPersistencia = estadoRespaldo({ ultimoRespaldo: null, dias, ahora: 1000, persistente: true });
+  esperarQue(/no está de más/.test(conPersistencia.texto), 'dio: ' + conPersistencia.texto);
+});
+
+test('estadoRespaldo avisa a los 14 días', () => {
+  const ahora = Date.parse('2026-08-20T12:00:00');
+  const dias = { a: { comidas: [] } };
+
+  const reciente = estadoRespaldo({ ultimoRespaldo: ahora - 5 * DIA_MS, dias, ahora });
+  esperarQue(!reciente.avisar);
+  esperarQue(/hace 5 días/.test(reciente.texto), 'dio: ' + reciente.texto);
+
+  const viejo = estadoRespaldo({ ultimoRespaldo: ahora - 20 * DIA_MS, dias, ahora });
+  esperarQue(viejo.avisar);
+  esperar(viejo.dias, 20);
+});
+
+test('estadoRespaldo usa el singular con un día', () => {
+  const ahora = Date.parse('2026-08-20T12:00:00');
+  const r = estadoRespaldo({ ultimoRespaldo: ahora - DIA_MS, dias: { a: { comidas: [] } }, ahora });
+  esperarQue(/hace 1 día\./.test(r.texto), 'dio: ' + r.texto);
+});
+
+/* ============================================================
+   Sincronización con Supabase (todo con un servidor simulado)
+   ============================================================ */
+
+/** Supabase de mentira: guarda filas en memoria y responde como el real. */
+function supabaseFalso(inicial = { comidas: [], dias: [] }) {
+  const tablas = clonar(inicial);
+  const pedidos = [];
+
+  const fetchFn = async (url, opciones = {}) => {
+    const ruta = url.split('/rest/v1/')[1];
+    const tabla = ruta.split('?')[0];
+    pedidos.push({ url, metodo: opciones.method || 'GET', cuerpo: opciones.body ? JSON.parse(opciones.body) : null });
+
+    if (!tablas[tabla]) {
+      return { ok: false, status: 404, json: async () => ({ message: 'relation does not exist' }) };
+    }
+
+    if ((opciones.method || 'GET') === 'POST') {
+      // upsert por (llave, id) en comidas y (llave, fecha) en días
+      for (const fila of JSON.parse(opciones.body)) {
+        const clave = tabla === 'comidas' ? 'id' : 'fecha';
+        const pos = tablas[tabla].findIndex(f => f.llave === fila.llave && f[clave] === fila[clave]);
+        if (pos >= 0) tablas[tabla][pos] = fila;
+        else tablas[tabla].push(fila);
+      }
+      return { ok: true, status: 204, json: async () => [] };
+    }
+
+    const params = new URLSearchParams(ruta.split('?')[1] || '');
+    const llave = (params.get('llave') || '').replace('eq.', '');
+    const desde = Number((params.get('subido') || 'gt.0').replace('gt.', ''));
+
+    const filas = tablas[tabla]
+      .filter(f => f.llave === llave && (Number(f.subido) || 0) > desde)
+      .sort((a, b) => a.subido - b.subido);
+
+    return { ok: true, status: 200, json: async () => clonar(filas) };
+  };
+
+  return { fetchFn, tablas, pedidos };
+}
+
+function clienteDePrueba(servidor, señal = null) {
+  return clienteSupabase({ url: 'https://xxx.supabase.co', anonKey: 'anon-de-prueba', fetchFn: servidor.fetchFn, señal });
+}
+
+function estadoConComidas(comidas, fecha = '2026-08-20') {
+  const s = migrar(null);
+  s.dias[fecha] = { peso: null, agua: 0, ejercicio: 0, nota: '', act: 0, comidas: clonar(comidas) };
+  return s;
+}
+
+const LLAVE = 'abcdefghjkmnpqrstuvwxyz23456789a';
+
+function comidaLocal(id, campos = {}) {
+  return {
+    id, ts: new Date(2026, 7, 20, 13, 0).getTime(), titulo: 'Comida ' + id, items: [],
+    kcal: 500, prot: 30, carb: 50, gras: 15, momento: 'almuerzo', notas: '',
+    thumb: null, foto: null, act: 1000, ...campos
+  };
+}
+
+/* ---- llave ---- */
+
+test('generarLlave arma una llave del largo esperado', () => {
+  const l = generarLlave();
+  esperar(l.length, LARGO_LLAVE);
+  esperarQue(llaveValida(l), 'la que genera tiene que ser válida: ' + l);
+});
+
+test('generarLlave no repite', () => {
+  const llaves = new Set(Array.from({ length: 50 }, () => generarLlave()));
+  esperar(llaves.size, 50);
+});
+
+test('generarLlave evita los caracteres que se confunden', () => {
+  const juntas = Array.from({ length: 20 }, () => generarLlave()).join('');
+  esperarQue(!/[lo01]/.test(juntas), 'no puede haber l, o, 0 ni 1');
+});
+
+test('llaveValida rechaza lo que no corresponde', () => {
+  esperarQue(!llaveValida(''), 'vacía');
+  esperarQue(!llaveValida('corta'), 'corta');
+  esperarQue(!llaveValida('A'.repeat(LARGO_LLAVE)), 'mayúsculas');
+  esperarQue(!llaveValida('o'.repeat(LARGO_LLAVE)), 'caracteres excluidos');
+  esperarQue(!llaveValida(null), 'nula');
+});
+
+test('llaveLegible la corta en bloques', () => {
+  esperar(llaveLegible('abcdefgh23456789abcdefgh23456789'), 'abcdefgh 23456789 abcdefgh 23456789');
+});
+
+/* ---- cliente ---- */
+
+test('clienteSupabase exige URL y clave', () => {
+  let msg = '';
+  try { clienteSupabase({ url: '', anonKey: 'x', fetchFn: async () => {} }); } catch (e) { msg = e.message; }
+  esperarQue(/URL y la clave/.test(msg), 'dio: ' + msg);
+});
+
+testAsync('el cliente manda las cabeceras de Supabase', async () => {
+  const servidor = supabaseFalso();
+  await clienteDePrueba(servidor).probar(LLAVE);
+
+  const pedido = servidor.pedidos[0];
+  esperarQue(pedido.url.startsWith('https://xxx.supabase.co/rest/v1/comidas'), 'dio: ' + pedido.url);
+  esperarQue(pedido.url.includes('llave=eq.' + LLAVE), 'tiene que filtrar por la llave');
+});
+
+testAsync('guardar manda las filas con el prefer de upsert', async () => {
+  const servidor = supabaseFalso();
+  await clienteDePrueba(servidor).guardar('comidas', [comidaAFila(comidaLocal('c1'), '2026-08-20', LLAVE)]);
+
+  esperar(servidor.tablas.comidas.length, 1);
+  esperar(servidor.pedidos[0].metodo, 'POST');
+});
+
+testAsync('guardar con lista vacía no llama a la red', async () => {
+  const servidor = supabaseFalso();
+  await clienteDePrueba(servidor).guardar('comidas', []);
+  esperar(servidor.pedidos.length, 0);
+});
+
+testAsync('traer filtra por llave y por cuándo llegó al servidor', async () => {
+  const servidor = supabaseFalso({
+    comidas: [
+      { llave: LLAVE, id: 'vieja', act: 500, subido: 500 },
+      { llave: LLAVE, id: 'nueva', act: 2000, subido: 2000 },
+      { llave: 'otra-llave-distinta-aaaaaaaaaaaa', id: 'ajena', act: 3000, subido: 3000 }
+    ],
+    dias: []
+  });
+
+  // el piso real es desde - 5 min por el margen de relojes, así que se pide bien arriba
+  const filas = await clienteDePrueba(servidor).traer('comidas', LLAVE, 5 * 60000 + 1000);
+  esperar(filas.map(f => f.id), ['nueva'], 'solo lo mío y posterior al último sync');
+});
+
+testAsync('el cliente traduce el 401 a algo entendible', async () => {
+  const servidor = supabaseFalso();
+  servidor.fetchFn = async () => ({ ok: false, status: 401, json: async () => ({ message: 'invalid key' }) });
+
+  let msg = '';
+  try { await clienteDePrueba(servidor).probar(LLAVE); } catch (e) { msg = e.message; }
+  esperarQue(/rechazó la clave/.test(msg), 'dio: ' + msg);
+});
+
+testAsync('el cliente avisa si faltan las tablas', async () => {
+  const servidor = supabaseFalso({});
+  let msg = '';
+  try { await clienteDePrueba(servidor).probar(LLAVE); } catch (e) { msg = e.message; }
+  esperarQue(/supabase\.sql/.test(msg), 'tiene que decir qué hacer, dio: ' + msg);
+});
+
+testAsync('el cliente avisa si no hay conexión', async () => {
+  const servidor = supabaseFalso();
+  servidor.fetchFn = async () => { throw new TypeError('Failed to fetch'); };
+
+  let msg = '';
+  try { await clienteDePrueba(servidor).probar(LLAVE); } catch (e) { msg = e.message; }
+  esperarQue(/No se pudo conectar/.test(msg), 'dio: ' + msg);
+});
+
+/* ---- forma de las filas ---- */
+
+test('comidaAFila no manda las fotos', () => {
+  const fila = comidaAFila(comidaLocal('c1', { thumb: 'data:...', foto: 'data:...' }), '2026-08-20', LLAVE);
+  esperarQue(!('thumb' in fila) && !('foto' in fila), 'las fotos se quedan en el dispositivo');
+  esperar(fila.llave, LLAVE);
+  esperar(fila.fecha, '2026-08-20');
+});
+
+test('filaAComida conserva la foto local', () => {
+  const fila = comidaAFila(comidaLocal('c1'), '2026-08-20', LLAVE);
+  const local = comidaLocal('c1', { thumb: 'mi-foto' });
+  esperar(filaAComida(fila, local).thumb, 'mi-foto', 'lo remoto no puede borrar la foto de acá');
+  esperar(filaAComida(fila).thumb, null);
+});
+
+test('filaAComida sanea lo que viene del servidor', () => {
+  const c = filaAComida({ id: 'x', kcal: '500', items: null, titulo: null });
+  esperar(c.kcal, 500);
+  esperar(c.items, []);
+  esperar(c.titulo, 'Comida');
+});
+
+/* ---- qué se sube ---- */
+
+test('cambiosLocales toma solo lo modificado después del último sync', () => {
+  const estado = estadoConComidas([
+    comidaLocal('vieja', { act: 500 }),
+    comidaLocal('nueva', { act: 2000 })
+  ]);
+  const c = cambiosLocales(estado, 1000);
+  esperar(c.comidas.map(x => x.comida.id), ['nueva']);
+});
+
+test('cambiosLocales incluye los días tocados', () => {
+  const estado = estadoConComidas([comidaLocal('c1', { act: 100 })]);
+  estado.dias['2026-08-20'].act = 3000;
+  esperar(cambiosLocales(estado, 1000).dias.length, 1);
+});
+
+test('cambiosLocales incluye los borrados', () => {
+  const estado = estadoConComidas([]);
+  estado.borradas = [{ id: 'muerta', fecha: '2026-08-20', act: 2000 }];
+  esperar(cambiosLocales(estado, 1000).borradas.length, 1);
+});
+
+test('cambiosLocales con todo viejo no devuelve nada', () => {
+  const estado = estadoConComidas([comidaLocal('c1', { act: 500 })]);
+  const c = cambiosLocales(estado, 1000);
+  esperar(c.comidas.length + c.dias.length + c.borradas.length, 0);
+});
+
+/* ---- sincronización completa: los cuatro casos que importan ---- */
+
+/** Simula un dispositivo: tiene su estado y sincroniza contra el servidor compartido. */
+function dispositivo(servidor, estado = null) {
+  return {
+    estado: estado || migrar(null),
+    ultimoSync: 0,
+    async sincronizar(ahora = Date.now()) {
+      const r = await sincronizar({
+        cliente: clienteDePrueba(servidor),
+        estado: this.estado,
+        llave: LLAVE,
+        ultimoSync: this.ultimoSync,
+        ahora
+      });
+      this.estado = r.estado;
+      this.ultimoSync = r.ultimoSync;
+      return r.resumen;
+    },
+    comidas(fecha = '2026-08-20') {
+      return (this.estado.dias[fecha]?.comidas || []).map(c => c.id);
+    },
+    comida(id, fecha = '2026-08-20') {
+      return (this.estado.dias[fecha]?.comidas || []).find(c => c.id === id);
+    }
+  };
+}
+
+testAsync('subir: lo local llega al servidor', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1'), comidaLocal('c2')]));
+
+  const resumen = await compu.sincronizar(5000);
+
+  esperar(resumen.subidasComidas, 2);
+  esperar(servidor.tablas.comidas.length, 2);
+  esperar(servidor.tablas.comidas[0].llave, LLAVE);
+});
+
+testAsync('subir: no se manda dos veces lo que no cambió', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1')]));
+
+  await compu.sincronizar(5000);
+  const resumen = await compu.sincronizar(6000);
+  esperar(resumen.subidasComidas, 0, 'la segunda vez no hay nada nuevo');
+});
+
+testAsync('bajar: el celular recibe lo que cargó la compu', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1'), comidaLocal('c2')]));
+  const celu = dispositivo(servidor);
+
+  await compu.sincronizar(5000);
+  const resumen = await celu.sincronizar(6000);
+
+  esperar(resumen.nuevas, 2);
+  esperar(celu.comidas().sort(), ['c1', 'c2']);
+  esperar(celu.comida('c1').kcal, 500);
+});
+
+testAsync('bajar: no duplica lo que ya estaba', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1')]));
+  const celu = dispositivo(servidor);
+
+  await compu.sincronizar(5000);
+  await celu.sincronizar(6000);
+  await celu.sincronizar(7000);
+
+  esperar(celu.comidas(), ['c1']);
+});
+
+testAsync('bajar: la foto local no se pierde al recibir la versión remota', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1', { act: 5000, kcal: 700 })]));
+  const celu = dispositivo(servidor, estadoConComidas([comidaLocal('c1', { act: 1000, thumb: 'mi-foto' })]));
+
+  await compu.sincronizar(6000);
+  await celu.sincronizar(7000);
+
+  esperar(celu.comida('c1').kcal, 700, 'se actualizó con lo remoto');
+  esperar(celu.comida('c1').thumb, 'mi-foto', 'pero la foto de acá sigue');
+});
+
+testAsync('conflicto: gana la edición más reciente', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1', { kcal: 500, act: 1000 })]));
+  const celu = dispositivo(servidor, estadoConComidas([comidaLocal('c1', { kcal: 500, act: 1000 })]));
+
+  await compu.sincronizar(2000);
+  await celu.sincronizar(2100);
+
+  // la misma comida editada en los dos lados; el celular la tocó después
+  compu.estado.dias['2026-08-20'].comidas[0].kcal = 600;
+  compu.estado.dias['2026-08-20'].comidas[0].act = 3000;
+  celu.estado.dias['2026-08-20'].comidas[0].kcal = 900;
+  celu.estado.dias['2026-08-20'].comidas[0].act = 4000;
+
+  await compu.sincronizar(5000);
+  await celu.sincronizar(5100);
+  await compu.sincronizar(6000);
+
+  esperar(compu.comida('c1').kcal, 900, 'la compu recibe la versión del celular, que es posterior');
+  esperar(celu.comida('c1').kcal, 900);
+});
+
+testAsync('conflicto: lo viejo no pisa lo nuevo', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1', { kcal: 500, act: 1000 })]));
+  const celu = dispositivo(servidor, estadoConComidas([comidaLocal('c1', { kcal: 900, act: 9000 })]));
+
+  await compu.sincronizar(2000);       // sube la vieja
+  const resumen = await celu.sincronizar(3000);
+
+  esperar(celu.comida('c1').kcal, 900, 'la del celular es posterior: se queda');
+  esperar(resumen.ignoradas, 1);
+});
+
+testAsync('borrado: lo borrado en un dispositivo no revive en el otro', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1'), comidaLocal('c2')]));
+  const celu = dispositivo(servidor);
+
+  await compu.sincronizar(2000);
+  await celu.sincronizar(2100);
+  esperar(celu.comidas().sort(), ['c1', 'c2']);
+
+  // en la compu se borra una
+  compu.estado.dias['2026-08-20'].comidas = compu.estado.dias['2026-08-20'].comidas.filter(c => c.id !== 'c1');
+  compu.estado.borradas = [{ id: 'c1', fecha: '2026-08-20', act: 3000 }];
+
+  await compu.sincronizar(4000);
+  const resumen = await celu.sincronizar(4100);
+
+  esperar(resumen.borradas, 1);
+  esperar(celu.comidas(), ['c2'], 'en el celular también desaparece');
+});
+
+testAsync('borrado: una comida borrada no vuelve al sincronizar de nuevo', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1')]));
+  const celu = dispositivo(servidor);
+
+  await compu.sincronizar(2000);
+  await celu.sincronizar(2100);
+
+  compu.estado.dias['2026-08-20'].comidas = [];
+  compu.estado.borradas = [{ id: 'c1', fecha: '2026-08-20', act: 3000 }];
+  await compu.sincronizar(4000);
+  await celu.sincronizar(4100);
+
+  // el celular sincroniza tres veces más: no puede reaparecer
+  await celu.sincronizar(5000);
+  await celu.sincronizar(6000);
+  esperar(celu.comidas(), []);
+});
+
+testAsync('borrado: si se borró acá, lo remoto viejo no la resucita', async () => {
+  const servidor = supabaseFalso({
+    comidas: [comidaAFila(comidaLocal('c1', { act: 1000 }), '2026-08-20', LLAVE)],
+    dias: []
+  });
+  const celu = dispositivo(servidor);
+  celu.estado.borradas = [{ id: 'c1', fecha: '2026-08-20', act: 5000 }];
+
+  const resumen = await celu.sincronizar(6000);
+  esperar(celu.comidas(), [], 'el borrado local es posterior: manda');
+  esperar(resumen.ignoradas, 1);
+});
+
+testAsync('los días también sincronizan: peso, agua, ejercicio y nota', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([comidaLocal('c1')]));
+  compu.estado.dias['2026-08-20'] = {
+    ...compu.estado.dias['2026-08-20'],
+    peso: 91.5, agua: 6, ejercicio: 300, nota: 'buen día', act: 3000
+  };
+
+  const celu = dispositivo(servidor);
+  await compu.sincronizar(4000);
+  await celu.sincronizar(4100);
+
+  const d = celu.estado.dias['2026-08-20'];
+  esperar(d.peso, 91.5);
+  esperar(d.agua, 6);
+  esperar(d.ejercicio, 300);
+  esperar(d.nota, 'buen día');
+});
+
+testAsync('el día más reciente gana', async () => {
+  const servidor = supabaseFalso();
+  const compu = dispositivo(servidor, estadoConComidas([]));
+  compu.estado.dias['2026-08-20'] = { peso: 92, agua: 2, ejercicio: 0, nota: '', act: 1000, comidas: [] };
+
+  const celu = dispositivo(servidor, estadoConComidas([]));
+  celu.estado.dias['2026-08-20'] = { peso: 90, agua: 8, ejercicio: 0, nota: '', act: 9000, comidas: [] };
+
+  await compu.sincronizar(2000);
+  await celu.sincronizar(2100);
+  await compu.sincronizar(3000);
+
+  esperar(compu.estado.dias['2026-08-20'].peso, 90, 'el del celular es posterior');
+  esperar(compu.estado.dias['2026-08-20'].agua, 8);
+});
+
+testAsync('las comidas quedan ordenadas por hora después de sincronizar', async () => {
+  const servidor = supabaseFalso();
+  const tarde = comidaLocal('cena', { ts: new Date(2026, 7, 20, 21, 0).getTime() });
+  const temprano = comidaLocal('desayuno', { ts: new Date(2026, 7, 20, 8, 0).getTime() });
+
+  const compu = dispositivo(servidor, estadoConComidas([tarde]));
+  const celu = dispositivo(servidor, estadoConComidas([temprano]));
+
+  await compu.sincronizar(2000);
+  await celu.sincronizar(2100);
+
+  esperar(celu.comidas(), ['desayuno', 'cena']);
+});
+
+testAsync('sincronizar rechaza una llave inválida', async () => {
+  const servidor = supabaseFalso();
+  let msg = '';
+  try {
+    await sincronizar({ cliente: clienteDePrueba(servidor), estado: migrar(null), llave: 'corta' });
+  } catch (e) { msg = e.message; }
+  esperarQue(/llave/.test(msg), 'dio: ' + msg);
+  esperar(servidor.pedidos.length, 0, 'ni siquiera intenta');
+});
+
+testAsync('sincronizar no toca el estado que recibe', async () => {
+  const servidor = supabaseFalso({
+    comidas: [comidaAFila(comidaLocal('remota'), '2026-08-20', LLAVE)], dias: []
+  });
+  const estado = estadoConComidas([comidaLocal('local')]);
+  const copia = clonar(estado);
+
+  await sincronizar({ cliente: clienteDePrueba(servidor), estado, llave: LLAVE, ahora: 5000 });
+  esperar(estado.dias, copia.dias, 'devuelve uno nuevo, no muta el original');
+});
+
+testAsync('tres dispositivos convergen al mismo estado', async () => {
+  const servidor = supabaseFalso();
+  const a = dispositivo(servidor, estadoConComidas([comidaLocal('a1', { act: 1000 })]));
+  const b = dispositivo(servidor, estadoConComidas([comidaLocal('b1', { act: 2000 })]));
+  const c = dispositivo(servidor);
+
+  for (const d of [a, b, c]) await d.sincronizar(5000);
+  for (const d of [a, b, c]) await d.sincronizar(6000);
+
+  esperar(a.comidas().sort(), ['a1', 'b1']);
+  esperar(b.comidas().sort(), ['a1', 'b1']);
+  esperar(c.comidas().sort(), ['a1', 'b1']);
+});
+
+/* ============================================================
+   Código de barras y Open Food Facts
+   ============================================================ */
+
+/* Respuesta real de Open Food Facts, recortada a los campos que se piden.
+   Es un yogur griego que existe de verdad en la base. */
+const OFF_YOGUR = {
+  status: 1,
+  product: {
+    code: '7790742000811',
+    product_name: 'Yogur griego natural',
+    brands: 'La Serenísima',
+    quantity: '160 g',
+    serving_size: '1 pote (160 g)',
+    serving_quantity: 160,
+    image_front_small_url: 'https://images.openfoodfacts.org/yogur.jpg',
+    nutriments: {
+      'energy-kcal_100g': 97,
+      proteins_100g: 8.5,
+      carbohydrates_100g: 4.2,
+      fat_100g: 5.1,
+      fiber_100g: 0,
+      sugars_100g: 4.2,
+      salt_100g: 0.12
+    }
+  }
+};
+
+/* Un producto que solo trae energía en kJ, como pasa con varios europeos. */
+const OFF_EN_KJ = {
+  status: 1,
+  product: {
+    code: '80135463',
+    product_name: 'Galletitas',
+    brands: '',
+    quantity: '200 g',
+    nutriments: { energy_100g: 2100, proteins_100g: 7, carbohydrates_100g: 65, fat_100g: 20 }
+  }
+};
+
+function respuestaOFF(datos, status = 200) {
+  return { ok: status === 200, status, json: async () => datos };
+}
+
+function cacheProductos() {
+  let datos = {};
+  return {
+    leer: (codigo) => leerProducto(datos, codigo),
+    guardar: (p) => { datos = guardarProducto(datos, p); },
+    contenido: () => datos
+  };
+}
+
+/* ---- código ---- */
+
+test('codigoValido acepta los formatos reales', () => {
+  esperarQue(codigoValido('7790742000811'), 'EAN-13');
+  esperarQue(codigoValido('80135463'), 'EAN-8');
+  esperarQue(codigoValido('012345678905'), 'UPC-A');
+  esperarQue(!codigoValido('123'), 'muy corto');
+  esperarQue(!codigoValido('abcdefgh'), 'letras');
+  esperarQue(!codigoValido(''), 'vacío');
+});
+
+test('limpiarCodigo saca lo que no sea número', () => {
+  esperar(limpiarCodigo('779-074 200.0811'), '7790742000811');
+});
+
+/* ---- normalización ---- */
+
+test('normalizarProducto arma la forma que usa la app', () => {
+  const p = normalizarProducto(OFF_YOGUR);
+  esperar(p.nombre, 'Yogur griego natural');
+  esperar(p.marca, 'La Serenísima');
+  esperar(p.gramosPorcion, 160);
+  esperar(p.por100.calorias, 97);
+  esperar(p.por100.proteinas, 8.5);
+});
+
+test('normalizarProducto convierte los kilojoules a calorías', () => {
+  const p = normalizarProducto(OFF_EN_KJ);
+  cerca(p.por100.calorias, 2100 / 4.184, 1, 'sin kcal directo hay que convertir');
+});
+
+test('normalizarProducto pasa la sal a sodio en miligramos', () => {
+  // 0,12 g de sal ≈ 0,048 g de sodio = 48 mg
+  esperar(normalizarProducto(OFF_YOGUR).por100.sodio, 48);
+});
+
+test('normalizarProducto usa el nombre en español si está', () => {
+  const datos = clonar(OFF_YOGUR);
+  datos.product.product_name_es = 'Yogur griego';
+  esperar(normalizarProducto(datos).nombre, 'Yogur griego');
+});
+
+test('normalizarProducto devuelve null si no hay producto o nombre', () => {
+  esperar(normalizarProducto({}), null);
+  esperar(normalizarProducto({ product: { code: '1', nutriments: {} } }), null);
+});
+
+test('productoUtil descarta los que no tienen calorías', () => {
+  esperarQue(productoUtil(normalizarProducto(OFF_YOGUR)));
+  const sinDatos = normalizarProducto({ product: { code: '1', product_name: 'Algo', nutriments: {} } });
+  esperarQue(!productoUtil(sinDatos));
+});
+
+/* ---- búsqueda ---- */
+
+testAsync('buscarProducto trae y normaliza', async () => {
+  let url = '';
+  const fetchFn = async (u) => { url = u; return respuestaOFF(OFF_YOGUR); };
+
+  const p = await buscarProducto('7790742000811', { fetchFn });
+  esperar(p.nombre, 'Yogur griego natural');
+  esperar(p.deCache, false);
+  esperarQue(url.includes('/api/v2/product/7790742000811.json'), 'dio: ' + url);
+  esperarQue(url.includes('fields='), 'tiene que pedir solo los campos que usa');
+});
+
+testAsync('buscarProducto usa el cache la segunda vez', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOFF(OFF_YOGUR); };
+  const cache = cacheProductos();
+
+  await buscarProducto('7790742000811', { fetchFn, cache });
+  const segunda = await buscarProducto('7790742000811', { fetchFn, cache });
+
+  esperar(llamadas, 1, 'el mismo producto no se pide dos veces');
+  esperar(segunda.deCache, true);
+  esperar(segunda.nombre, 'Yogur griego natural');
+});
+
+testAsync('buscarProducto rechaza códigos inválidos sin tocar la red', async () => {
+  let llamadas = 0;
+  const fetchFn = async () => { llamadas++; return respuestaOFF(OFF_YOGUR); };
+
+  let msg = '';
+  try { await buscarProducto('123', { fetchFn }); } catch (e) { msg = e.message; }
+  esperarQue(/no parece válido/.test(msg), 'dio: ' + msg);
+  esperar(llamadas, 0);
+});
+
+testAsync('buscarProducto avisa si el producto no está en la base', async () => {
+  for (const respuesta of [respuestaOFF({ status: 0 }), respuestaOFF({}, 404)]) {
+    let msg = '';
+    try { await buscarProducto('7790742000811', { fetchFn: async () => respuesta }); } catch (e) { msg = e.message; }
+    esperarQue(/no está en Open Food Facts/.test(msg), 'dio: ' + msg);
+  }
+});
+
+testAsync('buscarProducto avisa si el producto no trae nutrientes', async () => {
+  const sinDatos = { status: 1, product: { code: '7790742000811', product_name: 'Algo raro', nutriments: {} } };
+  let msg = '';
+  try { await buscarProducto('7790742000811', { fetchFn: async () => respuestaOFF(sinDatos) }); } catch (e) { msg = e.message; }
+  esperarQue(/sin datos nutricionales/.test(msg), 'dio: ' + msg);
+  esperarQue(/Algo raro/.test(msg), 'y tiene que decir de qué producto habla');
+});
+
+testAsync('buscarProducto avisa si no hay conexión', async () => {
+  let msg = '';
+  try {
+    await buscarProducto('7790742000811', { fetchFn: async () => { throw new TypeError('Failed to fetch'); } });
+  } catch (e) { msg = e.message; }
+  esperarQue(/Revisá la conexión/.test(msg), 'dio: ' + msg);
+});
+
+/* ---- cache ---- */
+
+test('el cache de productos respeta el tope', () => {
+  let cache = {};
+  for (let i = 0; i < MAX_PRODUCTOS + 20; i++) {
+    cache = guardarProducto(cache, { codigo: 'c' + i, nombre: 'p' + i, por100: { calorias: 100 }, traido: 1000 + i });
+  }
+  esperar(Object.keys(cache).length, MAX_PRODUCTOS);
+});
+
+test('el cache descarta los productos viejos', () => {
+  const cache = guardarProducto({}, { codigo: '1', nombre: 'Viejo', por100: { calorias: 100 }, traido: 0 });
+  esperar(leerProducto(cache, '1', 91 * 86400000), null, 'a los 91 días se vuelve a pedir');
+  esperarQue(!!leerProducto(cache, '1', 80 * 86400000), 'a los 80 todavía vale');
+});
+
+/* ---- porciones ---- */
+
+test('porcionesDe ofrece la del envase, 100 g y el envase entero', () => {
+  const p = normalizarProducto(OFF_YOGUR);
+  const opciones = porcionesDe(p);
+  esperar(opciones[0].gramos, 160, 'primero la porción declarada');
+  esperarQue(opciones.some(o => o.gramos === 100), 'siempre 100 g');
+});
+
+test('porcionesDe no repite si la porción es el envase entero', () => {
+  const p = normalizarProducto(OFF_YOGUR);
+  const gramos = porcionesDe(p).map(o => o.gramos);
+  esperar(gramos.length, new Set(gramos).size, 'sin duplicados');
+});
+
+test('porcionesDe funciona sin porción declarada', () => {
+  const p = normalizarProducto(OFF_EN_KJ);
+  const opciones = porcionesDe(p);
+  esperarQue(opciones.some(o => o.gramos === 100));
+  esperarQue(opciones.some(o => o.gramos === 200), 'el envase de 200 g');
+});
+
+/* ---- el alimento final ---- */
+
+test('productoAItem escala los valores a los gramos elegidos', () => {
+  const p = normalizarProducto(OFF_YOGUR);
+  const item = productoAItem(p, 160);
+
+  esperar(item.calorias, Math.round(97 * 1.6));
+  esperar(item.proteinas, Math.round(8.5 * 1.6));
+  esperar(item.porcion, '160 g');
+});
+
+test('productoAItem con 100 g deja los valores como vienen', () => {
+  const item = productoAItem(normalizarProducto(OFF_YOGUR), 100);
+  esperar(item.calorias, 97);
+});
+
+test('productoAItem suma la marca al nombre', () => {
+  const item = productoAItem(normalizarProducto(OFF_YOGUR), 100);
+  esperarQue(item.nombre.includes('La Serenísima'), 'dio: ' + item.nombre);
+});
+
+test('productoAItem no repite la marca si ya está en el nombre', () => {
+  const datos = clonar(OFF_YOGUR);
+  datos.product.product_name = 'Yogur La Serenísima';
+  const item = productoAItem(normalizarProducto(datos), 100);
+  esperar(item.nombre, 'Yogur La Serenísima');
+});
+
+test('productoAItem trae fibra, azúcar y sodio', () => {
+  const item = productoAItem(normalizarProducto(OFF_YOGUR), 100);
+  esperar(item.azucar, 4);
+  esperar(item.sodio, 48);
+  esperar(item.fibra, 0);
 });
 
 /* ============================================================

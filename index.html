@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=50">
+<link rel="stylesheet" href="styles.css?v=79">
 </head>
 <body>
 
@@ -67,6 +67,7 @@
         <div class="macro-head"><span>Grasas</span><b id="mGrasTxt">0 g</b></div>
         <div class="bar"><i id="mGrasBar" class="gras"></i></div>
       </div>
+      <div id="listaNutrientes" class="nutrientes" hidden></div>
     </div>
 
     <div class="card sin-key" id="cardSinKey" hidden>
@@ -89,6 +90,7 @@
     <div class="actions">
       <button id="btnFoto" class="primary big">📷 Analizar foto</button>
       <button id="btnManual" class="ghost big">✎ Carga manual</button>
+      <button id="btnEscanear" class="ghost big">📱 Escanear código de barras</button>
       <button id="btnEtiqueta" class="ghost big">🏷️ Leer etiqueta de un envase</button>
       <button id="btnRepetir" class="ghost big">↻ Repetir una comida</button>
       <button id="btnSugerir" class="ghost big">💡 ¿Qué me como con lo que queda?</button>
@@ -291,6 +293,17 @@
       <button id="btnGuardarKey" class="primary">Guardar</button>
       <p class="hint">La key queda solo en este navegador (localStorage) y se manda únicamente a api.anthropic.com.</p>
       <p class="hint" id="usoInfo"></p>
+
+      <div class="bloque-precision">
+        <span class="etiqueta">Tope de gasto por mes</span>
+        <div class="peso-row">
+          <input type="number" id="inputTope" step="1" min="0" inputmode="decimal" placeholder="dólares">
+          <button id="btnGuardarTope" class="ghost small">Guardar</button>
+        </div>
+        <div class="bar" style="margin-top:8px"><i id="barraGasto"></i></div>
+        <p class="hint" id="gastoInfo"></p>
+        <p class="aviso-sesgo" id="avisoTope" hidden></p>
+      </div>
       <details class="detalle-analisis">
         <summary>Ver el detalle de cada análisis</summary>
         <ul id="listaAnalisis" class="lista analisis"></ul>
@@ -335,6 +348,62 @@
       </details>
     </div>
 
+    <div class="card" id="cardSync">
+      <div class="card-head"><h2>Sincronización</h2><span id="syncPill" class="pill"></span></div>
+
+      <p class="hint" id="syncIntro">
+        Para ver lo mismo en la compu y en el celular. Necesita un proyecto de Supabase
+        (gratis): creá uno, corré el SQL de <code>supabase.sql</code> y pegá acá los datos.
+      </p>
+
+      <label class="block">URL del proyecto
+        <input type="url" id="syncUrl" placeholder="https://xxxxx.supabase.co" autocomplete="off">
+      </label>
+      <label class="block">Anon key
+        <input type="password" id="syncKey" placeholder="eyJhbGci..." autocomplete="off">
+      </label>
+
+      <div class="llave-box">
+        <span class="etiqueta">Tu llave de sincronización</span>
+        <code id="syncLlave">—</code>
+        <p class="hint">Copiala en el otro dispositivo para que compartan los datos. Es lo único que los conecta: guardala.</p>
+      </div>
+
+      <div class="actions-row">
+        <button id="btnGuardarSync" class="primary small">Guardar</button>
+        <button id="btnSincronizar" class="ghost small" hidden>Sincronizar ahora</button>
+        <button id="btnCopiarLlave" class="ghost small" hidden>Copiar llave</button>
+        <button id="btnPegarLlave" class="ghost small">Usar otra llave</button>
+      </div>
+
+      <p class="hint" id="syncEstado"></p>
+    </div>
+
+    <div class="card" id="cardCalibracion">
+      <div class="card-head"><h2>Calibrar la estimación</h2><span id="calibPill" class="pill"></span></div>
+      <p class="hint" style="margin:0 0 12px">
+        Cargá fotos de comidas cuyas calorías reales conozcas (algo con etiqueta, algo pesado
+        en balanza) y corré la prueba: te dice cuánto se equivoca la app con TUS comidas.
+      </p>
+
+      <p class="aviso-sesgo" id="avisoSesgo" hidden></p>
+
+      <div id="calibResultado" hidden>
+        <div class="progreso-head"><span>Error promedio</span><b id="calibError">—</b></div>
+        <p class="hint" id="calibVeredicto"></p>
+        <p class="hint" id="calibSesgo"></p>
+      </div>
+
+      <ul id="listaReferencias" class="lista"></ul>
+      <p id="referenciasVacio" class="vacio">Todavía no cargaste ninguna referencia.</p>
+
+      <div class="actions-row" style="margin-top:12px">
+        <button id="btnAgregarRef" class="ghost small">+ Agregar una foto</button>
+        <button id="btnCorrerCalib" class="primary small" hidden>Correr la prueba</button>
+      </div>
+      <input type="file" id="refInput" accept="image/*" hidden>
+    </div>
+
     <div class="card" id="cardRevision" hidden>
       <div class="card-head"><h2>Revisión de datos</h2><span id="revisionPill" class="pill"></span></div>
       <ul id="listaProblemas" class="lista problemas"></ul>
@@ -351,6 +420,9 @@
         <button id="btnReset" class="danger">Borrar todo</button>
       </div>
       <input type="file" id="importInput" accept="application/json" hidden>
+      <p class="aviso-respaldo" id="avisoRespaldo" hidden></p>
+      <p class="hint" id="respaldoInfo"></p>
+      <p class="hint" id="persistenciaInfo"></p>
       <p class="hint" id="backupInfo"></p>
       <button id="btnRestaurar" class="ghost small" hidden>Restaurar la última copia</button>
       <div class="cuota">
@@ -423,12 +495,41 @@
         <ul id="listaSugerencias" class="lista"></ul>
         <p class="hint costo" id="sugerenciasCosto"></p>
       </div>
+      <div id="panelEscaner" hidden>
+        <div class="escaner-caja">
+          <video id="escanerVideo" playsinline muted></video>
+          <p class="hint" id="escanerEstado">Apuntá al código de barras del envase.</p>
+        </div>
+        <div class="correccion">
+          <input id="codigoManual" inputmode="numeric" placeholder="…o escribí el código a mano">
+          <button id="btnBuscarCodigo" class="ghost small">Buscar</button>
+        </div>
+      </div>
+
+      <div id="panelProducto" hidden>
+        <div class="producto-cab">
+          <img id="productoImagen" alt="" hidden>
+          <div>
+            <b id="productoNombre"></b>
+            <small id="productoMarca"></small>
+          </div>
+        </div>
+        <p class="hint" id="productoOrigen"></p>
+        <span class="etiqueta">¿Cuánto comiste?</span>
+        <div class="momento-sel" id="productoPorciones" role="group" aria-label="Porción"></div>
+        <div class="correccion">
+          <input type="number" id="productoGramos" inputmode="decimal" placeholder="gramos">
+          <span class="hint" id="productoTotal"></span>
+        </div>
+      </div>
+
       <div id="analisisError" hidden class="error-box">
         <p id="errorTxt"></p>
       </div>
     </div>
     <div class="modal-foot">
       <button id="btnCancelar" class="ghost">Cancelar</button>
+      <button id="btnGuardarProducto" class="primary" hidden>Usar este producto</button>
       <button id="btnGuardarComida" class="primary" disabled>Guardar comida</button>
     </div>
   </div>
@@ -510,8 +611,22 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="core.js?v=50"></script>
-<script src="claude.js?v=50"></script>
-<script src="app.js?v=50"></script>
+<script src="core.js?v=79"></script>
+<script src="analisis.js?v=79"></script>
+<script src="claude.js?v=79"></script>
+<script src="productos.js?v=79"></script>
+<script src="sync.js?v=79"></script>
+<script src="app.js?v=79"></script>
+<script src="ui/general.js?v=79"></script>
+<script src="ui/hoy.js?v=79"></script>
+<script src="ui/comidas.js?v=79"></script>
+<script src="ui/escaner.js?v=79"></script>
+<script src="ui/asistente.js?v=79"></script>
+<script src="ui/historial.js?v=79"></script>
+<script src="ui/perfil.js?v=79"></script>
+<script src="ui/sincronizacion.js?v=79"></script>
+<script src="ui/calibracion.js?v=79"></script>
+<script src="ui/ajustes.js?v=79"></script>
+<script src="arranque.js?v=79"></script>
 </body>
 </html>

@@ -45,9 +45,12 @@ const SCHEMA_COMIDA = {
           calorias: { type: 'number' },
           proteinas: { type: 'number' },
           carbohidratos: { type: 'number' },
-          grasas: { type: 'number' }
+          grasas: { type: 'number' },
+          fibra: { type: 'number', description: 'Gramos de fibra; 0 si no se puede estimar' },
+          azucar: { type: 'number', description: 'Gramos de azúcar; 0 si no se puede estimar' },
+          sodio: { type: 'number', description: 'Miligramos de sodio; 0 si no se puede estimar' }
         },
-        required: ['nombre', 'porcion', 'calorias', 'proteinas', 'carbohidratos', 'grasas'],
+        required: ['nombre', 'porcion', 'calorias', 'proteinas', 'carbohidratos', 'grasas', 'fibra', 'azucar', 'sodio'],
         additionalProperties: false
       }
     },
@@ -70,6 +73,7 @@ Pautas:
 - Si algo no se ve con claridad, asumí la porción más probable y aclaralo en las notas.
 - Poné confianza "baja" si la foto es ambigua, tiene mala luz o el alimento está tapado.
 - Los números tienen que ser realistas y coherentes: 4 kcal por gramo de proteína y de carbohidratos, 9 por gramo de grasa.
+- Fibra, azúcar y sodio: estimalos si el alimento los tiene de forma evidente (una fruta tiene fibra, una gaseosa azúcar, un embutido sodio). Si no podés, poné 0; es mejor que inventar.
 - Respondé todo en español.`;
 
 const PROMPT_ETIQUETA = `Sos un nutricionista leyendo la etiqueta nutricional de un producto envasado.
@@ -82,6 +86,7 @@ Pautas:
 - Si se ve el nombre del producto, usalo como nombre del alimento.
 - Si algún macro no figura en la etiqueta, estimalo y aclaralo en las notas.
 - Los valores tienen que ser los de UNA porción, no los del envase entero.
+- Si la etiqueta trae fibra, azúcares o sodio, cargalos; si no figuran, poné 0.
 - Respondé todo en español.`;
 
 /**
@@ -458,7 +463,10 @@ function interpretarRespuesta(data) {
     calorias: Number(i.calorias) || 0,
     proteinas: Number(i.proteinas) || 0,
     carbohidratos: Number(i.carbohidratos) || 0,
-    grasas: Number(i.grasas) || 0
+    grasas: Number(i.grasas) || 0,
+    fibra: Number(i.fibra) || 0,
+    azucar: Number(i.azucar) || 0,
+    sodio: Number(i.sodio) || 0
   }));
 
   return parsed;

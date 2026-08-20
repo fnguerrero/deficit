@@ -586,3 +586,66 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* ---------- revision de datos ---------- */
 .lista.problemas li { align-items: flex-start; }
 .lista.problemas .info small { color: var(--warn); }
+
+/* ---------- calibracion ---------- */
+#calibResultado { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+#calibError { font-size: 20px; }
+.calib-bien { color: var(--acc); }
+.calib-aceptable { color: var(--warn); }
+.calib-flojo { color: var(--bad); }
+.lista .ref-error { font-weight: 650; font-size: 13px; white-space: nowrap; }
+
+/* ---------- sesgo aprendido ---------- */
+.aviso-sesgo {
+  background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.35);
+  color: var(--warn); border-radius: 10px; padding: 10px 12px;
+  margin: 0 0 14px; font-size: 12.5px;
+}
+.aviso-sesgo[hidden] { display: none; }
+
+/* ---------- sincronizacion ---------- */
+.llave-box { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; margin-bottom: 12px; }
+.llave-box .etiqueta { display: block; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .4px; }
+.llave-box code {
+  display: block; margin: 6px 0 4px; font-size: 13.5px; letter-spacing: .5px;
+  font-family: ui-monospace, Consolas, monospace; color: var(--acc); word-break: break-all;
+}
+.llave-box .hint { margin-top: 4px; }
+.sync-ok { color: var(--acc); }
+.sync-mal { color: var(--bad); }
+#syncIntro code { color: var(--acc); font-size: 12px; }
+
+/* ---------- aviso de respaldo ---------- */
+.aviso-respaldo {
+  background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.35);
+  color: var(--warn); border-radius: 10px; padding: 10px 12px;
+  margin: 12px 0 0; font-size: 12.5px;
+}
+.aviso-respaldo[hidden] { display: none; }
+
+/* ---------- escaner de codigo de barras ---------- */
+.escaner-caja { position: relative; margin-bottom: 12px; }
+.escaner-caja video {
+  width: 100%; max-height: 300px; border-radius: 12px; background: #000;
+  object-fit: cover; display: block;
+}
+.escaner-caja video[hidden] { display: none; }
+.escaner-caja .hint { text-align: center; }
+
+.producto-cab { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.producto-cab img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; background: var(--card2); }
+.producto-cab b { display: block; font-size: 16px; }
+.producto-cab small { color: var(--dim); font-size: 12.5px; }
+#productoTotal { flex: 1; margin: 0; align-self: center; }
+
+/* ---------- tope de gasto ---------- */
+#barraGasto { background: var(--acc2); width: 0; }
+#barraGasto.alerta { background: var(--warn); }
+#barraGasto.bloqueado { background: var(--bad); }
+
+/* ---------- nutrientes opcionales ---------- */
+.nutrientes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.nutrientes div { flex: 1; min-width: 82px; }
+.nutrientes span { display: block; font-size: 11px; color: var(--dim); }
+.nutrientes b { font-size: 15px; font-weight: 600; }
+.nutrientes b.pasado { color: var(--warn); }
