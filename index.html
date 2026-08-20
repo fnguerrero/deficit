@@ -13,16 +13,16 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
 <header class="topbar">
   <h1>Déficit</h1>
   <div class="date-nav">
-    <button id="prevDay" class="icon-btn" title="Día anterior">‹</button>
+    <button id="prevDay" class="icon-btn" title="Día anterior" aria-label="Ver el día anterior">‹</button>
     <span id="dateLabel">Hoy</span>
-    <button id="nextDay" class="icon-btn" title="Día siguiente">›</button>
+    <button id="nextDay" class="icon-btn" title="Día siguiente" aria-label="Ver el día siguiente">›</button>
   </div>
 </header>
 
@@ -30,6 +30,11 @@
 
   <!-- ============ HOY ============ -->
   <section id="tab-hoy" class="tab active">
+
+    <div class="aviso-dia" id="avisoDia" hidden>
+      <span id="avisoDiaTxt"></span>
+      <button id="volverHoy">Volver a hoy</button>
+    </div>
 
     <div class="card ring-card">
       <div class="ring-wrap">
@@ -64,9 +69,19 @@
       </div>
     </div>
 
+    <div class="card sin-key" id="cardSinKey" hidden>
+      <p>El análisis por foto necesita una API key de Anthropic. Todo lo demás anda sin eso.</p>
+      <div class="actions-row">
+        <button id="btnIrAjustes" class="ghost small">Cargar la key</button>
+        <button id="btnOcultarKey" class="ghost small">Ahora no</button>
+      </div>
+    </div>
+
     <div class="actions">
       <button id="btnFoto" class="primary big">📷 Analizar foto</button>
       <button id="btnManual" class="ghost big">✎ Carga manual</button>
+      <button id="btnEtiqueta" class="ghost big">🏷️ Leer etiqueta de un envase</button>
+      <button id="btnRepetir" class="ghost big">↻ Repetir una comida</button>
     </div>
     <input type="file" id="fileInput" accept="image/*" hidden>
 
@@ -74,6 +89,25 @@
       <div class="card-head"><h2>Comidas del día</h2><span id="comidasCount" class="pill">0</span></div>
       <ul id="listaComidas" class="lista"></ul>
       <p id="comidasVacio" class="vacio">Todavía no cargaste nada. Sacá una foto de tu plato.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Agua</h2><span id="aguaCount" class="pill">0</span></div>
+      <div class="agua-row">
+        <button id="aguaMenos" class="icon-btn" aria-label="Un vaso menos">−</button>
+        <div id="aguaVasos" class="vasos" role="img" aria-label="Vasos de agua tomados"></div>
+        <button id="aguaMas" class="icon-btn" aria-label="Un vaso más">+</button>
+      </div>
+      <p id="aguaInfo" class="hint"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Ejercicio</h2><span id="ejercicioPill" class="pill">0 kcal</span></div>
+      <div class="peso-row">
+        <input type="number" id="ejercicioHoy" inputmode="numeric" placeholder="kcal quemadas">
+        <button id="btnEjercicio" class="primary">Guardar</button>
+      </div>
+      <p id="ejercicioInfo" class="hint">Lo que quemes se suma al objetivo del día.</p>
     </div>
 
     <div class="card">
@@ -91,8 +125,23 @@
   <section id="tab-historial" class="tab">
     <div class="card">
       <div class="card-head"><h2>Peso</h2><span id="pesoDelta" class="pill"></span></div>
-      <svg id="chartPeso" class="chart" viewBox="0 0 320 120"></svg>
+      <svg id="chartPeso" class="chart" viewBox="0 0 320 120" role="img" aria-label="Evolución de tu peso"></svg>
+      <p id="chartLeyenda" class="leyenda" hidden>
+        <i class="l-diario"></i> día a día
+        <i class="l-media"></i> tendencia (7 días)
+      </p>
       <p id="chartVacio" class="vacio">Cargá tu peso unos días para ver la curva.</p>
+      <div id="progresoMeta" hidden>
+        <div class="progreso-head"><span>Progreso hacia tu meta</span><b id="progresoPct">0%</b></div>
+        <div class="bar"><i id="progresoBar" class="meta"></i></div>
+        <p class="hint" id="progresoTxt"></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Últimos 14 días</h2><span id="rachaPill" class="pill"></span></div>
+      <svg id="chartKcal" class="chart alto" viewBox="0 0 320 140" role="img" aria-label="Calorías de los últimos 14 días"></svg>
+      <p id="kcalVacio" class="vacio">Cargá algunas comidas para ver la comparación.</p>
     </div>
 
     <div class="card">
@@ -104,6 +153,7 @@
     <div class="card">
       <div class="card-head"><h2>Resumen</h2></div>
       <ul class="kv" id="resumenSemana"></ul>
+      <p class="hint" id="avisoTdee"></p>
     </div>
   </section>
 
@@ -180,49 +230,70 @@
       </label>
       <button id="btnGuardarKey" class="primary">Guardar</button>
       <p class="hint">La key queda solo en este navegador (localStorage) y se manda únicamente a api.anthropic.com.</p>
+      <p class="hint" id="usoInfo"></p>
     </div>
 
     <div class="card">
       <div class="card-head"><h2>Datos</h2></div>
       <div class="actions-row">
-        <button id="btnExport" class="ghost">Exportar</button>
+        <button id="btnExport" class="ghost">Exportar JSON</button>
+        <button id="btnExportCsv" class="ghost">Exportar CSV</button>
         <button id="btnImport" class="ghost">Importar</button>
         <button id="btnReset" class="danger">Borrar todo</button>
       </div>
       <input type="file" id="importInput" accept="application/json" hidden>
-      <p class="hint" id="statsInfo"></p>
+      <p class="hint" id="backupInfo"></p>
+      <button id="btnRestaurar" class="ghost small" hidden>Restaurar la última copia</button>
+      <div class="cuota">
+        <div class="bar"><i id="barraCuota"></i></div>
+        <p class="hint" id="statsInfo"></p>
+      </div>
+      <p class="hint aviso-cuota" id="avisoCuota" hidden></p>
+      <button id="btnLiberar" class="ghost small" hidden>Borrar las fotos viejas</button>
     </div>
   </section>
 
 </main>
 
-<nav class="tabbar">
-  <button class="tab-btn active" data-tab="hoy"><span>🍽️</span>Hoy</button>
-  <button class="tab-btn" data-tab="historial"><span>📈</span>Historial</button>
-  <button class="tab-btn" data-tab="perfil"><span>👤</span>Perfil</button>
-  <button class="tab-btn" data-tab="ajustes"><span>⚙️</span>Ajustes</button>
+<nav class="tabbar" role="tablist" aria-label="Secciones">
+  <button class="tab-btn active" role="tab" aria-selected="true" data-tab="hoy"><span>🍽️</span>Hoy</button>
+  <button class="tab-btn" role="tab" aria-selected="false" data-tab="historial"><span>📈</span>Historial</button>
+  <button class="tab-btn" role="tab" aria-selected="false" data-tab="perfil"><span>👤</span>Perfil</button>
+  <button class="tab-btn" role="tab" aria-selected="false" data-tab="ajustes"><span>⚙️</span>Ajustes</button>
 </nav>
 
 <!-- ============ MODAL ============ -->
-<div id="modal" class="modal">
+<div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
   <div class="modal-box">
     <div class="modal-head">
       <h2 id="modalTitle">Analizando…</h2>
-      <button id="modalClose" class="icon-btn">✕</button>
+      <button id="modalClose" class="icon-btn" aria-label="Cerrar">✕</button>
     </div>
     <div class="modal-body">
       <div id="analisisLoading" class="loading">
         <img id="preview" alt="">
         <div class="spinner"></div>
         <p id="loadingTxt">Claude está mirando el plato…</p>
+        <button id="btnCancelarAnalisis" class="ghost small">Cancelar</button>
       </div>
       <div id="analisisResult" hidden>
         <p id="resDescripcion" class="desc"></p>
         <div id="resConfianza"></div>
+        <div class="momento-sel" id="selMomento" role="group" aria-label="Momento de la comida"></div>
         <ul id="resItems" class="items"></ul>
         <button id="btnAddItem" class="ghost small">+ Agregar alimento</button>
         <div class="total-row"><span>Total</span><b id="resTotal">0 kcal</b></div>
         <p id="resNotas" class="hint"></p>
+        <p id="resCosto" class="hint costo"></p>
+        <div class="correccion" id="cajaCorreccion">
+          <input id="inputCorreccion" placeholder="¿Se equivocó? Corregilo: «la porción era el doble»">
+          <button id="btnCorregir" class="ghost small">Rehacer</button>
+        </div>
+      </div>
+      <div id="analisisRepetir" hidden>
+        <p class="hint" style="margin:0 0 10px">Tocá una comida de los últimos días para volver a cargarla hoy.</p>
+        <ul id="listaRepetir" class="lista"></ul>
+        <p id="repetirVacio" class="vacio">Todavía no tenés comidas guardadas.</p>
       </div>
       <div id="analisisError" hidden class="error-box">
         <p id="errorTxt"></p>
@@ -235,8 +306,78 @@
   </div>
 </div>
 
-<div id="toast" class="toast"></div>
 
-<script src="app.js"></script>
+<!-- ============ ONBOARDING ============ -->
+<div id="onboarding" class="onb" role="dialog" aria-modal="true" aria-labelledby="onbTitulo" hidden>
+  <div class="onb-box">
+    <div class="onb-pasos" id="onbPuntos"></div>
+
+    <section class="onb-paso" data-paso="1">
+      <div class="onb-icono">🥗</div>
+      <h2>Bienvenido a Déficit</h2>
+      <p>Sacás una foto de lo que vas a comer y la app estima las calorías y los macros. Vos revisás el número y lo guardás.</p>
+      <p class="hint">Todo queda guardado en este dispositivo. No hay cuenta ni servidor.</p>
+    </section>
+
+    <section class="onb-paso" data-paso="2" hidden>
+      <div class="onb-icono">📏</div>
+      <h2>Tus datos</h2>
+      <p class="hint">Con esto calculo tu gasto diario y tu objetivo de calorías.</p>
+      <div class="form-grid">
+        <label>Sexo
+          <select id="onbSexo"><option value="m">Masculino</option><option value="f">Femenino</option></select>
+        </label>
+        <label>Edad
+          <input type="number" id="onbEdad" inputmode="numeric" placeholder="años">
+        </label>
+        <label>Altura (cm)
+          <input type="number" id="onbAltura" inputmode="numeric" placeholder="cm">
+        </label>
+        <label>Peso (kg)
+          <input type="number" id="onbPeso" step="0.1" inputmode="decimal" placeholder="kg">
+        </label>
+        <label>Meta (kg)
+          <input type="number" id="onbPesoObj" step="0.1" inputmode="decimal" placeholder="opcional">
+        </label>
+        <label>Actividad
+          <select id="onbActividad">
+            <option value="1.2">Sedentario</option>
+            <option value="1.375">Ligera</option>
+            <option value="1.55" selected>Moderada</option>
+            <option value="1.725">Alta</option>
+            <option value="1.9">Muy alta</option>
+          </select>
+        </label>
+      </div>
+      <p class="error-campo" id="onbError"></p>
+    </section>
+
+    <section class="onb-paso" data-paso="3" hidden>
+      <div class="onb-icono">🔑</div>
+      <h2>Para leer las fotos</h2>
+      <p>El análisis por foto usa la API de Claude. Pegá tu key de <b>console.anthropic.com</b> y queda guardada solo acá.</p>
+      <label class="block">API key
+        <input type="password" id="onbKey" placeholder="sk-ant-...">
+      </label>
+      <p class="hint">Podés dejarlo para después: el registro manual funciona igual.</p>
+    </section>
+
+    <div class="onb-pie">
+      <button id="onbSaltear" class="ghost small">Saltear</button>
+      <button id="onbSiguiente" class="primary">Empezar</button>
+    </div>
+  </div>
+</div>
+
+<div id="bannerUpdate" class="banner-update" hidden>
+  <span>Hay una versión nueva de la app.</span>
+  <button id="btnActualizar">Actualizar</button>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="core.js?v=4"></script>
+<script src="claude.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
