@@ -1,67 +1,86 @@
-# SPEC — 30 mejoras a Déficit (ciclo 2)
+# SPEC — lo que le faltaba a Déficit (ciclo 3)
 
-El ciclo anterior (33 mejoras + andamiaje) está cerrado en `.nonstop/ciclo-1/`.
+Ciclos anteriores cerrados en `.nonstop/ciclo-1/` (33 mejoras) y `.nonstop/ciclo-2/` (31).
 
 ## Objetivo
 
-La app ya cubre el registro y el seguimiento. Este ciclo apunta a tres cosas que hoy
-no tiene: **sacar fricción del uso diario** (cargar en un toque lo que comés siempre),
-**gastar menos API por el mismo resultado**, y **que los datos digan algo** — no solo
-mostrar números, sino señalar dónde se te va el déficit y qué va a pasar si seguís así.
+Los dos ciclos anteriores agregaron funciones. Este arregla los **huecos de fondo** que
+quedaron, en el orden en que se los conté a Nico:
+
+1. **Nunca se probó la estimación por foto contra la API real.** Es la función central de
+   la app y es la única sin evidencia. No puedo correrla yo (necesita su key), así que
+   construyo el banco de pruebas para que le tome dos minutos y devuelva un número.
+2. **Los datos viven en un solo navegador sin respaldo automático.** Sincronización real
+   (Supabase) más respaldo a archivo y almacenamiento persistente.
+3. **Todo lo envasado se carga a mano o se paga.** Escaneo de código de barras contra
+   Open Food Facts: gratis, sin API y sin foto.
+4. **Nada frena el gasto de API.** Tope mensual con corte real.
+5. Fibra, azúcar y sodio, que hoy no se miden.
+6. `app.js` pasó las 2.500 líneas.
 
 ## Alcance
 
 **Entra**
-- Mejoras sobre el código existente (`core.js`, `claude.js`, `app.js`, `styles.css`, `sw.js`).
-- Tests nuevos en la suite propia para todo lo que sea lógica pura o capa de API.
-- Migración de datos: lo guardado hoy tiene que seguir andando sin tocar nada.
+- Todo lo de arriba sobre el código existente, sin romper nada de lo que ya anda.
+- Tests nuevos para toda la lógica pura y para las capas de red (con fetch simulado).
+- Migración: lo guardado hoy tiene que seguir funcionando sin tocar nada.
 
 **No entra**
-- Backend, cuentas, sincronización entre dispositivos.
-- Frameworks, bundlers, dependencias. Sigue siendo vanilla sin build.
-- APK / Capacitor: sigue siendo PWA.
-- Rediseño visual: se mantiene el lenguaje actual (oscuro, tarjetas). El tema claro
-  del ítem 22 es una variante de ese mismo lenguaje, no un rediseño.
+- Frameworks, bundlers, dependencias: sigue siendo vanilla sin build. El cliente de
+  Supabase se habla por REST con `fetch`, no con su SDK.
+- Login con usuario y contraseña: la sincronización va con un identificador propio y la
+  anon key, sin cuentas.
+- APK: sigue siendo PWA.
+- Correr la calibración de verdad: eso lo hace Nico con su key. Yo dejo el banco y lo
+  pruebo con respuestas simuladas.
 
 ## Stack y decisiones
 
-- Lo mismo de siempre: HTML + CSS + JS vanilla, sin build.
-- La lógica nueva que sea pura va a `core.js`; lo que hable con la API, a `claude.js`.
-  `app.js` solo render y eventos. Es lo que permite testear sin DOM y sin gastar API.
-- Tests: se extiende `tests.js` (runner propio, ya soporta async).
-- Persistencia: sigue `localStorage` bajo `deficit.v1`, con `migrar()` para cada campo nuevo.
+- HTML + CSS + JS vanilla, sin build.
+- Lo puro va a `core.js`; lo que habla con Claude, a `claude.js`. Se suman
+  `productos.js` (Open Food Facts) y `sync.js` (Supabase), los dos con `fetch` inyectable.
+- `app.js` se parte: la lógica de pantalla sale a `ui/` como archivos separados cargados
+  con `<script>`, sin módulos ES (para no pelear con el service worker y `file://`).
+- Supabase por REST (`/rest/v1`), con la anon key y RLS por identificador de dispositivo.
 
 ## Supuestos
 
 Decisiones tomadas por criterio propio (esta sección crece):
 
-1. **Las 30 mejoras las elijo yo**, igual que en el ciclo 1. Criterio: (a) toques que
-   ahorran tiempo todos los días, (b) plata de API ahorrada, (c) datos que llevan a una
-   decisión concreta, (d) huecos de robustez que ya se ven venir.
-2. **No repetir lo del ciclo 1.** Nada de rehacer lo que ya existe: cada ítem agrega algo
-   que hoy no está.
-3. **Los tests existentes tienen que seguir en verde** después de cada ítem. Si un cambio
-   los rompe, primero se decide si estaba mal el test o el código.
-4. **Commit y push**: Nico pidió explícitamente que en sus repos de GitHub no se pregunte.
-   Se commitea y pushea al cerrar, avisando después.
-5. **El tema claro respeta `prefers-color-scheme`** y se puede forzar; no se inventa una
-   paleta nueva, se derivan los mismos tokens.
-6. **Las notificaciones locales** se piden solo cuando la persona activa el recordatorio,
-   nunca al abrir la app.
+1. **Sincronización sin login**: cada instalación genera un identificador largo y aleatorio
+   que hace de llave. Para sumar el celu se copia ese identificador desde la compu. Es lo
+   más simple que resuelve el problema real (ver lo mismo en los dos lados) sin cuentas.
+2. **La sincronización resuelve conflictos por comida, no por día**: cada comida tiene su
+   id, gana la modificación más reciente, y las comidas borradas se anotan como tumba para
+   que no reaparezcan.
+3. **Open Food Facts sin API key** (es abierta), con cache local de lo escaneado para que
+   un producto repetido no vuelva a pedir red.
+4. **El tope de gasto corta de verdad**: al llegar al límite no se puede analizar hasta el
+   mes siguiente o hasta subirlo a mano. Un aviso que no frena nada no sirve de nada.
+5. **La calibración usa fotos que Nico elige**, con el valor real que él sabe (una etiqueta,
+   una receta pesada). No invento un dataset: no tendría sentido.
+6. **Fibra, azúcar y sodio son opcionales**: si el modelo no los devuelve, quedan en cero y
+   no se muestran, para no ensuciar la pantalla con ceros.
+7. **Commit y push**: repo personal propio, va sin preguntar (pedido explícito de Nico).
 
 ## Criterios de aceptación
 
-1. La suite pasa de 148 a **200+ tests**, con **0 fallos**.
-2. La app carga en `http://localhost:5599` **sin un error de consola**.
-3. Un `state` del ciclo anterior (esquema 2) se abre, migra y **no pierde ni un dato**.
-4. Las 30 mejoras están `[x]` en TODO.md, cada una con su verificación en la bitácora.
-5. **Cero llamadas reales a la API** durante todo el trabajo: la capa de red se prueba
-   con `fetch` mockeado.
-6. Exportar → borrar → importar sigue dejando el JSON idéntico.
-7. La app sigue siendo usable **sin API key** y **sin conexión** (shell cacheado).
-8. El tema claro y el oscuro se ven bien: ningún texto queda con contraste menor a 4.5:1.
+1. La suite pasa de 319 a **420+ tests**, con **0 fallos**.
+2. La app carga **sin un error de consola** y sigue andando sin API key y sin conexión.
+3. Un `state` del ciclo 2 se abre, migra y **no pierde ni un dato**.
+4. Todos los ítems del TODO en `[x]`, cada uno con su verificación en la bitácora.
+5. **Cero llamadas reales** a Claude, a Supabase o a Open Food Facts durante el trabajo:
+   todo con `fetch` simulado.
+6. La sincronización, probada contra un Supabase simulado, resuelve los cuatro casos:
+   subir, bajar, conflicto entre dos dispositivos y comida borrada que no revive.
+7. El escaneo de código de barras, probado con respuestas reales de Open Food Facts
+   guardadas como fixture, carga un producto con sus macros.
+8. El tope de gasto **impide** un análisis cuando se llegó al límite.
+9. `app.js` queda por debajo de **1.200 líneas** y ningún archivo de `ui/` pasa las 700.
+10. La calibración corre de punta a punta con respuestas simuladas y devuelve el error
+    promedio; queda documentado en el README cómo correrla de verdad en dos minutos.
 
 ## Presupuesto
 
-**40 iteraciones** para 30 ítems. El margen de 10 es para imprevistos y el cierre.
-Si a la iteración 30 quedan más de 5 ítems, se reporta el estado real en vez de apurar.
+**45 iteraciones** para 22 ítems. El margen es amplio a propósito: partir `app.js` y la
+sincronización son los dos trabajos con más riesgo de romper algo que ya andaba.

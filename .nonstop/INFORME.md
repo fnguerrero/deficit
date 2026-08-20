@@ -1,12 +1,47 @@
-# Informe — 30 mejoras a Déficit (ciclo 2)
+# Informe — lo que le faltaba a Déficit (ciclo 3)
 
 ## Qué se construyó
 
-El ciclo 1 dejó la app completa en registro y seguimiento. Este ciclo atacó tres cosas
-que faltaban: **sacar fricción del uso diario**, **gastar menos API** y **que los datos
-digan algo**, no solo que se muestren.
+Los dos ciclos anteriores agregaron funciones. Este atacó los **huecos de fondo** que quedaban,
+en el mismo orden en que se los conté a Nico cuando preguntó qué le faltaba a la app.
 
-Salieron 31 mejoras: las 30 planeadas más una que apareció verificando.
+### 1. Nunca se había probado la estimación por foto contra la API real
+
+Era el hueco más serio: la app entera se apoya en ese número y no había una sola medición.
+No puedo correrla yo (necesita su key), así que construí el banco:
+
+- **Calibración**: cargás 3 fotos de comidas cuyas calorías reales conocés, tocás un botón y
+  la app te dice **cuánto se equivoca con tus comidas**, para qué lado, y qué hacer con eso.
+- **Sesgo aprendido**: cada vez que corregís a mano una estimación queda una medición gratis.
+  Con 5 correcciones consistentes de 15% o más, la app te avisa que viene errando parejo.
+- El README arranca ahora con esa sección: tres tipos de comida que sirven de referencia, los
+  cuatro pasos y una tabla de qué significa cada nivel de error.
+
+### 2. Los datos vivían en un solo navegador, sin respaldo
+
+- **Sincronización con Supabase** por REST, sin SDK y sin login: una llave larga y aleatoria
+  agrupa tus datos, y se copia al otro dispositivo para compartirlos.
+- **`supabase.sql`** listo para pegar: tablas, índices, RLS y la explicación de qué protege qué.
+- **Respaldo**: aviso cuando nunca exportaste o cuando pasaron 14 días, y almacenamiento
+  persistente pedido recién cuando hay algo que proteger.
+
+### 3. Todo lo envasado se cargaba a mano o se pagaba
+
+- **Código de barras** contra Open Food Facts: gratis, sin API key, sin foto. Escaneás con la
+  cámara (o escribís el código) y trae los datos de la etiqueta, que no son una estimación.
+- Cache local de 300 productos por 90 días: el mismo yogur no se pide dos veces.
+
+### 4. Nada frenaba el gasto
+
+- **Tope mensual que corta de verdad**: al llegar al límite no se analiza más. Avisa al 80%,
+  y lo que no cuesta plata (manual, código de barras, historial) sigue andando igual.
+
+### 5 y 6. Nutrientes y tamaño del código
+
+- **Fibra, azúcar y sodio** en el modelo, en el análisis y en el código de barras, mostrados
+  solo cuando hay datos.
+- **`app.js` pasó de 2.785 líneas a 130**, repartido en 8 archivos de `ui/`. `core.js` también
+  se partió. Y quedó `tools/tamanos.py` para que no vuelva a pasar.
 
 ### Cómo correrlo
 
@@ -20,88 +55,75 @@ Salieron 31 mejoras: las 30 planeadas más una que apareció verificando.
 
 | Criterio de aceptación | Resultado |
 |---|---|
-| 1. 200+ tests, 0 fallos | **319 tests, 0 fallos** |
-| 2. App sin errores de consola | limpia en tab nuevo |
-| 3. State del ciclo anterior migra sin pérdida | conserva perfil, días, fotos, uso y frecuentes; suma los 8 campos nuevos |
-| 4. Las 30 mejoras `[x]` con verificación | 31/31 ítems, cada uno con su línea de bitácora |
-| 5. Cero llamadas reales a la API | todo con `fetch` mockeado, incluido el streaming |
-| 6. Exportar → borrar → importar | JSON idéntico |
-| 7. Usable sin API key y sin conexión | anda sin key; el shell completo responde desde el cache |
-| 8. Contraste AA en los dos temas | mínimo **4,92** en claro y **5,92** en oscuro |
+| 1. 420+ tests, 0 fallos | **430 tests, 0 fallos** |
+| 2. Sin errores de consola, sin key y sin conexión | limpia; anda sin key; el shell entero responde del cache |
+| 3. State del ciclo 2 migra sin pérdida | conserva perfil, días, fotos, frecuentes, recetas, correcciones, referencias, historial, errores y config; suma los 4 campos nuevos |
+| 4. Todos los ítems verificados | 22/22, cada uno con su línea de bitácora |
+| 5. Cero llamadas reales | Claude, Supabase y Open Food Facts, todo con `fetch` simulado |
+| 6. Sync: los cuatro casos | subir, bajar, conflicto y borrado que no revive — más convergencia de 3 dispositivos |
+| 7. Código de barras con respuesta real | fixture de Open Food Facts; carga el producto con sus macros |
+| 8. El tope impide analizar | con 5,20 gastados sobre un tope de 5, el botón de foto no abre el modal |
+| 9. `app.js` < 1.200 y `ui/` < 700 | app.js **130**; el mayor de `ui/` es 622 |
+| 10. Calibración de punta a punta | corre con respuestas simuladas y devuelve el error; documentada en el README |
 
 Ningún ítem quedó bloqueado.
 
-## Las 31 mejoras
-
-**Menos fricción** — favoritos de un toque · recetas reutilizables · copiar un día entero ·
-suma rápida de calorías · mover comidas de momento o de día · nota del día · buscador en el
-historial · visor de la foto en grande.
-
-**Menos API** — cache por huella de imagen (la misma foto no se paga dos veces) · streaming
-con los alimentos apareciendo mientras llegan · varias fotos en un solo análisis · modos
-rápido/normal/preciso · sugerencias de qué comer con lo que queda · registro de cada llamada
-con su costo.
-
-**Datos que dicen algo** — proyección de peso a 4 semanas · adherencia · reparto por momento
-del día · patrón por día de la semana · comparación semana contra semana · aviso de proteína
-corta · informe mensual imprimible.
-
-**Plataforma** — tema claro · recordatorios locales · cambio de día a medianoche · atajos de
-teclado · confirmación al descartar · rendimiento con años de datos.
-
-**Robustez** — revisión de datos incoherentes · importar fusionando · pantalla de diagnóstico
-· limpieza de caches viejos del service worker.
-
 ## Decisiones tomadas por criterio propio
 
-1. **Cuáles eran las 30 mejoras.** Sin lista, prioricé lo que ahorra tiempo todos los días,
-   lo que ahorra plata de API y lo que lleva a una decisión concreta.
+1. **Sincronización sin login.** Una llave aleatoria de 32 caracteres, sin `l`, `o`, `0` ni `1`
+   porque se copia a mano entre dispositivos. Sin cuentas ni contraseñas que mantener.
 
-2. **El cache de análisis no se usa en las correcciones.** Corregir es justamente pedir una
-   respuesta distinta: reusar la anterior sería lo contrario de lo que pide el usuario.
+2. **Los conflictos se resuelven por comida, no por día.** Gana la última edición. Es simple y
+   predecible, que es lo que hace falta cuando el conflicto lo genera una persona en dos
+   dispositivos, no dos personas peleando por el mismo dato.
 
-3. **Los recordatorios prometen solo lo que pueden.** Sin servidor no hay push real, así que
-   la UI dice "con la app abierta o recién usada" en vez de sugerir que llegan siempre.
+3. **Las fotos no se sincronizan.** Pesan y son del dispositivo donde se sacaron. Lo remoto
+   nunca pisa la foto local.
 
-4. **La fusión al importar completa, nunca pisa.** El peso, la nota y la configuración del
-   dispositivo mandan; el backup solo llena huecos. Y el gasto de API se suma, porque es
-   historia real de plata gastada.
+4. **El tope frena, no avisa.** Un aviso que no bloquea no evita la sorpresa a fin de mes.
 
-5. **La proyección de peso usa regresión lineal sobre toda la serie.** Dos puntos sueltos en
-   el peso son retención de agua, no tendencia.
+5. **Los nutrientes solo aparecen si hay datos.** El análisis por foto muchas veces no los
+   devuelve; una fila de ceros sería peor que no mostrarlos. Y el prompt le dice al modelo que
+   ponga 0 antes que inventar.
 
-6. **El TDEE adaptativo y la alerta de proteína se niegan a hablar con pocos datos.** Un
-   número calculado sobre tres días flojos invita a decisiones peores que no tener número.
+6. **El banco de calibración usa las fotos de Nico, no un dataset armado.** Lo que importa es
+   si acierta con *sus* comidas, no con un promedio ajeno.
 
 ## Desvíos de la SPEC
 
-Cinco, todos por cosas que aparecieron verificando:
+Cuatro, todos por cosas que aparecieron verificando:
 
-1. **Ítem 31 agregado al TODO** (no estaba planeado): el service worker limpiaba los caches
-   viejos solo al activarse, y como cada versión espera confirmación, se habían acumulado
-   **34 caches**. Ahora limpia también al instalar.
+1. **`core.js` se partió en dos** (no estaba planeado). Llegó a 1.782 de 1.800 líneas y el ítem
+   de nutrientes lo iba a pasar. Salió `analisis.js` con la lectura de datos y el informe.
 
-2. **`tools/version.py`** (no estaba planeado): subir la versión a mano en `sw.js` + dos HTML
-   era el paso que más veces se olvidaba, y olvidarlo hacía que el navegador sirviera código
-   viejo y los tests fallaran por una razón falsa. Un comando lo resuelve.
+2. **El orden de la sincronización se invirtió.** Estaba escrito como *subir → bajar*, y los
+   tests mostraron que así la versión vieja de un dispositivo pisa en el servidor la edición
+   más nueva del otro. Ahora es **bajar → fusionar → subir**.
 
-3. **`proyectarPeso` se reescribió.** El primer cálculo mezclaba un punto crudo con uno
-   suavizado y subestimaba la tendencia: con 1 kg en 14 días daba -0,4 en vez de -0,5. El
-   test estaba bien y el código mal.
+3. **El filtro de bajada pasó de `act` a `subido`.** Filtrar por "cuándo se modificó" dejaba
+   afuera las comidas viejas que otro dispositivo recién sube. Se agregó una segunda marca de
+   tiempo: cuándo llegó al servidor.
 
-4. **`tsParaFecha` se partió en dos.** Al copiar un día a *hoy* usaba la hora actual, y un
-   desayuno copiado a la noche quedaba a las 22:00 con momento "desayuno". Se separó
-   `tsEnMomento`, que siempre usa la hora típica.
+4. **Dos errores de "declarada después de usarse"** en `core.js` (`MAX_CORRECCIONES` y
+   `TOPE_DEFECTO`), que rompieron 39 y 160 tests respectivamente. Las constantes que usa
+   `DEFAULT_STATE` ahora están todas juntas arriba del archivo.
 
-5. **Dos correcciones de idioma** que los tests no iban a atrapar porque eran de redacción:
-   "los vierness" (los días terminados en -s no pluralizan) y "¿Cargaste el cena?" (cada
-   momento ahora lleva su artículo).
+   La primera vez, además, **mi verificación fue floja**: di por insertado un bloque porque
+   encontré el nombre de la función en el archivo, cuando lo que estaba era su línea en el
+   export. Desde entonces verifico contra la declaración (`function X`), no contra el nombre.
+
+## Lo que queda pendiente, y es de Nico
+
+- **Correr la calibración de verdad.** Es lo primero que conviene hacer: si la estimación
+  resulta floja con sus comidas, lo que hay que ajustar es el prompt, no la app.
+- **Crear el proyecto de Supabase** y pegar URL y anon key para activar la sincronización.
+  El SQL ya está listo; la capa está probada contra un servidor simulado, pero **nunca se
+  ejecutó contra un Supabase real**.
 
 ## Números
 
-- **32 iteraciones** sobre un presupuesto de 40.
-- **31 ítems** completados, 0 bloqueados.
-- **319 tests** (eran 148 al empezar el ciclo), 0 fallos.
-- **0 llamadas reales a la API** en todo el trabajo.
-- La app pasó de 4 a 5 archivos de código (`core.js`, `claude.js`, `app.js`, más
-  `tools/version.py` y `tools/gen_iconos.py`).
+- **23 iteraciones** sobre un presupuesto de 45.
+- **22 ítems** completados, 0 bloqueados.
+- **430 tests** (eran 319 al empezar el ciclo), 0 fallos.
+- **0 llamadas reales** a ninguna de las tres APIs.
+- El código pasó de 4 archivos a 15, ninguno por encima de su límite.

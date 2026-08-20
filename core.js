@@ -5,6 +5,13 @@
 
 const ESQUEMA = 2;
 
+/* Las constantes que usa DEFAULT_STATE tienen que estar declaradas antes que él. */
+const TOPE_DEFECTO = 5;         // dólares por mes
+const AVISO_GASTO = 0.8;        // a partir del 80% se avisa
+const MAX_CORRECCIONES = 40;
+const CORRECCION_MINIMA = 5;    // menos que esto es redondeo, no corrección
+const MAX_REFERENCIAS = 8;
+const MAX_ERRORES = 10;
 const DEFAULT_STATE = {
   esquema: ESQUEMA,
   perfil: {
@@ -17,10 +24,15 @@ const DEFAULT_STATE = {
   cacheAnalisis: {},
   historialAnalisis: [],
   errores: [],
+  referencias: [],
+  correcciones: [],
+  borradas: [],
+  productos: {},
   uso: { llamadas: 0, costo: 0, tokens: 0 },
   cfg: {
     apiKey: '', modelo: 'claude-opus-5', precision: 'normal', tema: 'auto',
     recordatorios: false, horarios: null,
+    topeGasto: TOPE_DEFECTO,
     avisoKeyOculto: false, onboardingHecho: false
   }
 };
@@ -50,6 +62,7 @@ function migrar(guardado) {
       agua: Number(d.agua) || 0,
       ejercicio: Number(d.ejercicio) || 0,
       nota: String(d.nota || ''),
+      act: Number(d.act) || 0,
       comidas: (d.comidas || []).map(c => ({
         id: c.id || (f + '-' + Math.random().toString(36).slice(2, 8)),
         ts: c.ts || Date.parse(f) || Date.now(),
@@ -59,7 +72,13 @@ function migrar(guardado) {
         prot: Number(c.prot) || 0,
         carb: Number(c.carb) || 0,
         gras: Number(c.gras) || 0,
+        // opcionales: solo los traen el código de barras y algunos análisis
+        fibra: Number(c.fibra) || 0,
+        azucar: Number(c.azucar) || 0,
+        sodio: Number(c.sodio) || 0,
         momento: c.momento || momentoDe(c.ts || Date.now()),
+        // cuándo se tocó por última vez acá: es lo que resuelve los conflictos al sincronizar
+        act: Number(c.act) || Number(c.ts) || 0,
         thumb: c.thumb || null,
         foto: c.foto || null,
         notas: c.notas || ''
@@ -101,6 +120,22 @@ function migrar(guardado) {
   s.errores = (Array.isArray(guardado.errores) ? guardado.errores : [])
     .filter(e => e && e.ts && e.mensaje)
     .slice(0, MAX_ERRORES);
+
+  s.referencias = (Array.isArray(guardado.referencias) ? guardado.referencias : [])
+    .filter(r => r && r.id && r.nombre && r.kcalReal > 0)
+    .map(r => ({ ...r, fotoGrande: r.fotoGrande || null }))
+    .slice(0, MAX_REFERENCIAS);
+
+  s.correcciones = (Array.isArray(guardado.correcciones) ? guardado.correcciones : [])
+    .filter(c => c && c.ts && c.estimado > 0 && c.corregido > 0)
+    .slice(0, MAX_CORRECCIONES);
+
+  // tumbas: lo borrado acá no puede revivir cuando sincronice con otro dispositivo
+  s.borradas = (Array.isArray(guardado.borradas) ? guardado.borradas : [])
+    .filter(b => b && b.id && b.fecha)
+    .slice(0, 500);
+
+  s.productos = (guardado.productos && typeof guardado.productos === 'object') ? guardado.productos : {};
 
   s.uso = {
     llamadas: Number(guardado.uso?.llamadas) || 0,
@@ -212,9 +247,111 @@ function fusionarEstados(actual, importado) {
   return { estado: salida, resumen };
 }
 
-/* ---------------- errores ---------------- */
+/* ---------------- calibración de la estimación ---------------- */
 
-const MAX_ERRORES = 10;
+/**
+ * Una referencia es una foto de la que SÍ se conocen las calorías reales
+ * (una etiqueta, algo pesado en balanza, una receta calculada). Sin eso no
+ * hay forma de saber si el modelo estima bien o inventa.
+ */
+function agregarReferencia(referencias, entrada, ts = Date.now()) {
+  const nombre = String(entrada.nombre || '').trim();
+  const kcalReal = Number(entrada.kcalReal) || 0;
+
+  if (!nombre) throw new Error('La referencia necesita un nombre.');
+  if (kcalReal <= 0) throw new Error('Poné las calorías reales, que son con las que se compara.');
+  if (!entrada.foto) throw new Error('Falta la foto.');
+
+  const ref = {
+    id: 'ref' + ts.toString(36) + Math.random().toString(36).slice(2, 6),
+    nombre,
+    kcalReal: Math.round(kcalReal),
+    protReal: Number(entrada.protReal) || null,
+    foto: entrada.foto,
+    fotoGrande: entrada.fotoGrande || null,
+    creada: ts,
+    ultima: null
+  };
+
+  return [ref, ...(referencias || [])].slice(0, MAX_REFERENCIAS);
+}
+
+function borrarReferencia(referencias, id) {
+  return (referencias || []).filter(r => r.id !== id);
+}
+
+/** Guarda lo que estimó el modelo para una referencia. */
+function anotarEstimacion(referencias, id, { kcal, prot = null, modelo = '', precision = '', costo = 0 }, ts = Date.now()) {
+  return (referencias || []).map(r => r.id !== id ? r : {
+    ...r,
+    ultima: {
+      ts,
+      kcal: Math.round(Number(kcal) || 0),
+      prot: prot == null ? null : Math.round(Number(prot)),
+      modelo, precision,
+      costo: Number(costo) || 0
+    }
+  });
+}
+
+/**
+ * Compara lo estimado contra lo real.
+ * - error: cuánto se equivoca en promedio, sin importar para qué lado
+ * - sesgo: para qué lado se equivoca (negativo = subestima)
+ * Los dos importan: un modelo que se pasa 20% en una y se queda 20% en otra
+ * tiene sesgo 0 pero es igual de inútil.
+ */
+function medirCalibracion(referencias) {
+  const conDatos = (referencias || []).filter(r => r.ultima && r.ultima.kcal > 0 && r.kcalReal > 0);
+  if (!conDatos.length) return null;
+
+  const filas = conDatos.map(r => {
+    const diferencia = r.ultima.kcal - r.kcalReal;
+    return {
+      id: r.id,
+      nombre: r.nombre,
+      real: r.kcalReal,
+      estimado: r.ultima.kcal,
+      diferencia,
+      pct: +((diferencia / r.kcalReal) * 100).toFixed(1)
+    };
+  });
+
+  const errorPromedio = +(filas.reduce((a, f) => a + Math.abs(f.pct), 0) / filas.length).toFixed(1);
+  const sesgo = +(filas.reduce((a, f) => a + f.pct, 0) / filas.length).toFixed(1);
+
+  const ordenadas = [...filas].sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
+
+  return {
+    n: filas.length,
+    filas,
+    errorPromedio,
+    sesgo,
+    peor: ordenadas[0],
+    mejor: ordenadas.at(-1),
+    veredicto: veredictoCalibracion(errorPromedio)
+  };
+}
+
+/**
+ * Qué tan confiable es el número que muestra la app.
+ * Los umbrales salen de para qué se usa: con 500 kcal de objetivo de déficit,
+ * un error del 20% sobre 2.000 kcal se come el déficit entero.
+ */
+function veredictoCalibracion(errorPromedio) {
+  if (errorPromedio <= 10) return { nivel: 'bueno', texto: 'La estimación es confiable para seguir un déficit.' };
+  if (errorPromedio <= 20) return { nivel: 'aceptable', texto: 'Sirve como referencia, pero conviene corregir a mano las comidas importantes.' };
+  return { nivel: 'flojo', texto: 'El error es demasiado grande para confiar en el número: probá el modo Preciso o cargá a mano lo que más comés.' };
+}
+
+/** Texto del sesgo, que es lo accionable: si siempre se queda corto, se sabe. */
+function textoSesgo(sesgo) {
+  if (Math.abs(sesgo) < 5) return 'No se inclina para ningún lado.';
+  const lado = sesgo < 0 ? 'por debajo' : 'por encima';
+  return `Estima ${Math.abs(sesgo)}% ${lado} de lo real, de forma pareja.`;
+}
+
+/* ---------------- errores ---------------- */
 
 /**
  * Guarda los últimos errores para poder mirarlos después.
@@ -273,6 +410,34 @@ function diagnosticoATexto(diag, errores = []) {
   }
 
   return lineas.join(String.fromCharCode(10));
+}
+
+/* ---------------- nutrientes opcionales ---------------- */
+
+/**
+ * Solo se muestran si hay datos: llenar la pantalla de ceros porque el
+ * análisis por foto no los devuelve sería peor que no mostrarlos.
+ */
+const NUTRIENTES = [
+  { id: 'fibra', nombre: 'Fibra', unidad: 'g', objetivo: (kcal) => Math.round(kcal / 1000 * 14), mas: true },
+  { id: 'azucar', nombre: 'Azúcar', unidad: 'g', objetivo: (kcal) => Math.round(kcal * 0.10 / 4), mas: false },
+  { id: 'sodio', nombre: 'Sodio', unidad: 'mg', objetivo: () => 2000, mas: false }
+];
+
+/** Qué nutrientes tienen datos cargados en ese día. */
+function nutrientesConDatos(totales) {
+  return NUTRIENTES.filter(n => (totales[n.id] || 0) > 0);
+}
+
+/**
+ * Objetivo de cada uno según las calorías del día.
+ * Fibra: 14 g cada 1.000 kcal. Azúcar: hasta el 10% de las calorías.
+ * Sodio: 2.000 mg, que es lo que recomienda la OMS.
+ */
+function objetivosNutrientes(kcalObjetivo) {
+  const salida = {};
+  for (const n of NUTRIENTES) salida[n.id] = n.objetivo(kcalObjetivo || 2000);
+  return salida;
 }
 
 /* ---------------- validación ---------------- */
@@ -348,81 +513,97 @@ function pesoDeThumbs(dias) {
   return { cantidad, kb: Math.round(bytes / 1024) };
 }
 
-/* ---------------- revisión de datos ---------------- */
+/* ---------------- tope de gasto ---------------- */
 
-/** Calorías que se deducen de los macros: 4 por proteína y carbo, 9 por grasa. */
-function kcalDeMacros(prot, carb, gras) {
-  return Math.round((Number(prot) || 0) * 4 + (Number(carb) || 0) * 4 + (Number(gras) || 0) * 9);
+/** Lo gastado en la API dentro de un mes (formato aaaa-mm). */
+function gastoDelMes(historial, mes) {
+  return +(historial || [])
+    .filter(a => !a.deCache && hoyISO(new Date(a.ts)).startsWith(mes))
+    .reduce((a, x) => a + (Number(x.costo) || 0), 0)
+    .toFixed(5);
 }
 
 /**
- * Busca comidas con números que no cierran. Las estimaciones por foto a veces
- * salen incoherentes, y un dato mal cargado ensucia todos los promedios.
+ * Estado del gasto contra el tope.
+ * Con `bloqueado` en true no se analiza más: un aviso que no frena nada
+ * no evita la sorpresa a fin de mes.
  */
-function revisarDatos(dias, hoy = hoyISO()) {
-  const problemas = [];
+function estadoGasto(historial, { tope = TOPE_DEFECTO, mes = hoyISO().slice(0, 7) } = {}) {
+  const gastado = gastoDelMes(historial, mes);
 
-  for (const f of Object.keys(dias || {}).sort()) {
-    const d = dias[f];
-
-    if (f > hoy) {
-      problemas.push({ tipo: 'fecha-futura', fecha: f, arreglable: false,
-        detalle: `Hay datos cargados en ${f}, que todavía no llegó.` });
-    }
-
-    for (const c of d.comidas || []) {
-      const kcal = Number(c.kcal) || 0;
-      const macros = kcalDeMacros(c.prot, c.carb, c.gras);
-
-      if (kcal < 0 || c.prot < 0 || c.carb < 0 || c.gras < 0) {
-        problemas.push({ tipo: 'negativo', fecha: f, id: c.id, titulo: c.titulo, arreglable: false,
-          detalle: 'Tiene valores negativos.' });
-        continue;
-      }
-
-      if (kcal > 6000) {
-        problemas.push({ tipo: 'exagerado', fecha: f, id: c.id, titulo: c.titulo, arreglable: false,
-          detalle: `${kcal} kcal en una sola comida es raro.` });
-        continue;
-      }
-
-      // sin macros cargados no hay con qué comparar
-      if (macros === 0) continue;
-
-      const diferencia = Math.abs(kcal - macros);
-      if (kcal === 0) {
-        problemas.push({ tipo: 'sin-kcal', fecha: f, id: c.id, titulo: c.titulo, arreglable: true,
-          sugerido: macros, detalle: `Tiene macros pero 0 kcal; por los macros serían ${macros}.` });
-      } else if (diferencia > kcal * 0.25 && diferencia > 60) {
-        problemas.push({ tipo: 'no-cierra', fecha: f, id: c.id, titulo: c.titulo, arreglable: true,
-          sugerido: macros, actual: kcal,
-          detalle: `Dice ${kcal} kcal pero sus macros dan ${macros}.` });
-      }
-    }
+  // tope en cero = sin límite, para el que prefiera no tener freno
+  if (!tope || tope <= 0) {
+    return { gastado, tope: 0, pct: 0, avisar: false, bloqueado: false, restante: Infinity, mes };
   }
 
-  return problemas;
+  const pct = Math.round((gastado / tope) * 100);
+
+  return {
+    gastado,
+    tope,
+    pct,
+    restante: +(tope - gastado).toFixed(5),
+    avisar: pct >= AVISO_GASTO * 100 && pct < 100,
+    bloqueado: gastado >= tope,
+    mes
+  };
+}
+
+/** Qué decirle a quien llegó al tope. */
+function textoTope(estado) {
+  if (estado.bloqueado) {
+    return `Llegaste al tope de US$ ${estado.tope} de este mes. ` +
+      'Podés subirlo en Ajustes o esperar al mes que viene; el registro manual y el código de barras siguen funcionando.';
+  }
+  if (estado.avisar) {
+    return `Vas por el ${estado.pct}% del tope del mes ` +
+      `(US$ ${estado.gastado.toFixed(2).replace('.', ',')} de ${String(estado.tope).replace('.', ',')}).`;
+  }
+  return '';
+}
+
+/* ---------------- respaldo ---------------- */
+
+const DIAS_SIN_RESPALDO_AVISO = 14;
+
+/** Cuántos días pasaron desde el último respaldo a archivo. */
+function diasSinRespaldo(ultimoRespaldo, ahora = Date.now()) {
+  if (!ultimoRespaldo) return null;
+  return Math.floor((ahora - ultimoRespaldo) / 86400000);
 }
 
 /**
- * Aplica los arreglos que se pueden deducir solos (recalcular kcal desde los
- * macros). Devuelve días nuevos: no toca los que recibe.
+ * Si conviene avisar que respalde.
+ * El localStorage lo puede vaciar el navegador solo: sin un archivo afuera,
+ * ese día se pierde todo. Con sincronización activa el riesgo es menor,
+ * pero no cero (la llave también se puede perder).
  */
-function arreglarDatos(dias, problemas) {
-  const copia = clonar(dias || {});
-  let arreglados = 0;
+function estadoRespaldo({ ultimoRespaldo, dias, ahora = Date.now(), persistente = false }) {
+  const cantidadDias = Object.keys(dias || {}).length;
+  const sinDatos = cantidadDias === 0;
 
-  for (const p of problemas || []) {
-    if (!p.arreglable || !p.id) continue;
+  if (sinDatos) return { avisar: false, dias: null, texto: '' };
 
-    const comida = (copia[p.fecha]?.comidas || []).find(c => c.id === p.id);
-    if (!comida) continue;
+  const pasados = diasSinRespaldo(ultimoRespaldo, ahora);
 
-    comida.kcal = p.sugerido;
-    arreglados++;
+  if (pasados == null) {
+    return {
+      avisar: cantidadDias >= 3,
+      dias: null,
+      texto: `Tenés ${cantidadDias} días cargados y todavía no exportaste nunca. ` +
+        (persistente
+          ? 'El navegador se comprometió a no borrarlos, pero un archivo aparte no está de más.'
+          : 'Si el navegador limpia el sitio, se pierden.')
+    };
   }
 
-  return { dias: copia, arreglados };
+  return {
+    avisar: pasados >= DIAS_SIN_RESPALDO_AVISO,
+    dias: pasados,
+    texto: pasados >= DIAS_SIN_RESPALDO_AVISO
+      ? `Hace ${pasados} días que no exportás. Bajá una copia por las dudas.`
+      : `Último respaldo hace ${pasados} ${pasados === 1 ? 'día' : 'días'}.`
+  };
 }
 
 /* ---------------- exportación ---------------- */
@@ -468,155 +649,6 @@ function armarCSV(dias) {
   return filas.join('\r\n');
 }
 
-/* ---------------- informe del mes ---------------- */
-
-/** Escapa texto para meterlo en el HTML del informe. */
-function escaparHTML(txt) {
-  return String(txt == null ? '' : txt)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/** Los datos del mes `aaaa-mm`, ya resumidos. */
-function datosDelMes(state, mes) {
-  const fechas = Object.keys(state.dias || {})
-    .filter(f => f.startsWith(mes))
-    .sort();
-
-  const conComidas = fechas.filter(f => (state.dias[f].comidas || []).length);
-  const calc = calcularPlan(state.perfil);
-  const objetivo = calc ? calc.objetivo : 0;
-
-  const filas = conComidas.map(f => {
-    const d = state.dias[f];
-    const t = sumarComidas(d.comidas);
-    return {
-      fecha: f,
-      dia: Number(f.slice(8)),
-      kcal: t.kcal,
-      prot: t.prot,
-      carb: t.carb,
-      gras: t.gras,
-      peso: d.peso,
-      agua: d.agua || 0,
-      ejercicio: d.ejercicio || 0,
-      nota: d.nota || '',
-      comidas: d.comidas.length,
-      diferencia: objetivo ? t.kcal - objetivo : null
-    };
-  });
-
-  const pesos = fechas.filter(f => typeof state.dias[f].peso === 'number').map(f => state.dias[f].peso);
-  const totalKcal = filas.reduce((a, f) => a + f.kcal, 0);
-
-  return {
-    mes,
-    objetivo,
-    filas,
-    dias: filas.length,
-    promedio: filas.length ? Math.round(totalKcal / filas.length) : 0,
-    promedioProt: filas.length ? Math.round(filas.reduce((a, f) => a + f.prot, 0) / filas.length) : 0,
-    pesoInicial: pesos.length ? pesos[0] : null,
-    pesoFinal: pesos.length ? pesos.at(-1) : null,
-    deltaPeso: pesos.length >= 2 ? +(pesos.at(-1) - pesos[0]).toFixed(1) : null,
-    adherencia: adherencia(state.dias, objetivo, mes + '-01', mes + '-31'),
-    reparto: repartoPorMomento(state.dias, mes + '-01', mes + '-31')
-  };
-}
-
-/** Informe del mes en una página, pensado para imprimir o guardar en PDF. */
-function armarInforme(state, mes) {
-  const d = datosDelMes(state, mes);
-  if (!d.dias) return null;
-
-  const [anio, num] = mes.split('-').map(Number);
-  const nombreMes = new Date(anio, num - 1, 1)
-    .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
-
-  const tarjeta = (titulo, valor, detalle) =>
-    `<div class="t"><span>${escaparHTML(titulo)}</span><b>${escaparHTML(valor)}</b>` +
-    (detalle ? `<small>${escaparHTML(detalle)}</small>` : '') + '</div>';
-
-  const tarjetas = [
-    tarjeta('Días registrados', String(d.dias), d.objetivo ? `objetivo ${fmtKcal(d.objetivo)}` : ''),
-    tarjeta('Promedio diario', fmtKcal(d.promedio), d.objetivo ? `${fmtDelta(d.promedio - d.objetivo)} vs objetivo` : ''),
-    tarjeta('Proteína promedio', `${fmtNum(d.promedioProt)} g`, ''),
-    d.deltaPeso != null
-      ? tarjeta('Cambio de peso', fmtDelta(d.deltaPeso, 1, 'kg'), `${fmtPeso(d.pesoInicial)} → ${fmtPeso(d.pesoFinal)}`)
-      : '',
-    d.adherencia ? tarjeta('Adherencia', d.adherencia.pct + '%', `${d.adherencia.dentro} de ${d.adherencia.dias} días`) : ''
-  ].filter(Boolean).join('');
-
-  const reparto = d.reparto.length
-    ? '<h2>Dónde se fueron las calorías</h2><ul class="reparto">' +
-      d.reparto.map(m => `<li><span>${escaparHTML(m.nombre)}</span><b>${m.pct}%</b><small>${fmtKcal(m.kcal)}</small></li>`).join('') +
-      '</ul>'
-    : '';
-
-  const filas = d.filas.map(f => `<tr>
-    <td>${f.dia}</td>
-    <td class="n">${fmtNum(f.kcal)}</td>
-    <td class="n ${f.diferencia > 0 ? 'alto' : 'bajo'}">${f.diferencia == null ? '' : fmtDelta(f.diferencia)}</td>
-    <td class="n">${fmtNum(f.prot)}</td>
-    <td class="n">${fmtNum(f.carb)}</td>
-    <td class="n">${fmtNum(f.gras)}</td>
-    <td class="n">${f.peso == null ? '' : fmtNum(f.peso, 1)}</td>
-    <td class="n">${f.ejercicio || ''}</td>
-    <td class="nota">${escaparHTML(f.nota)}</td>
-  </tr>`).join('');
-
-  return `<!DOCTYPE html>
-<html lang="es"><head><meta charset="utf-8">
-<title>Déficit — ${escaparHTML(nombreMes)}</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font: 13px/1.5 "Segoe UI", system-ui, sans-serif; color: #1a2029; margin: 0; padding: 28px; background: #fff; }
-  h1 { font-size: 22px; margin: 0 0 2px; }
-  .sub { color: #667; margin: 0 0 20px; font-size: 13px; }
-  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .5px; color: #667; margin: 24px 0 10px; }
-  .tarjetas { display: flex; flex-wrap: wrap; gap: 10px; }
-  .t { border: 1px solid #dde; border-radius: 10px; padding: 10px 14px; min-width: 140px; }
-  .t span { display: block; color: #667; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
-  .t b { display: block; font-size: 20px; margin-top: 2px; }
-  .t small { color: #778; }
-  ul.reparto { list-style: none; padding: 0; margin: 0; display: flex; gap: 10px; flex-wrap: wrap; }
-  ul.reparto li { border: 1px solid #dde; border-radius: 10px; padding: 8px 12px; }
-  ul.reparto b { display: block; font-size: 17px; }
-  ul.reparto small { color: #778; }
-  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-  th, td { padding: 5px 7px; border-bottom: 1px solid #eef; text-align: left; }
-  th { color: #667; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
-  td.n { text-align: right; font-variant-numeric: tabular-nums; }
-  td.alto { color: #b34; }
-  td.bajo { color: #2a7; }
-  td.nota { color: #667; font-size: 12px; max-width: 260px; }
-  footer { margin-top: 24px; color: #889; font-size: 11px; }
-  @media print { body { padding: 0; } .t, ul.reparto li { break-inside: avoid; } }
-</style></head>
-<body>
-  <h1>Déficit — ${escaparHTML(nombreMes)}</h1>
-  <p class="sub">Resumen del mes generado desde la app.</p>
-
-  <div class="tarjetas">${tarjetas}</div>
-
-  ${reparto}
-
-  <h2>Día por día</h2>
-  <table>
-    <thead><tr>
-      <th>Día</th><th class="n">kcal</th><th class="n">vs obj.</th>
-      <th class="n">Prot</th><th class="n">Carb</th><th class="n">Gras</th>
-      <th class="n">Peso</th><th class="n">Ejerc.</th><th>Nota</th>
-    </tr></thead>
-    <tbody>${filas}</tbody>
-  </table>
-
-  <footer>Los valores de las comidas analizadas por foto son estimaciones.</footer>
-</body></html>`;
-}
-
 /* ---------------- formato ---------------- */
 
 /** Números con separador de miles y coma decimal, como se escriben en Argentina. */
@@ -639,361 +671,6 @@ function fmtDelta(valor, decimales = 0, unidad = '') {
 
 function fmtPeso(kg) {
   return `${fmtNum(kg, 1)} kg`;
-}
-
-/* ---------------- análisis de la serie ---------------- */
-
-/**
- * Media móvil hacia atrás. El peso diario tiene mucho ruido (sal, agua, digestión):
- * la media de 7 días es lo que muestra la tendencia real.
- */
-function mediaMovil(serie, ventana = 7) {
-  return (serie || []).map((punto, i) => {
-    const desde = Math.max(0, i - ventana + 1);
-    const trozo = serie.slice(desde, i + 1);
-    const suma = trozo.reduce((a, p) => a + p.kg, 0);
-    return { f: punto.f, kg: +(suma / trozo.length).toFixed(2), muestras: trozo.length };
-  });
-}
-
-/**
- * Deja la serie en un largo manejable para dibujar.
- * Con 400 puntos en 320 px de ancho no se ve una curva sino una mancha, y
- * encima cuesta: se toma una muestra pareja y siempre se conserva el último.
- */
-function recortarSerie(serie, maximo = 120) {
-  const lista = serie || [];
-  if (lista.length <= maximo) return lista;
-
-  const paso = lista.length / maximo;
-  const salida = [];
-  for (let i = 0; i < maximo; i++) salida.push(lista[Math.floor(i * paso)]);
-
-  const ultimo = lista.at(-1);
-  if (salida.at(-1).f !== ultimo.f) salida[salida.length - 1] = ultimo;
-  return salida;
-}
-
-/** Días consecutivos con comidas cargadas, contando hacia atrás desde hoy. */
-function rachaDias(dias, hoy = hoyISO()) {
-  let racha = 0;
-  let f = hoy;
-
-  // el día de hoy todavía puede estar vacío sin cortar la racha
-  if (!(dias[f]?.comidas || []).length) f = sumarDias(f, -1);
-
-  while ((dias[f]?.comidas || []).length) {
-    racha++;
-    f = sumarDias(f, -1);
-  }
-  return racha;
-}
-
-/** Porcentaje recorrido entre el peso inicial y la meta. */
-function progresoPeso(inicial, actual, meta) {
-  if (inicial == null || actual == null || meta == null) return null;
-  const total = inicial - meta;
-  if (Math.abs(total) < 0.05) return actual <= meta ? 100 : 0;
-
-  const hecho = inicial - actual;
-  const pct = Math.round((hecho / total) * 100);
-  return Math.max(0, Math.min(100, pct));
-}
-
-/** Balance de los últimos N días: cuánto se comió contra cuánto se gastó. */
-function balanceSemanal(dias, tdee, hasta = hoyISO(), cantidad = 7) {
-  let consumido = 0, gastado = 0, conDatos = 0;
-
-  for (let i = 0; i < cantidad; i++) {
-    const f = sumarDias(hasta, -i);
-    const d = dias[f];
-    if (!d || !(d.comidas || []).length) continue;
-
-    conDatos++;
-    consumido += sumarComidas(d.comidas).kcal;
-    gastado += (Number(tdee) || 0) + (Number(d.ejercicio) || 0);
-  }
-
-  const balance = consumido - gastado;
-  return {
-    dias: conDatos,
-    consumido,
-    gastado,
-    balance,                                  // negativo = déficit
-    kg: +(balance / 7700).toFixed(2),
-    promedio: conDatos ? Math.round(consumido / conDatos) : 0
-  };
-}
-
-/**
- * TDEE real estimado a partir de lo que pasó, no de una fórmula:
- * gasto = consumo promedio + (peso perdido × 7700 / días).
- * Necesita al menos 10 días con comidas y dos pesos separados.
- */
-function tdeeAdaptativo(dias, minDias = 10) {
-  const fechas = Object.keys(dias).sort();
-
-  const pesos = fechas.filter(f => typeof dias[f].peso === 'number');
-  if (pesos.length < 2) return null;
-
-  const primero = pesos[0], ultimo = pesos.at(-1);
-  const lapso = diasEntre(primero, ultimo);
-  if (lapso < minDias) return null;
-
-  // solo cuentan los días del tramo que tienen comidas cargadas
-  const conComidas = fechas.filter(f => f >= primero && f <= ultimo && (dias[f].comidas || []).length);
-  if (conComidas.length < minDias) return null;
-
-  // sin cobertura suficiente el promedio miente: la mitad de los días sin cargar
-  const cobertura = conComidas.length / (lapso + 1);
-  if (cobertura < 0.6) return null;
-
-  const consumoTotal = conComidas.reduce((a, f) => a + sumarComidas(dias[f].comidas).kcal, 0);
-  const consumoPromedio = consumoTotal / conComidas.length;
-  const deltaPeso = dias[primero].peso - dias[ultimo].peso;   // positivo = bajó
-
-  const tdee = Math.round(consumoPromedio + (deltaPeso * 7700) / lapso);
-
-  return {
-    tdee,
-    dias: lapso,
-    diasCargados: conComidas.length,
-    cobertura: +cobertura.toFixed(2),
-    consumoPromedio: Math.round(consumoPromedio),
-    deltaPeso: +deltaPeso.toFixed(2)
-  };
-}
-
-/* ---------------- lectura de los datos ---------------- */
-
-/**
- * Pendiente por día de una serie de pesos, por mínimos cuadrados.
- * Usa todos los puntos: tomar solo el primero y el último deja la tendencia
- * a merced de dos días sueltos, que en el peso son pura retención de agua.
- */
-function pendienteLineal(serie) {
-  const n = (serie || []).length;
-  if (n < 2) return 0;
-
-  const base = serie[0].f;
-  const xs = serie.map(p => diasEntre(base, p.f));
-  const ys = serie.map(p => p.kg);
-
-  const mediaX = xs.reduce((a, x) => a + x, 0) / n;
-  const mediaY = ys.reduce((a, y) => a + y, 0) / n;
-
-  let arriba = 0, abajo = 0;
-  for (let i = 0; i < n; i++) {
-    arriba += (xs[i] - mediaX) * (ys[i] - mediaY);
-    abajo += (xs[i] - mediaX) ** 2;
-  }
-
-  return abajo === 0 ? 0 : arriba / abajo;
-}
-
-/**
- * Proyección de peso según la tendencia de toda la serie.
- * Devuelve null si no hay datos suficientes para decir algo serio.
- */
-function proyectarPeso(dias, semanas = 4, hoy = hoyISO()) {
-  const serie = Object.keys(dias || {})
-    .filter(f => typeof dias[f].peso === 'number')
-    .sort()
-    .map(f => ({ f, kg: dias[f].peso }));
-
-  if (serie.length < 4) return null;
-
-  const lapso = diasEntre(serie[0].f, serie.at(-1).f);
-  if (lapso < 7) return null;
-
-  const kgPorDia = pendienteLineal(serie);
-
-  // el punto de partida sí se suaviza: es el valor de hoy, no la tendencia
-  const media = mediaMovil(serie, 7);
-  const actual = media.at(-1).kg;
-
-  return {
-    actual: +actual.toFixed(1),
-    proyectado: +(actual + kgPorDia * semanas * 7).toFixed(1),
-    kgPorSemana: +(kgPorDia * 7).toFixed(2),
-    semanas,
-    fecha: sumarDias(hoy, semanas * 7),
-    diasDeDatos: lapso
-  };
-}
-
-/** Cuántos días cerraron dentro del objetivo, sobre los que tienen comidas. */
-function adherencia(dias, objetivo, desde = null, hasta = hoyISO()) {
-  if (!objetivo) return null;
-
-  const fechas = Object.keys(dias || {})
-    .filter(f => f <= hasta && (!desde || f >= desde))
-    .filter(f => (dias[f].comidas || []).length);
-
-  if (!fechas.length) return null;
-
-  let dentro = 0, excedidos = 0, muyPorDebajo = 0;
-
-  for (const f of fechas) {
-    const kcal = sumarComidas(dias[f].comidas).kcal;
-    const meta = objetivo + (Number(dias[f].ejercicio) || 0);
-
-    if (kcal > meta) excedidos++;
-    else if (kcal < meta * 0.7) muyPorDebajo++;   // comer de menos también es un problema
-    else dentro++;
-  }
-
-  return {
-    dias: fechas.length,
-    dentro,
-    excedidos,
-    muyPorDebajo,
-    pct: Math.round((dentro / fechas.length) * 100)
-  };
-}
-
-/** Reparto de calorías por momento del día: dónde se te va el déficit. */
-function repartoPorMomento(dias, desde = null, hasta = hoyISO()) {
-  const acumulado = {};
-  for (const m of MOMENTOS) acumulado[m.id] = { kcal: 0, veces: 0 };
-
-  let total = 0;
-
-  for (const f of Object.keys(dias || {})) {
-    if (f > hasta || (desde && f < desde)) continue;
-
-    for (const c of dias[f].comidas || []) {
-      const id = c.momento || momentoDe(c.ts);
-      if (!acumulado[id]) acumulado[id] = { kcal: 0, veces: 0 };
-      acumulado[id].kcal += Number(c.kcal) || 0;
-      acumulado[id].veces++;
-      total += Number(c.kcal) || 0;
-    }
-  }
-
-  if (!total) return [];
-
-  return MOMENTOS
-    .map(m => ({
-      id: m.id,
-      nombre: m.nombre,
-      icono: m.icono,
-      kcal: Math.round(acumulado[m.id].kcal),
-      veces: acumulado[m.id].veces,
-      pct: Math.round((acumulado[m.id].kcal / total) * 100)
-    }))
-    .filter(m => m.veces > 0);
-}
-
-/** Lunes a viernes no cambian en plural; sábado y domingo sí. */
-function pluralDia(nombre) {
-  const n = String(nombre || '').toLowerCase();
-  return n.endsWith('s') ? n : n + 's';
-}
-
-/** Promedio de calorías por día de la semana: los findes suelen ser otra historia. */
-function patronSemanal(dias, hasta = hoyISO(), cantidad = 56) {
-  const NOMBRES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const acumulado = NOMBRES.map(() => ({ kcal: 0, dias: 0 }));
-
-  for (let i = 0; i < cantidad; i++) {
-    const f = sumarDias(hasta, -i);
-    const d = (dias || {})[f];
-    if (!d || !(d.comidas || []).length) continue;
-
-    const [y, m, dd] = f.split('-').map(Number);
-    const diaSemana = new Date(y, m - 1, dd).getDay();
-    acumulado[diaSemana].kcal += sumarComidas(d.comidas).kcal;
-    acumulado[diaSemana].dias++;
-  }
-
-  const conDatos = acumulado
-    .map((a, i) => ({
-      dia: i,
-      nombre: NOMBRES[i],
-      promedio: a.dias ? Math.round(a.kcal / a.dias) : null,
-      dias: a.dias
-    }))
-    .filter(x => x.dias > 0);
-
-  if (conDatos.length < 2) return null;
-
-  const ordenados = [...conDatos].sort((a, b) => b.promedio - a.promedio);
-  return {
-    dias: conDatos,
-    peor: ordenados[0],
-    mejor: ordenados.at(-1)
-  };
-}
-
-/** Esta semana contra la anterior: promedio, días cargados y peso. */
-function compararSemanas(dias, hasta = hoyISO()) {
-  const resumen = (desde, fin) => {
-    const fechas = [];
-    for (let f = desde; f <= fin; f = sumarDias(f, 1)) fechas.push(f);
-
-    const conDatos = fechas.filter(f => (dias[f]?.comidas || []).length);
-    const kcal = conDatos.reduce((a, f) => a + sumarComidas(dias[f].comidas).kcal, 0);
-    const pesos = fechas.filter(f => typeof dias[f]?.peso === 'number').map(f => dias[f].peso);
-
-    return {
-      desde, hasta: fin,
-      dias: conDatos.length,
-      promedio: conDatos.length ? Math.round(kcal / conDatos.length) : 0,
-      total: kcal,
-      peso: pesos.length ? +(pesos.reduce((a, p) => a + p, 0) / pesos.length).toFixed(1) : null
-    };
-  };
-
-  const estaDesde = sumarDias(hasta, -6);
-  const anteriorDesde = sumarDias(hasta, -13);
-
-  const actual = resumen(estaDesde, hasta);
-  const anterior = resumen(anteriorDesde, sumarDias(hasta, -7));
-
-  if (!actual.dias || !anterior.dias) return null;
-
-  return {
-    actual,
-    anterior,
-    deltaPromedio: actual.promedio - anterior.promedio,
-    deltaDias: actual.dias - anterior.dias,
-    deltaPeso: (actual.peso != null && anterior.peso != null)
-      ? +(actual.peso - anterior.peso).toFixed(1)
-      : null
-  };
-}
-
-/**
- * Avisa si la proteína viene corta. En déficit es lo primero que se descuida
- * y es justo lo que sostiene el músculo mientras bajás.
- */
-function alertaProteina(dias, objetivoProt, hasta = hoyISO(), cantidad = 3, umbral = 0.8) {
-  if (!objetivoProt) return null;
-
-  const revisados = [];
-
-  for (let i = 0; i < cantidad; i++) {
-    const f = sumarDias(hasta, -i);
-    const d = (dias || {})[f];
-    if (!d || !(d.comidas || []).length) continue;
-    revisados.push({ fecha: f, prot: sumarComidas(d.comidas).prot });
-  }
-
-  if (revisados.length < cantidad) return null;
-
-  const cortos = revisados.filter(r => r.prot < objetivoProt * umbral);
-  if (cortos.length < cantidad) return null;
-
-  const promedio = Math.round(revisados.reduce((a, r) => a + r.prot, 0) / revisados.length);
-
-  return {
-    dias: revisados.length,
-    promedio,
-    objetivo: objetivoProt,
-    falta: Math.round(objetivoProt - promedio),
-    pct: Math.round((promedio / objetivoProt) * 100)
-  };
 }
 
 /* ---------------- porciones ---------------- */
@@ -1123,54 +800,6 @@ function resumenAnalisis(historial) {
     ahorrados: lista.length - pagados.length,
     costo: +pagados.reduce((a, x) => a + x.costo, 0).toFixed(5),
     tokens: pagados.reduce((a, x) => a + x.tokens, 0)
-  };
-}
-
-/* ---------------- búsqueda ---------------- */
-
-/**
- * Busca un texto en títulos, alimentos y notas. Devuelve las comidas que
- * coinciden, de la más reciente a la más vieja, con el motivo del match.
- */
-function buscarEnHistorial(dias, texto, limite = 40) {
-  const q = normalizar(texto);
-  if (q.length < 2) return [];
-
-  const salida = [];
-
-  for (const f of Object.keys(dias || {}).sort().reverse()) {
-    const d = dias[f];
-    const notaCoincide = normalizar(d.nota).includes(q);
-
-    for (const c of d.comidas || []) {
-      const enTitulo = normalizar(c.titulo).includes(q);
-      const alimentos = (c.items || []).filter(i => normalizar(i.nombre).includes(q));
-
-      if (!enTitulo && !alimentos.length && !notaCoincide) continue;
-
-      salida.push({
-        fecha: f,
-        comida: c,
-        donde: enTitulo ? 'titulo' : (alimentos.length ? 'alimento' : 'nota'),
-        alimentos: alimentos.map(i => i.nombre)
-      });
-
-      if (salida.length >= limite) return salida;
-    }
-  }
-
-  return salida;
-}
-
-/** Cuántas veces y cuántas calorías representa lo buscado. */
-function resumenBusqueda(resultados) {
-  const kcal = resultados.reduce((a, r) => a + (Number(r.comida.kcal) || 0), 0);
-  const dias = new Set(resultados.map(r => r.fecha)).size;
-  return {
-    veces: resultados.length,
-    dias,
-    kcal,
-    promedio: resultados.length ? Math.round(kcal / resultados.length) : 0
   };
 }
 
@@ -1546,18 +1175,83 @@ function calcularPlan(p) {
   };
 }
 
+/* ---------------- sesgo aprendido de las correcciones ---------------- */
+
+/**
+ * Cada vez que se corrige a mano lo que estimó la IA queda una medición gratis
+ * de cuánto se equivoca. Es la calibración que se arma sola, sin cargar nada.
+ */
+function registrarCorreccion(lista, estimado, corregido, ts = Date.now()) {
+  const est = Math.round(Number(estimado) || 0);
+  const cor = Math.round(Number(corregido) || 0);
+  if (est <= 0 || cor <= 0) return lista || [];
+
+  const pct = +(((est - cor) / cor) * 100).toFixed(1);
+  if (Math.abs(pct) < CORRECCION_MINIMA) return lista || [];
+
+  return [{ ts, estimado: est, corregido: cor, pct }, ...(lista || [])].slice(0, MAX_CORRECCIONES);
+}
+
+/**
+ * El sesgo que se desprende de las correcciones.
+ * Se pide un mínimo de muestras: con dos correcciones no hay patrón, hay ruido.
+ */
+function sesgoAprendido(lista, minimo = 5) {
+  const datos = lista || [];
+  if (datos.length < minimo) return null;
+
+  const sesgo = +(datos.reduce((a, c) => a + c.pct, 0) / datos.length).toFixed(1);
+  const error = +(datos.reduce((a, c) => a + Math.abs(c.pct), 0) / datos.length).toFixed(1);
+
+  // solo es un patrón si la mayoría se equivoca para el mismo lado
+  const mismoLado = datos.filter(c => Math.sign(c.pct) === Math.sign(sesgo)).length;
+  const consistente = mismoLado / datos.length >= 0.7;
+
+  return {
+    n: datos.length,
+    sesgo,
+    error,
+    consistente,
+    avisar: consistente && Math.abs(sesgo) >= 15,
+    lado: sesgo > 0 ? 'de más' : 'de menos'
+  };
+}
+
+/** Suma los alimentos de una comida: sirve para el total antes de guardarla. */
+function sumarItems(items) {
+  const t = { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0, fibra: 0, azucar: 0, sodio: 0 };
+  for (const i of items || []) {
+    t.calorias += Number(i.calorias) || 0;
+    t.proteinas += Number(i.proteinas) || 0;
+    t.carbohidratos += Number(i.carbohidratos) || 0;
+    t.grasas += Number(i.grasas) || 0;
+    t.fibra += Number(i.fibra) || 0;
+    t.azucar += Number(i.azucar) || 0;
+    t.sodio += Number(i.sodio) || 0;
+  }
+  return {
+    calorias: Math.round(t.calorias), proteinas: Math.round(t.proteinas),
+    carbohidratos: Math.round(t.carbohidratos), grasas: Math.round(t.grasas),
+    fibra: Math.round(t.fibra), azucar: Math.round(t.azucar), sodio: Math.round(t.sodio)
+  };
+}
+
 /** Suma calorías y macros de una lista de comidas. */
 function sumarComidas(comidas) {
-  const t = { kcal: 0, prot: 0, carb: 0, gras: 0 };
+  const t = { kcal: 0, prot: 0, carb: 0, gras: 0, fibra: 0, azucar: 0, sodio: 0 };
   for (const c of comidas || []) {
     t.kcal += Number(c.kcal) || 0;
     t.prot += Number(c.prot) || 0;
     t.carb += Number(c.carb) || 0;
     t.gras += Number(c.gras) || 0;
+    t.fibra += Number(c.fibra) || 0;
+    t.azucar += Number(c.azucar) || 0;
+    t.sodio += Number(c.sodio) || 0;
   }
   return {
     kcal: Math.round(t.kcal), prot: Math.round(t.prot),
-    carb: Math.round(t.carb), gras: Math.round(t.gras)
+    carb: Math.round(t.carb), gras: Math.round(t.gras),
+    fibra: Math.round(t.fibra), azucar: Math.round(t.azucar), sodio: Math.round(t.sodio)
   };
 }
 
@@ -1569,8 +1263,11 @@ if (typeof window !== 'undefined') {
     registrarFrecuentes, buscarFrecuentes, alternarFavorito, esFavorito, favoritos,
     MAX_CACHE, huellaImagen, guardarEnCache, leerDeCache,
     MAX_HISTORIAL_ANALISIS, registrarAnalisis, resumenAnalisis,
+    MAX_REFERENCIAS, agregarReferencia, borrarReferencia, anotarEstimacion,
+    medirCalibracion, veredictoCalibracion, textoSesgo,
+    MAX_CORRECCIONES, registrarCorreccion, sesgoAprendido,
     MAX_ERRORES, registrarError, armarDiagnostico, diagnosticoATexto,
-    buscarEnHistorial, resumenBusqueda,
+
     comidasCopiadas, diasConComidas,
     MAX_RECETAS, guardarReceta, borrarReceta, aplicarReceta, recetasOrdenadas,
     msHastaMedianoche,
@@ -1579,12 +1276,14 @@ if (typeof window !== 'undefined') {
     horaDeMomento, tsParaFecha, tsEnMomento,
     ML_POR_VASO, objetivoAgua, objetivoEfectivo,
     FACTORES, escalarItem, escalarPorcion,
-    mediaMovil, recortarSerie, rachaDias, progresoPeso, balanceSemanal, tdeeAdaptativo,
-    pendienteLineal, proyectarPeso, adherencia, pluralDia, repartoPorMomento, patronSemanal, compararSemanas, alertaProteina,
+
+    NUTRIENTES, nutrientesConDatos, objetivosNutrientes,
     LIMITES, validarPerfil, fmtNum, fmtKcal, fmtDelta, fmtPeso,
-    CUOTA_BYTES, usoAlmacenamiento, pesoDeThumbs, kcalDeMacros, revisarDatos, arreglarDatos, armarCSV, celdaCSV,
-    escaparHTML, datosDelMes, armarInforme,
+    CUOTA_BYTES, usoAlmacenamiento, pesoDeThumbs,
+    DIAS_SIN_RESPALDO_AVISO, diasSinRespaldo, estadoRespaldo,
+    TOPE_DEFECTO, gastoDelMes, estadoGasto, textoTope, armarCSV, celdaCSV,
+
     hoyISO, sumarDias, diasEntre, etiquetaFecha,
-    calcularPlan, sumarComidas
+    calcularPlan, sumarComidas, sumarItems
   };
 }

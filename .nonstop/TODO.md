@@ -1,80 +1,65 @@
-# TODO — 30 mejoras a Déficit (ciclo 2)
+# TODO — lo que le faltaba a Déficit (ciclo 3)
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-## Menos fricción en el uso diario
+## Partir app.js (primero: todo lo demás va a tocar esos archivos)
 
-- [x] 1. Favoritos: marcar alimentos y cargarlos desde Hoy en un toque
-      · verif: test del toggle y del orden; en la app, un favorito carga la comida entera
-- [x] 2. Recetas: guardar un conjunto de alimentos como plantilla con nombre
-      · verif: test de crear/aplicar receta; aplicar una deja los mismos items y kcal
-- [x] 3. Copiar un día entero a otro
-      · verif: copiar ayer a hoy deja las mismas comidas y no toca el original
-- [x] 4. Suma rápida: cargar kcal sueltas sin nombre ni desglose
-      · verif: sumar 150 kcal por DOM y ver el anillo moverse
-- [x] 5. Mover una comida a otro momento o a otro día
-      · verif: mover del almuerzo a la cena y de hoy a ayer, con los totales siguiendo
-- [x] 6. Nota del día, con indicador cuando hay algo escrito
-      · verif: escribir, recargar y comprobar que persiste
-- [x] 7. Buscador en el historial por alimento o comida
-      · verif: test de la función de búsqueda; buscar "pizza" lista los días que la tienen
-- [x] 8. Ver la foto original en grande al tocar la miniatura
-      · verif: comprobar que abre el visor y que se cierra
+- [x] 1. Separar el render en `ui/` por pantalla, sin cambiar comportamiento
+      · verif: los 319 tests siguen en verde y la app arranca sin errores de consola
+- [x] 2. Un chequeo automático de tamaño de archivos, para que no vuelva a pasar
+      · verif: el script marca en rojo cualquier archivo que pase el límite
 
-## Gastar menos API
+## Probar que la IA estima bien
 
-- [x] 9. Cache de análisis por huella de la imagen: la misma foto no se paga dos veces
-      · verif: test que analiza dos veces y comprueba una sola llamada
-- [x] 10. Respuesta en streaming, con el texto apareciendo mientras llega
-      · verif: test con un stream SSE mockeado que reconstruye el JSON final
-- [x] 11. Varias fotos en un mismo análisis (plato + bebida + postre)
-      · verif: test que arma el body con 3 imágenes en un solo mensaje
-- [x] 12. Selector de precisión por análisis (rápido / preciso) que cambia effort y modelo
-      · verif: test que comprueba el body de cada modo
-- [x] 13. Sugerencia de qué comer con las calorías que quedan del día
-      · verif: test del prompt con el margen y los macros restantes
-- [x] 14. Registro de análisis: qué se pidió, qué costó y con qué modelo
-      · verif: test del registro acotado a N entradas; visible en Ajustes
+- [x] 3. Banco de calibración: fotos con su valor real, corrida y error promedio
+      · verif: correrlo con respuestas simuladas devuelve el error contra los valores reales
+- [x] 4. Guardar cada corrección como medición del sesgo del modelo
+      · verif: test que registra 3 correcciones y calcula el sesgo
+- [x] 5. Avisar si el modelo viene subestimando o sobrestimando sistemáticamente
+      · verif: test con sesgo del 20% que dispara el aviso, y con 3% que no
+- [x] 6. Documentar en el README cómo correr la calibración en dos minutos
+      · verif: seguir los pasos escritos, sin conocimiento previo, llega al resultado
 
-## Que los datos digan algo
+## Que los datos no se pierdan
 
-- [x] 15. Proyección de peso a 4 semanas según la tendencia real
-      · verif: test con serie conocida; el número coincide con el cálculo a mano
-- [x] 16. Adherencia: porcentaje de días dentro del objetivo
-      · verif: test con 10 días, 7 dentro → 70%
-- [x] 17. Dónde se te va el déficit: reparto de calorías por momento del día
-      · verif: test del reparto con comidas conocidas
-- [x] 18. Patrón por día de la semana (los findes se comen distinto)
-      · verif: test que promedia por día de semana con una serie armada
-- [x] 19. Comparar esta semana contra la anterior
-      · verif: test con dos semanas distintas y el delta correcto
-- [x] 20. Aviso de proteína corta, que es lo que más se descuida en déficit
-      · verif: test del umbral (menos del 80% del objetivo, 3 días seguidos)
-- [x] 21. Informe imprimible del mes, en una página
-      · verif: generar el HTML y comprobar secciones y totales
+- [x] 7. Cliente de Supabase por REST, con fetch inyectable
+      · verif: test de las cuatro operaciones contra un servidor simulado
+- [x] 8. Identificador de dispositivo y llave de sincronización
+      · verif: test de generación, formato y persistencia
+- [x] 9. Subir los cambios locales
+      · verif: test que sube 3 comidas y comprueba el cuerpo del request
+- [x] 10. Bajar los cambios remotos y fusionarlos
+      · verif: test que baja comidas nuevas y las suma sin duplicar
+- [x] 11. Resolver conflictos: gana la modificación más reciente
+      · verif: test con la misma comida editada en dos dispositivos
+- [x] 12. Comidas borradas que no reviven al sincronizar
+      · verif: test que borra en un dispositivo y sincroniza en el otro
+- [x] 13. Pantalla de sincronización: estado, último sync, copiar la llave
+      · verif: por DOM, con el cliente simulado, muestra el resultado real
+- [x] 14. El SQL de las tablas y las políticas, listo para pegar en Supabase
+      · verif: el archivo existe y describe todas las columnas que usa el cliente
+- [x] 15. Respaldo automático a archivo y almacenamiento persistente
+      · verif: pedir persistencia y comprobar el aviso de días sin respaldar
 
-## Plataforma
+## Código de barras
 
-- [x] 22. Tema claro: respeta el sistema y se puede forzar desde Ajustes
-      · verif: cambiar el tema y medir contraste de los textos principales
-- [x] 23. Recordatorios para cargar las comidas, con permiso pedido a demanda
-      · verif: comprobar el agendado y que no pide permiso solo al abrir
-- [x] 24. Cambio de día a medianoche con la app abierta
-      · verif: simular el cruce de medianoche y comprobar que la vista pasa al día nuevo
-- [x] 25. Atajos de teclado en la compu (nueva comida, tabs, cerrar modal)
-      · verif: disparar los eventos de teclado y comprobar el efecto
-- [x] 26. Confirmar antes de descartar un análisis sin guardar
-      · verif: cerrar con datos cargados pide confirmación; sin datos, no
-- [x] 27. Que no se ponga lenta con años de datos
-      · verif: cargar 400 días y medir que el render de Historial baje de 150 ms
+- [x] 16. Cliente de Open Food Facts con cache local
+      · verif: test con respuestas reales guardadas; el segundo pedido no usa red
+- [x] 17. Escáner de código de barras con la cámara, y alternativa a mano
+      · verif: comprobar el flujo con un código tipeado cuando no hay cámara
+- [x] 18. Del producto a la comida: porciones, cantidad y guardado
+      · verif: escanear (simulado) y guardar deja la comida con sus macros
 
-## Robustez
+## Que no se dispare el gasto
 
-- [x] 28. Revisar datos incoherentes (kcal que no cierran con los macros) y ofrecer arreglo
-      · verif: test de detección con casos límite; la app lista los problemas
-- [x] 29. Importar fusionando en vez de reemplazar, sin duplicar comidas
-      · verif: test de merge con solapamiento parcial
-- [x] 30. Pantalla de diagnóstico: versión, service worker, cuota y últimos errores
-      · verif: provocar un error y comprobar que queda registrado y visible
-- [x] 31. El service worker limpia los caches viejos al instalar, no solo al activar — detectado en el camino: quedaron 34 caches acumulados porque cada version nueva espera confirmacion
-      · verif: con varios caches viejos sembrados, instalar deja solo el actual
+- [x] 19. Tope mensual de gasto que corta de verdad
+      · verif: test que llega al límite y comprueba que el análisis se rechaza
+- [x] 20. Aviso al acercarse y gasto del mes a la vista
+      · verif: al 80% aparece el aviso; al 100%, el corte
+
+## Nutrientes que faltaban
+
+- [x] 21. Fibra, azúcar y sodio: modelo, schema del análisis y migración
+      · verif: test de migración y del schema; los datos viejos quedan en cero
+- [x] 22. Mostrarlos en el día y en el informe, solo si hay datos
+      · verif: con datos aparecen, sin datos no ensucian la pantalla
