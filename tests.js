@@ -3883,6 +3883,132 @@ test('productoAItem trae fibra, azúcar y sodio', () => {
 });
 
 /* ============================================================
+   Proxy: de dónde sale el acceso a la API
+   ============================================================ */
+
+const SIN_PROXY = { proxyUrl: '' };
+const CON_PROXY = { proxyUrl: 'https://deficit-proxy.workers.dev' };
+
+test('accesoApi usa la clave propia cuando está cargada', () => {
+  const a = accesoApi({ apiKey: 'sk-mia' }, CON_PROXY);
+  esperar(a.apiKey, 'sk-mia');
+  esperar(a.proxyUrl, '', 'con clave propia no se pasa por el proxy');
+});
+
+test('accesoApi cae al proxy cuando no hay clave', () => {
+  const a = accesoApi({ apiKey: '' }, CON_PROXY);
+  esperar(a.apiKey, '');
+  esperar(a.proxyUrl, 'https://deficit-proxy.workers.dev');
+});
+
+test('accesoApi ignora una clave que es solo espacios', () => {
+  const a = accesoApi({ apiKey: '   ' }, CON_PROXY);
+  esperar(a.proxyUrl, 'https://deficit-proxy.workers.dev', 'espacios no son una clave');
+});
+
+test('hayAcceso es falso solo si no hay ni clave ni proxy', () => {
+  esperarQue(hayAcceso({ apiKey: 'k' }, SIN_PROXY), 'con clave hay acceso');
+  esperarQue(hayAcceso({ apiKey: '' }, CON_PROXY), 'con proxy hay acceso');
+  esperarQue(!hayAcceso({ apiKey: '' }, SIN_PROXY), 'sin nada no hay acceso');
+});
+
+testAsync('por el proxy no viaja la clave', async () => {
+  let capturado = null;
+  const fetchFn = async (url, opts) => { capturado = { url, opts }; return respuestaOk(COMIDA_OK); };
+
+  await analizarImagen({ fetchFn, proxyUrl: 'https://mi-proxy.dev', imagen: 'BASE64' });
+
+  esperar(capturado.url, 'https://mi-proxy.dev', 'tiene que pegarle al proxy, no a la API');
+  esperar(capturado.opts.headers['x-api-key'], undefined, 'la clave no puede salir del navegador');
+  esperar(capturado.opts.headers['anthropic-dangerous-direct-browser-access'], undefined);
+  esperar(capturado.opts.headers['anthropic-version'], '2023-06-01', 'la versión sí viaja');
+  esperar(JSON.parse(capturado.opts.body).messages[0].content[0].source.data, 'BASE64');
+});
+
+testAsync('sin proxy sigue yendo derecho a la API con la clave', async () => {
+  let capturado = null;
+  const fetchFn = async (url, opts) => { capturado = { url, opts }; return respuestaOk(COMIDA_OK); };
+
+  await analizarImagen({ fetchFn, apiKey: 'sk-mia', imagen: 'x' });
+
+  esperar(capturado.url, 'https://api.anthropic.com/v1/messages');
+  esperar(capturado.opts.headers['x-api-key'], 'sk-mia');
+});
+
+testAsync('analizarImagen no exige clave si hay proxy', async () => {
+  const fetchFn = async () => respuestaOk(COMIDA_OK);
+  const r = await analizarImagen({ fetchFn, apiKey: '', proxyUrl: 'https://mi-proxy.dev', imagen: 'x' });
+  esperarQue(r.items.length > 0, 'tiene que analizar igual, sin clave local');
+});
+
+testAsync('sin clave y sin proxy avisa que falta la key', async () => {
+  const fetchFn = async () => { throw new Error('no debería llamar'); };
+  try {
+    await analizarImagen({ fetchFn, apiKey: '', imagen: 'x' });
+    esperarQue(false, 'tendría que haber fallado');
+  } catch (e) {
+    esperarQue(/API key/.test(e.message), 'el mensaje tiene que hablar de la key: ' + e.message);
+  }
+});
+
+testAsync('sugerirComida también sabe usar el proxy', async () => {
+  let url = null;
+  const fetchFn = async (u) => {
+    url = u;
+    return respuestaOk({ opciones: [{
+      titulo: 'Ensalada de pollo',
+      porque: 'Entra en lo que te queda y suma proteína',
+      items: [{ nombre: 'Pollo', porcion: '150 g', calorias: 250, proteinas: 40, carbohidratos: 0, grasas: 9 }]
+    }] });
+  };
+
+  await sugerirComida({
+    fetchFn, apiKey: '', proxyUrl: 'https://mi-proxy.dev',
+    margen: { kcal: 600, prot: 40 }
+  });
+
+  esperar(url, 'https://mi-proxy.dev');
+});
+
+testAsync('los reintentos del proxy no filtran la clave', async () => {
+  const urls = [];
+  const headers = [];
+  let llamadas = 0;
+  const fetchFn = async (u, o) => {
+    urls.push(u); headers.push(o.headers); llamadas++;
+    return llamadas < 3 ? respuestaError(429, 'rate limit') : respuestaOk(COMIDA_OK);
+  };
+
+  await analizarImagen({ fetchFn, proxyUrl: 'https://mi-proxy.dev', imagen: 'x', dormir: async () => {} });
+
+  esperar(llamadas, 3, 'tiene que reintentar');
+  esperarQue(urls.every(u => u === 'https://mi-proxy.dev'), 'todos los intentos van al proxy');
+  esperarQue(headers.every(h => !h['x-api-key']), 'ningún reintento puede mandar la clave');
+});
+
+
+testAsync('con proxy, el 401 no manda a Ajustes', async () => {
+  const fetchFn = async () => respuestaError(401, 'invalid key');
+  try {
+    await analizarImagen({ fetchFn, proxyUrl: 'https://mi-proxy.dev', imagen: 'x' });
+    esperarQue(false, 'tendría que haber fallado');
+  } catch (e) {
+    esperarQue(/Cloudflare/.test(e.message), 'tiene que apuntar al proxy: ' + e.message);
+    esperarQue(!/Ajustes/.test(e.message), 'mandar a Ajustes sería mentira: la clave no está ahí');
+  }
+});
+
+testAsync('sin proxy, el 401 sigue mandando a Ajustes', async () => {
+  const fetchFn = async () => respuestaError(401, 'invalid key');
+  try {
+    await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x' });
+    esperarQue(false, 'tendría que haber fallado');
+  } catch (e) {
+    esperarQue(/Ajustes/.test(e.message), 'ahí sí está la clave: ' + e.message);
+  }
+});
+
+/* ============================================================
    Resultado
    ============================================================ */
 

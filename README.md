@@ -57,6 +57,9 @@ La primera vez arranca un onboarding de 3 pasos: bienvenida, tus datos y la API 
 La key de Anthropic se saca de `console.anthropic.com` y queda solo en el
 `localStorage` de este navegador; se manda únicamente a `api.anthropic.com`.
 
+**Se puede evitar cargarla en cada dispositivo**: con el proxy desplegado (ver más abajo),
+la clave vive en el servidor y la app anda sin configurar nada, también en el celular.
+
 ## Qué hace
 
 **Registro**
@@ -134,10 +137,27 @@ más hasta el mes siguiente, aunque el registro manual y el código de barras si
 Modelo por defecto: **Opus 5**, con tres modos de precisión en Ajustes:
 *Rápido* (Haiku 4.5), *Normal* (esfuerzo medio) y *Preciso* (esfuerzo alto).
 
+## La clave en un solo lugar
+
+Cargar la clave dispositivo por dispositivo es molesto, y en el código no puede ir: el repo
+es público y GitHub Pages sirve todo tal cual. La salida es un **Worker de Cloudflare** que
+guarda la clave del lado servidor; la app le habla a él en vez de a `api.anthropic.com`.
+
+Se configura una sola vez y ni el celular, ni la compu, ni el repo tienen la clave.
+Los pasos están en [`proxy/README.md`](proxy/README.md) — son tres comandos.
+
+El Worker solo acepta pedidos desde los orígenes de la app, limita a 30 por minuto por IP y
+restringe los modelos, así que la URL suelta no le sirve de mucho a nadie. Aun así, el freno
+que de verdad acota el peor caso es el límite de gasto en la consola de Anthropic.
+
+Si el proxy no está configurado, cada dispositivo usa su propia clave desde Ajustes, como
+siempre. Y si cargás una clave estando el proxy activo, gana la tuya en ese dispositivo.
+
 ## Desarrollo
 
 | Archivo | Qué tiene |
 |---|---|
+| `config.js` | configuración pública de la app (la URL del proxy) — sin credenciales |
 | `core.js` | lógica pura: cálculo, fechas, estado, formato |
 | `analisis.js` | lectura de los datos: tendencias, patrones, búsqueda e informe |
 | `claude.js` | la API de Claude (el `fetch` se inyecta para poder testearlo) |
@@ -147,7 +167,8 @@ Modelo por defecto: **Opus 5**, con tres modos de precisión en Ajustes:
 | `ui/*.js` | una pantalla por archivo |
 | `arranque.js` | el arranque, que va último |
 | `supabase.sql` | las tablas, listas para pegar en Supabase |
-| `tests.js` + `tests.html` | 430 tests sin dependencias — abrir `/tests.html` |
+| `proxy/` | el Worker de Cloudflare que guarda la clave (`node proxy/test.mjs`) |
+| `tests.js` + `tests.html` | 442 tests sin dependencias — abrir `/tests.html` |
 | `sw.js` | service worker (network-first, cache como respaldo offline) |
 | `tools/gen_iconos.py` | regenera los íconos (`py -3 tools/gen_iconos.py`) |
 | `tools/version.py` | sube la versión de los assets (`py -3 tools/version.py`) |

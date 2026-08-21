@@ -121,7 +121,7 @@ $('refInput').onchange = async (e) => {
 
 $('btnCorrerCalib').onclick = async () => {
   if (topeAlcanzado()) return;
-  if (!state.cfg.apiKey) {
+  if (!hayAcceso(state.cfg)) {
     toast('Falta la API key', { texto: 'Cargarla', accion: () => irTab('ajustes') });
     return;
   }
@@ -147,7 +147,7 @@ $('btnCorrerCalib').onclick = async () => {
       // sin cache: la gracia es medir lo que devuelve el modelo hoy
       const resultado = await analizarImagen({
         fetchFn: (...a) => fetch(...a),
-        apiKey: state.cfg.apiKey,
+        ...accesoApi(state.cfg),
         modelo: state.cfg.modelo || MODELO_DEFAULT,
         precision: state.cfg.precision || 'normal',
         imagen: r.fotoGrande,

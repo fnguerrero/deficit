@@ -308,6 +308,7 @@ function renderAjustes() {
   renderPrecision();
   renderHistorialAnalisis();
   $('apiKey').value = state.cfg.apiKey || '';
+  renderEstadoAcceso();
   $('modelo').value = state.cfg.modelo || 'claude-opus-5';
   const nDias = Object.keys(state.dias).length;
   const nCom = Object.values(state.dias).reduce((a, d) => a + (d.comidas?.length || 0), 0);
@@ -620,3 +621,23 @@ $('btnReset').onclick = () => {
   save(); renderAll();
   toast('Datos borrados');
 };
+
+/**
+ * Explica por dónde sale el análisis. Sin esto, ver la app funcionando con el
+ * campo de clave vacío parece un error, cuando en realidad es lo esperado.
+ */
+function renderEstadoAcceso() {
+  const el = $('estadoAcceso');
+  if (!el) return;
+
+  const a = accesoApi(state.cfg);
+
+  if (a.proxyUrl) {
+    el.textContent = 'No hace falta cargar nada: los análisis salen por el proxy, que tiene la clave del lado servidor. ' +
+      'Si cargás una clave acá, se usa esa en este dispositivo.';
+  } else if (a.apiKey) {
+    el.textContent = 'Los análisis salen con esta clave, directo desde este navegador.';
+  } else {
+    el.textContent = 'Sin clave no se puede analizar por foto. El registro manual y el código de barras andan igual.';
+  }
+}

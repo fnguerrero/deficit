@@ -23,7 +23,7 @@ function margenDelDia() {
 
 $('btnSugerir').onclick = async () => {
   if (topeAlcanzado()) return;
-  if (!state.cfg.apiKey) {
+  if (!hayAcceso(state.cfg)) {
     toast('Falta la API key', { texto: 'Cargarla', accion: () => irTab('ajustes') });
     return;
   }
@@ -44,7 +44,7 @@ $('btnSugerir').onclick = async () => {
   try {
     const r = await sugerirComida({
       fetchFn: (...args) => fetch(...args),
-      apiKey: state.cfg.apiKey,
+      ...accesoApi(state.cfg),
       modelo: resolverPrecision(state.cfg.precision || 'normal', state.cfg.modelo || MODELO_DEFAULT).modelo,
       margen,
       momento: nombreMomento(momentoDe(Date.now())).toLowerCase(),
