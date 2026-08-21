@@ -390,6 +390,8 @@ function armarDiagnostico({ version, sw, cuota, state: st, online, pantalla, age
     tema: (st.cfg || {}).tema || 'auto',
     precision: (st.cfg || {}).precision || 'normal',
     apiKey: (st.cfg || {}).apiKey ? 'cargada' : 'sin cargar',
+    acceso: (st.cfg || {}).apiKey ? 'clave propia'
+      : ((typeof CONFIG_APP !== 'undefined' && CONFIG_APP.proxyUrl) ? 'proxy' : 'sin acceso'),
     errores: (st.errores || []).length,
     pantalla: pantalla || '—',
     agente: (agente || '').slice(0, 120)

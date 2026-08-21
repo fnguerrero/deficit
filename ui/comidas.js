@@ -75,7 +75,7 @@ async function analizarFoto(b64jpeg, opciones = {}) {
   try {
     return await analizarImagen({
       fetchFn: (...a) => fetch(...a),
-      apiKey: state.cfg.apiKey,
+      ...accesoApi(state.cfg),
       modelo: state.cfg.modelo || MODELO_DEFAULT,
       precision: state.cfg.precision || 'normal',
       imagen: b64jpeg,
@@ -170,7 +170,7 @@ let modoAnalisis = 'plato';
 
 function pedirFoto(modo) {
   if (topeAlcanzado()) return;
-  if (!state.cfg.apiKey) {
+  if (!hayAcceso(state.cfg)) {
     state.cfg.avisoKeyOculto = false;   // si la busca, la tarjeta vuelve a aparecer
     save(); renderSinKey();
     toast('Falta la API key', { texto: 'Cargarla', accion: () => irTab('ajustes') });

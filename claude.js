@@ -6,6 +6,34 @@
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const API_VERSION = '2023-06-01';
 
+/* ---------------- de dónde sale el acceso a la API ---------------- */
+
+/**
+ * Hay dos caminos posibles y se elige uno solo:
+ *
+ * - Con clave propia cargada en Ajustes, se llama derecho a la API.
+ * - Sin clave, se pasa por el proxy (un Worker que tiene la clave del lado
+ *   servidor). Así el celular no necesita configurar nada.
+ *
+ * La clave propia gana: si alguien se tomó el trabajo de cargarla, es porque
+ * quiere usar esa. El proxy es el camino por defecto, no una imposición.
+ */
+function accesoApi(cfg = {}, config = null) {
+  const app = config || (typeof CONFIG_APP !== 'undefined' ? CONFIG_APP : {});
+  const apiKey = String(cfg.apiKey || '').trim();
+
+  if (apiKey) return { apiKey, proxyUrl: '' };
+  return { apiKey: '', proxyUrl: String(app.proxyUrl || '').trim() };
+}
+
+/** Si esto es falso, no hay forma de analizar nada y conviene decirlo antes. */
+function hayAcceso(cfg, config = null) {
+  const a = accesoApi(cfg, config);
+  return !!(a.apiKey || a.proxyUrl);
+}
+
+const SIN_ACCESO = 'Falta la API key. Cargala en Ajustes.';
+
 /* Precio por millón de tokens, para estimar el costo de cada análisis. */
 const PRECIOS = {
   'claude-opus-5': { entrada: 5, salida: 25 },
@@ -235,10 +263,10 @@ Pautas:
 
 /** Pide 3 opciones de comida que entren en las calorías que quedan. */
 async function sugerirComida({
-  fetchFn, apiKey, modelo = MODELO_DEFAULT, margen, momento = 'la próxima comida',
+  fetchFn, apiKey, proxyUrl = '', modelo = MODELO_DEFAULT, margen, momento = 'la próxima comida',
   faltaProteina = false, frecuentes = [], señal, dormir
 }) {
-  if (!apiKey) throw new Error('Falta la API key. Cargala en Ajustes.');
+  if (!apiKey && !proxyUrl) throw new Error(SIN_ACCESO);
   if (!margen || margen.kcal < 100) throw new Error('Te quedan muy pocas calorías para sugerirte algo.');
 
   const body = {
@@ -248,12 +276,12 @@ async function sugerirComida({
     output_config: { format: { type: 'json_schema', schema: SCHEMA_SUGERENCIAS } }
   };
 
-  const res = await pedirAClaude({ fetchFn, apiKey, body, señal, dormir });
+  const res = await pedirAClaude({ fetchFn, apiKey, proxyUrl, body, señal, dormir });
 
   if (!res.ok) {
     let detalle = '';
     try { detalle = (await res.json())?.error?.message || ''; } catch { /* sin cuerpo */ }
-    throw new Error(mensajeDeError(res.status, detalle));
+    throw new Error(mensajeDeError(res.status, detalle, !!proxyUrl));
   }
 
   const data = await res.json();
@@ -311,8 +339,14 @@ function formatearCosto(usd) {
 
 const REINTENTABLES = [429, 500, 502, 503, 504, 529];
 
-function mensajeDeError(status, detalle = '') {
-  if (status === 401) return 'API key inválida o vencida. Revisala en Ajustes.';
+function mensajeDeError(status, detalle = '', porProxy = false) {
+  // Con el proxy no hay nada que arreglar en Ajustes: la clave vive en el Worker.
+  if (status === 401) {
+    return porProxy
+      ? 'El proxy tiene una clave inválida o vencida. Hay que cargarla de nuevo en Cloudflare.'
+      : 'API key inválida o vencida. Revisala en Ajustes.';
+  }
+  if (status === 403 && porProxy) return 'El proxy rechazó el pedido: este origen no está en su lista.';
   if (status === 429) return 'Límite de uso alcanzado. Esperá un momento y probá de nuevo.';
   if (/credit|balance/i.test(detalle)) return 'Tu cuenta de Anthropic no tiene saldo.';
   if (status >= 500) return 'La API de Claude está con problemas. Probá de nuevo en un rato.';
@@ -327,20 +361,26 @@ const espera = (ms) => new Promise(r => setTimeout(r, ms));
  * POST a la API reintentando los errores transitorios (429 y 5xx) con backoff.
  * Los errores definitivos (401, 400) no se reintentan: no van a cambiar.
  */
-async function pedirAClaude({ fetchFn, apiKey, body, señal, intentos = 3, dormir = espera, base = 800 }) {
+async function pedirAClaude({ fetchFn, apiKey, proxyUrl = '', body, señal, intentos = 3, dormir = espera, base = 800 }) {
   let ultimo = null;
+
+  // Por el proxy no viaja ninguna credencial: la pone el Worker del otro lado.
+  const url = proxyUrl || API_URL;
+  const headers = proxyUrl
+    ? { 'content-type': 'application/json', 'anthropic-version': API_VERSION }
+    : {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': API_VERSION,
+        'anthropic-dangerous-direct-browser-access': 'true'
+      };
 
   for (let i = 0; i < intentos; i++) {
     let res;
     try {
-      res = await fetchFn(API_URL, {
+      res = await fetchFn(url, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': API_VERSION,
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
+        headers,
         body: JSON.stringify(body),
         signal: señal
       });
@@ -479,11 +519,11 @@ function interpretarRespuesta(data) {
  * Si el modelo rechaza el structured output, reintenta pidiendo JSON por prompt.
  */
 async function analizarImagen({
-  fetchFn, apiKey, modelo = MODELO_DEFAULT, imagen, imagenes,
+  fetchFn, apiKey, proxyUrl = '', modelo = MODELO_DEFAULT, imagen, imagenes,
   modo = 'plato', contexto = null, correccion = '', previo = null,
   señal, dormir, cache = null, onProgreso = null, precision = 'normal'
 }) {
-  if (!apiKey) throw new Error('Falta la API key. Cargala en Ajustes.');
+  if (!apiKey && !proxyUrl) throw new Error(SIN_ACCESO);
 
   const elegido = resolverPrecision(precision, modelo);
   modelo = elegido.modelo;
@@ -501,7 +541,7 @@ async function analizarImagen({
   const enStreaming = !!onProgreso;
 
   const pedir = (conSchema) => pedirAClaude({
-    fetchFn, apiKey, señal, dormir,
+    fetchFn, apiKey, proxyUrl, señal, dormir,
     body: armarBody({
       modelo, imagenes: fotos, conSchema, previo, stream: enStreaming, effort: elegido.effort,
       prompt: construirPrompt({ modo, contexto, conSchema, correccion, cantidadFotos: fotos.length })
@@ -520,10 +560,10 @@ async function analizarImagen({
       if (!res.ok) {
         let d2 = '';
         try { d2 = (await res.json())?.error?.message || ''; } catch { /* sin cuerpo legible */ }
-        throw new Error(mensajeDeError(res.status, d2));
+        throw new Error(mensajeDeError(res.status, d2, !!proxyUrl));
       }
     } else {
-      throw new Error(mensajeDeError(res.status, detalle));
+      throw new Error(mensajeDeError(res.status, detalle, !!proxyUrl));
     }
   }
 

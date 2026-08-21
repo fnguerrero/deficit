@@ -300,7 +300,7 @@ function renderNutrientes(totales, calc) {
 
 /** Sin API key la app sigue andando: solo se avisa, y una sola vez. */
 function renderSinKey() {
-  $('cardSinKey').hidden = !!state.cfg.apiKey || !!state.cfg.avisoKeyOculto;
+  $('cardSinKey').hidden = hayAcceso(state.cfg) || !!state.cfg.avisoKeyOculto;
 }
 
 $('btnIrAjustes').onclick = () => irTab('ajustes');

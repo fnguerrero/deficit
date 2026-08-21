@@ -14,6 +14,7 @@ LIMITES = [
     ('app.js', 400),
     ('arranque.js', 100),
     ('core.js', 1400),
+    ('config.js', 40),
     ('claude.js', 900),
     ('analisis.js', 900),
     ('sync.js', 500),
@@ -21,6 +22,8 @@ LIMITES = [
     ('sw.js', 150),
     ('ui/*.js', 700),
     ('tools/*.py', 250),
+    ('proxy/worker.js', 200),
+    ('proxy/test.mjs', 250),
 ]
 
 AVISO = 0.85   # a partir de aca ya conviene ir mirando
