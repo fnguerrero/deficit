@@ -134,7 +134,9 @@ function cerrarModal(forzar = false) {
   cancelarAnalisis();
   $('modal').classList.remove('open');
   pendiente = null;
+  // los dos, o repetir la misma foto no vuelve a disparar el onchange
   $('fileInput').value = '';
+  $('camaraInput').value = '';
 }
 
 function mostrarEstado(cual) {
@@ -177,8 +179,26 @@ function pedirFoto(modo) {
     return;
   }
   modoAnalisis = modo;
-  $('fileInput').click();
+
+  // En la compu no hay "sacar una foto": el explorador es la única opción real.
+  if (!esTactil()) { $('fileInput').click(); return; }
+
+  $('tituloOrigenFoto').textContent = modo === 'etiqueta' ? 'Leer etiqueta' : 'Analizar foto';
+  $('modalOrigenFoto').classList.add('open');
 }
+
+/** Pantalla táctil = celular o tablet, que es donde tiene sentido abrir la cámara. */
+function esTactil() {
+  return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+}
+
+function cerrarOrigenFoto() { $('modalOrigenFoto').classList.remove('open'); }
+
+$('btnCerrarOrigenFoto').onclick = cerrarOrigenFoto;
+$('modalOrigenFoto').onclick = (e) => { if (e.target.id === 'modalOrigenFoto') cerrarOrigenFoto(); };
+
+$('btnDesdeCamara').onclick = () => { cerrarOrigenFoto(); $('camaraInput').click(); };
+$('btnDesdeGaleria').onclick = () => { cerrarOrigenFoto(); $('fileInput').click(); };
 
 $('btnFoto').onclick = () => pedirFoto('plato');
 $('btnEtiqueta').onclick = () => pedirFoto('etiqueta');
@@ -208,7 +228,9 @@ function animarEspera(modo) {
   return frenar;
 }
 
-$('fileInput').onchange = async (e) => {
+/* Los dos inputs hacen exactamente lo mismo con lo que devuelven: uno trae la
+   foto de la cámara y el otro de la galería, pero de ahí en adelante es igual. */
+const recibirFotos = async (e) => {
   const archivos = [...(e.target.files || [])].slice(0, 4);   // 4 fotos ya es de sobra
   if (!archivos.length) return;
 
@@ -256,6 +278,9 @@ $('fileInput').onchange = async (e) => {
     mostrarEstado('error');
   }
 };
+
+$('fileInput').onchange = recibirFotos;
+$('camaraInput').onchange = recibirFotos;
 
 /* ---------------- resultado editable ---------------- */
 
