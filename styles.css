@@ -429,6 +429,9 @@ input.invalido, select.invalido { border-color: var(--bad); }
   max-width: 596px; margin: 0 auto;
 }
 .banner-update[hidden] { display: none; }
+/* Flota sobre todo (z-index 65), así que con un modal abierto tapaba sus botones.
+   Mientras haya uno abierto se esconde; vuelve al cerrarlo. */
+body:has(.modal.open) .banner-update { display: none; }
 .banner-update button {
   background: var(--acc2); color: var(--sobre-acc); border: 0; border-radius: 9px;
   padding: 7px 13px; font-weight: 650; cursor: pointer; white-space: nowrap;
@@ -649,3 +652,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .nutrientes span { display: block; font-size: 11px; color: var(--dim); }
 .nutrientes b { font-size: 15px; font-weight: 600; }
 .nutrientes b.pasado { color: var(--warn); }
+
+/* Menú de dónde sacar la foto. Solo aparece en pantallas táctiles: en la compu
+   el botón va derecho al explorador, porque "sacar una foto" no significa nada ahí. */
+.opciones-origen { display: flex; flex-direction: column; gap: 10px; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
