@@ -1209,7 +1209,12 @@ test('tdeeAdaptativo necesita al menos dos pesos', () => {
    ============================================================ */
 
 /** Días armados a medida para los tests de análisis. */
-function diasArmados({ hasta = '2026-08-20', cantidad = 14, kcal = 2000, prot = 100,
+/* Hasta dónde llegan los días que arma el helper. Toda función que cuente hacia
+   atrás desde "hoy" tiene que recibir esta fecha, o el test se rompe solo cuando
+   el calendario avanza. */
+const FIN_FIXTURE = '2026-08-20';
+
+function diasArmados({ hasta = FIN_FIXTURE, cantidad = 14, kcal = 2000, prot = 100,
                        pesoInicial = null, deltaDiario = 0, momento = 'almuerzo', huecos = [] } = {}) {
   const dias = {};
   for (let i = 0; i < cantidad; i++) {
@@ -1371,7 +1376,8 @@ test('compararSemanas sin una de las dos semanas devuelve null', () => {
 
 test('alertaProteina salta con tres días cortos seguidos', () => {
   const dias = diasArmados({ cantidad: 5, prot: 60 });
-  const a = alertaProteina(dias, 150);
+  // la fecha va explícita: el fixture termina el 2026-08-20, no en el hoy real
+  const a = alertaProteina(dias, 150, FIN_FIXTURE);
   esperar(a.dias, 3);
   esperar(a.promedio, 60);
   esperar(a.falta, 90);
@@ -1379,7 +1385,7 @@ test('alertaProteina salta con tres días cortos seguidos', () => {
 });
 
 test('alertaProteina no salta si llega al 80%', () => {
-  esperar(alertaProteina(diasArmados({ cantidad: 5, prot: 130 }), 150), null);
+  esperar(alertaProteina(diasArmados({ cantidad: 5, prot: 130 }), 150, FIN_FIXTURE), null);
 });
 
 test('alertaProteina no salta con un solo día flojo', () => {
@@ -1390,9 +1396,9 @@ test('alertaProteina no salta con un solo día flojo', () => {
 });
 
 test('alertaProteina pide tres días cargados', () => {
-  esperar(alertaProteina(diasArmados({ cantidad: 2, prot: 20 }), 150), null);
-  esperar(alertaProteina({}, 150), null);
-  esperar(alertaProteina(diasArmados({ cantidad: 5, prot: 20 }), 0), null);
+  esperar(alertaProteina(diasArmados({ cantidad: 2, prot: 20 }), 150, FIN_FIXTURE), null);
+  esperar(alertaProteina({}, 150, FIN_FIXTURE), null);
+  esperar(alertaProteina(diasArmados({ cantidad: 5, prot: 20 }), 0, FIN_FIXTURE), null);
 });
 
 /* ============================================================

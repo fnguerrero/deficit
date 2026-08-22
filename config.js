@@ -12,5 +12,5 @@
 const CONFIG_APP = {
   /* Vacío = cada dispositivo usa su propia clave, cargada en Ajustes.
      Con la URL del Worker puesta, no hay que configurar nada en ningún lado. */
-  proxyUrl: ''
+  proxyUrl: 'https://deficit-proxy.fnguerrero.workers.dev'
 };
