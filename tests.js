@@ -4014,6 +4014,56 @@ testAsync('sin proxy, el 401 sigue mandando a Ajustes', async () => {
   }
 });
 
+
+/* ---- credenciales: locales vs las que vienen con la app ---- */
+
+const APP_SUPA = { url: 'https://abc.supabase.co', anonKey: 'anon-de-la-app' };
+
+test('resolverCredenciales usa las de la app cuando no hay locales', () => {
+  const r = resolverCredenciales({}, APP_SUPA);
+  esperar(r.url, 'https://abc.supabase.co');
+  esperar(r.anonKey, 'anon-de-la-app');
+  esperarQue(r.global, 'tiene que avisar que son las globales');
+});
+
+test('lo cargado a mano le gana al default de la app', () => {
+  const r = resolverCredenciales({ url: 'https://mia.supabase.co', anonKey: 'mia' }, APP_SUPA);
+  esperar(r.url, 'https://mia.supabase.co');
+  esperar(r.anonKey, 'mia');
+  esperarQue(!r.global, 'son propias, no globales');
+});
+
+test('sin nada en ningún lado no hay credenciales', () => {
+  const r = resolverCredenciales({}, {});
+  esperar(r.url, '');
+  esperar(r.anonKey, '');
+  esperarQue(!r.global, 'no hay default que usar');
+});
+
+test('resolverCredenciales le saca la barra final a la URL', () => {
+  esperar(resolverCredenciales({ url: 'https://x.supabase.co/' }, {}).url, 'https://x.supabase.co');
+});
+
+test('una URL local con la clave de la app no cuenta como global', () => {
+  const r = resolverCredenciales({ url: 'https://mia.supabase.co' }, APP_SUPA);
+  esperar(r.url, 'https://mia.supabase.co');
+  esperar(r.anonKey, 'anon-de-la-app', 'completa lo que falta');
+  esperarQue(!r.global, 'hay algo local, así que los campos no están vacíos');
+});
+
+testAsync('el cliente arma bien la URL viniendo de las credenciales de la app', async () => {
+  let visto = null;
+  const cred = resolverCredenciales({}, APP_SUPA);
+  const cli = clienteSupabase({
+    url: cred.url, anonKey: cred.anonKey,
+    fetchFn: async (u, o) => { visto = { u, o }; return { ok: true, status: 200, json: async () => [] }; }
+  });
+
+  await cli.probar('a'.repeat(32));
+  esperarQue(visto.u.startsWith('https://abc.supabase.co/rest/v1/'), 'la base tiene que ser la de la app: ' + visto.u);
+  esperar(visto.o.headers.apikey, 'anon-de-la-app');
+});
+
 /* ============================================================
    Resultado
    ============================================================ */
