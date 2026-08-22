@@ -36,6 +36,25 @@ function llaveLegible(llave) {
   return String(llave || '').replace(/(.{8})/g, '$1 ').trim();
 }
 
+/**
+ * De dónde salen la URL y la anon key. Gana lo cargado a mano en este
+ * dispositivo; si no hay nada, se usa el default que viene con la app, así el
+ * celular no necesita que le carguen credenciales.
+ *
+ * `global` es true cuando se está usando ese default, para poder decirlo en
+ * pantalla: con los campos vacíos y todo andando, si no se explica parece un error.
+ */
+function resolverCredenciales(local = {}, app = {}) {
+  const url = String(local.url || app.url || '').replace(/\/+$/, '');
+  const anonKey = String(local.anonKey || app.anonKey || '');
+
+  return {
+    url,
+    anonKey,
+    global: !local.url && !local.anonKey && !!(app.url && app.anonKey)
+  };
+}
+
 /* ---------------- cliente REST ---------------- */
 
 function clienteSupabase({ url, anonKey, fetchFn, señal = null }) {

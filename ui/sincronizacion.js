@@ -4,8 +4,32 @@
 
 let sincronizando = false;
 
-function configSync() {
+/**
+ * Lo que hay guardado en ESTE dispositivo. Para escribir siempre se parte de
+ * acá: si se partiera de configSync(), el default global quedaría copiado al
+ * estado local y ya no habría forma de volver atrás.
+ */
+function configSyncLocal() {
   return state.cfg.sync || {};
+}
+
+/**
+ * Lo que se usa para conectarse: gana lo cargado a mano en este dispositivo y,
+ * si no hay nada, se cae al default de config.js. Así el celular no necesita
+ * que le carguen las credenciales.
+ */
+function configSync() {
+  const local = configSyncLocal();
+  return { ...local, ...resolverCredenciales(local, credencialesDeLaApp()) };
+}
+
+function credencialesDeLaApp() {
+  return (typeof CONFIG_APP !== 'undefined' && CONFIG_APP.supabase) || {};
+}
+
+/** Si las credenciales vienen de config.js, no hay nada que cargar en Ajustes. */
+function credencialesGlobales() {
+  return resolverCredenciales(configSyncLocal(), credencialesDeLaApp()).global;
 }
 
 /** La llave se genera sola la primera vez que hace falta. */
@@ -14,7 +38,7 @@ function llaveDeEsteDispositivo() {
   if (llaveValida(cfg.llave)) return cfg.llave;
 
   const llave = generarLlave();
-  state.cfg.sync = { ...cfg, llave };
+  state.cfg.sync = { ...configSyncLocal(), llave };
   save();
   return llave;
 }
@@ -24,8 +48,10 @@ function renderSync() {
   const llave = llaveDeEsteDispositivo();
   const configurado = !!(cfg.url && cfg.anonKey);
 
-  $('syncUrl').value = cfg.url || '';
-  $('syncKey').value = cfg.anonKey || '';
+  const local = configSyncLocal();
+  $('syncUrl').value = local.url || '';
+  $('syncKey').value = local.anonKey || '';
+  renderOrigenCredenciales();
   $('syncLlave').textContent = llaveLegible(llave);
 
   $('btnSincronizar').hidden = !configurado;
@@ -59,7 +85,7 @@ $('btnGuardarSync').onclick = () => {
   const anonKey = $('syncKey').value.trim();
 
   if (!url && !anonKey) {
-    state.cfg.sync = { ...configSync(), url: '', anonKey: '' };
+    state.cfg.sync = { ...configSyncLocal(), url: '', anonKey: '' };
     save(); renderSync();
     toast('Sincronización desactivada');
     return;
@@ -71,7 +97,7 @@ $('btnGuardarSync').onclick = () => {
   }
   if (anonKey.length < 20) { toast('Esa anon key parece incompleta'); return; }
 
-  state.cfg.sync = { ...configSync(), url, anonKey, ultimoError: '' };
+  state.cfg.sync = { ...configSyncLocal(), url, anonKey, ultimoError: '' };
   save(); renderSync();
   toast('Guardado. Probá con "Sincronizar ahora"');
 };
@@ -93,7 +119,7 @@ $('btnPegarLlave').onclick = () => {
   if (!llaveValida(pegada)) { toast('Esa llave no tiene el formato correcto'); return; }
 
   // cambiar de llave es cambiar de cuenta: lo que baje se fusiona con lo de acá
-  state.cfg.sync = { ...configSync(), llave: pegada, ultimoSync: 0, ultimoError: '' };
+  state.cfg.sync = { ...configSyncLocal(), llave: pegada, ultimoSync: 0, ultimoError: '' };
   save(); renderSync();
   toast('Llave cambiada. Sincronizá para traer los datos');
 };
@@ -144,3 +170,21 @@ $('btnSincronizar').onclick = async () => {
     boton.textContent = 'Sincronizar ahora';
   }
 };
+
+/**
+ * Explica de dónde salen la URL y la clave. Sin esto, ver la sincronización
+ * andando con los campos vacíos parece un error y no lo es.
+ */
+function renderOrigenCredenciales() {
+  const el = $('origenCredenciales');
+  if (!el) return;
+
+  if (credencialesGlobales()) {
+    el.textContent = 'Ya vienen configuradas con la app: no hace falta cargar nada acá. ' +
+      'Lo único que se copia entre dispositivos es la llave de abajo.';
+  } else if (configSync().url) {
+    el.textContent = 'Estás usando las credenciales cargadas en este dispositivo.';
+  } else {
+    el.textContent = 'Sin esto, los datos se quedan en este dispositivo.';
+  }
+}
