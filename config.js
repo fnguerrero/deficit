@@ -19,7 +19,7 @@ const CONFIG_APP = {
      llave de 32 caracteres, que NO va acá y se copia a mano entre dispositivos.
      Vacío = cada dispositivo carga lo suyo en Ajustes. */
   supabase: {
-    url: '',
-    anonKey: ''
+    url: 'https://qjpcpjjcppwuufmsafbu.supabase.co',
+    anonKey: 'sb_publishable_MIWjqN2Od5-fXQNjH214CQ_Qja_9MiM'
   }
 };
