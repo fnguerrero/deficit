@@ -97,9 +97,19 @@ $('btnGuardarSync').onclick = () => {
   }
   if (anonKey.length < 20) { toast('Esa anon key parece incompleta'); return; }
 
-  state.cfg.sync = { ...configSyncLocal(), url, anonKey, ultimoError: '' };
+  // Si es igual a lo que ya trae la app, no se guarda: una copia local que
+  // envejece mal el día que cambie el proyecto.
+  const app = credencialesDeLaApp();
+  const propio = !(url === app.url && anonKey === app.anonKey);
+
+  state.cfg.sync = {
+    ...configSyncLocal(),
+    url: propio ? url : '',
+    anonKey: propio ? anonKey : '',
+    ultimoError: ''
+  };
   save(); renderSync();
-  toast('Guardado. Probá con "Sincronizar ahora"');
+  toast(propio ? 'Guardado. Probá con "Sincronizar ahora"' : 'Ya venía configurado con la app');
 };
 
 $('btnCopiarLlave').onclick = async () => {
@@ -179,12 +189,26 @@ function renderOrigenCredenciales() {
   const el = $('origenCredenciales');
   if (!el) return;
 
-  if (credencialesGlobales()) {
-    el.textContent = 'Ya vienen configuradas con la app: no hace falta cargar nada acá. ' +
-      'Lo único que se copia entre dispositivos es la llave de abajo.';
-  } else if (configSync().url) {
-    el.textContent = 'Estás usando las credenciales cargadas en este dispositivo.';
+  const global = credencialesGlobales();
+  const hayAlgo = !!configSync().url;
+
+  // Sin nada configurado no hay forma de sincronizar: ahí el plegable se abre solo.
+  const det = $('avanzadoSync');
+  if (det) det.open = !hayAlgo;
+
+  if (global) {
+    el.textContent = 'Listo para usar: el proyecto ya viene con la app. Lo único que se copia entre ' +
+      'dispositivos es la llave de acá abajo.';
+  } else if (hayAlgo) {
+    el.textContent = 'Estás usando un proyecto cargado en este dispositivo, no el que trae la app.';
   } else {
     el.textContent = 'Sin esto, los datos se quedan en este dispositivo.';
+  }
+
+  const intro = $('syncIntro');
+  if (intro) {
+    intro.textContent = global || hayAlgo
+      ? 'Para ver lo mismo en la compu y en el celular.'
+      : 'Para ver lo mismo en la compu y en el celular. Necesita un proyecto de Supabase (gratis).';
   }
 }

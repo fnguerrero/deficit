@@ -632,9 +632,12 @@ function renderEstadoAcceso() {
 
   const a = accesoApi(state.cfg);
 
+  // Sin proxy la clave es imprescindible, así que el plegable arranca abierto.
+  const det = $('avanzadoKey');
+  if (det) det.open = !a.proxyUrl && !a.apiKey;
+
   if (a.proxyUrl) {
-    el.textContent = 'No hace falta cargar nada: los análisis salen por el proxy, que tiene la clave del lado servidor. ' +
-      'Si cargás una clave acá, se usa esa en este dispositivo.';
+    el.textContent = 'Los análisis ya salen por el proxy, que tiene la clave del lado servidor. No tenés que cargar nada.';
   } else if (a.apiKey) {
     el.textContent = 'Los análisis salen con esta clave, directo desde este navegador.';
   } else {
