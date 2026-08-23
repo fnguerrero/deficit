@@ -1,9 +1,10 @@
 # Déficit
 
 PWA de déficit calórico con análisis de comidas **por foto** (Claude vision).
-Sin backend, sin cuentas y sin dependencias: todo corre en el navegador.
+Sin build y sin dependencias: todo corre en el navegador.
 
-Publicada en <https://fnguerrero.github.io/deficit/>
+Publicada en <https://fnguerrero.github.io/deficit/> — **no hay nada que configurar**:
+la clave de Claude vive en un proxy y la sincronización ya viene apuntada a su proyecto.
 
 ## En el celular (Android)
 
@@ -15,8 +16,15 @@ Andando como PWA funciona offline salvo el análisis de foto, que necesita inter
 
 ## En la compu
 
-Doble clic en `Deficit.bat` → abre `http://localhost:5599`.
-Con `file://` no anda el service worker, así que conviene el `.bat`.
+El acceso directo **Deficit** del escritorio abre la versión publicada en una ventana
+sin barra de direcciones. Si no está, se recrea con:
+
+```
+powershell -ExecutionPolicy Bypass -File tools\crear_acceso_directo.ps1
+```
+
+Para desarrollo, `Deficit.bat` levanta `http://localhost:5599`. Con `file://` no anda el
+service worker, así que conviene el `.bat`.
 
 ## Antes que nada: probá que la estimación sirve
 
@@ -49,10 +57,17 @@ día real es más alto que el que ves — y eso es accionable aunque el error se
 La app además va aprendiendo sola: cada vez que corregís a mano lo que estimó, guarda esa
 diferencia, y si detecta que se equivoca siempre para el mismo lado te lo dice.
 
+**Lo que ya está medido**: leer una etiqueta funciona perfecto. Con la que genera
+`tools/etiqueta_prueba.py` devolvió los 8 valores exactos (calorías, macros, fibra, azúcar
+y sodio), confianza alta, en 9,5 segundos. Eso es transcribir, que es la parte fácil.
+**Estimar un plato servido es otra cosa** y sigue sin medirse: eso es lo que responde la
+calibración de arriba.
+
 ## Primer uso
 
 La primera vez arranca un onboarding de 3 pasos: bienvenida, tus datos y la API key
-(este último se puede saltear). Con eso ya calcula tu objetivo diario.
+(este último se puede saltear, y conviene: la clave ya viene por el proxy). Con eso ya
+calcula tu objetivo diario.
 
 La key de Anthropic se saca de `console.anthropic.com` y queda solo en el
 `localStorage` de este navegador; se manda únicamente a `api.anthropic.com`.
@@ -105,15 +120,26 @@ la clave vive en el servidor y la app anda sin configurar nada, también en el c
 
 ## Sincronizar entre la compu y el celular
 
-Los datos viven en el navegador de cada dispositivo. Para verlos en los dos:
+Los datos viven en el navegador de cada dispositivo. El proyecto de Supabase **ya viene
+configurado con la app**, así que alcanza con emparejarlos:
+
+1. En un dispositivo: **Ajustes → Sincronización → Sincronizar ahora**.
+2. Ahí aparece **tu llave**. Tocá *Copiar llave*.
+3. En el otro: **Usar otra llave**, pegás esa, y *Sincronizar ahora*.
+
+Desde ese momento los dos ven lo mismo.
+
+<details>
+<summary>Usar otro proyecto de Supabase</summary>
 
 1. Creá un proyecto gratis en [supabase.com](https://supabase.com).
-2. En el proyecto, andá a **SQL Editor**, pegá todo el contenido de `supabase.sql` y dale **Run**.
-3. En **Project Settings → API**, copiá la *Project URL* y la *anon public key*.
-4. En la app: **Ajustes → Sincronización**, pegá las dos cosas y tocá *Guardar*.
-5. Tocá **Sincronizar ahora**. Ahí aparece **tu llave**: copiala.
-6. En el otro dispositivo, repetí los pasos 4 y 5, pero antes tocá **Usar otra llave** y pegá
-   la del primero. Sincronizá y vas a ver lo mismo en los dos.
+2. **SQL Editor** → pegá todo `supabase.sql` → **Run**.
+3. **Project Settings → API**: copiá la *Project URL* y la *Publishable key*
+   (antes se llamaba anon key y empezaba con `eyJ`; ahora empieza con `sb_publishable_`).
+4. En la app, **Ajustes → Sincronización → Usar otro proyecto de Supabase**, pegá las dos
+   cosas y *Guardar*. Para volver al proyecto de la app, vaciá los campos y guardá.
+
+</details>
 
 Cómo resuelve los choques: cada comida se compara por separado y gana la última edición.
 Lo que borrás en un dispositivo desaparece en el otro y no vuelve. Las fotos no se
@@ -137,6 +163,10 @@ más hasta el mes siguiente, aunque el registro manual y el código de barras si
 Modelo por defecto: **Opus 5**, con tres modos de precisión en Ajustes:
 *Rápido* (Haiku 4.5), *Normal* (esfuerzo medio) y *Preciso* (esfuerzo alto).
 
+Cuánto sale, medido: **US$ 0,018 por análisis** en Opus 5 / Normal, unos 10 segundos.
+Con 5 dólares de crédito son unos 275 análisis. En *Rápido* baja bastante, y para leer
+una etiqueta —que es transcribir, no estimar— alcanza de sobra.
+
 ## La clave en un solo lugar
 
 Cargar la clave dispositivo por dispositivo es molesto, y en el código no puede ir: el repo
@@ -144,7 +174,9 @@ es público y GitHub Pages sirve todo tal cual. La salida es un **Worker de Clou
 guarda la clave del lado servidor; la app le habla a él en vez de a `api.anthropic.com`.
 
 Se configura una sola vez y ni el celular, ni la compu, ni el repo tienen la clave.
-Los pasos están en [`proxy/README.md`](proxy/README.md) — son tres comandos.
+**Ya está desplegado** en `deficit-proxy.fnguerrero.workers.dev`; para rehacerlo o moverlo,
+los pasos están en [`proxy/README.md`](proxy/README.md) — son tres comandos.
+Sus propios tests corren sin Cloudflare y sin tocar la API: `node proxy/test.mjs`.
 
 El Worker solo acepta pedidos desde los orígenes de la app, limita a 30 por minuto por IP y
 restringe los modelos, así que la URL suelta no le sirve de mucho a nadie. Aun así, el freno
@@ -168,11 +200,13 @@ siempre. Y si cargás una clave estando el proxy activo, gana la tuya en ese dis
 | `arranque.js` | el arranque, que va último |
 | `supabase.sql` | las tablas, listas para pegar en Supabase |
 | `proxy/` | el Worker de Cloudflare que guarda la clave (`node proxy/test.mjs`) |
-| `tests.js` + `tests.html` | 442 tests sin dependencias — abrir `/tests.html` |
+| `tests.js` + `tests.html` | 448 tests sin dependencias — abrir `/tests.html` |
 | `sw.js` | service worker (network-first, cache como respaldo offline) |
 | `tools/gen_iconos.py` | regenera los íconos (`py -3 tools/gen_iconos.py`) |
 | `tools/version.py` | sube la versión de los assets (`py -3 tools/version.py`) |
 | `tools/tamanos.py` | avisa si un archivo se pasó de largo (`py -3 tools/tamanos.py`) |
+| `tools/etiqueta_prueba.py` | arma una etiqueta con valores conocidos, para verificar la lectura |
+| `tools/crear_acceso_directo.ps1` | deja el acceso directo en el escritorio de Windows |
 
 **Al tocar cualquier archivo del shell hay que subir la versión**, y de eso se encarga
 `py -3 tools/version.py`: toca `VERSION` en `sw.js` y el `?v=N` de los `<script>`/`<link>`
