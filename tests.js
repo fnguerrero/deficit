@@ -4064,6 +4064,141 @@ testAsync('el cliente arma bien la URL viniendo de las credenciales de la app', 
   esperar(visto.o.headers.apikey, 'anon-de-la-app');
 });
 
+
+/* ---- cuándo la app se puede actualizar sola ---- */
+
+test('con la app ociosa se actualiza sola', () => {
+  esperarQue(sePuedeActualizarSolo({}), 'sin nada en juego no hay que preguntar');
+  esperarQue(sePuedeActualizarSolo({ modalAbierto: false, analizando: false, editando: false }), 'idem explícito');
+});
+
+test('con un modal abierto NO se actualiza sola', () => {
+  esperarQue(!sePuedeActualizarSolo({ modalAbierto: true }), 'recargar le sacaría el modal de las manos');
+});
+
+test('con un análisis corriendo NO se actualiza sola', () => {
+  esperarQue(!sePuedeActualizarSolo({ analizando: true }), 'se perdería el análisis ya pagado');
+});
+
+test('escribiendo NO se actualiza sola', () => {
+  esperarQue(!sePuedeActualizarSolo({ editando: true }), 'se perdería lo tipeado');
+});
+
+test('alcanza con una sola razón para no actualizar', () => {
+  esperarQue(!sePuedeActualizarSolo({ modalAbierto: true, analizando: false, editando: false }));
+  esperarQue(!sePuedeActualizarSolo({ modalAbierto: true, analizando: true, editando: true }));
+});
+
+
+/* ---- cuándo sincronizar sola ---- */
+
+test('no sincroniza sola si no está configurada', () => {
+  esperarQue(!convieneSincronizar({ configurada: false, ultimoSync: 0, ahora: 1000000 }));
+});
+
+test('sincroniza al arrancar si nunca sincronizó', () => {
+  esperarQue(convieneSincronizar({ configurada: true, ultimoSync: 0, ahora: 1000000 }));
+});
+
+test('no sincroniza de nuevo si acaba de hacerlo', () => {
+  const ahora = 1000000;
+  esperarQue(!convieneSincronizar({ configurada: true, ultimoSync: ahora - 30000, ahora }),
+    'abrir y cerrar la app no tiene que disparar una ronda por vez');
+});
+
+test('vuelve a sincronizar pasado el piso de tiempo', () => {
+  const ahora = 1000000;
+  esperarQue(convieneSincronizar({ configurada: true, ultimoSync: ahora - 180000, ahora }));
+});
+
+test('el piso de tiempo es configurable', () => {
+  const ahora = 1000000;
+  esperarQue(convieneSincronizar({ configurada: true, ultimoSync: ahora - 5000, ahora, minimoMs: 1000 }));
+});
+
+testAsync('sincronizar no pisa el estado si el servidor falla a mitad', async () => {
+  const estado = {
+    dias: { '2026-08-20': { peso: 80, agua: 0, ejercicio: 0, nota: '', act: 1,
+      comidas: [{ id: 'c1', ts: 1, titulo: 'Asado', items: [], kcal: 700, prot: 40, carb: 10, gras: 50, momento: 'almuerzo', act: 1 }] } },
+    borradas: [], cfg: {}
+  };
+  const antes = JSON.stringify(estado);
+
+  const cliente = {
+    traer: async () => { throw new Error('se cortó la red'); },
+    guardar: async () => [],
+    probar: async () => true
+  };
+
+  try {
+    await sincronizar({ cliente, estado, llave: 'a'.repeat(32), ultimoSync: 0 });
+    esperarQue(false, 'tendría que haber propagado el error');
+  } catch (e) {
+    esperarQue(/red/.test(e.message), 'el error llega tal cual: ' + e.message);
+  }
+
+  esperar(JSON.stringify(estado), antes, 'el estado local no se puede haber tocado');
+});
+
+
+
+/* ---- reintentos del cliente de Supabase ---- */
+
+function respuestaSupa(status, cuerpo = []) {
+  return { ok: status >= 200 && status < 300, status, json: async () => cuerpo };
+}
+
+testAsync('un 503 de paso no rompe el sync: reintenta', async () => {
+  let llamadas = 0;
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'k', dormir: async () => {},
+    fetchFn: async () => { llamadas++; return llamadas < 3 ? respuestaSupa(503) : respuestaSupa(200, [{ id: 'c1' }]); }
+  });
+
+  const r = await cli.traer('comidas', 'a'.repeat(32));
+  esperar(llamadas, 3, 'dos fallos y a la tercera va');
+  esperar(r.length, 1);
+});
+
+testAsync('una clave mal puesta NO se reintenta: no va a cambiar', async () => {
+  let llamadas = 0;
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'k', dormir: async () => {},
+    fetchFn: async () => { llamadas++; return respuestaSupa(401, { message: 'bad key' }); }
+  });
+
+  try { await cli.traer('comidas', 'a'.repeat(32)); } catch { /* esperado */ }
+  esperar(llamadas, 1, 'insistir con una clave inválida es perder el tiempo');
+});
+
+testAsync('el backoff crece entre intentos', async () => {
+  const esperas = [];
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'k', base: 100,
+    dormir: async (ms) => { esperas.push(ms); },
+    fetchFn: async () => respuestaSupa(500)
+  });
+
+  try { await cli.traer('comidas', 'a'.repeat(32)); } catch { /* esperado */ }
+  esperar(esperas, [100, 200], 'cada intento espera el doble que el anterior');
+});
+
+testAsync('si se cae la red del todo, avisa después de agotar los intentos', async () => {
+  let llamadas = 0;
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'k', dormir: async () => {},
+    fetchFn: async () => { llamadas++; throw new Error('offline'); }
+  });
+
+  try {
+    await cli.traer('comidas', 'a'.repeat(32));
+    esperarQue(false, 'tendría que haber fallado');
+  } catch (e) {
+    esperarQue(/conectar con Supabase/.test(e.message), e.message);
+  }
+  esperar(llamadas, 3);
+});
+
 /* ============================================================
    Resultado
    ============================================================ */

@@ -47,3 +47,46 @@ Formato: `#N — qué se hizo — cómo se verificó`
 #21 — Fibra, azucar y sodio en el modelo, en el schema del analisis (con instruccion de poner 0 antes que inventar) y en el codigo de barras, con migracion que deja en cero lo ya guardado — verificado: 12 tests nuevos y las comidas viejas siguen intactas con los tres campos en cero
 
 #22 — Los tres nutrientes se muestran en Hoy solo si hay datos, con objetivo por calorias (14 g de fibra cada 1.000 kcal, 10% de azucar, 2.000 mg de sodio de la OMS) y marca cuando te pasas; en el informe del mes aparecen como promedios — verificado: sin datos la fila queda oculta, con lentejas mostro los tres y con 2.600 mg de sodio marco el exceso
+
+---
+
+## Ciclo 4 — que la app se sienta terminada (23/08/2026)
+
+#0 — Bootstrap. 17 items en 4 frentes: lo que quedo desactualizado al mover la clave al
+proxy, que la app se actualice sin pelear, sincronizacion automatica y robustez ante
+fallas. El disparador son tres cosas que pasaron hoy de verdad, no una lista de deseos.
+Presupuesto 40.
+
+#1 — El paso 3 del onboarding ya no pide la clave cuando hay proxy: pasa a explicar como se usa la app, con otro icono y otro titulo; sin proxy vuelve el campo — verificado por DOM en los dos casos (con proxy el input mide 0, sin proxy 43,75)
+
+#1b — Encontrado arreglando lo anterior: `hidden` no ocultaba nada si el elemento tenia una clase con display propio, porque el UA stylesheet pierde contra cualquier regla de autor. Afectaba a 6 elementos, y el peor era listaNutrientes, que se suponia oculto sin datos y se veia siempre. Una regla `[hidden] { display: none !important }` arriba de todo — verificado: la lista de elementos que ignoran hidden paso de 6 a 0
+
+#2 — La tarjeta "sin key" de Hoy ya no aparece con el proxy andando (la destrabo el fix de hidden de #1b) y sin proxy sigue apareciendo con su texto correcto — verificado por DOM: 0 de alto con proxy, 91,8 sin proxy
+
+#3 — Los tres toasts que piden la clave ahora usan la constante SIN_ACCESO en vez de repetir el literal. Ademas verifique el circuito entero: el toast lleva a Ajustes y ahi el campo esta VISIBLE, no escondido en el plegable que agregue antes — verificado por DOM
+
+#4 — La app toma la version nueva sola cuando no hay nada en juego; el banner queda solo si hay un modal abierto, un analisis corriendo o algo tipeandose. La decision es sePuedeActualizarSolo() en core.js, pura — verificado: 5 tests nuevos, y en vivo con un worker falso la app ociosa manda 'actualizar' sin banner y con un modal abierto muestra el banner sin mandar nada
+
+#5 — Ademas de al cargar, ahora busca version nueva cada vez que se vuelve a la app (visibilitychange). Quien la deja abierta dias en el celular no dispara nunca el load y se quedaba clavado en una version vieja — verificado: el handler queda registrado y reg.update() corre al volver
+
+#6 — Diagnostico muestra la version que sirve el worker ACTIVO, preguntandosela por MessageChannel, en vez de leer el cache mas alto: con una version esperando, su cache ya existe y decia que estabas actualizado cuando corrias la vieja — verificado: antes de activar reportaba vacio (el worker viejo no tiene el handler) y despues de activar coincide con deficit-v96
+
+#7-9 — La sincronizacion dejo de ser un boton que hay que acordarse de tocar: corre al arrancar (con piso de 2 min para que abrir y cerrar la app no dispare una ronda por vez) y 4 segundos despues de cualquier cambio. El enganche esta en save(), que es el unico punto por donde pasa todo, en vez de en los 6 lugares que agregan comidas — verificado en vivo con fetch interceptado: un cambio dispara una ronda, cinco save() seguidos colapsan en una sola, y con una corriendo la segunda devuelve "ya hay una corriendo"
+
+#7b — Encontrado en el camino: el handler del boton guardaba configSync() completo, o sea copiaba al estado local las credenciales que trae la app. Mismo bug que ya habia evitado en los otros lugares. Ahora usa configSyncLocal()
+
+#10 — Un fallo de red deja el estado local intacto — verificado con un test que corta la bajada a mitad y compara el estado serializado antes y despues
+
+#11 — El cliente de Supabase reintenta 429 y 5xx con backoff, igual que el de Claude; 401 y 404 no se reintentan porque no van a cambiar — verificado: 4 tests (dos 503 y a la tercera pasa; un 401 llama una sola vez; las esperas son 100 y 200 ms; sin red avisa tras 3 intentos)
+
+#12 — Faltaba el estado "sincronizando", que con la sincronizacion automatica es justo el que importa: la app hace pedidos que nadie pidio y no se veian por ningun lado — verificado por DOM los cinco estados: sin configurar, lista, activa con resumen, con error y sincronizando
+
+#13 — La app arranca y navega sin conexion — verificado de verdad: apague el servidor y recargue. Cargo el shell entero (28 recursos del cache del SW), los 5 modulos presentes, las 4 pantallas navegables y el anillo pintado. El unico error de consola era residuo del buffer, no reproducible
+
+#14 — Los errores del diagnostico ya se podian limpiar y el contador no mentia — verificado por DOM: con 3 dice "3 errores" y muestra el boton; despues de limpiar dice "todo en orden" y el boton desaparece. Sin cambios de codigo
+
+#15 — Con el almacenamiento lleno la app avisa y sigue andando — verificado interceptando localStorage.setItem para que tire QuotaExceededError siempre: no lanza excepcion, muestra "No se pudo guardar: almacenamiento lleno" y la app queda usable
+
+#16 — Accesibilidad: 0 controles sin nombre y 0 inalcanzables por teclado en las 4 pantallas (7 a 36 controles cada una, con los plegables abiertos) y en los dos modales
+
+#17 — Encontrados dos bugs que habia introducido YO hoy con el menu de origen de foto: no respondia a Escape y no contaba como modal abierto, asi que la app se podia auto-actualizar con el menu en pantalla. Ademas agregue trampa de foco: con un modal abierto el Tab ya no se escapa a la pagina de atras y al cerrar el foco vuelve de donde vino — verificado por DOM: foco entra, cicla, Escape cierra y lo devuelve a btnFoto

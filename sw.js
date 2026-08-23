@@ -1,30 +1,30 @@
 /* Service worker — cachea el shell de la app para que ande offline.
    Subir la versión al cambiar cualquier archivo. */
 
-const VERSION = 'deficit-v92';
+const VERSION = 'deficit-v104';
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=92',
-  './config.js?v=92',
-  './core.js?v=92',
-  './analisis.js?v=92',
-  './claude.js?v=92',
-  './productos.js?v=92',
-  './sync.js?v=92',
-  './app.js?v=92',
-  './ui/general.js?v=92',
-  './ui/hoy.js?v=92',
-  './ui/comidas.js?v=92',
-  './ui/escaner.js?v=92',
-  './ui/asistente.js?v=92',
-  './ui/historial.js?v=92',
-  './ui/perfil.js?v=92',
-  './ui/sincronizacion.js?v=92',
-  './ui/calibracion.js?v=92',
-  './ui/ajustes.js?v=92',
-  './arranque.js?v=92',
+  './styles.css?v=104',
+  './config.js?v=104',
+  './core.js?v=104',
+  './analisis.js?v=104',
+  './claude.js?v=104',
+  './productos.js?v=104',
+  './sync.js?v=104',
+  './app.js?v=104',
+  './ui/general.js?v=104',
+  './ui/hoy.js?v=104',
+  './ui/comidas.js?v=104',
+  './ui/escaner.js?v=104',
+  './ui/asistente.js?v=104',
+  './ui/historial.js?v=104',
+  './ui/perfil.js?v=104',
+  './ui/sincronizacion.js?v=104',
+  './ui/calibracion.js?v=104',
+  './ui/ajustes.js?v=104',
+  './arranque.js?v=104',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -54,6 +54,11 @@ self.addEventListener('install', (e) => {
 
 self.addEventListener('message', (e) => {
   if (e.data === 'actualizar') self.skipWaiting();
+
+  // Qué versión está sirviendo REALMENTE quien contesta. Mirar los caches no
+  // sirve: con una versión esperando, su cache ya existe y el diagnóstico diría
+  // que estás actualizado cuando todavía corrés la vieja.
+  if (e.data === 'version' && e.ports && e.ports[0]) e.ports[0].postMessage(VERSION);
 });
 
 self.addEventListener('activate', (e) => {

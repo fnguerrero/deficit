@@ -55,9 +55,27 @@ function resolverCredenciales(local = {}, app = {}) {
   };
 }
 
+/**
+ * Si vale la pena sincronizar sola en este momento.
+ *
+ * El piso de tiempo existe para que abrir y cerrar la app cinco veces seguidas
+ * no dispare cinco rondas: sincronizar de más no rompe nada, pero gasta batería
+ * y datos del celular sin traer nada nuevo.
+ */
+function convieneSincronizar({ configurada = false, ultimoSync = 0, ahora = Date.now(), minimoMs = 120000 } = {}) {
+  if (!configurada) return false;
+  return (ahora - (ultimoSync || 0)) >= minimoMs;
+}
+
 /* ---------------- cliente REST ---------------- */
 
-function clienteSupabase({ url, anonKey, fetchFn, señal = null }) {
+/* Los mismos que reintenta el cliente de Claude: nada de esto es culpa nuestra
+   y todos se arreglan solos esperando un poco. */
+const REINTENTABLES_SUPA = [429, 500, 502, 503, 504];
+
+const dormirDefecto = (ms) => new Promise(r => setTimeout(r, ms));
+
+function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, dormir = dormirDefecto, base: espera = 600 }) {
   if (!url || !anonKey) throw new Error('Faltan la URL y la clave de Supabase.');
 
   const base = String(url).replace(/\/+$/, '') + '/rest/v1/';
@@ -69,15 +87,25 @@ function clienteSupabase({ url, anonKey, fetchFn, señal = null }) {
 
   async function pedir(ruta, opciones = {}) {
     let res;
-    try {
-      res = await fetchFn(base + ruta, {
-        ...opciones,
-        headers: { ...cabeceras, ...(opciones.headers || {}) },
-        signal: señal
-      });
-    } catch (e) {
-      if (e && e.name === 'AbortError') throw e;
-      throw new Error('No se pudo conectar con Supabase. Revisá la conexión y la URL.');
+    let ultimoFallo = null;
+
+    // Un 503 de paso no tiene por qué costarle a la persona el sync entero.
+    for (let i = 0; i < intentos; i++) {
+      try {
+        res = await fetchFn(base + ruta, {
+          ...opciones,
+          headers: { ...cabeceras, ...(opciones.headers || {}) },
+          signal: señal
+        });
+      } catch (e) {
+        if (e && e.name === 'AbortError') throw e;
+        ultimoFallo = new Error('No se pudo conectar con Supabase. Revisá la conexión y la URL.');
+        if (i < intentos - 1) { await dormir(espera * Math.pow(2, i)); continue; }
+        throw ultimoFallo;
+      }
+
+      if (res.ok || !REINTENTABLES_SUPA.includes(res.status)) break;
+      if (i < intentos - 1) await dormir(espera * Math.pow(2, i));
     }
 
     if (!res.ok) {

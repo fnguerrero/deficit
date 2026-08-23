@@ -1,4 +1,9 @@
 /* Paleta oscura: la de siempre y la que se usa por defecto. */
+
+/* `hidden` es solo display:none del navegador, asi que CUALQUIER clase propia que
+   defina display se lo come. Pasaba en 6 lugares, entre ellos la fila de nutrientes
+   que se supone que solo aparece si hay datos. Esto lo cierra de raiz. */
+[hidden] { display: none !important; }
 :root {
   --bg: #0e1116;
   --bg2: #161b22;

@@ -375,6 +375,20 @@ function registrarError(errores, entrada, max = MAX_ERRORES) {
 }
 
 /** Resumen del estado de la app, para mirar o para copiar y pegar. */
+/* ---------------- actualización de la app ---------------- */
+
+/**
+ * Si conviene tomar la versión nueva sin preguntar.
+ *
+ * Nadie quiere decidir sobre service workers: con la app ociosa, actualizar sola
+ * es lo correcto. El banner queda para cuando hay algo que se perdería —un
+ * análisis corriendo, un modal con datos a medio cargar—, que ahí sí recargar
+ * de golpe sería sacarle el trabajo de las manos a la persona.
+ */
+function sePuedeActualizarSolo({ modalAbierto = false, analizando = false, editando = false } = {}) {
+  return !modalAbierto && !analizando && !editando;
+}
+
 function armarDiagnostico({ version, sw, cuota, state: st, online, pantalla, agente }) {
   return {
     version: version || '—',
@@ -1269,6 +1283,7 @@ if (typeof window !== 'undefined') {
     medirCalibracion, veredictoCalibracion, textoSesgo,
     MAX_CORRECCIONES, registrarCorreccion, sesgoAprendido,
     MAX_ERRORES, registrarError, armarDiagnostico, diagnosticoATexto,
+    sePuedeActualizarSolo,
 
     comidasCopiadas, diasConComidas,
     MAX_RECETAS, guardarReceta, borrarReceta, aplicarReceta, recetasOrdenadas,

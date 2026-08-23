@@ -141,6 +141,9 @@ Desde ese momento los dos ven lo mismo.
 
 </details>
 
+La sincronización **corre sola**: al abrir la app y unos segundos después de cualquier
+cambio. El botón *Sincronizar ahora* sigue estando para forzarla y ver qué pasó.
+
 Cómo resuelve los choques: cada comida se compara por separado y gana la última edición.
 Lo que borrás en un dispositivo desaparece en el otro y no vuelve. Las fotos no se
 sincronizan: se quedan donde las sacaste, porque pesan y no valen el tráfico.
@@ -200,7 +203,7 @@ siempre. Y si cargás una clave estando el proxy activo, gana la tuya en ese dis
 | `arranque.js` | el arranque, que va último |
 | `supabase.sql` | las tablas, listas para pegar en Supabase |
 | `proxy/` | el Worker de Cloudflare que guarda la clave (`node proxy/test.mjs`) |
-| `tests.js` + `tests.html` | 448 tests sin dependencias — abrir `/tests.html` |
+| `tests.js` + `tests.html` | 463 tests sin dependencias — abrir `/tests.html` |
 | `sw.js` | service worker (network-first, cache como respaldo offline) |
 | `tools/gen_iconos.py` | regenera los íconos (`py -3 tools/gen_iconos.py`) |
 | `tools/version.py` | sube la versión de los assets (`py -3 tools/version.py`) |

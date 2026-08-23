@@ -64,7 +64,15 @@ function renderSync() {
     return;
   }
 
-  $('syncPill').textContent = cfg.ultimoSync ? 'activa' : 'lista';
+  // Ahora que corre sola, tiene que verse cuándo está pasando algo: si no, la
+  // app hace pedidos de red que la persona no pidió y no ve por ningún lado.
+  $('syncPill').textContent = sincronizando ? 'sincronizando…' : (cfg.ultimoSync ? 'activa' : 'lista');
+
+  if (sincronizando) {
+    $('syncEstado').textContent = 'Sincronizando…';
+    $('syncEstado').className = 'hint';
+    return;
+  }
 
   if (cfg.ultimoError) {
     $('syncEstado').textContent = cfg.ultimoError;
@@ -134,16 +142,26 @@ $('btnPegarLlave').onclick = () => {
   toast('Llave cambiada. Sincronizá para traer los datos');
 };
 
-$('btnSincronizar').onclick = async () => {
-  if (sincronizando) return;
+/**
+ * Una sola rutina para las dos formas de sincronizar: el botón y la automática.
+ *
+ * `silencioso` es lo único que cambia: la automática no pisa la pantalla con
+ * toasts ni toca un botón que puede no estar a la vista. Si falla, se anota y
+ * ya está: no vale interrumpir a alguien que está cargando el almuerzo.
+ */
+async function correrSync({ silencioso = false } = {}) {
+  if (sincronizando) return { salteada: 'ya hay una corriendo' };
 
   const cfg = configSync();
-  if (!cfg.url || !cfg.anonKey) { toast('Faltan la URL y la clave'); return; }
+  if (!cfg.url || !cfg.anonKey) {
+    if (!silencioso) toast('Faltan la URL y la clave');
+    return { salteada: 'sin credenciales' };
+  }
 
   sincronizando = true;
   const boton = $('btnSincronizar');
-  boton.disabled = true;
-  boton.textContent = 'Sincronizando…';
+  if (!silencioso && boton) { boton.disabled = true; boton.textContent = 'Sincronizando…'; }
+  renderSync();
 
   try {
     const resultado = await sincronizar({
@@ -158,8 +176,10 @@ $('btnSincronizar').onclick = async () => {
     const bajadas = r.nuevas + r.actualizadas + r.borradas + r.diasTocados;
 
     state = resultado.estado;
+    // configSyncLocal y no configSync: si no, las credenciales que trae la app
+    // quedarían copiadas en el estado de este dispositivo.
     state.cfg.sync = {
-      ...configSync(),
+      ...configSyncLocal(),
       ultimoSync: resultado.ultimoSync,
       ultimoError: '',
       ultimoResumen: `Subí ${subidas} y bajé ${bajadas}.`
@@ -167,19 +187,58 @@ $('btnSincronizar').onclick = async () => {
 
     save();
     renderAll();
-    toast(bajadas ? `${bajadas} ${bajadas === 1 ? 'cambio nuevo' : 'cambios nuevos'}` : 'Todo al día');
+    if (!silencioso) toast(bajadas ? `${bajadas} ${bajadas === 1 ? 'cambio nuevo' : 'cambios nuevos'}` : 'Todo al día');
+    return { subidas, bajadas };
   } catch (err) {
-    state.cfg.sync = { ...configSync(), ultimoError: err.message };
+    state.cfg.sync = { ...configSyncLocal(), ultimoError: err.message };
     save();
     renderSync();
-    toast('No se pudo sincronizar');
+    if (!silencioso) toast('No se pudo sincronizar');
     anotarError('Sync: ' + err.message, 'sync', 0);
+    return { error: err.message };
   } finally {
     sincronizando = false;
-    boton.disabled = false;
-    boton.textContent = 'Sincronizar ahora';
+    if (!silencioso && boton) { boton.disabled = false; boton.textContent = 'Sincronizar ahora'; }
+    renderSync();
   }
-};
+}
+
+$('btnSincronizar').onclick = () => correrSync({ silencioso: false });
+
+/**
+ * Al abrir la app. Acá sí corre el piso de tiempo: abrir y cerrar cinco veces
+ * seguidas no tiene por qué disparar cinco rondas contra el servidor.
+ */
+function sincronizarAlArrancar() {
+  const cfg = configSync();
+  if (!convieneSincronizar({
+    configurada: !!(cfg.url && cfg.anonKey),
+    ultimoSync: cfg.ultimoSync || 0
+  })) return;
+
+  correrSync({ silencioso: true }).catch(() => { /* ya queda anotado adentro */ });
+}
+
+let relojCambio = null;
+
+/**
+ * Después de un cambio. Sin piso de tiempo —hay algo nuevo que subir sí o sí—
+ * pero con una espera corta, porque cargar una comida dispara varios save()
+ * seguidos y no vale una ronda por cada uno.
+ */
+function sincronizarTrasCambio({ esperaMs = 4000 } = {}) {
+  // el save() de la propia sincronización no puede disparar otra
+  if (sincronizando) return;
+
+  const cfg = configSync();
+  if (!cfg.url || !cfg.anonKey) return;
+
+  clearTimeout(relojCambio);
+  relojCambio = setTimeout(() => {
+    correrSync({ silencioso: true }).catch(() => {});
+  }, esperaMs);
+}
+
 
 /**
  * Explica de dónde salen la URL y la clave. Sin esto, ver la sincronización
