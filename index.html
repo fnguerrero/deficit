@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=90">
+<link rel="stylesheet" href="styles.css?v=92">
 </head>
 <body>
 
@@ -290,10 +290,14 @@
 
     <div class="card">
       <div class="card-head"><h2>API de Claude</h2></div>
-      <label class="block">API key
-        <input type="password" id="apiKey" placeholder="sk-ant-...">
-      </label>
       <p class="hint" id="estadoAcceso"></p>
+      <details class="avanzado" id="avanzadoKey">
+        <summary>Usar mi propia clave</summary>
+        <label class="block">API key
+          <input type="password" id="apiKey" placeholder="sk-ant-...">
+        </label>
+        <p class="hint">Solo si querés que este dispositivo gaste de tu propia cuenta en vez del proxy.</p>
+      </details>
       <label class="block">Modelo
         <select id="modelo">
           <option value="claude-opus-5">Opus 5 — mejor precisión</option>
@@ -372,13 +376,17 @@
         (gratis): creá uno, corré el SQL de <code>supabase.sql</code> y pegá acá los datos.
       </p>
 
-      <label class="block">URL del proyecto
-        <input type="url" id="syncUrl" placeholder="https://xxxxx.supabase.co" autocomplete="off">
-      </label>
-      <label class="block">Publishable key
-        <input type="password" id="syncKey" placeholder="sb_publishable_..." autocomplete="off">
-      </label>
       <p class="hint" id="origenCredenciales"></p>
+      <details class="avanzado" id="avanzadoSync">
+        <summary>Usar otro proyecto de Supabase</summary>
+        <label class="block">URL del proyecto
+          <input type="url" id="syncUrl" placeholder="https://xxxxx.supabase.co" autocomplete="off">
+        </label>
+        <label class="block">Publishable key
+          <input type="password" id="syncKey" placeholder="sb_publishable_..." autocomplete="off">
+        </label>
+        <p class="hint">Vaciá los dos campos y guardá para volver al proyecto que trae la app.</p>
+      </details>
 
       <div class="llave-box">
         <span class="etiqueta">Tu llave de sincronización</span>
@@ -628,23 +636,23 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=90"></script>
-<script src="core.js?v=90"></script>
-<script src="analisis.js?v=90"></script>
-<script src="claude.js?v=90"></script>
-<script src="productos.js?v=90"></script>
-<script src="sync.js?v=90"></script>
-<script src="app.js?v=90"></script>
-<script src="ui/general.js?v=90"></script>
-<script src="ui/hoy.js?v=90"></script>
-<script src="ui/comidas.js?v=90"></script>
-<script src="ui/escaner.js?v=90"></script>
-<script src="ui/asistente.js?v=90"></script>
-<script src="ui/historial.js?v=90"></script>
-<script src="ui/perfil.js?v=90"></script>
-<script src="ui/sincronizacion.js?v=90"></script>
-<script src="ui/calibracion.js?v=90"></script>
-<script src="ui/ajustes.js?v=90"></script>
-<script src="arranque.js?v=90"></script>
+<script src="config.js?v=92"></script>
+<script src="core.js?v=92"></script>
+<script src="analisis.js?v=92"></script>
+<script src="claude.js?v=92"></script>
+<script src="productos.js?v=92"></script>
+<script src="sync.js?v=92"></script>
+<script src="app.js?v=92"></script>
+<script src="ui/general.js?v=92"></script>
+<script src="ui/hoy.js?v=92"></script>
+<script src="ui/comidas.js?v=92"></script>
+<script src="ui/escaner.js?v=92"></script>
+<script src="ui/asistente.js?v=92"></script>
+<script src="ui/historial.js?v=92"></script>
+<script src="ui/perfil.js?v=92"></script>
+<script src="ui/sincronizacion.js?v=92"></script>
+<script src="ui/calibracion.js?v=92"></script>
+<script src="ui/ajustes.js?v=92"></script>
+<script src="arranque.js?v=92"></script>
 </body>
 </html>

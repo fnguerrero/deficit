@@ -656,3 +656,20 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* Menú de dónde sacar la foto. Solo aparece en pantallas táctiles: en la compu
    el botón va derecho al explorador, porque "sacar una foto" no significa nada ahí. */
 .opciones-origen { display: flex; flex-direction: column; gap: 10px; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+
+/* Lo que ya viene resuelto con la app no se muestra: es plomeria, no una
+   decision del usuario. Queda a mano por si alguna vez hace falta. */
+.avanzado { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.avanzado > summary {
+  cursor: pointer; font-size: 12.5px; color: var(--txt2);
+  list-style: none; display: flex; align-items: center; gap: 6px;
+}
+.avanzado > summary::-webkit-details-marker { display: none; }
+.avanzado > summary::before { content: '▸'; font-size: 10px; }
+.avanzado[open] > summary::before { content: '▾'; }
+.avanzado > summary:hover { color: var(--txt); }
+.avanzado > *:not(summary) { margin-top: 10px; }
+/* El ocultamiento nativo de <details> deberia alcanzar, pero acá se decide qué
+   ve el usuario: si algún navegador no lo aplica, quedan expuestas credenciales
+   que no tiene por qué tocar. Con esto no depende de eso. */
+.avanzado:not([open]) > *:not(summary) { display: none; }
