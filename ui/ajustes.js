@@ -68,14 +68,17 @@ async function renderDiagnostico() {
     else if (reg.active) sw = 'activo (' + reg.active.state + ')';
   }
 
-  let version = '—';
-  try {
-    // pueden quedar caches viejos: interesa el número más alto, no el primero
-    const claves = (await caches.keys())
-      .filter(k => /^deficit-v\d+$/.test(k))
-      .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
-    version = claves[0] || '—';
-  } catch { /* sin Cache API */ }
+  // Se la preguntamos al worker que está sirviendo, no a los caches: si hay una
+  // versión esperando, su cache ya existe y mentiría diciendo que ya actualizaste.
+  let version = await versionDelWorker();
+  if (!version) {
+    try {
+      const claves = (await caches.keys())
+        .filter(k => /^deficit-v\d+$/.test(k))
+        .sort((a, b) => Number(b.slice(9)) - Number(a.slice(9)));
+      version = claves[0] || '—';
+    } catch { version = '—'; }
+  }
 
   const diag = armarDiagnostico({
     version,
@@ -643,4 +646,18 @@ function renderEstadoAcceso() {
   } else {
     el.textContent = 'Sin clave no se puede analizar por foto. El registro manual y el código de barras andan igual.';
   }
+}
+
+/** Le pregunta al service worker activo qué versión está sirviendo. */
+function versionDelWorker(msTope = 1500) {
+  return new Promise((resolver) => {
+    const activo = navigator.serviceWorker?.controller;
+    if (!activo) return resolver('');
+
+    const canal = new MessageChannel();
+    const reloj = setTimeout(() => resolver(''), msTope);   // que no cuelgue el diagnóstico
+
+    canal.port1.onmessage = (e) => { clearTimeout(reloj); resolver(String(e.data || '')); };
+    try { activo.postMessage('version', [canal.port2]); } catch { clearTimeout(reloj); resolver(''); }
+  });
 }

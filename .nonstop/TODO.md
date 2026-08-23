@@ -1,65 +1,58 @@
-# TODO — lo que le faltaba a Déficit (ciclo 3)
+# TODO — ciclo 4: que la app se sienta terminada
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-## Partir app.js (primero: todo lo demás va a tocar esos archivos)
+## Lo que quedó desactualizado al mover la clave al proxy
 
-- [x] 1. Separar el render en `ui/` por pantalla, sin cambiar comportamiento
-      · verif: los 319 tests siguen en verde y la app arranca sin errores de consola
-- [x] 2. Un chequeo automático de tamaño de archivos, para que no vuelva a pasar
-      · verif: el script marca en rojo cualquier archivo que pase el límite
+- [x] 1. El onboarding no pide la clave si el proxy está configurado; ese paso pasa a
+      explicar qué hace la app · verif: por DOM, con proxy los 3 pasos se completan sin
+      input de clave; con proxy vacío el input vuelve a aparecer
+- [x] 2. La tarjeta "sin key" de Hoy y sus textos hablan del caso real, no de una clave
+      que nadie tiene que cargar · verif: por DOM en los dos casos
+- [x] 3. Revisar todo mensaje de error que mande a Ajustes a cargar una clave cuando la
+      clave no está ahí · verif: grep de los mensajes + test de los que dependen del proxy
 
-## Probar que la IA estima bien
+- [x] 1b. (aparecido en el camino) `hidden` no funcionaba sobre ningún elemento con una
+      clase que definiera display: 6 lugares, entre ellos la fila de nutrientes que se
+      supone que solo aparece con datos · verif: la lista de elementos que ignoran hidden
+      quedó vacía
 
-- [x] 3. Banco de calibración: fotos con su valor real, corrida y error promedio
-      · verif: correrlo con respuestas simuladas devuelve el error contra los valores reales
-- [x] 4. Guardar cada corrección como medición del sesgo del modelo
-      · verif: test que registra 3 correcciones y calcula el sesgo
-- [x] 5. Avisar si el modelo viene subestimando o sobrestimando sistemáticamente
-      · verif: test con sesgo del 20% que dispara el aviso, y con 3% que no
-- [x] 6. Documentar en el README cómo correr la calibración en dos minutos
-      · verif: seguir los pasos escritos, sin conocimiento previo, llega al resultado
+## Que la app se actualice sin pelear
 
-## Que los datos no se pierdan
+- [x] 4. Auto-actualizar cuando no hay nada en juego; el banner solo si hay un modal
+      abierto o un análisis corriendo · verif: test de la decisión con las dos situaciones
+- [x] 5. Buscar versión nueva al volver a la app, no solo al cargarla · verif: simular
+      visibilitychange y comprobar que se pide la actualización
+- [x] 6. Mostrar en Diagnóstico qué versión está corriendo · verif: por DOM, coincide con
+      la del service worker
 
-- [x] 7. Cliente de Supabase por REST, con fetch inyectable
-      · verif: test de las cuatro operaciones contra un servidor simulado
-- [x] 8. Identificador de dispositivo y llave de sincronización
-      · verif: test de generación, formato y persistencia
-- [x] 9. Subir los cambios locales
-      · verif: test que sube 3 comidas y comprueba el cuerpo del request
-- [x] 10. Bajar los cambios remotos y fusionarlos
-      · verif: test que baja comidas nuevas y las suma sin duplicar
-- [x] 11. Resolver conflictos: gana la modificación más reciente
-      · verif: test con la misma comida editada en dos dispositivos
-- [x] 12. Comidas borradas que no reviven al sincronizar
-      · verif: test que borra en un dispositivo y sincroniza en el otro
-- [x] 13. Pantalla de sincronización: estado, último sync, copiar la llave
-      · verif: por DOM, con el cliente simulado, muestra el resultado real
-- [x] 14. El SQL de las tablas y las políticas, listo para pegar en Supabase
-      · verif: el archivo existe y describe todas las columnas que usa el cliente
-- [x] 15. Respaldo automático a archivo y almacenamiento persistente
-      · verif: pedir persistencia y comprobar el aviso de días sin respaldar
+## Sincronización que no hay que acordarse de tocar
 
-## Código de barras
+- [x] 7. Sincronizar al arrancar, si está configurada y pasó un rato · verif: test con
+      cliente simulado; no corre si sincronizó recién
+- [x] 8. Sincronizar después de guardar una comida, sin bloquear la interfaz · verif: test
+      que guarda y comprueba que subió sin await en el camino del usuario
+- [x] 9. Nunca dos sincronizaciones en paralelo · verif: test que dispara dos a la vez y
+      comprueba que la segunda no llama al servidor
+- [x] 10. Un fallo de red deja el estado local intacto y el error a la vista · verif: test
+      con fetch que rompe a mitad; el estado queda igual que antes
+- [x] 11. Reintentar con backoff los errores transitorios de Supabase · verif: test con
+      500 y después 200
+- [x] 12. Indicador de estado de sincronización que no mienta · verif: por DOM en los
+      cuatro estados: sin configurar, al día, sincronizando, con error
 
-- [x] 16. Cliente de Open Food Facts con cache local
-      · verif: test con respuestas reales guardadas; el segundo pedido no usa red
-- [x] 17. Escáner de código de barras con la cámara, y alternativa a mano
-      · verif: comprobar el flujo con un código tipeado cuando no hay cámara
-- [x] 18. Del producto a la comida: porciones, cantidad y guardado
-      · verif: escanear (simulado) y guardar deja la comida con sus macros
+## Que no se rompa cuando algo falla
 
-## Que no se dispare el gasto
+- [x] 13. La app arranca y navega sin conexión · verif: con el SW activo y la red cortada,
+      cargar y cambiar de pantalla sin errores
+- [x] 14. Los errores del diagnóstico se pueden limpiar y el contador dice la verdad ·
+      verif: por DOM, agregar 3 errores, limpiar, comprobar que queda en 0
+- [x] 15. Un localStorage lleno no rompe la app: avisa y deja seguir · verif: test que
+      simula el error de cuota al guardar
 
-- [x] 19. Tope mensual de gasto que corta de verdad
-      · verif: test que llega al límite y comprueba que el análisis se rechaza
-- [x] 20. Aviso al acercarse y gasto del mes a la vista
-      · verif: al 80% aparece el aviso; al 100%, el corte
+## Accesibilidad
 
-## Nutrientes que faltaban
-
-- [x] 21. Fibra, azúcar y sodio: modelo, schema del análisis y migración
-      · verif: test de migración y del schema; los datos viejos quedan en cero
-- [x] 22. Mostrarlos en el día y en el informe, solo si hay datos
-      · verif: con datos aparecen, sin datos no ensucian la pantalla
+- [x] 16. Todo control interactivo alcanzable por teclado y con nombre accesible · verif:
+      recorrer el DOM y listar los que no lo cumplen; que la lista quede vacía
+- [x] 17. Los modales atrapan el foco y cierran con Escape · verif: test de foco con el
+      modal abierto

@@ -30,6 +30,7 @@ function escribiendo() {
 
 function hayModalAbierto() {
   return $('modal').classList.contains('open') ||
+    $('modalOrigenFoto').classList.contains('open') ||
     !$('visorFoto').hidden ||
     !$('onboarding').hidden;
 }
@@ -40,6 +41,7 @@ document.addEventListener('keydown', (e) => {
   // Escape cierra lo que esté abierto, incluso desde un campo de texto
   if (e.key === 'Escape') {
     if (!$('visorFoto').hidden) { cerrarVisor(); e.preventDefault(); return; }
+    if ($('modalOrigenFoto').classList.contains('open')) { cerrarOrigenFoto(); e.preventDefault(); return; }
     if ($('modal').classList.contains('open')) { cerrarModal(); e.preventDefault(); return; }
     if (escribiendo()) document.activeElement.blur();
     return;
@@ -170,6 +172,30 @@ function pintarPasoOnb() {
 
   $('onbSiguiente').textContent = pasoOnb === 1 ? 'Empezar' : (pasoOnb === TOTAL_PASOS ? 'Listo' : 'Seguir');
   $('onbError').textContent = '';
+
+  if (pasoOnb === TOTAL_PASOS) pintarPasoClave();
+}
+
+/**
+ * El último paso pedía la clave de Claude. Con el proxy andando eso ya no hace
+ * falta y pedirla sería mentir sobre lo que la app necesita: el paso pasa a
+ * contar cómo se usa. Sin proxy vuelve a pedirla, que ahí sí es imprescindible.
+ */
+function pintarPasoClave() {
+  const conProxy = hayAcceso({});   // sin clave propia: ¿alcanza con lo que trae la app?
+
+  $('onbCampoKey').hidden = conProxy;
+  $('onbIcono3').textContent = conProxy ? '📷' : '🔑';
+  $('onbTitulo3').textContent = conProxy ? 'Ya está todo listo' : 'Para leer las fotos';
+
+  $('onbTexto3').textContent = conProxy
+    ? 'Sacale una foto a lo que vas a comer y la app estima las calorías y los macros. ' +
+      'Podés corregir cualquier porción antes de guardar.'
+    : 'El análisis por foto usa la API de Claude. Pegá tu key de console.anthropic.com y queda guardada solo acá.';
+
+  $('onbHint3').textContent = conProxy
+    ? 'También podés cargar comidas a mano o escanear un código de barras, que no gastan nada.'
+    : 'Podés dejarlo para después: el registro manual funciona igual.';
 }
 
 function cerrarOnboarding() {
@@ -207,7 +233,7 @@ $('onbSiguiente').onclick = () => {
   }
 
   if (pasoOnb === TOTAL_PASOS) {
-    const key = $('onbKey').value.trim();
+    const key = $('onbCampoKey').hidden ? '' : $('onbKey').value.trim();
     if (key) state.cfg.apiKey = key;
     cerrarOnboarding();
     toast('Listo, ya podés cargar tu primera comida');
@@ -225,6 +251,17 @@ let swEsperando = null;
 /** Muestra el banner cuando hay una versión nueva lista para tomar el control. */
 function avisarActualizacion(worker) {
   swEsperando = worker;
+
+  // Con la app ociosa se toma sola; el banner es para cuando hay algo en juego.
+  if (sePuedeActualizarSolo({
+    modalAbierto: hayModalAbierto(),
+    analizando: !!analisisEnCurso,
+    editando: escribiendo()
+  })) {
+    worker.postMessage('actualizar');
+    return;
+  }
+
   $('bannerUpdate').hidden = false;
 }
 
@@ -249,6 +286,12 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
         });
       });
     }).catch(() => { /* sin offline, no es crítico */ });
+
+    // Al volver a la app conviene mirar si hay algo nuevo: quien la deja abierta
+    // días en el celular no dispara nunca el load, y se queda en una versión vieja.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+    });
 
     // cuando el worker nuevo toma el control, recargamos una sola vez
     let recargando = false;
@@ -282,3 +325,59 @@ window.addEventListener('appinstalled', () => {
   $('cardInstalar').hidden = true;
   toast('Listo, ya la tenés instalada');
 });
+
+/* ---------------- foco dentro de los modales ---------------- */
+
+/*
+ * Sin esto, con un modal abierto el Tab sigue recorriendo la página de atrás:
+ * quien navega por teclado termina escribiendo en campos que no ve. Se guarda
+ * de dónde venía el foco para devolverlo al cerrar, que es lo que espera
+ * cualquiera que no esté mirando la pantalla.
+ */
+let focoPrevio = null;
+
+function enfocables(cont) {
+  return [...cont.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.disabled && el.getBoundingClientRect().height > 0);
+}
+
+/** El contenedor de modal visible en este momento, si hay alguno. */
+function modalActivo() {
+  if (!$('visorFoto').hidden) return $('visorFoto');
+  if ($('modalOrigenFoto').classList.contains('open')) return $('modalOrigenFoto');
+  if ($('modal').classList.contains('open')) return $('modal');
+  if (!$('onboarding').hidden) return $('onboarding');
+  return null;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+
+  const cont = modalActivo();
+  if (!cont) return;
+
+  const lista = enfocables(cont);
+  if (!lista.length) return;
+
+  const primero = lista[0];
+  const ultimo = lista[lista.length - 1];
+  const dentro = cont.contains(document.activeElement);
+
+  // el foco arranca afuera, o llegó al borde: se lo trae de vuelta al otro extremo
+  if (!dentro) { (e.shiftKey ? ultimo : primero).focus(); e.preventDefault(); return; }
+  if (!e.shiftKey && document.activeElement === ultimo) { primero.focus(); e.preventDefault(); }
+  else if (e.shiftKey && document.activeElement === primero) { ultimo.focus(); e.preventDefault(); }
+}, true);
+
+/** Al abrir un modal: recordar de dónde venía el foco y llevarlo adentro. */
+function tomarFoco(cont) {
+  focoPrevio = document.activeElement;
+  const lista = enfocables(cont);
+  if (lista.length) lista[0].focus();
+}
+
+/** Al cerrarlo: devolverlo a donde estaba. */
+function devolverFoco() {
+  if (focoPrevio && document.body.contains(focoPrevio)) focoPrevio.focus();
+  focoPrevio = null;
+}

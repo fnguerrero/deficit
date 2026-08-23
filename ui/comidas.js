@@ -175,7 +175,7 @@ function pedirFoto(modo) {
   if (!hayAcceso(state.cfg)) {
     state.cfg.avisoKeyOculto = false;   // si la busca, la tarjeta vuelve a aparecer
     save(); renderSinKey();
-    toast('Falta la API key', { texto: 'Cargarla', accion: () => irTab('ajustes') });
+    toast(SIN_ACCESO, { texto: 'Cargarla', accion: () => irTab('ajustes') });
     return;
   }
   modoAnalisis = modo;
@@ -185,6 +185,7 @@ function pedirFoto(modo) {
 
   $('tituloOrigenFoto').textContent = modo === 'etiqueta' ? 'Leer etiqueta' : 'Analizar foto';
   $('modalOrigenFoto').classList.add('open');
+  tomarFoco($('modalOrigenFoto'));
 }
 
 /** Pantalla táctil = celular o tablet, que es donde tiene sentido abrir la cámara. */
@@ -192,7 +193,7 @@ function esTactil() {
   return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 }
 
-function cerrarOrigenFoto() { $('modalOrigenFoto').classList.remove('open'); }
+function cerrarOrigenFoto() { $('modalOrigenFoto').classList.remove('open'); devolverFoco(); }
 
 $('btnCerrarOrigenFoto').onclick = cerrarOrigenFoto;
 $('modalOrigenFoto').onclick = (e) => { if (e.target.id === 'modalOrigenFoto') cerrarOrigenFoto(); };

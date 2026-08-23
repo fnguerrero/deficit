@@ -72,6 +72,10 @@ function save() {
       catch { toast('No se pudo guardar: almacenamiento lleno'); }
     }
   }
+
+  // Un solo enganche para todo: cargar una comida, editarla, borrarla, anotar el
+  // peso. Engancharlo en cada pantalla habría dejado agujeros.
+  if (typeof sincronizarTrasCambio === 'function') sincronizarTrasCambio();
 }
 
 /** La copia de respaldo permite volver atrás si el state principal se corrompe. */

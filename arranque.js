@@ -8,6 +8,7 @@ renderAll();
 programarRecordatorios();
 programarCambioDeDia();
 mostrarOnboarding();
+sincronizarAlArrancar();
 
 // acceso directo "Analizar foto" del ícono de la app
 if (new URLSearchParams(location.search).get('accion') === 'foto') {

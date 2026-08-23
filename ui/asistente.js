@@ -24,7 +24,7 @@ function margenDelDia() {
 $('btnSugerir').onclick = async () => {
   if (topeAlcanzado()) return;
   if (!hayAcceso(state.cfg)) {
-    toast('Falta la API key', { texto: 'Cargarla', accion: () => irTab('ajustes') });
+    toast(SIN_ACCESO, { texto: 'Cargarla', accion: () => irTab('ajustes') });
     return;
   }
 
