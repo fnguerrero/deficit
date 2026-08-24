@@ -42,6 +42,14 @@ function objetivosDelDia() {
       valor: d.ejercicio ? fmtNum(d.ejercicio) + ' kcal' : ''
     },
     {
+      id: 'ayuno',
+      emoji: '⏱️',
+      nombre: 'Ayuno',
+      listo: !!(d.ayuno && d.ayuno.cumplido),
+      valor: enCursoAyuno() ? estadoAyuno(state.cfg.ayunoInicio, Date.now(), horasAyuno()).texto
+        : (d.ayuno ? d.ayuno.horas.toFixed(1) + ' h' : '')
+    },
+    {
       id: 'animo',
       emoji: '🙂',
       nombre: 'Ánimo',
@@ -73,6 +81,7 @@ const TITULOS_OBJ = {
   peso: 'Peso de hoy',
   agua: 'Agua',
   ejercicio: 'Ejercicio',
+  ayuno: 'Ayuno',
   animo: '¿Cómo venís hoy?'
 };
 
@@ -86,6 +95,7 @@ function abrirObjetivo(id) {
   if (id === 'peso') renderPeso();
   if (id === 'agua') renderAgua();
   if (id === 'ejercicio') { renderEjercicio(); renderActividades(); }
+  if (id === 'ayuno') renderAyuno();
   if (id === 'animo') renderCaritas();
 
   $('modalObjetivo').classList.add('open');
@@ -166,3 +176,70 @@ function cerrarMas() { $('modalMas').classList.remove('open'); devolverFoco(); }
 $('btnMas').onclick = () => { $('modalMas').classList.add('open'); tomarFoco($('modalMas')); };
 $('btnCerrarMas').onclick = cerrarMas;
 $('modalMas').onclick = (e) => { if (e.target.id === 'modalMas') cerrarMas(); };
+
+
+/* ---------------- ayuno ---------------- */
+
+function horasAyuno() {
+  const v = VENTANAS_AYUNO.find(x => x.id === (state.cfg.ventanaAyuno || '16:8'));
+  return v ? v.horas : 16;
+}
+
+function enCursoAyuno() { return !!state.cfg.ayunoInicio; }
+
+let relojAyuno = null;
+
+/**
+ * El cronometro se refresca solo mientras el editor esta abierto. Fuera de ahi
+ * no hace falta: el tablero se repinta cada vez que se entra.
+ */
+function renderAyuno() {
+  const cont = $('estadoAyuno');
+  if (!cont) return;
+
+  const ventanas = $('ventanasAyuno');
+  ventanas.innerHTML = '';
+  for (const v of VENTANAS_AYUNO) {
+    const b = document.createElement('button');
+    b.className = 'chip' + (horasAyuno() === v.horas ? ' activo' : '');
+    b.innerHTML = v.nombre + ' <small>' + v.detalle + '</small>';
+    b.onclick = () => { state.cfg.ventanaAyuno = v.id; save(); renderAyuno(); };
+    ventanas.appendChild(b);
+  }
+
+  const d = dia();
+
+  if (enCursoAyuno()) {
+    const e = estadoAyuno(state.cfg.ayunoInicio, Date.now(), horasAyuno());
+    cont.innerHTML = '<div class="ayuno-reloj' + (e.completo ? ' completo' : '') + '">' + e.texto + '</div>' +
+      '<p class="hint">' + (e.completo
+        ? 'Objetivo cumplido. Podes cortarlo cuando quieras.'
+        : 'Faltan ' + Math.ceil(e.faltan / 3600000) + ' h para las ' + e.horasObjetivo + '.') + '</p>';
+    $('btnAyuno').textContent = 'Cortar el ayuno';
+    $('btnAyuno').className = 'primary big';
+  } else {
+    cont.innerHTML = d.ayuno
+      ? '<p class="hint">Hoy ayunaste ' + d.ayuno.horas.toFixed(1) + ' h de ' + d.ayuno.objetivo + '.</p>'
+      : '<p class="hint">Arranca cuando termines de comer.</p>';
+    $('btnAyuno').textContent = 'Empezar a ayunar';
+    $('btnAyuno').className = 'ghost big';
+  }
+}
+
+$('btnAyuno').onclick = () => {
+  if (enCursoAyuno()) {
+    const cerrado = cerrarAyuno(state.cfg.ayunoInicio, Date.now(), horasAyuno());
+    const d = dia();
+    d.ayuno = cerrado;
+    d.act = Date.now();
+    state.cfg.ayunoInicio = null;
+    save();
+    toast(cerrado.cumplido ? 'Ayuno cumplido: ' + cerrado.horas.toFixed(1) + ' h' : 'Ayuno de ' + cerrado.horas.toFixed(1) + ' h');
+  } else {
+    state.cfg.ayunoInicio = Date.now();
+    save();
+    toast('Ayuno arrancado');
+  }
+  renderAyuno();
+  renderObjetivos();
+};

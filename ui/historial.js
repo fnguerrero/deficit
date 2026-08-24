@@ -22,6 +22,8 @@ function svgEl(tag, attrs, texto) {
 }
 
 function renderHistorial() {
+  renderVeredicto();
+  renderRecomendaciones();
   renderBusqueda();
   renderChartPeso();
   renderProyeccion();
@@ -429,5 +431,60 @@ function renderResumen() {
       : `Según tus ${adaptativo.dias} días de datos gastás ${fmtKcal(Math.abs(dif))} ${dif < 0 ? 'menos' : 'más'} de lo que dice la fórmula. Si el peso no baja como esperabas, ajustá el objetivo con esto.`;
   } else {
     aviso.textContent = 'Con 10 días de comidas y dos pesos cargados puedo estimar tu gasto real, que suele diferir bastante de la fórmula.';
+  }
+}
+
+/* ---------------- veredicto y recomendaciones ---------------- */
+
+const ETIQUETA_VEREDICTO = {
+  bien: 'en camino',
+  lento: 'más lento',
+  rapido: 'muy rápido',
+  mal: 'atención',
+  'sin-datos': 'sin datos'
+};
+
+/**
+ * Lo primero que se ve al entrar. Es honesto por diseño: cuando no hay datos
+ * suficientes lo dice, en vez de dar un veredicto de cortesía que llevaría a
+ * decidir mal.
+ */
+function renderVeredicto() {
+  const card = $('cardVeredicto');
+  if (!card) return;
+
+  const v = veredictoProgreso(state.dias, calcular());
+
+  card.className = 'card ' + v.estado;
+  $('veredictoTitulo').textContent = v.titulo || '¿Cómo venís?';
+  $('veredictoPill').textContent = ETIQUETA_VEREDICTO[v.estado] || '';
+  $('veredictoDetalle').textContent = v.detalle;
+
+  const datos = $('veredictoDatos');
+  if (v.datos && v.datos.kgSemanaReal != null) {
+    const baja = -v.datos.kgSemanaReal;
+    datos.innerHTML =
+      `<div><span>${baja >= 0 ? '−' : '+'}${Math.abs(baja).toFixed(2)}</span><small>kg / semana</small></div>` +
+      `<div><span>${v.datos.kgSemanaEsperado.toFixed(2)}</span><small>previsto</small></div>` +
+      `<div><span>${v.datos.adherencia}%</span><small>días cumplidos</small></div>`;
+    datos.hidden = false;
+  } else {
+    datos.hidden = true;
+  }
+}
+
+/** Qué conviene hacer en el modo elegido. Cambian juntas con el modo. */
+function renderRecomendaciones() {
+  const ul = $('listaReco');
+  if (!ul) return;
+
+  const modo = modoDe(state.perfil.modo);
+  $('recoPill').textContent = modo.nombre;
+
+  ul.innerHTML = '';
+  for (const texto of recomendacionesDeModo(modo.id)) {
+    const li = document.createElement('li');
+    li.textContent = texto;
+    ul.appendChild(li);
   }
 }

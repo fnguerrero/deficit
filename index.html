@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=126">
+<link rel="stylesheet" href="styles.css?v=132">
 </head>
 <body>
 
@@ -132,6 +132,18 @@
 
   <!-- ============ HISTORIAL ============ -->
   <section id="tab-historial" class="tab">
+
+    <div class="card" id="cardVeredicto">
+      <div class="card-head"><h2 id="veredictoTitulo">¿Cómo venís?</h2><span id="veredictoPill" class="pill"></span></div>
+      <p id="veredictoDetalle" class="hint"></p>
+      <div class="ring-stats" id="veredictoDatos" hidden></div>
+    </div>
+
+    <div class="card" id="cardRecomendaciones">
+      <div class="card-head"><h2>Para tu modo</h2><span id="recoPill" class="pill"></span></div>
+      <ul id="listaReco" class="lista-reco"></ul>
+    </div>
+
     <div class="card">
       <div class="card-head"><h2>Peso</h2><span id="pesoDelta" class="pill"></span></div>
       <svg id="chartPeso" class="chart" viewBox="0 0 320 120" role="img" aria-label="Evolución de tu peso"></svg>
@@ -291,6 +303,15 @@
             <button id="btnEjercicio" class="primary">Guardar</button>
           </div>
           <p id="ejercicioInfo" class="hint">Lo que quemes se suma al objetivo del día.</p>
+        </section>
+
+        <section data-obj="ayuno" hidden>
+          <!-- Un cronometro, nada mas. Justamente por eso funciona: no depende
+               de sensores que una PWA no tiene. -->
+          <div id="estadoAyuno"></div>
+          <button id="btnAyuno" class="ghost big">Empezar a ayunar</button>
+          <p class="hint" style="margin-top:12px">Ventana</p>
+          <div class="chips" id="ventanasAyuno"></div>
         </section>
 
         <section data-obj="animo" hidden>
@@ -692,25 +713,25 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=126"></script>
-<script src="core.js?v=126"></script>
-<script src="modos.js?v=126"></script>
-<script src="analisis.js?v=126"></script>
-<script src="claude.js?v=126"></script>
-<script src="productos.js?v=126"></script>
-<script src="sync.js?v=126"></script>
-<script src="app.js?v=126"></script>
-<script src="ui/general.js?v=126"></script>
-<script src="ui/hoy.js?v=126"></script>
-<script src="ui/objetivos.js?v=126"></script>
-<script src="ui/comidas.js?v=126"></script>
-<script src="ui/escaner.js?v=126"></script>
-<script src="ui/asistente.js?v=126"></script>
-<script src="ui/historial.js?v=126"></script>
-<script src="ui/perfil.js?v=126"></script>
-<script src="ui/sincronizacion.js?v=126"></script>
-<script src="ui/calibracion.js?v=126"></script>
-<script src="ui/ajustes.js?v=126"></script>
-<script src="arranque.js?v=126"></script>
+<script src="config.js?v=132"></script>
+<script src="core.js?v=132"></script>
+<script src="modos.js?v=132"></script>
+<script src="analisis.js?v=132"></script>
+<script src="claude.js?v=132"></script>
+<script src="productos.js?v=132"></script>
+<script src="sync.js?v=132"></script>
+<script src="app.js?v=132"></script>
+<script src="ui/general.js?v=132"></script>
+<script src="ui/hoy.js?v=132"></script>
+<script src="ui/objetivos.js?v=132"></script>
+<script src="ui/comidas.js?v=132"></script>
+<script src="ui/escaner.js?v=132"></script>
+<script src="ui/asistente.js?v=132"></script>
+<script src="ui/historial.js?v=132"></script>
+<script src="ui/perfil.js?v=132"></script>
+<script src="ui/sincronizacion.js?v=132"></script>
+<script src="ui/calibracion.js?v=132"></script>
+<script src="ui/ajustes.js?v=132"></script>
+<script src="arranque.js?v=132"></script>
 </body>
 </html>

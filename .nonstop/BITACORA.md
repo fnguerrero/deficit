@@ -122,3 +122,9 @@ Nico sumo despues el veredicto honesto de si va bien.
 #14-15 — Ahorro de API: Sonnet por defecto (un tercio del costo de Opus) y Haiku para etiquetas, que es transcribir y no estimar. convieneEscalar() ofrece Opus solo cuando el modelo devolvio confianza baja, para pagar precision solo cuando hace falta — verificado: 8 tests, incluyendo que un plato pide sonnet y una etiqueta pide haiku en el body real
 
 #14b — Tres tests fallaron con el cambio y tenian el precio de Opus escrito a mano: el costo bajo a 0,6 del anterior, que es exactamente la relacion Sonnet/Opus. Se corrigieron los tests, no el codigo. El que elige Opus explicitamente quedo con el precio de Opus, que ahi si corresponde
+
+#32-33 — Ayuno intermitente: boton de arrancar/cortar, cronometro en vivo, cuatro ventanas (16:8, 18:6, 20:4, 12:12) y el ayuno como quinto objetivo del dia. Es un cronometro y nada mas, que es justo por lo que funciona: no depende de sensores que una PWA no tiene — verificado por DOM el flujo entero y 7 tests de la logica
+
+#25-27 — Veredicto y recomendaciones en Historial. Verificado por DOM los tres estados: sin datos dice "Faltan 9 dias de peso y 6 de comidas"; bajando al ritmo previsto dice "Vas en camino" con -0,51 contra 0,51 y 100% de adherencia; y con el peso quieto dice "No estas bajando" y da la explicacion mas probable en vez de maquillarlo. Las recomendaciones cambian con el modo
+
+#31 — Cinco temas: automatico, claro, oscuro, negro OLED (bateria real en el celular) y calido (menos azul de noche) — verificado: los cuatro fondos son distintos y la barra del navegador acompana
