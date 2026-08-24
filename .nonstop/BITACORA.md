@@ -90,3 +90,35 @@ Presupuesto 40.
 #16 — Accesibilidad: 0 controles sin nombre y 0 inalcanzables por teclado en las 4 pantallas (7 a 36 controles cada una, con los plegables abiertos) y en los dos modales
 
 #17 — Encontrados dos bugs que habia introducido YO hoy con el menu de origen de foto: no respondia a Escape y no contaba como modal abierto, asi que la app se podia auto-actualizar con el menu en pantalla. Ademas agregue trampa de foco: con un modal abierto el Tab ya no se escapa a la pagina de atras y al cerrar el foco vuelve de donde vino — verificado por DOM: foco entra, cicla, Escape cierra y lo devuelve a btnFoto
+
+---
+
+## Ciclo 5 — modos, simplificar y que se pueda cumplir (23/08/2026)
+
+#0 — Bootstrap. 31 items en 9 frentes, presupuesto 45. El eje cambia: de "registrar con
+precision" a "que se pueda cumplir todos los dias". Ventana de preguntas usada: login
+multiusuario queda para el ciclo 6, Hoy se rehace como tablero de objetivos, API va con
+Sonnet + optimizaciones + escalado por confianza, y el agua va con vasos tactiles sin +/-.
+Nico sumo despues el veredicto honesto de si va bien.
+
+#1-3 — modos.js nuevo con los 6 modos (mantenimiento, moderado, agresivo, definicion, keto, volumen). El objetivo sale de Mifflin-St Jeor por el cuerpo de cada uno, no de una constante; la proteina se prescribe por kilo de peso; keto fija 30 g de carbos y llena con grasa. Pisos de seguridad: 1500/1200 y nunca por debajo del basal — verificado: 14 tests, con el TMB y el TDEE calculados a mano
+
+#6 — comidaApta(): reglas por modo, todo local, cero llamadas a la API. En keto el carbono es tope duro y cuenta lo que ya consumiste hoy; en el resto una comida que se lleva mas del 60% del dia no entra — verificado: 6 tests con comidas al limite
+
+#18 y #22 — Actividades por MET (kcal = MET x peso x horas) con duracion propia por actividad, favoritas y actividades que se pueden agregar sin perder las del catalogo. Agua: vasos objetivo segun el peso, con piso y techo — verificado: 8 tests
+
+#26 — veredictoProgreso(): honesto o calla. Con menos de 10 dias de peso y 7 de registro dice cuantos faltan en vez de inventar una tendencia; con datos detecta en camino, mas lento, sin deficit y demasiado rapido, con regresion lineal sobre el peso y adherencia real — verificado: 11 tests, incluido que el peso que sube no puede dar "vas bien"
+
+#9-13 — Hoy rehecha como tablero. Los tres botones de carga en una fila; sugerencias, repetir, manual y kcal sueltas se fueron a "Mas opciones"; grilla de 4 objetivos que se marcan en verde al completarse; las comidas sin descripcion en la lista (se ve al tocar) y con marca de si entran en el modo — verificado por DOM: los 3 botones comparten offsetTop, y completar peso/ejercicio/animo los pone verdes
+
+#13b — El layout perseguia alturas fijas y siempre quedaba corto. Ahora la estructura ocupa lo suyo y la lista de comidas se queda con lo que sobra (flex + min-height 0), asi entra con 2 comidas o con 10 — verificado: sobra 0 px en 375x812 con el dia cargado y 4 comidas; con 10 la lista scrollea adentro sin mover la pagina
+
+#21 — Agua tactil: se toca el vaso al que llegaste y se llenan todos hasta ahi; volver a tocar el ultimo baja uno. Sin + ni -, que era un toque por vaso — verificado por DOM: tocar el 4 deja 4, tocarlo de nuevo deja 3, tocar el 8 deja 8
+
+#19 y #23-24 — Ejercicio por actividad favorita de un toque (funcional 60' = 510 kcal para 85 kg), animo por caritas con nota opcional, y el peso precargado con el ultimo valor conocido — verificado por DOM
+
+#4 — Selector de modo en Perfil: los 6 en una grilla, con lo que implica cada uno y el objetivo resultante debajo — verificado por DOM: elegir Keto guarda el modo y baja los carbos a 30
+
+#14-15 — Ahorro de API: Sonnet por defecto (un tercio del costo de Opus) y Haiku para etiquetas, que es transcribir y no estimar. convieneEscalar() ofrece Opus solo cuando el modelo devolvio confianza baja, para pagar precision solo cuando hace falta — verificado: 8 tests, incluyendo que un plato pide sonnet y una etiqueta pide haiku en el body real
+
+#14b — Tres tests fallaron con el cambio y tenian el precio de Opus escrito a mano: el costo bajo a 0,6 del anterior, que es exactamente la relacion Sonnet/Opus. Se corrigieron los tests, no el codigo. El que elige Opus explicitamente quedo con el precio de Opus, que ahi si corresponde

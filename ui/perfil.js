@@ -5,6 +5,7 @@
 /* ---------------- render: PERFIL ---------------- */
 
 function renderPerfil() {
+  renderModos();
   const p = state.perfil;
   $('pSexo').value = p.sexo;
   $('pEdad').value = p.edad ?? '';
@@ -106,3 +107,46 @@ $('btnGuardarPerfil').onclick = () => {
   save(); renderAll();
   toast('Perfil guardado');
 };
+
+/* ---------------- el modo ---------------- */
+
+/**
+ * Elegir el modo es la decisión que más cambia la app: de acá salen el objetivo
+ * del día, el reparto de macros, qué comida entra y qué se recomienda.
+ */
+function renderModos() {
+  const cont = $('listaModos');
+  if (!cont) return;
+
+  const actual = state.perfil.modo || MODO_DEFECTO;
+  cont.innerHTML = '';
+
+  for (const m of listaModos()) {
+    const b = document.createElement('button');
+    b.className = 'modo-btn' + (m.id === actual ? ' activo' : '');
+    b.innerHTML = `${m.nombre}<small>${m.resumen}</small>`;
+    b.setAttribute('aria-pressed', String(m.id === actual));
+    b.onclick = () => {
+      state.perfil.modo = m.id;
+      save();
+      renderModos();
+      renderPerfil();
+      renderHoy();
+      toast(`Modo ${m.nombre}`);
+    };
+    cont.appendChild(b);
+  }
+
+  const modo = modoDe(actual);
+  const calc = calcular();
+  const partes = [modo.detalle];
+
+  if (calc) {
+    partes.push(`Tu objetivo: ${fmtNum(calc.objetivo)} kcal — ${fmtNum(calc.macros.prot)} g de proteína, ` +
+      `${fmtNum(calc.macros.carb)} g de carbohidratos y ${fmtNum(calc.macros.gras)} g de grasas.`);
+    if (calc.ajustado && calc.motivo) partes.push(calc.motivo);
+  }
+  if (modo.aviso) partes.push(modo.aviso);
+
+  $('detalleModo').textContent = partes.join(' ');
+}

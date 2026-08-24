@@ -124,8 +124,38 @@ function dia(f = fecha) {
 
 /* ---------------- cálculo (envuelve a core.js) ---------------- */
 
+/*
+ * El objetivo del dia ahora lo decide el modo (ver modos.js). Se siguen
+ * devolviendo `objetivo` y `macros` porque la UI vieja los lee por ese nombre:
+ * renombrarlos en 8 pantallas de una sola vez seria buscarse un problema.
+ */
 function calcular() {
-  return calcularPlan(state.perfil);
+  const o = objetivoDeModo(state.perfil, state.perfil.modo);
+  if (!o) return null;
+
+  // un objetivo puesto a mano le gana al del modo: es una decision de la persona
+  const manual = Number(state.perfil.manual) || 0;
+  const kcal = manual > 0 ? manual : o.kcal;
+
+  const deficitReal = o.tdee - kcal;
+  const kgSemana = +((deficitReal * 7) / 7700).toFixed(2);
+
+  let semanas = null;
+  const p = state.perfil;
+  if (p.pesoObj && p.peso > p.pesoObj && kgSemana > 0) {
+    semanas = Math.ceil((p.peso - p.pesoObj) / kgSemana);
+  }
+
+  return {
+    ...o,
+    kcal,
+    objetivo: kcal,
+    deficitReal,
+    kgSemana,
+    semanas,
+    piso: Math.max(o.tmb, PISO_KCAL[p.sexo === 'f' ? 'f' : 'm']),
+    macros: { prot: o.prot, carb: o.carb, gras: o.gras }
+  };
 }
 
 function totalesDia(f = fecha) {

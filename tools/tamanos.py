@@ -17,6 +17,7 @@ LIMITES = [
     ('config.js', 40),
     ('claude.js', 900),
     ('analisis.js', 900),
+    ('modos.js', 700),
     ('sync.js', 500),
     ('tests.js', 6000),   # la suite crece con cada feature; partirla no aporta
     ('sw.js', 150),

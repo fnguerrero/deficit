@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=104">
+<link rel="stylesheet" href="styles.css?v=126">
 </head>
 <body>
 
@@ -36,6 +36,7 @@
       <button id="volverHoy">Volver a hoy</button>
     </div>
 
+    <div class="resumen">
     <div class="card ring-card">
       <div class="ring-wrap">
         <svg viewBox="0 0 120 120" class="ring">
@@ -47,12 +48,7 @@
           <span id="ringGoal">/ 0 kcal</span>
         </div>
       </div>
-      <div class="ring-stats">
-        <div><span id="statRestante">0</span><small>restantes</small></div>
-        <div><span id="statObjetivo">0</span><small>objetivo</small></div>
-        <div><span id="statTdee">0</span><small>gasto est.</small></div>
       </div>
-    </div>
 
     <div class="card macros">
       <div class="macro">
@@ -68,6 +64,13 @@
         <div class="bar"><i id="mGrasBar" class="gras"></i></div>
       </div>
       <div id="listaNutrientes" class="nutrientes" hidden></div>
+    </div>
+    </div>
+
+    <div class="ring-stats">
+      <div><span id="statRestante">0</span><small>restantes</small></div>
+      <div><span id="statObjetivo">0</span><small>objetivo</small></div>
+      <div><span id="statTdee">0</span><small>gasto est.</small></div>
     </div>
 
     <div class="card sin-key" id="cardSinKey" hidden>
@@ -87,60 +90,43 @@
       <div class="chips" id="listaFavoritos"></div>
     </div>
 
-    <div class="actions">
-      <button id="btnFoto" class="primary big">📷 Analizar foto</button>
-      <button id="btnManual" class="ghost big">✎ Carga manual</button>
-      <button id="btnEscanear" class="ghost big">📱 Escanear código de barras</button>
-      <button id="btnEtiqueta" class="ghost big">🏷️ Leer etiqueta de un envase</button>
-      <button id="btnRepetir" class="ghost big">↻ Repetir una comida</button>
-      <button id="btnSugerir" class="ghost big">💡 ¿Qué me como con lo que queda?</button>
+    <div class="card sin-key" id="cardSinKey" hidden>
+      <p>El análisis por foto necesita una API key de Anthropic. Todo lo demás anda sin eso.</p>
+      <div class="actions-row">
+        <button id="btnIrAjustes" class="ghost small">Cargar la key</button>
+        <button id="btnOcultarKey" class="ghost small">Ahora no</button>
+      </div>
+    </div>
+
+    <div class="aviso-proteina" id="avisoProteina" hidden>
+      <span id="avisoProteinaTxt"></span>
+    </div>
+
+    <div class="card" id="cardFavoritos" hidden>
+      <div class="card-head"><h2>Favoritos</h2><span class="pill">1 toque</span></div>
+      <div class="chips" id="listaFavoritos"></div>
+    </div>
+
+    <div class="acciones-fila">
+      <button id="btnFoto" class="accion primary">📷<span>Foto</span></button>
+      <button id="btnEscanear" class="accion">📊<span>Código</span></button>
+      <button id="btnEtiqueta" class="accion">🏷️<span>Etiqueta</span></button>
     </div>
     <input type="file" id="fileInput" accept="image/*" multiple hidden>
     <!-- capture abre la cámara directo; va sin multiple porque juntos Android ignora la cámara -->
     <input type="file" id="camaraInput" accept="image/*" capture="environment" hidden>
 
-    <div class="card">
+    <!-- Los objetivos del día: se completan y se apagan. Lo que ya cargaste deja
+         de pedirte atención, que es lo único que hace que se sostenga. -->
+    <div class="objetivos" id="objetivosDia"></div>
+
+    <div class="card" id="cardComidas">
       <div class="card-head"><h2>Comidas del día</h2><span id="comidasCount" class="pill">0</span></div>
       <ul id="listaComidas" class="lista"></ul>
       <p id="comidasVacio" class="vacio">Todavía no cargaste nada. Sacá una foto de tu plato.</p>
-      <div class="quick">
-        <input type="number" id="quickKcal" inputmode="numeric" placeholder="Sumar kcal sueltas" aria-label="Calorías sueltas">
-        <button id="btnQuick" class="ghost small">+ Sumar</button>
-      </div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><h2>Agua</h2><span id="aguaCount" class="pill">0</span></div>
-      <div class="agua-row">
-        <button id="aguaMenos" class="icon-btn" aria-label="Un vaso menos">−</button>
-        <div id="aguaVasos" class="vasos" role="img" aria-label="Vasos de agua tomados"></div>
-        <button id="aguaMas" class="icon-btn" aria-label="Un vaso más">+</button>
-      </div>
-      <p id="aguaInfo" class="hint"></p>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Ejercicio</h2><span id="ejercicioPill" class="pill">0 kcal</span></div>
-      <div class="peso-row">
-        <input type="number" id="ejercicioHoy" inputmode="numeric" placeholder="kcal quemadas">
-        <button id="btnEjercicio" class="primary">Guardar</button>
-      </div>
-      <p id="ejercicioInfo" class="hint">Lo que quemes se suma al objetivo del día.</p>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Nota del día</h2><span id="notaPill" class="pill" hidden>✎</span></div>
-      <textarea id="notaDia" rows="2" placeholder="Cómo te sentiste, qué salió distinto, lo que quieras acordarte"></textarea>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>Peso de hoy</h2></div>
-      <div class="peso-row">
-        <input type="number" id="pesoHoy" step="0.1" inputmode="decimal" placeholder="kg">
-        <button id="btnPeso" class="primary">Guardar</button>
-      </div>
-      <p id="pesoInfo" class="hint"></p>
-    </div>
+    <button id="btnMas" class="mas-opciones">Más opciones</button>
 
   </section>
 
@@ -220,6 +206,11 @@
   <section id="tab-perfil" class="tab">
     <div class="card">
       <div class="card-head"><h2>Tus datos</h2></div>
+
+      <!-- El modo va primero: decide el objetivo del dia y que comida entra. -->
+      <div class="modos" id="listaModos"></div>
+      <p class="hint" id="detalleModo"></p>
+
       <div class="form-grid">
         <label>Sexo
           <select id="pSexo"><option value="m">Masculino</option><option value="f">Femenino</option></select>
@@ -266,6 +257,71 @@
       <p class="hint" id="calcAviso"></p>
     </div>
   </section>
+
+  <!-- Editor de un objetivo del día. Cada tile abre su sección; el resto queda
+       oculto. Todo lo que antes eran cuatro tarjetas apiladas vive acá. -->
+  <div class="modal" id="modalObjetivo">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="tituloObjetivo">Objetivo</h2>
+        <button class="icon" id="btnCerrarObjetivo" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <section data-obj="peso" hidden>
+          <div class="peso-row">
+            <input type="number" id="pesoHoy" step="0.1" inputmode="decimal" placeholder="kg" aria-label="Peso de hoy">
+            <button id="btnPeso" class="primary">Guardar</button>
+          </div>
+          <p id="pesoInfo" class="hint"></p>
+        </section>
+
+        <section data-obj="agua" hidden>
+          <!-- Se toca el vaso al que llegaste: sin + ni −, que era pedir un toque
+               por vaso y nadie lo sostiene. -->
+          <div id="aguaVasos" class="vasos" role="group" aria-label="Vasos de agua"></div>
+          <p id="aguaInfo" class="hint"></p>
+        </section>
+
+        <section data-obj="ejercicio" hidden>
+          <p class="hint">Elegí qué hiciste y la app calcula las calorías con tu peso.</p>
+          <div class="chips" id="listaActividades"></div>
+          <div class="peso-row" style="margin-top:12px">
+            <input type="number" id="ejercicioHoy" inputmode="numeric" placeholder="o poné las kcal a mano" aria-label="Calorías quemadas">
+            <button id="btnEjercicio" class="primary">Guardar</button>
+          </div>
+          <p id="ejercicioInfo" class="hint">Lo que quemes se suma al objetivo del día.</p>
+        </section>
+
+        <section data-obj="animo" hidden>
+          <!-- Escribir una nota todos los días no lo sostiene nadie; tocar una
+               carita sí. La nota queda para cuando de verdad hay algo que contar. -->
+          <div class="caritas" id="listaCaritas"></div>
+          <textarea id="notaDia" rows="2" placeholder="Si querés agregar algo (opcional)"></textarea>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Lo que se usa poco: sigue existiendo, pero fuera del camino. -->
+  <div class="modal" id="modalMas">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2>Más opciones</h2>
+        <button class="icon" id="btnCerrarMas" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modal-body opciones-origen">
+        <button id="btnManual" class="ghost big">✎ Carga manual</button>
+        <button id="btnRepetir" class="ghost big">↻ Repetir una comida</button>
+        <button id="btnSugerir" class="ghost big">💡 ¿Qué me como con lo que queda?</button>
+        <div class="peso-row" style="margin-top:6px">
+          <input type="number" id="quickKcal" inputmode="numeric" placeholder="Sumar kcal sueltas" aria-label="Calorías sueltas">
+          <button id="btnQuick" class="ghost">+ Sumar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div class="modal" id="modalOrigenFoto">
     <div class="modal-box">
@@ -636,23 +692,25 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=104"></script>
-<script src="core.js?v=104"></script>
-<script src="analisis.js?v=104"></script>
-<script src="claude.js?v=104"></script>
-<script src="productos.js?v=104"></script>
-<script src="sync.js?v=104"></script>
-<script src="app.js?v=104"></script>
-<script src="ui/general.js?v=104"></script>
-<script src="ui/hoy.js?v=104"></script>
-<script src="ui/comidas.js?v=104"></script>
-<script src="ui/escaner.js?v=104"></script>
-<script src="ui/asistente.js?v=104"></script>
-<script src="ui/historial.js?v=104"></script>
-<script src="ui/perfil.js?v=104"></script>
-<script src="ui/sincronizacion.js?v=104"></script>
-<script src="ui/calibracion.js?v=104"></script>
-<script src="ui/ajustes.js?v=104"></script>
-<script src="arranque.js?v=104"></script>
+<script src="config.js?v=126"></script>
+<script src="core.js?v=126"></script>
+<script src="modos.js?v=126"></script>
+<script src="analisis.js?v=126"></script>
+<script src="claude.js?v=126"></script>
+<script src="productos.js?v=126"></script>
+<script src="sync.js?v=126"></script>
+<script src="app.js?v=126"></script>
+<script src="ui/general.js?v=126"></script>
+<script src="ui/hoy.js?v=126"></script>
+<script src="ui/objetivos.js?v=126"></script>
+<script src="ui/comidas.js?v=126"></script>
+<script src="ui/escaner.js?v=126"></script>
+<script src="ui/asistente.js?v=126"></script>
+<script src="ui/historial.js?v=126"></script>
+<script src="ui/perfil.js?v=126"></script>
+<script src="ui/sincronizacion.js?v=126"></script>
+<script src="ui/calibracion.js?v=126"></script>
+<script src="ui/ajustes.js?v=126"></script>
+<script src="arranque.js?v=126"></script>
 </body>
 </html>

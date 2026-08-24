@@ -2468,7 +2468,7 @@ testAsync('sugerirComida devuelve las opciones normalizadas', async () => {
   esperar(r.opciones[0].titulo, 'Pollo con ensalada');
   esperar(r.opciones[0].items.length, 2);
   esperar(r.opciones[0].items[0].calorias, 300);
-  cerca(r.costo, 800 / 1e6 * 5 + 400 / 1e6 * 25, 0.000001);
+  cerca(r.costo, 800 / 1e6 * PRECIOS[MODELO_DEFAULT].entrada + 400 / 1e6 * PRECIOS[MODELO_DEFAULT].salida, 0.000001);
 });
 
 testAsync('sugerirComida manda el schema correcto', async () => {
@@ -2691,7 +2691,7 @@ testAsync('analizarImagen en streaming devuelve lo mismo que sin streaming', asy
   esperar(body.stream, true, 'tiene que pedir streaming');
   esperar(r.titulo, 'Milanesa con puré');
   esperar(r.items.length, 1);
-  cerca(r.costo, 1200 / 1e6 * 5 + 300 / 1e6 * 25, 0.000001, 'el costo se calcula igual');
+  cerca(r.costo, 1200 / 1e6 * PRECIOS[MODELO_DEFAULT].entrada + 300 / 1e6 * PRECIOS[MODELO_DEFAULT].salida, 0.000001, 'el costo se calcula igual');
   esperarQue(avances.length > 0, 'y el avance llegó');
 });
 
@@ -2903,7 +2903,8 @@ testAsync('el análisis devuelve tokens y costo', async () => {
   const fetchFn = async () => respuestaOk(COMIDA_OK, { input_tokens: 2000, output_tokens: 400 });
   const r = await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', modelo: 'claude-opus-5' });
   esperar(r.tokens, { entrada: 2000, salida: 400 });
-  cerca(r.costo, 2000 / 1e6 * 5 + 400 / 1e6 * 25, 0.000001);
+  // acá el modelo va explícito, así que el costo es el de Opus y no el del default
+  cerca(r.costo, 2000 / 1e6 * PRECIOS['claude-opus-5'].entrada + 400 / 1e6 * PRECIOS['claude-opus-5'].salida, 0.000001);
   esperar(r.modelo, 'claude-opus-5');
 });
 
@@ -4197,6 +4198,346 @@ testAsync('si se cae la red del todo, avisa después de agotar los intentos', as
     esperarQue(/conectar con Supabase/.test(e.message), e.message);
   }
   esperar(llamadas, 3);
+});
+
+
+/* ============================================================
+   Modos
+   ============================================================ */
+
+/* Varón de 35 años, 180 cm, 85 kg, actividad moderada.
+   TMB Mifflin = 10*85 + 6.25*180 - 5*35 + 5 = 850 + 1125 - 175 + 5 = 1805
+   TDEE = 1805 * 1.55 = 2798 */
+const PERFIL_M = { sexo: 'm', edad: 35, altura: 180, peso: 85, actividad: 1.55 };
+
+/* Mujer de 30, 165 cm, 60 kg.
+   TMB = 600 + 1031.25 - 150 - 161 = 1320 (redondeado) */
+const PERFIL_F = { sexo: 'f', edad: 30, altura: 165, peso: 60, actividad: 1.55 };
+
+test('el gasto basal sale de Mifflin-St Jeor', () => {
+  const o = objetivoDeModo(PERFIL_M, 'mantenimiento');
+  esperar(o.tmb, 1805, 'TMB calculado a mano');
+  esperar(o.tdee, 2798, 'TDEE = TMB x 1,55');
+});
+
+test('la formula cambia con el genero', () => {
+  esperar(objetivoDeModo(PERFIL_F, 'mantenimiento').tmb, 1320);
+});
+
+test('mantenimiento no aplica deficit', () => {
+  const o = objetivoDeModo(PERFIL_M, 'mantenimiento');
+  esperar(o.kcal, o.tdee, 'comes lo que gastas');
+  esperar(o.kgSemana, 0);
+});
+
+test('cada modo baja lo que promete', () => {
+  const tdee = objetivoDeModo(PERFIL_M, 'mantenimiento').tdee;
+  esperar(objetivoDeModo(PERFIL_M, 'moderado').kcal, Math.round(tdee * 0.8));
+  esperar(objetivoDeModo(PERFIL_M, 'agresivo').kcal, Math.round(tdee * 0.7));
+  esperar(objetivoDeModo(PERFIL_M, 'definicion').kcal, Math.round(tdee * 0.85));
+});
+
+test('volumen suma en vez de restar', () => {
+  const o = objetivoDeModo(PERFIL_M, 'volumen');
+  esperarQue(o.kcal > o.tdee, 'tiene que comer por encima del gasto');
+});
+
+test('el objetivo sale del cuerpo, no de una constante', () => {
+  const flaco = objetivoDeModo({ ...PERFIL_M, peso: 60 }, 'moderado');
+  const grande = objetivoDeModo({ ...PERFIL_M, peso: 110 }, 'moderado');
+  esperarQue(grande.kcal > flaco.kcal + 300, 'dos cuerpos distintos no pueden dar lo mismo');
+});
+
+test('los macros cierran con las calorias', () => {
+  for (const m of ['mantenimiento', 'moderado', 'agresivo', 'definicion', 'volumen']) {
+    const o = objetivoDeModo(PERFIL_M, m);
+    const suma = o.prot * 4 + o.carb * 4 + o.gras * 9;
+    esperarQue(Math.abs(suma - o.kcal) < 60, m + ': los macros suman ' + suma + ' contra ' + o.kcal);
+  }
+});
+
+test('keto fija los carbohidratos en 30 g y llena con grasa', () => {
+  const o = objetivoDeModo(PERFIL_M, 'keto');
+  esperar(o.carb, 30);
+  esperar(o.carbosMaxDia, 30);
+  esperarQue(o.gras * 9 > o.kcal * 0.55, 'la mayoria de las calorias tienen que venir de grasa');
+});
+
+test('la proteina se calcula por kilo de peso', () => {
+  const o = objetivoDeModo(PERFIL_M, 'definicion');
+  esperarQue(o.prot >= 85 * 2.0, 'definicion pide ~2,2 g/kg y dio ' + o.prot + ' g para 85 kg');
+});
+
+/* ---- pisos de seguridad ---- */
+
+test('ningun modo baja del piso de seguridad', () => {
+  const chica = { sexo: 'f', edad: 60, altura: 150, peso: 48, actividad: 1.2 };
+  const o = objetivoDeModo(chica, 'agresivo');
+  esperarQue(o.kcal >= 1200, 'no puede quedar en ' + o.kcal);
+  esperarQue(o.ajustado, 'tiene que avisar que lo ajusto');
+  esperarQue(/musculo|músculo/.test(o.motivo), 'y explicar por que: ' + o.motivo);
+});
+
+test('el piso nunca queda por debajo del metabolismo basal', () => {
+  const o = objetivoDeModo({ ...PERFIL_M, peso: 70 }, 'agresivo');
+  esperarQue(o.kcal >= o.tmb, o.kcal + ' no puede ser menor que el basal ' + o.tmb);
+});
+
+test('sin datos del cuerpo no hay objetivo inventado', () => {
+  esperar(objetivoDeModo({ sexo: 'm' }, 'moderado'), null);
+  esperar(objetivoDeModo(null, 'moderado'), null);
+});
+
+test('un modo que ya no existe cae en el de siempre', () => {
+  esperar(objetivoDeModo(PERFIL_M, 'inventado').modo, 'moderado');
+});
+
+/* ---- apta o no apta ---- */
+
+const OBJ_M = objetivoDeModo(PERFIL_M, 'moderado');
+const OBJ_KETO = objetivoDeModo(PERFIL_M, 'keto');
+
+test('keto: una comida con muchos carbohidratos no entra', () => {
+  const r = comidaApta({ kcal: 600, carb: 45, prot: 20 }, 'keto', OBJ_KETO, { carb: 0 });
+  esperarQue(!r.apta, 'no puede entrar');
+  esperarQue(/45 g/.test(r.motivo), 'el motivo tiene que decir el numero: ' + r.motivo);
+});
+
+test('keto: una comida baja en carbohidratos entra', () => {
+  const r = comidaApta({ kcal: 600, carb: 6, prot: 40 }, 'keto', OBJ_KETO, { carb: 0 });
+  esperarQue(r.apta);
+  esperar(r.nivel, 'si');
+});
+
+test('keto: la misma comida deja de entrar si ya gastaste los carbohidratos', () => {
+  const comida = { kcal: 400, carb: 12, prot: 20 };
+  esperarQue(comidaApta(comida, 'keto', OBJ_KETO, { carb: 0 }).apta, 'a la manana entra');
+  esperarQue(!comidaApta(comida, 'keto', OBJ_KETO, { carb: 25 }).apta, 'con 25 g ya gastados, no');
+});
+
+test('una comida que se lleva el dia entero no entra en ningun modo', () => {
+  const r = comidaApta({ kcal: Math.round(OBJ_M.kcal * 0.7), carb: 80, prot: 30 }, 'moderado', OBJ_M);
+  esperarQue(!r.apta);
+  esperarQue(/% de tu objetivo/.test(r.motivo), r.motivo);
+});
+
+test('una comida grande pero razonable entra con aviso', () => {
+  const r = comidaApta({ kcal: Math.round(OBJ_M.kcal * 0.5), carb: 60, prot: 40 }, 'moderado', OBJ_M);
+  esperarQue(r.apta, 'entra');
+  esperar(r.nivel, 'justo', 'pero avisando que es grande');
+});
+
+test('una comida normal entra sin ruido', () => {
+  const r = comidaApta({ kcal: 500, carb: 50, prot: 35 }, 'moderado', OBJ_M);
+  esperarQue(r.apta);
+  esperar(r.nivel, 'si');
+  esperar(r.motivo, '', 'sin motivo no hay nada que mostrar');
+});
+
+/* ---- recomendaciones ---- */
+
+test('cada modo tiene sus propias recomendaciones', () => {
+  const keto = recomendacionesDeModo('keto').join(' ');
+  const vol = recomendacionesDeModo('volumen').join(' ');
+  esperarQue(/carbohidratos escondidos/.test(keto), 'keto habla de carbohidratos');
+  esperarQue(/fuerza/.test(vol), 'volumen habla de entrenar');
+  esperarQue(keto !== vol, 'no pueden ser las mismas');
+});
+
+test('todos los modos tienen recomendaciones', () => {
+  for (const m of listaModos()) {
+    esperarQue(recomendacionesDeModo(m.id).length >= 3, m.id + ' tiene pocas');
+  }
+});
+
+/* ---- actividades por MET ---- */
+
+test('las calorias del ejercicio salen de MET x peso x horas', () => {
+  const running = ACTIVIDADES.find(a => a.id === 'running');
+  esperar(caloriasActividad(running, 85, 30), Math.round(9.8 * 85 * 0.5));
+  esperar(caloriasActividad(running, 85, 60), Math.round(9.8 * 85));
+});
+
+test('cada actividad trae su duracion habitual', () => {
+  const porId = (id) => ACTIVIDADES.find(a => a.id === id);
+  esperar(porId('funcional').minutos, 60);
+  esperar(porId('running').minutos, 30);
+  esperar(porId('futbol').minutos, 60);
+});
+
+test('sin minutos usa la duracion por defecto de la actividad', () => {
+  const f = ACTIVIDADES.find(a => a.id === 'funcional');
+  esperar(caloriasActividad(f, 85), Math.round(6.0 * 85 * 1));
+});
+
+test('el mismo ejercicio gasta mas en alguien mas pesado', () => {
+  const f = ACTIVIDADES.find(a => a.id === 'futbol');
+  esperarQue(caloriasActividad(f, 100) > caloriasActividad(f, 70));
+});
+
+test('se pueden agregar actividades propias sin perder las del catalogo', () => {
+  const estado = { cfg: { actividades: [{ id: 'escalada', nombre: 'Escalada', met: 8, minutos: 90 }] } };
+  const todas = actividadesDe(estado);
+  esperarQue(todas.some(a => a.id === 'escalada'), 'esta la propia');
+  esperarQue(todas.some(a => a.id === 'running'), 'y siguen las de siempre');
+});
+
+test('una actividad del catalogo se puede ajustar sin duplicarla', () => {
+  const estado = { cfg: { actividades: [{ id: 'running', nombre: 'Running', minutos: 45 }] } };
+  const todas = actividadesDe(estado);
+  esperar(todas.filter(a => a.id === 'running').length, 1, 'no puede aparecer dos veces');
+  esperar(todas.find(a => a.id === 'running').minutos, 45, 'con la duracion propia');
+  esperar(todas.find(a => a.id === 'running').met, 9.8, 'pero conservando el MET del catalogo');
+});
+
+test('las favoritas por defecto son tres', () => {
+  esperar(actividadesFavoritas({ cfg: {} }).length, 3);
+});
+
+/* ---- agua ---- */
+
+test('el objetivo de vasos sale del peso', () => {
+  esperar(vasosObjetivo(85), Math.round((85 * 35) / 250));
+  esperarQue(vasosObjetivo(50) >= 6, 'con un piso razonable');
+  esperarQue(vasosObjetivo(140) <= 12, 'y un techo, o serian 20 vasos');
+});
+
+
+/* ---- veredicto: dice la verdad o dice que no sabe ---- */
+
+/* Serie de dias con peso y comidas. deltaDiario positivo = mas peso en el
+   pasado = la persona esta bajando. */
+function serie({ dias = 14, kcalDia = 2000, pesoHoy = 85, bajaPorSemana = 0.5 } = {}) {
+  const out = {};
+  const porDia = bajaPorSemana / 7;
+  for (let i = 0; i < dias; i++) {
+    const f = sumarDias(FIN_FIXTURE, -i);
+    out[f] = {
+      peso: +(pesoHoy + porDia * i).toFixed(2),
+      agua: 0, ejercicio: 0, nota: '', act: 1,
+      comidas: [{ id: 'c' + i, ts: tsEnMomento(f, 'almuerzo'), momento: 'almuerzo',
+                  titulo: 'Dia', items: [], kcal: kcalDia, prot: 100, carb: 100, gras: 50 }]
+    };
+  }
+  return out;
+}
+
+test('con pocos dias no inventa una tendencia', () => {
+  const v = veredictoProgreso(serie({ dias: 4 }), OBJ_M, FIN_FIXTURE);
+  esperar(v.estado, 'sin-datos');
+  esperarQue(/Faltan/.test(v.detalle), 'tiene que decir cuanto falta: ' + v.detalle);
+  esperarQue(/agua y sal|inventada/.test(v.detalle), 'y por que no puede afirmar nada');
+});
+
+test('cuenta cuantos dias faltan, no dice "pocos"', () => {
+  const v = veredictoProgreso(serie({ dias: 6 }), OBJ_M, FIN_FIXTURE);
+  esperarQue(/4 dias de peso|4 días de peso/.test(v.detalle), 'faltan 4 para los 10: ' + v.detalle);
+});
+
+test('sin objetivo no se pronuncia', () => {
+  esperar(veredictoProgreso(serie({}), null, FIN_FIXTURE).estado, 'sin-datos');
+});
+
+test('detecta que vas en camino', () => {
+  // el objetivo moderado apunta a ~0,55 kg/semana; bajando eso, va bien
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: 1500, bajaPorSemana: OBJ_M.kgSemana }), OBJ_M, FIN_FIXTURE);
+  esperar(v.estado, 'bien');
+  esperarQue(/kg por semana/.test(v.detalle), 'tiene que mostrar el numero real: ' + v.detalle);
+});
+
+test('detecta que no estas bajando, y no lo maquilla', () => {
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: 1500, bajaPorSemana: 0 }), OBJ_M, FIN_FIXTURE);
+  esperar(v.estado, 'mal');
+  esperarQue(/No estas bajando|No estás bajando/.test(v.titulo), v.titulo);
+  esperarQue(/registras|registrás|subestiman/.test(v.detalle), 'tiene que dar la explicacion mas probable: ' + v.detalle);
+});
+
+test('detecta que vas mas lento de lo previsto', () => {
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: 1500, bajaPorSemana: OBJ_M.kgSemana * 0.3 }), OBJ_M, FIN_FIXTURE);
+  esperar(v.estado, 'lento');
+  esperarQue(/mas lento|más lento/.test(v.titulo), v.titulo);
+});
+
+test('avisa si estas bajando demasiado rapido', () => {
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: 1200, bajaPorSemana: OBJ_M.kgSemana * 2 }), OBJ_M, FIN_FIXTURE);
+  esperar(v.estado, 'rapido');
+  esperarQue(/musculo|músculo/.test(v.detalle), 'tiene que decir el riesgo real: ' + v.detalle);
+});
+
+test('en mantenimiento, estar estable es ir bien', () => {
+  const obj = objetivoDeModo(PERFIL_M, 'mantenimiento');
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: obj.kcal, bajaPorSemana: 0 }), obj, FIN_FIXTURE);
+  esperar(v.estado, 'bien');
+  esperarQue(/manten/.test(v.titulo.toLowerCase()), v.titulo);
+});
+
+test('el veredicto muestra los numeros en que se apoya', () => {
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: 1500, bajaPorSemana: 0.5 }), OBJ_M, FIN_FIXTURE);
+  esperarQue(v.datos != null, 'tiene que traer los datos');
+  esperarQue(typeof v.datos.kgSemanaReal === 'number', 'el ritmo real');
+  esperarQue(typeof v.datos.adherencia === 'number', 'y la adherencia');
+  esperarQue(v.datos.adherencia >= 0 && v.datos.adherencia <= 100, 'la adherencia es un porcentaje');
+});
+
+test('la adherencia cuenta los dias dentro del objetivo', () => {
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: 1500, bajaPorSemana: 0.5 }), OBJ_M, FIN_FIXTURE);
+  esperar(v.datos.adherencia, 100, '1500 esta por debajo del objetivo todos los dias');
+
+  const v2 = veredictoProgreso(serie({ dias: 21, kcalDia: 4000, bajaPorSemana: 0.5 }), OBJ_M, FIN_FIXTURE);
+  esperar(v2.datos.adherencia, 0, '4000 se pasa todos los dias');
+});
+
+test('el peso que sube tambien se detecta', () => {
+  const v = veredictoProgreso(serie({ dias: 21, kcalDia: 3000, bajaPorSemana: -0.4 }), OBJ_M, FIN_FIXTURE);
+  esperar(v.estado, 'mal', 'si sube, no puede decir que va bien');
+});
+
+
+/* ---- que modelo se usa y cuando conviene escalar ---- */
+
+testAsync('un plato se analiza con Sonnet, no con Opus', async () => {
+  let cuerpo = null;
+  const fetchFn = async (u, o) => { cuerpo = JSON.parse(o.body); return respuestaOk(COMIDA_OK); };
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', modo: 'plato' });
+  esperar(cuerpo.model, 'claude-sonnet-5');
+});
+
+testAsync('una etiqueta se lee con Haiku: es transcribir, no estimar', async () => {
+  let cuerpo = null;
+  const fetchFn = async (u, o) => { cuerpo = JSON.parse(o.body); return respuestaOk(COMIDA_OK); };
+  await analizarImagen({ fetchFn, apiKey: 'k', imagen: 'x', modo: 'etiqueta' });
+  esperar(cuerpo.model, 'claude-haiku-4-5');
+});
+
+test('modeloPara elige segun lo que se mira', () => {
+  esperar(modeloPara('plato'), 'claude-sonnet-5');
+  esperar(modeloPara('etiqueta'), 'claude-haiku-4-5');
+  esperar(modeloPara('plato', 'claude-opus-5'), 'claude-opus-5', 'un modelo elegido a mano manda');
+});
+
+test('con confianza baja conviene ofrecer el modelo grande', () => {
+  esperarQue(convieneEscalar({ confianza: 'baja' }, 'claude-sonnet-5'));
+});
+
+test('con confianza alta no se gasta de mas', () => {
+  esperarQue(!convieneEscalar({ confianza: 'alta' }, 'claude-sonnet-5'));
+  esperarQue(!convieneEscalar({ confianza: 'media' }, 'claude-sonnet-5'));
+});
+
+test('no se ofrece escalar si ya se uso el modelo grande', () => {
+  esperarQue(!convieneEscalar({ confianza: 'baja' }, 'claude-opus-5'), 'no hay a donde escalar');
+});
+
+test('sin resultado no hay nada que escalar', () => {
+  esperarQue(!convieneEscalar(null, 'claude-sonnet-5'));
+});
+
+test('Sonnet cuesta bastante menos que Opus', () => {
+  const opus = PRECIOS['claude-opus-5'];
+  const sonnet = PRECIOS['claude-sonnet-5'];
+  const haiku = PRECIOS['claude-haiku-4-5'];
+  esperarQue(sonnet.salida < opus.salida, 'Sonnet tiene que ser mas barato');
+  esperarQue(haiku.salida < sonnet.salida, 'y Haiku mas barato todavia');
 });
 
 /* ============================================================
