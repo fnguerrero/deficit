@@ -472,3 +472,54 @@ function vasosObjetivo(pesoKg) {
   if (!pesoKg) return 8;
   return Math.min(12, Math.max(6, Math.round((pesoKg * 35) / 250)));
 }
+
+/* ---------------- ayuno intermitente ---------------- */
+
+/* Las ventanas que usa la gente. La primera es la habitual. */
+const VENTANAS_AYUNO = [
+  { id: '16:8', horas: 16, nombre: '16:8', detalle: '16 h de ayuno, 8 para comer. La más común.' },
+  { id: '18:6', horas: 18, nombre: '18:6', detalle: 'Un poco más exigente.' },
+  { id: '20:4', horas: 20, nombre: '20:4', detalle: 'Una sola comida grande.' },
+  { id: '12:12', horas: 12, nombre: '12:12', detalle: 'Suave: básicamente no picar de noche.' }
+];
+
+/**
+ * En qué anda un ayuno arrancado.
+ *
+ * No hay nada que medir automáticamente acá: es un cronómetro. Justamente por
+ * eso funciona — no depende de sensores que la PWA no tiene.
+ */
+function estadoAyuno(inicio, ahora = Date.now(), horasObjetivo = 16) {
+  if (!inicio) return { activo: false };
+
+  const ms = Math.max(0, ahora - inicio);
+  const horas = ms / 3600000;
+  const objetivoMs = horasObjetivo * 3600000;
+
+  const h = Math.floor(horas);
+  const m = Math.floor((ms % 3600000) / 60000);
+
+  return {
+    activo: true,
+    inicio,
+    ms,
+    horas: +horas.toFixed(2),
+    texto: `${h}h ${String(m).padStart(2, '0')}m`,
+    pct: Math.min(1, ms / objetivoMs),
+    completo: ms >= objetivoMs,
+    faltan: Math.max(0, objetivoMs - ms),
+    horasObjetivo
+  };
+}
+
+/** Un ayuno terminado, listo para guardar en el día. */
+function cerrarAyuno(inicio, fin = Date.now(), horasObjetivo = 16) {
+  const e = estadoAyuno(inicio, fin, horasObjetivo);
+  return {
+    inicio,
+    fin,
+    horas: e.horas,
+    objetivo: horasObjetivo,
+    cumplido: e.completo
+  };
+}

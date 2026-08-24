@@ -4540,6 +4540,55 @@ test('Sonnet cuesta bastante menos que Opus', () => {
   esperarQue(haiku.salida < sonnet.salida, 'y Haiku mas barato todavia');
 });
 
+
+/* ---- ayuno ---- */
+
+test('el cronometro del ayuno cuenta bien', () => {
+  const inicio = 1000000;
+  const e = estadoAyuno(inicio, inicio + 5 * 3600000 + 30 * 60000, 16);
+  esperar(e.texto, '5h 30m');
+  esperar(e.horas, 5.5);
+  esperarQue(!e.completo);
+});
+
+test('marca cumplido al llegar a la ventana', () => {
+  const inicio = 1000000;
+  esperarQue(!estadoAyuno(inicio, inicio + 15.9 * 3600000, 16).completo, 'a las 15,9 todavia no');
+  esperarQue(estadoAyuno(inicio, inicio + 16 * 3600000, 16).completo, 'a las 16 si');
+});
+
+test('la ventana elegida cambia cuando se cumple', () => {
+  const inicio = 1000000;
+  const a20 = estadoAyuno(inicio, inicio + 18 * 3600000, 20);
+  esperarQue(!a20.completo, 'con ventana de 20 h, 18 no alcanza');
+  esperarQue(estadoAyuno(inicio, inicio + 18 * 3600000, 16).completo, 'con ventana de 16 si');
+});
+
+test('sin ayuno arrancado no hay estado', () => {
+  esperarQue(!estadoAyuno(null).activo);
+  esperarQue(!estadoAyuno(0).activo);
+});
+
+test('cerrar el ayuno deja el registro del dia', () => {
+  const inicio = 1000000;
+  const r = cerrarAyuno(inicio, inicio + 17 * 3600000, 16);
+  esperar(r.horas, 17);
+  esperar(r.objetivo, 16);
+  esperarQue(r.cumplido);
+});
+
+test('un ayuno cortado antes queda registrado igual, sin cumplir', () => {
+  const inicio = 1000000;
+  const r = cerrarAyuno(inicio, inicio + 10 * 3600000, 16);
+  esperar(r.horas, 10);
+  esperarQue(!r.cumplido, 'no se cumplio, pero se guarda igual');
+});
+
+test('las cuatro ventanas de ayuno estan disponibles', () => {
+  esperar(VENTANAS_AYUNO.length, 4);
+  esperarQue(VENTANAS_AYUNO.some(v => v.id === '16:8'), 'la mas comun tiene que estar');
+});
+
 /* ============================================================
    Resultado
    ============================================================ */

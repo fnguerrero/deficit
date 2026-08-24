@@ -74,11 +74,11 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 
 ## Recomendaciones y veredicto
 
-- [ ] 25. Recomendaciones por modo, concretas y accionables
+- [x] 25. Recomendaciones por modo, concretas y accionables
       · verif: por DOM, cambiar de modo cambia lo que dice
 - [x] 26. Veredicto honesto: en camino, más lento, o sin déficit — y "faltan datos" cuando
       no alcanza para afirmar nada · verif: tests de los cuatro casos con series armadas
-- [ ] 27. El veredicto explica en qué se basa, sin adornos
+- [x] 27. El veredicto explica en qué se basa, sin adornos
       · verif: por DOM, el texto nombra el dato concreto que lo sostiene
 
 ## Gráficos
@@ -92,14 +92,14 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 
 ## Temas
 
-- [ ] 31. Cuatro temas: claro, oscuro, negro OLED y cálido
+- [x] 31. Cuatro temas: claro, oscuro, negro OLED y cálido
       · verif: por DOM, cada uno cambia el fondo y sobrevive a recargar
 
 ## Ayuno y sueño (pedido de Nico a mitad del ciclo)
 
-- [ ] 32. Ayuno intermitente: botón iniciar/cortar con cronómetro en vivo y ventanas
+- [x] 32. Ayuno intermitente: botón iniciar/cortar con cronómetro en vivo y ventanas
       típicas (16:8, 18:6, 20:4) · verif: test del cálculo de horas y por DOM el contador
-- [ ] 33. El ayuno como objetivo del día, con su historial · verif: por DOM, un ayuno en
+- [x] 33. El ayuno como objetivo del día, con su historial · verif: por DOM, un ayuno en
       curso se ve en el tablero y al cortarlo queda registrado
 - [ ] 34. Sueño auto-reportado: al abrir la app a la mañana, horas y calidad en caritas
       · verif: por DOM, cargar el sueño marca el objetivo

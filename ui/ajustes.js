@@ -354,7 +354,11 @@ function renderAll() {
 const TEMAS = {
   auto: { nombre: 'Automático', detalle: 'Sigue el tema de tu teléfono o de Windows.' },
   claro: { nombre: 'Claro', detalle: 'Siempre claro, aunque el sistema esté en oscuro.' },
-  oscuro: { nombre: 'Oscuro', detalle: 'Siempre oscuro, aunque el sistema esté en claro.' }
+  oscuro: { nombre: 'Oscuro', detalle: 'Siempre oscuro, aunque el sistema esté en claro.' },
+  /* En pantallas OLED el negro puro no enciende el pixel: ahorra bateria de verdad. */
+  oled: { nombre: 'Negro', detalle: 'Negro puro. En pantallas OLED gasta menos batería.' },
+  /* Menos azul para la noche, que es cuando se carga la cena. */
+  calido: { nombre: 'Cálido', detalle: 'Tonos cálidos, con menos azul. Cansa menos de noche.' }
 };
 
 /** En automático no se fuerza nada: manda el prefers-color-scheme del CSS. */
