@@ -16,7 +16,9 @@ const DEFAULT_STATE = {
   esquema: ESQUEMA,
   perfil: {
     sexo: 'm', edad: null, altura: null, peso: null, pesoObj: null,
-    actividad: 1.55, ritmo: 0.5, manual: null
+    actividad: 1.55, ritmo: 0.5, manual: null,
+    /* El modo decide el objetivo del dia y que comida entra. Ver modos.js. */
+    modo: 'moderado'
   },
   dias: {},
   frecuentes: [],
@@ -62,6 +64,8 @@ function migrar(guardado) {
       agua: Number(d.agua) || 0,
       ejercicio: Number(d.ejercicio) || 0,
       nota: String(d.nota || ''),
+      /* Como venia el dia, en caritas. Escribir una nota es mucho pedir todos los dias. */
+      animo: d.animo || null,
       act: Number(d.act) || 0,
       comidas: (d.comidas || []).map(c => ({
         id: c.id || (f + '-' + Math.random().toString(36).slice(2, 8)),

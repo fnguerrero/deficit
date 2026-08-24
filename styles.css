@@ -678,3 +678,113 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    ve el usuario: si algún navegador no lo aplica, quedan expuestas credenciales
    que no tiene por qué tocar. Con esto no depende de eso. */
 .avanzado:not([open]) > *:not(summary) { display: none; }
+
+/* ---------- tablero de objetivos del día ---------- */
+
+/* Los tres que se usan siempre, del mismo tamaño y en una sola línea: la
+   decisión de "con qué cargo esto" tiene que ser de un vistazo. */
+.acciones-fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+.acciones-fila .accion {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 4px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--card); color: var(--txt); font-size: 20px; cursor: pointer;
+}
+.acciones-fila .accion span { font-size: 11.5px; font-weight: 600; }
+.acciones-fila .accion.primary { background: var(--acc); color: var(--sobre-acc); border-color: transparent; }
+.acciones-fila .accion:active { transform: scale(.97); }
+
+/* Cada objetivo cargado se apaga: lo que ya está hecho no tiene que seguir
+   pidiendo atención. Es lo que hace que la pantalla se vacíe durante el día. */
+.objetivos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.objetivo {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 2px; border-radius: 14px; border: 1px dashed var(--line);
+  background: transparent; color: var(--txt2); cursor: pointer; font-size: 17px;
+}
+.objetivo b { font-size: 11px; font-weight: 600; }
+.objetivo small { font-size: 10px; color: var(--dim); }
+.objetivo.listo {
+  border-style: solid; border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 12%, transparent); color: var(--txt);
+}
+.objetivo.listo b { color: var(--acc); }
+
+/* vasos de agua: se toca al que llegaste */
+.vasos { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 6px 0 10px; }
+.vaso {
+  width: 40px; height: 48px; border-radius: 6px 6px 12px 12px;
+  border: 2px solid var(--line); background: transparent; cursor: pointer;
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px;
+  font-size: 11px; color: var(--dim);
+}
+.vaso.lleno { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 25%, transparent); color: var(--txt); }
+
+.caritas { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+.carita {
+  padding: 12px 2px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--card); cursor: pointer; font-size: 24px;
+}
+.carita.elegida { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 15%, transparent); }
+
+.mas-opciones {
+  width: 100%; padding: 10px; border-radius: 12px; border: 1px dashed var(--line);
+  background: transparent; color: var(--txt2); font-size: 12.5px; cursor: pointer;
+}
+
+/* marca de si la comida entra en el modo */
+.marca-apta { font-size: 11px; padding: 1px 6px; border-radius: 6px; font-weight: 650; }
+.marca-apta.no { background: color-mix(in srgb, var(--err) 20%, transparent); color: var(--err); }
+.marca-apta.justo { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+
+/* El anillo y los macros lado a lado: juntos se llevaban 428 de los 812 px de
+   un celular, o sea media pantalla para dos cosas que se leen de un vistazo. */
+.resumen { display: grid; grid-template-columns: minmax(0, 148px) 1fr; gap: 8px; align-items: stretch; }
+.resumen > .card { margin: 0; }
+.resumen .ring-card { display: flex; flex-direction: column; justify-content: center; padding: 10px 6px; }
+.resumen .ring-wrap svg { width: 104px; height: 104px; }
+.resumen .ring-stats { display: flex; flex-direction: column; gap: 1px; margin-top: 6px; font-size: 10.5px; }
+.resumen .ring-stats > div { display: flex; justify-content: space-between; gap: 6px; }
+.resumen .ring-stats small { font-size: 9.5px; }
+.resumen .macros { padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.resumen .macro-head { font-size: 11.5px; }
+
+/* Los tres números del día en una franja, a todo el ancho: en columna dentro de
+   la tarjeta del anillo se llevaban 135 px para tres cifras. */
+#tab-hoy > .ring-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  margin: 8px 0 0; padding: 8px 10px; border-radius: 12px;
+  background: var(--card); border: 1px solid var(--line);
+}
+#tab-hoy > .ring-stats > div { display: flex; flex-direction: column; align-items: center; gap: 0; }
+#tab-hoy > .ring-stats span { font-size: 15px; font-weight: 700; }
+#tab-hoy > .ring-stats small { font-size: 10px; color: var(--dim); }
+
+/* En el celular la pantalla del día tiene que entrar entera. Lo que crece sin
+   límite es la lista de comidas, así que esa scrollea adentro de su caja y la
+   estructura de arriba queda siempre a la vista. */
+@media (max-width: 480px) {
+  main { padding: 8px 10px 74px; }
+  #tab-hoy .card { margin-bottom: 8px; padding: 10px 12px; }
+  #tab-hoy .card-head { padding: 0 0 6px; }
+  #tab-hoy .card-head h2 { font-size: 14px; }
+  .acciones-fila { margin: 8px 0; }
+  .objetivos { margin-bottom: 8px; }
+  #listaComidas { max-height: 30vh; overflow-y: auto; }
+  #cardComidas { margin-bottom: 6px; }
+  .mas-opciones { padding: 8px; }
+}
+
+/* Perseguir alturas fijas es una carrera perdida: la lista crece con el día y
+   cualquier número queda corto. Acá la estructura ocupa lo suyo y la lista se
+   queda con lo que sobra, así entra siempre — con dos comidas o con ocho. */
+@media (max-width: 480px) {
+  main { display: flex; flex-direction: column; min-height: 0; }
+  #tab-hoy:not([hidden]) {
+    display: flex; flex-direction: column; min-height: 0;
+    height: calc(100dvh - 216px);   /* header + barra de fecha + nav + respiro */
+  }
+  #cardComidas { flex: 1 1 auto; min-height: 96px; display: flex; flex-direction: column; overflow: hidden; }
+  #listaComidas { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+  .resumen .ring-wrap svg { width: 92px; height: 92px; }
+  .resumen { grid-template-columns: minmax(0, 132px) 1fr; }
+}

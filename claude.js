@@ -41,7 +41,31 @@ const PRECIOS = {
   'claude-haiku-4-5': { entrada: 1, salida: 5 }
 };
 
-const MODELO_DEFAULT = 'claude-opus-5';
+/*
+ * Sonnet por defecto en vez de Opus: baja el costo a un tercio y en un plato
+ * servido la diferencia casi no se nota. Lo que limita la precision ahi no es el
+ * modelo, es que la porcion se estima a ojo desde una foto.
+ */
+const MODELO_DEFAULT = 'claude-sonnet-5';
+
+/* Leer una etiqueta es transcribir, no estimar: Haiku alcanza y sale diez veces
+   menos. Pagar el modelo grande para copiar numeros de una tabla es tirar plata. */
+const MODELO_TRANSCRIPCION = 'claude-haiku-4-5';
+
+/* Cuando el modelo avisa que no vio bien, ahi si conviene pagar el grande. Se
+   ofrece, no se hace solo: la persona decide si vale los centavos. */
+const MODELO_ESCALADO = 'claude-opus-5';
+
+/** Con que modelo conviene arrancar, segun lo que se este mirando. */
+function modeloPara(modo, modeloBase = MODELO_DEFAULT) {
+  return modo === 'etiqueta' ? MODELO_TRANSCRIPCION : modeloBase;
+}
+
+/** Si vale la pena ofrecer una segunda pasada con el modelo grande. */
+function convieneEscalar(resultado, modeloUsado) {
+  if (!resultado || modeloUsado === MODELO_ESCALADO) return false;
+  return resultado.confianza === 'baja';
+}
 
 /* Cada modo elige modelo y esfuerzo: la diferencia real de plata está acá. */
 const PRECISIONES = {
@@ -525,7 +549,7 @@ async function analizarImagen({
 }) {
   if (!apiKey && !proxyUrl) throw new Error(SIN_ACCESO);
 
-  const elegido = resolverPrecision(precision, modelo);
+  const elegido = resolverPrecision(precision, modeloPara(modo, modelo));
   modelo = elegido.modelo;
 
   // La misma foto no se paga dos veces. Una corrección sí vuelve a preguntar:
