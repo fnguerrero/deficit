@@ -75,15 +75,22 @@ const REINTENTABLES_SUPA = [429, 500, 502, 503, 504];
 
 const dormirDefecto = (ms) => new Promise(r => setTimeout(r, ms));
 
-function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, dormir = dormirDefecto, base: espera = 600 }) {
+function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, dormir = dormirDefecto, base: espera = 600, token: tokenActual = '' }) {
   if (!url || !anonKey) throw new Error('Faltan la URL y la clave de Supabase.');
 
   const base = String(url).replace(/\/+$/, '') + '/rest/v1/';
-  const cabeceras = {
+
+  /*
+   * Con sesion iniciada el Bearer es el token del usuario, y ahi las politicas
+   * RLS filtran por auth.uid(): cada uno ve lo suyo y nada mas. Sin sesion cae
+   * en la anon key, que ya no alcanza para leer nada pero deja que el cliente
+   * se construya igual sin explotar.
+   */
+  const cabeceras = () => ({
     apikey: anonKey,
-    Authorization: 'Bearer ' + anonKey,
+    Authorization: 'Bearer ' + (tokenActual || anonKey),
     'Content-Type': 'application/json'
-  };
+  });
 
   async function pedir(ruta, opciones = {}) {
     let res;
@@ -94,7 +101,7 @@ function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, d
       try {
         res = await fetchFn(base + ruta, {
           ...opciones,
-          headers: { ...cabeceras, ...(opciones.headers || {}) },
+          headers: { ...cabeceras(), ...(opciones.headers || {}) },
           signal: señal
         });
       } catch (e) {
@@ -145,8 +152,25 @@ function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, d
     async traer(tabla, llave, desde = 0) {
       // margen por relojes desfasados entre dispositivos
       const piso = Math.max(0, desde - 5 * 60000);
-      const filtro = `?llave=eq.${encodeURIComponent(llave)}&subido=gt.${piso}&order=subido.asc`;
-      return pedir(tabla + filtro);
+
+      /* Con sesion iniciada no se filtra por llave: las politicas RLS ya
+         devuelven solo lo del usuario, y filtrar ademas por la llave de ESTE
+         dispositivo escondería lo que cargaste desde el celular. */
+      const porLlave = tokenActual ? '' : `llave=eq.${encodeURIComponent(llave)}&`;
+      return pedir(`${tabla}?${porLlave}subido=gt.${piso}&order=subido.asc`);
+    },
+
+    /** Adopta las filas que quedaron con llave y sin duenio, tras el primer login. */
+    async reclamarLlave(llave) {
+      const r = await pedir('rpc/reclamar_llave', {
+        method: 'POST',
+        body: JSON.stringify({ p_llave: llave })
+      });
+      const fila = Array.isArray(r) ? r[0] : r;
+      return {
+        comidas: Number(fila?.comidas_migradas) || 0,
+        dias: Number(fila?.dias_migrados) || 0
+      };
     },
 
     /** Prueba de vida: si esto anda, la URL, la clave y las tablas están bien. */
@@ -160,10 +184,11 @@ function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, d
 /* ---------------- forma de las filas ---------------- */
 
 /** Una comida local pasada a fila de Supabase. Las fotos no viajan: pesan y son locales. */
-function comidaAFila(comida, fecha, llave, subido = Date.now()) {
+function comidaAFila(comida, fecha, llave, subido = Date.now(), userId = null) {
   return {
     llave,
     subido,
+    ...(userId ? { user_id: userId } : {}),
     id: comida.id,
     fecha,
     ts: comida.ts,
@@ -200,10 +225,11 @@ function filaAComida(fila, comidaLocal = null) {
   };
 }
 
-function diaAFila(dia, fecha, llave, subido = Date.now()) {
+function diaAFila(dia, fecha, llave, subido = Date.now(), userId = null) {
   return {
     llave,
     subido,
+    ...(userId ? { user_id: userId } : {}),
     fecha,
     peso: dia.peso,
     agua: dia.agua || 0,
@@ -312,7 +338,7 @@ function aplicarRemoto(estado, { comidas = [], dias = [] }) {
  * al revés, la versión vieja de este dispositivo pisaría en el servidor la
  * edición más nueva que hizo el otro.
  */
-async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Date.now() }) {
+async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Date.now(), userId = null }) {
   if (!llaveValida(llave)) throw new Error('La llave de sincronización no es válida.');
 
   // 1) primero se baja: si lo remoto es más nuevo tiene que ganar ANTES de que
@@ -330,13 +356,14 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
   // 2) recién ahora se mira qué hay para subir, ya sobre el estado fusionado
   const cambios = cambiosLocales(fusionado, ultimoSync);
 
-  const filasComidas = cambios.comidas.map(({ comida, fecha }) => comidaAFila(comida, fecha, llave, ahora));
+  const filasComidas = cambios.comidas.map(({ comida, fecha }) => comidaAFila(comida, fecha, llave, ahora, userId));
   const filasBorradas = cambios.borradas.map(b => ({
-    llave, subido: ahora, id: b.id, fecha: b.fecha, ts: 0, titulo: '', items: [],
+    llave, subido: ahora, ...(userId ? { user_id: userId } : {}),
+    id: b.id, fecha: b.fecha, ts: 0, titulo: '', items: [],
     kcal: 0, prot: 0, carb: 0, gras: 0, momento: 'almuerzo', notas: '',
     borrada: true, act: b.act
   }));
-  const filasDias = cambios.dias.map(({ dia, fecha }) => diaAFila(dia, fecha, llave, ahora));
+  const filasDias = cambios.dias.map(({ dia, fecha }) => diaAFila(dia, fecha, llave, ahora, userId));
 
   await cliente.guardar(TABLA_COMIDAS, [...filasComidas, ...filasBorradas]);
   await cliente.guardar(TABLA_DIAS, filasDias);

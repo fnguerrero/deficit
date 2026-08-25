@@ -52,6 +52,7 @@ function renderSync() {
   $('syncUrl').value = local.url || '';
   $('syncKey').value = local.anonKey || '';
   renderOrigenCredenciales();
+  if (typeof renderCuenta === 'function') renderCuenta();
   $('syncLlave').textContent = llaveLegible(llave);
 
   $('btnSincronizar').hidden = !configurado;
@@ -164,11 +165,17 @@ async function correrSync({ silencioso = false } = {}) {
   renderSync();
 
   try {
+    /* Con sesión iniciada manda el token del usuario y las filas viajan con su
+       user_id; sin sesión sigue funcionando como antes, agrupando por llave. */
+    const sesion = typeof sesionActual === 'function' ? sesionActual() : null;
+    const token = sesion && typeof auth === 'function' ? await auth().token() : null;
+
     const resultado = await sincronizar({
-      cliente: clienteSupabase({ url: cfg.url, anonKey: cfg.anonKey, fetchFn: (...a) => fetch(...a) }),
+      cliente: clienteSupabase({ url: cfg.url, anonKey: cfg.anonKey, token, fetchFn: (...a) => fetch(...a) }),
       estado: state,
       llave: llaveDeEsteDispositivo(),
-      ultimoSync: cfg.ultimoSync || 0
+      ultimoSync: cfg.ultimoSync || 0,
+      userId: sesion?.usuario?.id || null
     });
 
     const r = resultado.resumen;

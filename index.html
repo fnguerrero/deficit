@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=132">
+<link rel="stylesheet" href="styles.css?v=136">
 </head>
 <body>
 
@@ -445,6 +445,33 @@
       </details>
     </div>
 
+    <div class="card" id="cardCuenta">
+      <div class="card-head"><h2>Tu cuenta</h2></div>
+      <p class="hint" id="estadoCuenta"></p>
+
+      <div id="formCuenta">
+        <label class="block">Mail
+          <input type="email" id="cuentaEmail_in" autocomplete="email" placeholder="tu@mail.com">
+        </label>
+        <label class="block">Contraseña
+          <input type="password" id="cuentaPass" autocomplete="current-password" placeholder="mínimo 6 caracteres">
+        </label>
+        <div class="actions-row">
+          <button id="btnEntrar" class="primary">Entrar</button>
+          <button id="btnRegistrar" class="ghost">Crear cuenta</button>
+        </div>
+        <button id="btnOlvide" class="ghost small" style="margin-top:8px">Olvidé mi contraseña</button>
+      </div>
+
+      <div id="cuentaAdentro" hidden>
+        <p class="hint">Sesión iniciada como <b id="cuentaEmail"></b></p>
+        <button id="btnSalir" class="ghost small">Cerrar sesión</button>
+      </div>
+
+      <p class="hint sync-mal" id="cuentaError"></p>
+      <p class="hint sync-ok" id="cuentaOk"></p>
+    </div>
+
     <div class="card" id="cardSync">
       <div class="card-head"><h2>Sincronización</h2><span id="syncPill" class="pill"></span></div>
 
@@ -713,25 +740,27 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=132"></script>
-<script src="core.js?v=132"></script>
-<script src="modos.js?v=132"></script>
-<script src="analisis.js?v=132"></script>
-<script src="claude.js?v=132"></script>
-<script src="productos.js?v=132"></script>
-<script src="sync.js?v=132"></script>
-<script src="app.js?v=132"></script>
-<script src="ui/general.js?v=132"></script>
-<script src="ui/hoy.js?v=132"></script>
-<script src="ui/objetivos.js?v=132"></script>
-<script src="ui/comidas.js?v=132"></script>
-<script src="ui/escaner.js?v=132"></script>
-<script src="ui/asistente.js?v=132"></script>
-<script src="ui/historial.js?v=132"></script>
-<script src="ui/perfil.js?v=132"></script>
-<script src="ui/sincronizacion.js?v=132"></script>
-<script src="ui/calibracion.js?v=132"></script>
-<script src="ui/ajustes.js?v=132"></script>
-<script src="arranque.js?v=132"></script>
+<script src="config.js?v=136"></script>
+<script src="core.js?v=136"></script>
+<script src="modos.js?v=136"></script>
+<script src="analisis.js?v=136"></script>
+<script src="claude.js?v=136"></script>
+<script src="productos.js?v=136"></script>
+<script src="sync.js?v=136"></script>
+<script src="auth.js?v=136"></script>
+<script src="app.js?v=136"></script>
+<script src="ui/general.js?v=136"></script>
+<script src="ui/hoy.js?v=136"></script>
+<script src="ui/objetivos.js?v=136"></script>
+<script src="ui/comidas.js?v=136"></script>
+<script src="ui/escaner.js?v=136"></script>
+<script src="ui/asistente.js?v=136"></script>
+<script src="ui/historial.js?v=136"></script>
+<script src="ui/perfil.js?v=136"></script>
+<script src="ui/sincronizacion.js?v=136"></script>
+<script src="ui/cuenta.js?v=136"></script>
+<script src="ui/calibracion.js?v=136"></script>
+<script src="ui/ajustes.js?v=136"></script>
+<script src="arranque.js?v=136"></script>
 </body>
 </html>

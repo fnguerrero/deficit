@@ -141,6 +141,10 @@ Desde ese momento los dos ven lo mismo.
 
 </details>
 
+**Con cuenta**: en Ajustes → *Tu cuenta* entrás con mail y contraseña, y desde ahí tus
+datos son tuyos y no del dispositivo. Instalás donde quieras, entrás y está todo. Lo que
+hayas cargado antes de tener cuenta se adopta solo en el primer login.
+
 La sincronización **corre sola**: al abrir la app y unos segundos después de cualquier
 cambio. El botón *Sincronizar ahora* sigue estando para forzarla y ver qué pasó.
 
@@ -203,7 +207,7 @@ siempre. Y si cargás una clave estando el proxy activo, gana la tuya en ese dis
 | `arranque.js` | el arranque, que va último |
 | `supabase.sql` | las tablas, listas para pegar en Supabase |
 | `proxy/` | el Worker de Cloudflare que guarda la clave (`node proxy/test.mjs`) |
-| `tests.js` + `tests.html` | 463 tests sin dependencias — abrir `/tests.html` |
+| `tests.js` + `tests.html` | 534 tests sin dependencias — abrir `/tests.html` |
 | `sw.js` | service worker (network-first, cache como respaldo offline) |
 | `tools/gen_iconos.py` | regenera los íconos (`py -3 tools/gen_iconos.py`) |
 | `tools/version.py` | sube la versión de los assets (`py -3 tools/version.py`) |
