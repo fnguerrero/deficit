@@ -183,6 +183,21 @@ function pedirFoto(modo) {
   // En la compu no hay "sacar una foto": el explorador es la única opción real.
   if (!esTactil()) { $('fileInput').click(); return; }
 
+  /* Directo a la cámara. Sacar la foto del plato que tenés adelante es lo que se
+     hace casi siempre; elegir de la galería es la excepción y vive en la
+     flechita, no en un menú que aparece cada vez. */
+  $('camaraInput').click();
+}
+
+/** La flechita: acá sí se pregunta, porque justamente se pidió elegir. */
+function elegirOrigenFoto(modo = 'plato') {
+  if (topeAlcanzado()) return;
+  if (!hayAcceso(state.cfg)) {
+    toast(SIN_ACCESO, { texto: 'Cargarla', accion: () => irTab('ajustes') });
+    return;
+  }
+
+  modoAnalisis = modo;
   $('tituloOrigenFoto').textContent = modo === 'etiqueta' ? 'Leer etiqueta' : 'Analizar foto';
   $('modalOrigenFoto').classList.add('open');
   tomarFoco($('modalOrigenFoto'));
@@ -202,6 +217,7 @@ $('btnDesdeCamara').onclick = () => { cerrarOrigenFoto(); $('camaraInput').click
 $('btnDesdeGaleria').onclick = () => { cerrarOrigenFoto(); $('fileInput').click(); };
 
 $('btnFoto').onclick = () => pedirFoto('plato');
+$('btnOrigenFoto').onclick = (e) => { e.stopPropagation(); elegirOrigenFoto('plato'); };
 $('btnEtiqueta').onclick = () => pedirFoto('etiqueta');
 
 const FRASES = {
