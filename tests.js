@@ -4589,6 +4589,222 @@ test('las cuatro ventanas de ayuno estan disponibles', () => {
   esperarQue(VENTANAS_AYUNO.some(v => v.id === '16:8'), 'la mas comun tiene que estar');
 });
 
+
+/* ============================================================
+   Cuentas
+   ============================================================ */
+
+/* Un almacen en memoria: los tests no tocan el localStorage real. */
+function almacenFalso(inicial = null) {
+  let dato = inicial;
+  return { leer: () => dato, escribir: (s) => { dato = s; }, ver: () => dato };
+}
+
+function respuestaAuth(status, cuerpo) {
+  return { ok: status >= 200 && status < 300, status, json: async () => cuerpo };
+}
+
+const SESION_OK = {
+  access_token: 'token-abc',
+  refresh_token: 'refresco-xyz',
+  expires_in: 3600,
+  user: { id: 'user-1', email: 'nico@mail.com' }
+};
+
+test('un mail con forma de mail pasa, uno roto no', () => {
+  esperarQue(emailValido('nico@mail.com'));
+  esperarQue(emailValido('a.b+c@sub.dominio.com.ar'));
+  esperarQue(!emailValido('nico@'));
+  esperarQue(!emailValido('sin arroba'));
+  esperarQue(!emailValido(''));
+});
+
+testAsync('entrar guarda la sesion', async () => {
+  const alm = almacenFalso();
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => respuestaAuth(200, SESION_OK)
+  });
+
+  const s = await a.entrar('nico@mail.com', 'secreta');
+  esperar(s.token, 'token-abc');
+  esperar(s.usuario.email, 'nico@mail.com');
+  esperar(alm.ver().usuario.id, 'user-1', 'tiene que quedar guardada');
+});
+
+testAsync('entrar manda el mail y la contrasena al endpoint correcto', async () => {
+  let visto = null;
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: almacenFalso(),
+    fetchFn: async (u, o) => { visto = { u, body: JSON.parse(o.body), headers: o.headers }; return respuestaAuth(200, SESION_OK); }
+  });
+
+  await a.entrar('nico@mail.com', 'secreta');
+  esperarQue(/\/auth\/v1\/token\?grant_type=password$/.test(visto.u), visto.u);
+  esperar(visto.body.email, 'nico@mail.com');
+  esperar(visto.headers.apikey, 'anon');
+});
+
+testAsync('una contrasena mal puesta da un mensaje entendible', async () => {
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: almacenFalso(),
+    fetchFn: async () => respuestaAuth(400, { error_description: 'Invalid login credentials' })
+  });
+
+  try {
+    await a.entrar('nico@mail.com', 'mala');
+    esperarQue(false, 'tendria que haber fallado');
+  } catch (e) {
+    esperar(e.message, 'Mail o contrasena incorrectos.'.replace('contrasena', 'contraseña'));
+  }
+});
+
+testAsync('registrarse con un mail ya usado lo dice claro', async () => {
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: almacenFalso(),
+    fetchFn: async () => respuestaAuth(400, { msg: 'User already registered' })
+  });
+
+  try {
+    await a.registrar('nico@mail.com', 'secreta');
+    esperarQue(false, 'tendria que haber fallado');
+  } catch (e) {
+    esperarQue(/ya tiene una cuenta/.test(e.message), e.message);
+  }
+});
+
+testAsync('si Supabase pide confirmar el mail, se avisa en vez de fallar', async () => {
+  const alm = almacenFalso();
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => respuestaAuth(200, { user: { email: 'nico@mail.com' } })   // sin access_token
+  });
+
+  const r = await a.registrar('nico@mail.com', 'secreta');
+  esperarQue(r.confirmar, 'tiene que pedir confirmacion');
+  esperar(alm.ver(), null, 'sin token no hay sesion que guardar');
+});
+
+testAsync('el token vigente no se renueva al pedo', async () => {
+  let llamadas = 0;
+  const alm = almacenFalso({ token: 't1', refresco: 'r1', vence: Date.now() + 3600000, usuario: { id: 'u1', email: 'a@b.com' } });
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => { llamadas++; return respuestaAuth(200, SESION_OK); }
+  });
+
+  esperar(await a.token(), 't1');
+  esperar(llamadas, 0, 'no tiene que ir al servidor');
+});
+
+testAsync('un token por vencer se renueva solo', async () => {
+  const alm = almacenFalso({ token: 'viejo', refresco: 'r1', vence: Date.now() + 60000, usuario: { id: 'u1', email: 'a@b.com' } });
+  let visto = null;
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async (u, o) => { visto = { u, body: JSON.parse(o.body) }; return respuestaAuth(200, SESION_OK); }
+  });
+
+  esperar(await a.token(), 'token-abc', 'tiene que devolver el nuevo');
+  esperarQue(/grant_type=refresh_token/.test(visto.u), visto.u);
+  esperar(visto.body.refresh_token, 'r1');
+});
+
+testAsync('si el refresco ya no sirve, se pide entrar de nuevo sin romper', async () => {
+  const alm = almacenFalso({ token: 'viejo', refresco: 'r1', vence: Date.now() - 1000, usuario: { id: 'u1', email: 'a@b.com' } });
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => respuestaAuth(400, { msg: 'Invalid Refresh Token' })
+  });
+
+  esperar(await a.token(), null, 'sin token vivo devuelve null, no una excepcion');
+  esperar(alm.ver(), null, 'y limpia la sesion muerta');
+});
+
+testAsync('sin sesion guardada no hay token', async () => {
+  const a = crearAuth({ url: 'https://x.supabase.co', anonKey: 'anon', almacen: almacenFalso(), fetchFn: async () => respuestaAuth(200, {}) });
+  esperar(await a.token(), null);
+});
+
+testAsync('salir limpia la sesion aunque el servidor falle', async () => {
+  const alm = almacenFalso({ token: 't1', refresco: 'r1', vence: Date.now() + 3600000, usuario: { id: 'u1', email: 'a@b.com' } });
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => { throw new Error('sin red'); }
+  });
+
+  await a.salir();
+  esperar(alm.ver(), null, 'la sesion local se va igual');
+});
+
+/* ---- el cliente de datos con sesion ---- */
+
+testAsync('con token, las consultas van firmadas por el usuario', async () => {
+  let visto = null;
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'anon', token: 'token-del-usuario',
+    fetchFn: async (u, o) => { visto = { u, headers: o.headers }; return { ok: true, status: 200, json: async () => [] }; }
+  });
+
+  await cli.traer('comidas', 'a'.repeat(32));
+  esperar(visto.headers.Authorization, 'Bearer token-del-usuario');
+  esperar(visto.headers.apikey, 'anon', 'la apikey sigue yendo');
+});
+
+testAsync('con sesion NO se filtra por llave: los datos son del usuario', async () => {
+  let url = null;
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'anon', token: 'tok',
+    fetchFn: async (u) => { url = u; return { ok: true, status: 200, json: async () => [] }; }
+  });
+
+  await cli.traer('comidas', 'a'.repeat(32));
+  esperarQue(!/llave=eq/.test(url), 'filtrar por la llave de este dispositivo escondería lo del celular: ' + url);
+});
+
+testAsync('sin sesion sigue filtrando por llave, como antes', async () => {
+  let url = null;
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'anon',
+    fetchFn: async (u) => { url = u; return { ok: true, status: 200, json: async () => [] }; }
+  });
+
+  await cli.traer('comidas', 'b'.repeat(32));
+  esperarQue(/llave=eq/.test(url), url);
+});
+
+testAsync('las filas que se suben llevan el dueno', async () => {
+  const subidas = [];
+  const cliente = {
+    traer: async () => [],
+    guardar: async (t, filas) => { subidas.push(...filas); return []; },
+    probar: async () => true
+  };
+
+  const estado = {
+    dias: { '2026-08-20': { peso: 80, act: 5, agua: 0, ejercicio: 0, nota: '',
+      comidas: [{ id: 'c1', ts: 1, titulo: 'Asado', items: [], kcal: 700, prot: 40, carb: 10, gras: 50, act: 5 }] } },
+    borradas: [], cfg: {}
+  };
+
+  await sincronizar({ cliente, estado, llave: 'c'.repeat(32), ultimoSync: 0, userId: 'user-9' });
+  esperarQue(subidas.length > 0, 'algo tiene que haber subido');
+  esperarQue(subidas.every(f => f.user_id === 'user-9'), 'todas las filas tienen que llevar el user_id');
+});
+
+testAsync('sin usuario, las filas no inventan un dueno', async () => {
+  const subidas = [];
+  const cliente = { traer: async () => [], guardar: async (t, f) => { subidas.push(...f); return []; }, probar: async () => true };
+  const estado = {
+    dias: { '2026-08-20': { peso: 80, act: 5, agua: 0, ejercicio: 0, nota: '',
+      comidas: [{ id: 'c1', ts: 1, titulo: 'x', items: [], kcal: 100, prot: 1, carb: 1, gras: 1, act: 5 }] } },
+    borradas: [], cfg: {}
+  };
+
+  await sincronizar({ cliente, estado, llave: 'd'.repeat(32), ultimoSync: 0 });
+  esperarQue(subidas.every(f => !('user_id' in f)), 'no puede mandar user_id nulo');
+});
+
 /* ============================================================
    Resultado
    ============================================================ */

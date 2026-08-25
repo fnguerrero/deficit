@@ -1,0 +1,181 @@
+/* ============================================================
+   ui/cuenta.js — entrar, registrarse y salir.
+
+   La app sigue andando sin cuenta: todo se guarda local igual. La cuenta es
+   para que los datos sean tuyos y no de un dispositivo, y para verlos en el
+   celular y en la compu sin copiar una llave a mano.
+   ============================================================ */
+
+let clienteAuth = null;
+
+/** Se arma una sola vez, con las credenciales que ya resuelve la sincronización. */
+function auth() {
+  if (clienteAuth) return clienteAuth;
+
+  const cfg = configSync();
+  if (!cfg.url || !cfg.anonKey) return null;
+
+  clienteAuth = crearAuth({ url: cfg.url, anonKey: cfg.anonKey, fetchFn: (...a) => fetch(...a) });
+  return clienteAuth;
+}
+
+function sesionActual() {
+  const a = auth();
+  return a ? a.sesion() : null;
+}
+
+/* ---------------- pantalla ---------------- */
+
+function renderCuenta() {
+  const cont = $('estadoCuenta');
+  if (!cont) return;
+
+  const s = sesionActual();
+
+  $('formCuenta').hidden = !!s;
+  $('cuentaAdentro').hidden = !s;
+
+  if (s) {
+    $('cuentaEmail').textContent = s.usuario.email || 'tu cuenta';
+    cont.textContent = 'Tus datos están asociados a esta cuenta. Entrá con el mismo mail en cualquier dispositivo y vas a ver lo mismo.';
+  } else {
+    cont.textContent = auth()
+      ? 'Sin cuenta la app funciona igual, pero los datos se quedan en este dispositivo.'
+      : 'Falta configurar Supabase para poder usar cuentas.';
+  }
+
+  $('cuentaError').textContent = '';
+  $('cuentaOk').textContent = '';
+}
+
+function mostrarErrorCuenta(msg) {
+  $('cuentaError').textContent = msg;
+  $('cuentaOk').textContent = '';
+}
+
+function ocupado(si) {
+  for (const id of ['btnEntrar', 'btnRegistrar', 'btnOlvide']) {
+    const b = $(id);
+    if (b) b.disabled = si;
+  }
+}
+
+/**
+ * Después de entrar: adoptar lo que se había cargado sin cuenta y bajar todo.
+ *
+ * Es el momento delicado de la migración. Si esto no corriera, las comidas
+ * viejas quedarían huérfanas en el servidor y la persona vería su historial
+ * vacío justo después de crearse la cuenta, que es la peor primera impresión
+ * posible.
+ */
+async function despuesDeEntrar() {
+  const cfg = configSync();
+  const llave = llaveDeEsteDispositivo();
+  const s = sesionActual();
+  const token = await auth().token();
+
+  try {
+    const cli = clienteSupabase({
+      url: cfg.url, anonKey: cfg.anonKey, token,
+      fetchFn: (...a) => fetch(...a)
+    });
+
+    const r = await cli.reclamarLlave(llave);
+    if (r.comidas || r.dias) {
+      toast(`Recuperé ${r.comidas} ${r.comidas === 1 ? 'comida' : 'comidas'} que ya tenías`);
+    }
+  } catch (e) {
+    // que falle el reclamo no puede impedir entrar: se anota y se sigue
+    anotarError('Reclamo de llave: ' + e.message, 'auth', 0);
+  }
+
+  // desde cero: lo que hay en el servidor es de esta cuenta, no de esta llave
+  state.cfg.sync = { ...configSyncLocal(), ultimoSync: 0, ultimoError: '' };
+  save();
+
+  await correrSync({ silencioso: false });
+  renderCuenta();
+  renderAll();
+}
+
+/* ---------------- acciones ---------------- */
+
+$('btnEntrar').onclick = async () => {
+  const a = auth();
+  if (!a) return mostrarErrorCuenta('Falta configurar Supabase.');
+
+  const email = $('cuentaEmail_in').value.trim();
+  const pass = $('cuentaPass').value;
+
+  if (!emailValido(email)) return mostrarErrorCuenta('Ese mail no parece válido.');
+  if (!pass) return mostrarErrorCuenta('Falta la contraseña.');
+
+  ocupado(true);
+  try {
+    await a.entrar(email, pass);
+    $('cuentaPass').value = '';
+    await despuesDeEntrar();
+  } catch (e) {
+    mostrarErrorCuenta(e.message);
+  } finally {
+    ocupado(false);
+  }
+};
+
+$('btnRegistrar').onclick = async () => {
+  const a = auth();
+  if (!a) return mostrarErrorCuenta('Falta configurar Supabase.');
+
+  const email = $('cuentaEmail_in').value.trim();
+  const pass = $('cuentaPass').value;
+
+  if (!emailValido(email)) return mostrarErrorCuenta('Ese mail no parece válido.');
+  if (pass.length < 6) return mostrarErrorCuenta('La contraseña necesita al menos 6 caracteres.');
+
+  ocupado(true);
+  try {
+    const r = await a.registrar(email, pass);
+    $('cuentaPass').value = '';
+
+    if (r.confirmar) {
+      $('cuentaOk').textContent = 'Te mandamos un mail para confirmar. Después entrá con esos datos.';
+      $('cuentaError').textContent = '';
+    } else {
+      await despuesDeEntrar();
+    }
+  } catch (e) {
+    mostrarErrorCuenta(e.message);
+  } finally {
+    ocupado(false);
+  }
+};
+
+$('btnOlvide').onclick = async () => {
+  const a = auth();
+  const email = $('cuentaEmail_in').value.trim();
+
+  if (!a) return mostrarErrorCuenta('Falta configurar Supabase.');
+  if (!emailValido(email)) return mostrarErrorCuenta('Escribí tu mail y volvé a tocar.');
+
+  ocupado(true);
+  try {
+    await a.recuperar(email);
+    $('cuentaOk').textContent = 'Si ese mail tiene cuenta, te va a llegar un link para cambiar la contraseña.';
+    $('cuentaError').textContent = '';
+  } catch (e) {
+    mostrarErrorCuenta(e.message);
+  } finally {
+    ocupado(false);
+  }
+};
+
+$('btnSalir').onclick = async () => {
+  const a = auth();
+  if (!a) return;
+
+  // Los datos locales se quedan: salir no es borrar. Volver a entrar los
+  // vuelve a unir con la cuenta.
+  await a.salir();
+  renderCuenta();
+  toast('Cerraste sesión. Tus datos siguen en este dispositivo.');
+};
