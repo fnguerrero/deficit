@@ -741,7 +741,6 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .resumen { display: grid; grid-template-columns: minmax(0, 148px) 1fr; gap: 8px; align-items: stretch; }
 .resumen > .card { margin: 0; }
 .resumen .ring-card { display: flex; flex-direction: column; justify-content: center; padding: 10px 6px; }
-.resumen .ring-wrap svg { width: 104px; height: 104px; }
 .resumen .ring-stats { display: flex; flex-direction: column; gap: 1px; margin-top: 6px; font-size: 10.5px; }
 .resumen .ring-stats > div { display: flex; justify-content: space-between; gap: 6px; }
 .resumen .ring-stats small { font-size: 9.5px; }
@@ -785,7 +784,6 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   }
   #cardComidas { flex: 1 1 auto; min-height: 96px; display: flex; flex-direction: column; overflow: hidden; }
   #listaComidas { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
-  .resumen .ring-wrap svg { width: 92px; height: 92px; }
   .resumen { grid-template-columns: minmax(0, 132px) 1fr; }
 }
 
@@ -833,4 +831,62 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   --acc: #e8a33d;
   --sobre-acc: #241705;
   --warn: #f0c674;
+}
+
+/* El anillo: el contenedor manda el tamano y el svg lo llena.
+   Antes .ring-wrap estaba fijo en 190 px y yo habia achicado solo el <svg>:
+   el numero del centro se posiciona sobre el wrap, asi que quedaba centrado en
+   190 mientras el circulo media 104 —de ahi el desfasaje— y en escritorio el
+   wrap no entraba en su columna y se cortaba. */
+.resumen .ring-wrap {
+  width: 100%;
+  max-width: 132px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+.resumen .ring-wrap .ring { width: 100%; height: 100%; }
+
+/* El numero acompana al tamano del anillo en vez de quedar fijo. */
+.resumen .ring-center strong { font-size: clamp(20px, 7vw, 30px); letter-spacing: -1px; }
+.resumen .ring-center span { font-size: 11px; }
+
+/* En pantallas grandes hay lugar de sobra: el anillo vuelve a respirar. */
+@media (min-width: 700px) {
+  .resumen { grid-template-columns: minmax(0, 210px) 1fr; }
+  .resumen .ring-wrap { max-width: 180px; }
+  .resumen .ring-center strong { font-size: 34px; }
+}
+
+/* El botón grande va derecho a la cámara, que es lo que se hace el 95% de las
+   veces. La flechita es la salida para la galería, sin robarle lugar. */
+.accion-doble { position: relative; display: flex; }
+.accion-doble .accion { flex: 1; padding-right: 16px; }
+.accion-doble .flechita {
+  position: absolute; top: 0; right: 0; width: 22px; height: 100%;
+  border: 0; border-radius: 0 14px 14px 0; cursor: pointer;
+  background: rgba(0, 0, 0, .16); color: inherit; font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+}
+.accion-doble .flechita:active { background: rgba(0, 0, 0, .28); }
+
+/* El flex de la tarjeta estiraba el contenedor y el anillo quedaba ovalado
+   (106 de ancho por 112 de alto). Con flex fijo el aspect-ratio manda. */
+.resumen .ring-wrap { flex: 0 0 auto; display: block; }
+.resumen .ring-wrap .ring { display: block; }
+
+/* El número y el objetivo tienen que entrar DENTRO del círculo, no pasarse. */
+/* Padding y no width: .ring-center se centra con inset:0, y fijarle un ancho
+   entra en conflicto con eso y lo tira contra el borde izquierdo. */
+.resumen .ring-center {
+  padding: 0 10%;
+  text-align: center;
+  line-height: 1.05;
+}
+.resumen .ring-center span {
+  display: block;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
