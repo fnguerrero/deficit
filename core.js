@@ -66,6 +66,9 @@ function migrar(guardado) {
       nota: String(d.nota || ''),
       /* Como venia el dia, en caritas. Escribir una nota es mucho pedir todos los dias. */
       animo: d.animo || null,
+      /* Horas dormidas y que tal se durmio. Auto-reportado: medirlo de verdad
+         necesita una app nativa o un reloj, y esto se sostiene sin comprar nada. */
+      sueno: d.sueno || null,
       act: Number(d.act) || 0,
       comidas: (d.comidas || []).map(c => ({
         id: c.id || (f + '-' + Math.random().toString(36).slice(2, 8)),

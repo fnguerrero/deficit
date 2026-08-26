@@ -358,7 +358,11 @@ const TEMAS = {
   /* En pantallas OLED el negro puro no enciende el pixel: ahorra bateria de verdad. */
   oled: { nombre: 'Negro', detalle: 'Negro puro. En pantallas OLED gasta menos batería.' },
   /* Menos azul para la noche, que es cuando se carga la cena. */
-  calido: { nombre: 'Cálido', detalle: 'Tonos cálidos, con menos azul. Cansa menos de noche.' }
+  calido: { nombre: 'Cálido', detalle: 'Tonos cálidos, con menos azul. Cansa menos de noche.' },
+  oceano: { nombre: 'Océano', detalle: 'Azules profundos, con acento turquesa.' },
+  bosque: { nombre: 'Bosque', detalle: 'Verdes apagados, tranquilo para la vista.' },
+  vino: { nombre: 'Vino', detalle: 'Oscuro con acento bordó.' },
+  papel: { nombre: 'Papel', detalle: 'Claro y cálido, como una libreta.' }
 };
 
 /** En automático no se fuerza nada: manda el prefers-color-scheme del CSS. */

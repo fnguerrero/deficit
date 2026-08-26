@@ -138,6 +138,62 @@ const MODOS = {
     regla: 'singluten'
   },
 
+  paleo: {
+    id: 'paleo',
+    nombre: 'Paleo',
+    resumen: 'Nada de procesados ni cereales',
+    detalle: 'Carne, pescado, huevo, verduras, frutas y frutos secos. Sin cereales, sin lácteos y sin nada de paquete.',
+    deficitPct: 0.20,
+    macros: { prot: 0.30, carb: 0.25, gras: 0.45 },
+    proteinaPorKg: 2.0,
+    regla: 'paleo'
+  },
+
+  dash: {
+    id: 'dash',
+    nombre: 'DASH',
+    resumen: 'Pensada para la presión alta',
+    detalle: 'Mucha verdura y fruta, granos integrales, poca sal y poca grasa saturada. Es la que suelen indicar para hipertensión.',
+    deficitPct: 0.15,
+    macros: { prot: 0.25, carb: 0.50, gras: 0.25 },
+    proteinaPorKg: 1.6,
+    sodioMaxDia: 2300,
+    regla: 'dash'
+  },
+
+  flexi: {
+    id: 'flexi',
+    nombre: 'Flexitariana',
+    resumen: 'Casi vegetariana, sin ser estricta',
+    detalle: 'Base vegetal, con carne de vez en cuando. Más fácil de sostener que la vegetariana pura y con casi los mismos beneficios.',
+    deficitPct: 0.18,
+    macros: { prot: 0.25, carb: 0.45, gras: 0.30 },
+    proteinaPorKg: 1.7,
+    regla: 'flexi'
+  },
+
+  sinlactosa: {
+    id: 'sinlactosa',
+    nombre: 'Sin lactosa',
+    resumen: 'Sin leche ni derivados',
+    detalle: 'Para intolerancia. Ojo con la lactosa escondida en panificados, embutidos y salsas.',
+    deficitPct: 0.15,
+    macros: { prot: 0.30, carb: 0.40, gras: 0.30 },
+    proteinaPorKg: 1.8,
+    regla: 'sinlactosa'
+  },
+
+  antiinflamatoria: {
+    id: 'antiinflamatoria',
+    nombre: 'Antiinflamatoria',
+    resumen: 'Menos azúcar y ultraprocesados',
+    detalle: 'Pescado, verduras de hoja, frutos secos y aceite de oliva; afuera el azúcar agregada, los fritos y lo ultraprocesado.',
+    deficitPct: 0.15,
+    macros: { prot: 0.28, carb: 0.37, gras: 0.35 },
+    proteinaPorKg: 1.8,
+    regla: 'antiinflamatoria'
+  },
+
   volumen: {
     id: 'volumen',
     nombre: 'Volumen limpio',
@@ -251,7 +307,7 @@ function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy
   const p = comida?.perfil || null;
 
   if (p && modo.regla) {
-    const veredicto = porPatron(modo.regla, p, { kcal, prot });
+    const veredicto = porPatron(modo.regla, p, { kcal, prot, sodio: Number(comida?.sodio) || 0 });
     if (veredicto) return veredicto;
   }
 
@@ -603,7 +659,7 @@ function cerrarAyuno(inicio, fin = Date.now(), horasObjetivo = 16) {
  * general de calorias. Es a proposito: una comida puede estar bien para el
  * patron y ser igual demasiado grande.
  */
-function porPatron(regla, p, { kcal = 0, prot = 0 } = {}) {
+function porPatron(regla, p, { kcal = 0, prot = 0, sodio = 0 } = {}) {
   if (regla === 'vegetariana') {
     if (p.vegetariano === false) {
       return { apta: false, nivel: 'no', motivo: 'Tiene carne, ave o pescado.' };
@@ -639,6 +695,45 @@ function porPatron(regla, p, { kcal = 0, prot = 0 } = {}) {
     if (!p.vegetales) {
       return { apta: true, nivel: 'justo', motivo: 'Sin verduras a la vista.' };
     }
+    return null;
+  }
+
+  if (regla === 'paleo') {
+    if (p.cereales) return { apta: false, nivel: 'no', motivo: 'Tiene cereales, que acá no van.' };
+    if (p.lacteos) return { apta: false, nivel: 'no', motivo: 'Tiene lácteos.' };
+    if (p.ultraprocesado) return { apta: false, nivel: 'no', motivo: 'Es ultraprocesado.' };
+    if (p.azucarAgregada) return { apta: false, nivel: 'no', motivo: 'Tiene azúcar agregada.' };
+    if (p.legumbres) return { apta: true, nivel: 'justo', motivo: 'Las legumbres son discutidas en paleo.' };
+    return null;
+  }
+
+  if (regla === 'dash') {
+    // acá el enemigo es la sal, y eso se mide con el sodio del análisis
+    if (sodio > 800) return { apta: false, nivel: 'no', motivo: `${Math.round(sodio)} mg de sodio en una comida es mucho para esta dieta.` };
+    if (p.ultraprocesado) return { apta: false, nivel: 'no', motivo: 'Los ultraprocesados son la principal fuente de sal escondida.' };
+    if (sodio > 500) return { apta: true, nivel: 'justo', motivo: `${Math.round(sodio)} mg de sodio: mirá el resto del día.` };
+    if (p.vegetales || p.frutas) return { apta: true, nivel: 'si', motivo: 'Con verduras o fruta, como corresponde.' };
+    return null;
+  }
+
+  if (regla === 'flexi') {
+    // no prohíbe la carne: solo avisa, que es lo que la hace sostenible
+    if (p.carneRoja) return { apta: true, nivel: 'justo', motivo: 'Carne roja: acá va de vez en cuando, no todos los días.' };
+    if (p.vegetariano || p.legumbres) return { apta: true, nivel: 'si', motivo: 'Base vegetal, que es de lo que se trata.' };
+    return null;
+  }
+
+  if (regla === 'sinlactosa') {
+    if (p.lacteos) return { apta: false, nivel: 'no', motivo: 'Tiene lácteos.' };
+    return null;
+  }
+
+  if (regla === 'antiinflamatoria') {
+    if (p.azucarAgregada) return { apta: false, nivel: 'no', motivo: 'El azúcar agregada es justo lo que esta dieta saca.' };
+    if (p.ultraprocesado) return { apta: false, nivel: 'no', motivo: 'Es ultraprocesado.' };
+    if (p.frito) return { apta: false, nivel: 'no', motivo: 'Frito: las grasas oxidadas van en contra.' };
+    if (p.pescado || p.frutosSecos || p.aceiteOliva) return { apta: true, nivel: 'si', motivo: 'Grasas buenas: justo lo que busca.' };
+    if (p.vegetales) return { apta: true, nivel: 'si', motivo: 'Con verduras.' };
     return null;
   }
 

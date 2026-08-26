@@ -907,3 +907,54 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .marca-apta.grande.no { background: color-mix(in srgb, var(--err) 18%, transparent); color: var(--err); }
 .marca-apta.grande.justo { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
 .resumen-comida .actions-row { margin-top: 14px; }
+
+/* ---------- el personaje ---------- */
+
+.mascota {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; margin-bottom: 8px; cursor: pointer; text-align: left;
+  border-radius: 16px; border: 1px solid var(--line); background: var(--card);
+}
+.mascota:active { transform: scale(.995); }
+.mascota-dibujo { flex: 0 0 auto; line-height: 0; }
+.mascota-svg { display: block; }
+.mascota-texto { min-width: 0; flex: 1; }
+.mascota-texto b { display: block; font-size: 13.5px; margin-bottom: 2px; }
+.mascota-texto small { display: block; font-size: 11.5px; color: var(--txt2); line-height: 1.35; }
+
+.mascota-nivel { display: flex; align-items: center; gap: 7px; margin-top: 7px; font-size: 10.5px; color: var(--dim); }
+.mascota-barra { flex: 1; height: 5px; border-radius: 3px; background: var(--card2); overflow: hidden; }
+.mascota-barra i { display: block; height: 100%; background: var(--acc); border-radius: 3px; transition: width .4s ease; }
+
+/* El personaje respira: quieto del todo parece un ícono, no un bicho. */
+@keyframes respirar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.mascota-svg { animation: respirar 3.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .mascota-svg { animation: none; } }
+
+/* Azules profundos con acento turquesa. */
+:root[data-tema="oceano"] {
+  --bg: #0a1622; --bg2: #0f1e2e; --card: #14283c; --card2: #1c3450;
+  --line: #21405c; --txt: #e6f0f8; --txt2: #a8c0d4; --dim: #6f8ba3;
+  --acc: #2dd4bf; --sobre-acc: #04201c; --warn: #fbbf24; --err: #f87171;
+}
+
+/* Verdes apagados: el que menos cansa de los oscuros. */
+:root[data-tema="bosque"] {
+  --bg: #101a14; --bg2: #16221a; --card: #1c2c22; --card2: #24382c;
+  --line: #2c4436; --txt: #e8f2ea; --txt2: #b0c8b8; --dim: #7a9484;
+  --acc: #7cc47f; --sobre-acc: #08200c; --warn: #d9b166; --err: #e88a8a;
+}
+
+/* Oscuro con acento bordo, para el que quiere algo que no sea verde. */
+:root[data-tema="vino"] {
+  --bg: #171014; --bg2: #1e1418; --card: #281a20; --card2: #33222a;
+  --line: #402a34; --txt: #f4e8ec; --txt2: #cbb0ba; --dim: #94737f;
+  --acc: #e0607f; --sobre-acc: #24060e; --warn: #e8b06a; --err: #ff8a8a;
+}
+
+/* Claro y calido, como una libreta de papel. */
+:root[data-tema="papel"] {
+  --bg: #f7f3ea; --bg2: #fffdf7; --card: #fffdf7; --card2: #f0e9db;
+  --line: #e0d7c4; --txt: #2c2620; --txt2: #5f564a; --dim: #8d8474;
+  --acc: #2f7d4f; --sobre-acc: #ffffff; --warn: #a06a1a; --err: #b3382f;
+}

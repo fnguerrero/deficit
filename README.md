@@ -207,7 +207,7 @@ siempre. Y si cargás una clave estando el proxy activo, gana la tuya en ese dis
 | `arranque.js` | el arranque, que va último |
 | `supabase.sql` | las tablas, listas para pegar en Supabase |
 | `proxy/` | el Worker de Cloudflare que guarda la clave (`node proxy/test.mjs`) |
-| `tests.js` + `tests.html` | 550 tests sin dependencias — abrir `/tests.html` |
+| `tests.js` + `tests.html` | 573 tests sin dependencias — abrir `/tests.html` |
 | `sw.js` | service worker (network-first, cache como respaldo offline) |
 | `tools/gen_iconos.py` | regenera los íconos (`py -3 tools/gen_iconos.py`) |
 | `tools/version.py` | sube la versión de los assets (`py -3 tools/version.py`) |

@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=148">
+<link rel="stylesheet" href="styles.css?v=154">
 </head>
 <body>
 
@@ -35,6 +35,20 @@
       <span id="avisoDiaTxt"></span>
       <button id="volverHoy">Volver a hoy</button>
     </div>
+
+    <!-- El personaje: el resumen del día en una cara, antes que cualquier número. -->
+    <button class="mascota" id="mascotaCard" aria-label="Cómo venís hoy">
+      <div class="mascota-dibujo" id="mascotaDibujo"></div>
+      <div class="mascota-texto">
+        <b id="mascotaTitulo"></b>
+        <small id="mascotaDetalle"></small>
+        <div class="mascota-nivel">
+          <span id="mascotaRacha"></span>
+          <span class="mascota-barra"><i id="mascotaBarra"></i></span>
+          <span id="mascotaLvl"></span>
+        </div>
+      </div>
+    </button>
 
     <div class="resumen">
     <div class="card ring-card">
@@ -315,6 +329,13 @@
           <button id="btnAyuno" class="ghost big">Empezar a ayunar</button>
           <p class="hint" style="margin-top:12px">Ventana</p>
           <div class="chips" id="ventanasAyuno"></div>
+        </section>
+
+        <section data-obj="sueno" hidden>
+          <p class="hint">¿Cuánto dormiste anoche? No hace falta que sea exacto.</p>
+          <div class="chips" id="horasSueno"></div>
+          <p class="hint" style="margin-top:12px">¿Cómo dormiste?</p>
+          <div class="caritas" id="calidadSueno"></div>
         </section>
 
         <section data-obj="animo" hidden>
@@ -761,27 +782,28 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=148"></script>
-<script src="core.js?v=148"></script>
-<script src="modos.js?v=148"></script>
-<script src="analisis.js?v=148"></script>
-<script src="claude.js?v=148"></script>
-<script src="productos.js?v=148"></script>
-<script src="sync.js?v=148"></script>
-<script src="auth.js?v=148"></script>
-<script src="app.js?v=148"></script>
-<script src="ui/general.js?v=148"></script>
-<script src="ui/hoy.js?v=148"></script>
-<script src="ui/objetivos.js?v=148"></script>
-<script src="ui/comidas.js?v=148"></script>
-<script src="ui/escaner.js?v=148"></script>
-<script src="ui/asistente.js?v=148"></script>
-<script src="ui/historial.js?v=148"></script>
-<script src="ui/perfil.js?v=148"></script>
-<script src="ui/sincronizacion.js?v=148"></script>
-<script src="ui/cuenta.js?v=148"></script>
-<script src="ui/calibracion.js?v=148"></script>
-<script src="ui/ajustes.js?v=148"></script>
-<script src="arranque.js?v=148"></script>
+<script src="config.js?v=154"></script>
+<script src="core.js?v=154"></script>
+<script src="modos.js?v=154"></script>
+<script src="mascota.js?v=154"></script>
+<script src="analisis.js?v=154"></script>
+<script src="claude.js?v=154"></script>
+<script src="productos.js?v=154"></script>
+<script src="sync.js?v=154"></script>
+<script src="auth.js?v=154"></script>
+<script src="app.js?v=154"></script>
+<script src="ui/general.js?v=154"></script>
+<script src="ui/hoy.js?v=154"></script>
+<script src="ui/objetivos.js?v=154"></script>
+<script src="ui/comidas.js?v=154"></script>
+<script src="ui/escaner.js?v=154"></script>
+<script src="ui/asistente.js?v=154"></script>
+<script src="ui/historial.js?v=154"></script>
+<script src="ui/perfil.js?v=154"></script>
+<script src="ui/sincronizacion.js?v=154"></script>
+<script src="ui/cuenta.js?v=154"></script>
+<script src="ui/calibracion.js?v=154"></script>
+<script src="ui/ajustes.js?v=154"></script>
+<script src="arranque.js?v=154"></script>
 </body>
 </html>
