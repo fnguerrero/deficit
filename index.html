@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=174">
+<link rel="stylesheet" href="styles.css?v=195">
 </head>
 <body>
 
@@ -43,10 +43,10 @@
         <b id="mascotaTitulo"></b>
         <small id="mascotaDetalle"></small>
         <div class="mascota-nivel">
-          <span id="mascotaRacha"></span>
-          <span class="mascota-barra"><i id="mascotaBarra"></i></span>
+          <div class="rachas" id="rachasFila"></div>
           <span id="mascotaLvl"></span>
         </div>
+        <span class="mascota-barra"><i id="mascotaBarra"></i></span>
       </div>
     </button>
 
@@ -233,6 +233,20 @@
 
   <!-- ============ PROGRESO ============ -->
   <section id="tab-progreso" class="tab">
+
+    <div class="card nivel-card">
+      <div class="card-head"><h2>Nivel</h2><span id="nivelPill" class="pill"></span></div>
+      <div class="nivel-barra"><i id="nivelBarra"></i></div>
+      <p class="hint" id="nivelNota"></p>
+
+      <div class="rachas-grande" id="rachasGrande"></div>
+      <p class="hint" id="escudosNota"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Logros</h2><span id="logrosPill" class="pill"></span></div>
+      <div class="logros" id="logrosGrilla"></div>
+    </div>
 
     <div class="periodos" id="selPeriodo"></div>
 
@@ -485,6 +499,15 @@
         <ul id="listaAnalisis" class="lista analisis"></ul>
         <p id="analisisVacio" class="vacio">Todavía no hay análisis registrados.</p>
       </details>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Sonidos</h2><span id="sonidoPill" class="pill"></span></div>
+      <label class="switch">
+        <input type="checkbox" id="chkSonido">
+        <span>Sonar al cumplir un objetivo, subir de nivel o ganar un logro</span>
+      </label>
+      <p class="hint" id="sonidoNota"></p>
     </div>
 
     <div class="card">
@@ -854,32 +877,39 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=174"></script>
-<script src="core.js?v=174"></script>
-<script src="modos.js?v=174"></script>
-<script src="mascota.js?v=174"></script>
-<script src="graficos.js?v=174"></script>
-<script src="analisis.js?v=174"></script>
-<script src="claude.js?v=174"></script>
-<script src="productos.js?v=174"></script>
-<script src="sync.js?v=174"></script>
-<script src="auth.js?v=174"></script>
-<script src="app.js?v=174"></script>
-<script src="ui/general.js?v=174"></script>
-<script src="ui/hoy.js?v=174"></script>
-<script src="ui/objetivos.js?v=174"></script>
-<script src="ui/comidas.js?v=174"></script>
-<script src="ui/escaner.js?v=174"></script>
-<script src="ui/asistente.js?v=174"></script>
-<script src="ui/historial.js?v=174"></script>
-<script src="ui/progreso.js?v=174"></script>
-<script src="ui/perfil.js?v=174"></script>
-<script src="ui/sincronizacion.js?v=174"></script>
-<script src="ui/cuenta.js?v=174"></script>
-<script src="ui/calibracion.js?v=174"></script>
-<script src="ui/actividades.js?v=174"></script>
-<script src="ui/recordatorios.js?v=174"></script>
-<script src="ui/ajustes.js?v=174"></script>
-<script src="arranque.js?v=174"></script>
+<script src="config.js?v=195"></script>
+<script src="core.js?v=195"></script>
+<script src="modos.js?v=195"></script>
+<script src="mascota.js?v=195"></script>
+<script src="cuerpo.js?v=195"></script>
+<script src="personaje.js?v=195"></script>
+<script src="juego.js?v=195"></script>
+<script src="sonidos.js?v=195"></script>
+<script src="voz.js?v=195"></script>
+<script src="graficos.js?v=195"></script>
+<script src="analisis.js?v=195"></script>
+<script src="claude.js?v=195"></script>
+<script src="productos.js?v=195"></script>
+<script src="sync.js?v=195"></script>
+<script src="auth.js?v=195"></script>
+<script src="app.js?v=195"></script>
+<script src="ui/general.js?v=195"></script>
+<script src="ui/hoy.js?v=195"></script>
+<script src="ui/objetivos.js?v=195"></script>
+<script src="ui/logros.js?v=195"></script>
+<script src="ui/comidas.js?v=195"></script>
+<script src="ui/edicion.js?v=195"></script>
+<script src="ui/escaner.js?v=195"></script>
+<script src="ui/asistente.js?v=195"></script>
+<script src="ui/historial.js?v=195"></script>
+<script src="ui/progreso.js?v=195"></script>
+<script src="ui/perfil.js?v=195"></script>
+<script src="ui/sincronizacion.js?v=195"></script>
+<script src="ui/cuenta.js?v=195"></script>
+<script src="ui/calibracion.js?v=195"></script>
+<script src="ui/actividades.js?v=195"></script>
+<script src="ui/recordatorios.js?v=195"></script>
+<script src="ui/ajustes.js?v=195"></script>
+<script src="arranque.js?v=195"></script>
 </body>
 </html>

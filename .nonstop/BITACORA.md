@@ -152,3 +152,39 @@ Nico sumo despues el veredicto honesto de si va bien.
 #16b — Un test se puso en rojo con el cambio de cache: esperaba que expirara a los 31 dias. El cambio era deliberado, asi que se corrigio el test —ahora prueba 90 dias y que el plazo siga siendo configurable—, no el codigo
 
 #35b — ui/ajustes.js se volvio a pasar de tamano. Salio ui/recordatorios.js con los avisos, que son un tema propio y autocontenido
+
+## Ciclo 6 — Fito humano y el sistema que engancha
+
+#1 — ui/comidas.js estaba 18 lineas pasado del limite: salio ui/edicion.js con el editor del resultado (cargar una comida y corregirla son dos momentos distintos). Verif: tamanos.py limpio
+
+#2 — Un test en rojo heredado del ciclo 5: "con el dia en blanco no opina" fallaba porque estadoMascota leia el reloj adentro y a las 18 hs un dia vacio SI es un problema. El codigo estaba bien; lo que estaba mal era que la hora no se pudiera fijar. Ahora entra por parametro. Verif: 587 en verde
+
+#3 — cuerpo.js: IMC, bandas, contextura continua (17-35 clampeado), musculatura por dias entrenados en 14, y el descuento por musculo. Sin peso devuelve null en vez de inventar. Verif: 16 tests nuevos, 603 en verde
+
+#4 — personaje.js: Fito pasa a ser humano. Silueta muestreada a partir de cuatro anchos, lo que deja cortar la ropa a cualquier altura y que siga al cuerpo. Verif: rasterizado con Edge headless y mirado
+
+#5 — Tres arreglos que solo se ven mirando el render: los brazos quedaban tapados por el torso (se dibujaban antes), las piernas eran muy cortas y la manga tenia forma rara. Verif: PNG de la grilla de cuerpos
+
+#6 — Proporciones a lo Duolingo: la cabeza se lleva casi un tercio. No es capricho: en Hoy el personaje mide 74 px y con proporciones reales la cara quedaba en 12 px, donde no se distingue un bostezo de una sonrisa. Verif: PNG de los ocho animos, todos legibles
+
+#7 — El personaje entra en la pantalla y sin peso cargado dibuja un cuerpo medio pidiendo el dato. 22 tests nuevos, incluido el que fija el criterio central: mismo peso con distinta comida da la MISMA silueta. Verif: 621 en verde y por DOM
+
+#8 — juego.js: cuatro rachas separadas, escudos que se ganan cada 7 dias, XP que paga por registrar ademas de por cumplir, niveles y 16 logros. Todo se recalcula contra el historial en vez de acumularse: asi borrar una comida cargada por error no deja XP fantasma. Verif: 654 en verde
+
+#9 — sonidos.js (WebAudio, sin un solo archivo, apagado por defecto) y voz.js (el repertorio de Fito, con un test que prohibe frases que humillen por el cuerpo). Verif: 678 en verde
+
+#10 — tests.js se paso de 6000 lineas: salio tests2.js con la suite del ciclo 6. Ojo con como se lee el resultado: hay tests async que corren despues, y el resumen en pantalla se pinta dos veces. Lo confiable es esperar a window.__listo
+
+#11 — Bug real que solo se ve en el navegador: la manga escribia el menos a mano y del lado izquierdo salia "q--5.9", que tira el path entero. El test de NaN no lo agarraba porque "--5.9" no es NaN. Se agrego el test que si lo agarra
+
+#12 — Pantalla de nivel, rachas grandes y logros dentro de Progreso (la barra de abajo ya tiene cinco botones), festejo en cola de a uno, e interruptor de sonido en Ajustes que suena al prenderlo. Verif: por DOM
+
+#13 — Hoy en 375x812: la lista de comidas quedaba en 37 px. Dos causas. Los seis objetivos ocupaban dos filas (ahora una), y sobre todo el `calc(100dvh - 216px)`: el 216 era una suma a ojo del header y la nav, y dejaba 120 px de pantalla vacia abajo. Ahora el alto lo reparte flex. Verif: Hoy entra justo y la lista paso a 88 px
+
+#13b — Al pasar el alto a flex hubo que mover el scroll del documento a `main`, o Historial, Progreso, Perfil y Ajustes quedaban sin poder scrollear. Verif: las cinco pestanas llegan al final
+
+#14 — El juego no se sincroniza como tabla propia: XP, nivel, rachas y logros se derivan de los dias, que ya se sincronizan. Solo quedan por dispositivo los escudos gastados y que logros ya se festejaron. Anotado en Supuestos. Verif: test de que los mismos dias dan el mismo juego
+
+#15 — Siete archivos nuevos entraron en index.html y NO en el shell del service worker: eso no falla en el navegador, falla sin internet y semanas despues. Se agregaron, y version.py ahora avisa cuando pasa. Se probo que la guardia dispare de verdad
+
+#16 — Verificacion final contra los criterios de la SPEC: 682 tests en verde, 0 errores de consola, los 15 criterios cumplidos. Ciclo cerrado en 14 iteraciones de 55
