@@ -55,7 +55,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
       min, fútbol 1 h) · verif: test de kcal = MET × peso × horas contra valores conocidos
 - [x] 19. Favoritas en Hoy, de un toque; el resto en un selector
       · verif: por DOM, tocar una favorita carga el ejercicio del día
-- [ ] 20. Editar actividades y duraciones fuera de la pantalla principal
+- [x] 20. Editar actividades y duraciones fuera de la pantalla principal
       · verif: por DOM en Ajustes, agregar una actividad propia y usarla
 
 ## Agua
@@ -83,11 +83,11 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
 
 ## Gráficos
 
-- [ ] 28. Sección propia con peso, calorías contra objetivo y adherencia
+- [x] 28. Sección propia con peso, calorías contra objetivo y adherencia
       · verif: por DOM con datos simulados, los tres gráficos dibujan
-- [ ] 29. Selector de período: diario, semanal y mensual
+- [x] 29. Selector de período: diario, semanal y mensual
       · verif: por DOM, cambiar el período cambia la cantidad de puntos
-- [ ] 30. Gráfico propio del modo cuando aplica (carbohidratos en keto, proteína en
+- [x] 30. Gráfico propio del modo cuando aplica (carbohidratos en keto, proteína en
       definición) · verif: por DOM en keto aparece la línea de carbos
 
 ## Temas
@@ -101,7 +101,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
       típicas (16:8, 18:6, 20:4) · verif: test del cálculo de horas y por DOM el contador
 - [x] 33. El ayuno como objetivo del día, con su historial · verif: por DOM, un ayuno en
       curso se ve en el tablero y al cortarlo queda registrado
-- [ ] 34. Sueño auto-reportado: al abrir la app a la mañana, horas y calidad en caritas
+- [x] 34. Sueño auto-reportado: al abrir la app a la mañana, horas y calidad en caritas
       · verif: por DOM, cargar el sueño marca el objetivo
 - [ ] 35. Recordatorio de hora de dormir, con los recordatorios que ya existen
       · verif: se programa y aparece en la lista de recordatorios

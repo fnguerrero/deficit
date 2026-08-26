@@ -299,6 +299,7 @@ $('btnGuardarTope').onclick = () => {
 };
 
 function renderAjustes() {
+  renderActividadesEditar();
   renderTope();
   renderRespaldo();
   renderSync();

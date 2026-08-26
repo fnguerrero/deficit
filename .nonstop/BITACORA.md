@@ -128,3 +128,15 @@ Nico sumo despues el veredicto honesto de si va bien.
 #25-27 — Veredicto y recomendaciones en Historial. Verificado por DOM los tres estados: sin datos dice "Faltan 9 dias de peso y 6 de comidas"; bajando al ritmo previsto dice "Vas en camino" con -0,51 contra 0,51 y 100% de adherencia; y con el peso quieto dice "No estas bajando" y da la explicacion mas probable en vez de maquillarlo. Las recomendaciones cambian con el modo
 
 #31 — Cinco temas: automatico, claro, oscuro, negro OLED (bateria real en el celular) y calido (menos azul de noche) — verificado: los cuatro fondos son distintos y la barra del navegador acompana
+
+#34 — El sueno auto-reportado ya estaba: se hizo junto con el personaje (horas + calidad en caritas, sexto objetivo del dia). Se marca sin trabajo nuevo
+
+#28 — En curso: seccion de progreso con graficos propios
+
+#28-30 — Seccion Progreso nueva, quinta pestana. Cuatro graficos en SVG a mano (una libreria de charts pesa mas que toda la app): peso, calorias contra objetivo, adherencia, y uno que depende del modo —carbohidratos en keto, proteina en definicion—. Selector de dia/semana/mes que agrupa promediando, porque mirar el peso dia a dia es mirar ruido. Los huecos cortan la linea en vez de inventar el tramo — verificado por DOM: 14/8/3 puntos segun periodo
+
+#28b — Dos bugs que solo aparecieron mirando el render, no leyendo el codigo: la adherencia pintaba de ROJO el 100% y de verde el 0%, porque reusaba la regla de calorias donde pasarse es malo; y el eje del peso imprimia "86, 85, 85" al redondear a entero un rango de menos de un kilo — verificado: el color acompana al valor en las 14 barras y el eje va con decimales cuando el rango es chico
+
+#20 — Editar actividades desde Ajustes: cambiar duracion, elegir cuales van en Hoy (tope de 3, que es lo que entra) y agregar propias con nombre e intensidad. El id sale del nombre sin acentos y sin pisar uno existente — verificado por DOM: cambiar running a 45' recalcula a 625 kcal, intercambiar favoritas anda, la cuarta se rechaza y "Escalada" queda con su id sin romper el catalogo
+
+#20b — ui/ajustes.js se paso del limite de 700 lineas al agregar esto. Salio ui/actividades.js. El control de tamanos existe justamente para que el corte se decida cuando corresponde y no cuando el archivo ya es inmanejable

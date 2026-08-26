@@ -958,3 +958,25 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   --line: #e0d7c4; --txt: #2c2620; --txt2: #5f564a; --dim: #8d8474;
   --acc: #2f7d4f; --sobre-acc: #ffffff; --warn: #a06a1a; --err: #b3382f;
 }
+
+/* ---------- progreso ---------- */
+
+.periodos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.periodo {
+  padding: 8px 4px; border-radius: 11px; border: 1px solid var(--line);
+  background: var(--card); color: var(--txt2); font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.periodo.activo { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 14%, transparent); color: var(--acc); }
+
+.gr { width: 100%; height: 130px; display: block; overflow: visible; }
+
+/* Editar actividades: la fila entera es el interruptor de favorita. */
+.act-fila { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+.act-fila:first-child { border-top: 0; }
+.act-nombre {
+  flex: 1; text-align: left; background: transparent; border: 0; cursor: pointer;
+  color: var(--txt2); font-size: 13px; padding: 4px 0;
+}
+.act-fila.fav .act-nombre { color: var(--acc); font-weight: 600; }
+.act-nombre small { display: block; font-size: 10.5px; color: var(--dim); font-weight: 400; }
+.act-min { width: 62px; text-align: center; }
