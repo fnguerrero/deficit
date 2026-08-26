@@ -196,66 +196,176 @@ function rachaActual(dias, hoy = hoyISO()) {
 /* ---------------- el dibujo ---------------- */
 
 /*
- * SVG hecho a mano y no una imagen: pesa nada, se adapta al tema porque usa las
- * variables de color, y sobre todo permite cambiar la expresión sin tener diez
- * archivos. Cada ánimo mueve los ojos, la boca y un par de detalles.
+ * Fito es un SVG hecho a mano, no una imagen.
+ *
+ * Lo que hace que un personaje se lea como personaje y no como ícono son tres
+ * cosas: ojos grandes con pupila (para que mire), CEJAS (que es donde vive el
+ * 90% de la expresión) y un cuerpo con panza. Todo lo demás es decoración.
+ *
+ * Los colores son propios y no del tema: un personaje que cambia de color con
+ * el tema deja de ser el mismo personaje. Solo el fondo se adapta.
  */
-const CARAS = {
-  neutral: { ojos: 'abiertos', boca: 'recta', color: 'var(--acc)', gota: false, zzz: false },
-  bien:    { ojos: 'abiertos', boca: 'sonrisa', color: 'var(--acc)', gota: false, zzz: false },
-  genial:  { ojos: 'felices', boca: 'sonrisota', color: 'var(--acc)', gota: false, zzz: false, brillo: true },
-  flojo:   { ojos: 'medio', boca: 'recta', color: 'var(--warn)', gota: false, zzz: false },
-  cansado: { ojos: 'cerrados', boca: 'chica', color: 'var(--dim)', gota: false, zzz: true },
-  seco:    { ojos: 'abiertos', boca: 'seca', color: 'var(--warn)', gota: true, zzz: false },
-  pesado:  { ojos: 'medio', boca: 'triste', color: 'var(--warn)', gota: false, zzz: false },
-  triste:  { ojos: 'tristes', boca: 'triste', color: 'var(--dim)', gota: false, zzz: false }
+
+const FITO = {
+  cuerpo: '#5fbf6a',
+  cuerpoOscuro: '#4aa356',
+  panza: '#e8f5d8',
+  pico: '#f5a742',
+  picoOscuro: '#e08c28',
+  ojo: '#ffffff',
+  pupila: '#2c2418',
+  ceja: '#3d8f47',
+  mejilla: '#f08ea0',
+  hoja: '#7dd67d'
 };
 
-function ojosSvg(tipo) {
-  if (tipo === 'cerrados') return '<path d="M34 46 q6 5 12 0" /><path d="M54 46 q6 5 12 0" />';
-  if (tipo === 'felices')  return '<path d="M34 48 q6 -7 12 0" /><path d="M54 48 q6 -7 12 0" />';
-  if (tipo === 'medio')    return '<circle cx="40" cy="47" r="3.5" fill="currentColor" stroke="none"/><circle cx="60" cy="47" r="3.5" fill="currentColor" stroke="none"/><path d="M34 42 h12" /><path d="M54 42 h12" />';
-  if (tipo === 'tristes')  return '<circle cx="40" cy="48" r="3.5" fill="currentColor" stroke="none"/><circle cx="60" cy="48" r="3.5" fill="currentColor" stroke="none"/><path d="M34 41 q6 -4 12 -1" /><path d="M54 40 q6 -3 12 1" />';
-  return '<circle cx="40" cy="46" r="4.5" fill="currentColor" stroke="none"/><circle cx="60" cy="46" r="4.5" fill="currentColor" stroke="none"/>';
+/*
+ * Cada ánimo es un puñado de parámetros, no un dibujo aparte: así los ocho
+ * estados son el mismo bicho y no ocho bichos distintos.
+ *
+ * ceja: inclinación en grados (negativo = enojado/preocupado hacia adentro)
+ * parpado: cuánto baja el párpado, 0 a 1
+ * mirada: hacia dónde miran las pupilas
+ */
+const ANIMOS = {
+  neutral: { ceja: 0, cejaY: 0, parpado: 0, boca: 'recta', mirada: [0, 0], mejillas: false, color: FITO.cuerpo },
+  bien:    { ceja: -4, cejaY: -2, parpado: 0, boca: 'sonrisa', mirada: [0, 0], mejillas: true, color: FITO.cuerpo },
+  genial:  { ceja: -8, cejaY: -3, parpado: 0, boca: 'sonrisota', mirada: [0, -1], mejillas: true, color: FITO.cuerpo, ojosFelices: true, brillos: true },
+  flojo:   { ceja: 7, cejaY: 0, parpado: .35, boca: 'recta', mirada: [0, 1], mejillas: false, color: '#8fc47a' },
+  cansado: { ceja: 11, cejaY: 1, parpado: .75, boca: 'chica', mirada: [0, 2], mejillas: false, color: '#9fb98f', zzz: true, ojeras: true },
+  seco:    { ceja: 13, cejaY: 1, parpado: .15, boca: 'seca', mirada: [1, 0], mejillas: false, color: '#b5bf70', gota: true },
+  /* Pesado mira para abajo y con los ojos casi cerrados; triste mira de frente
+     con las cejas hacia arriba por dentro, que es el gesto de pena y no de
+     modorra. Sin eso los dos se leían igual. */
+  pesado:  { ceja: 17, cejaY: 2, parpado: .3, boca: 'triste', mirada: [0, 2.4], mejillas: false, color: '#9aad72', pesado: true },
+  triste:  { ceja: -20, cejaY: -1, parpado: .15, boca: 'triste', mirada: [0, .6], mejillas: false, color: '#8fa891', lagrima: true }
+};
+
+/*
+ * Un tono más oscuro del mismo color. La ceja tenía color fijo, y cuando el
+ * cuerpo se apaga —cansado, seco— quedaba como una barra oscura pegada al ojo
+ * en vez de leerse como parte de la cara.
+ */
+function oscurecer(hex, factor = 0.72) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * factor);
+  const g = Math.round(((n >> 8) & 255) * factor);
+  const b = Math.round((n & 255) * factor);
+  return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
-function bocaSvg(tipo) {
-  if (tipo === 'sonrisota') return '<path d="M38 60 q12 12 24 0 q-12 5 -24 0" fill="currentColor" stroke="none"/>';
-  if (tipo === 'sonrisa')   return '<path d="M40 60 q10 8 20 0" />';
-  if (tipo === 'triste')    return '<path d="M40 64 q10 -8 20 0" />';
-  if (tipo === 'seca')      return '<path d="M42 62 h16" /><path d="M46 58 v8" /><path d="M54 58 v8" />';
-  if (tipo === 'chica')     return '<path d="M46 62 h8" />';
-  return '<path d="M42 62 h16" />';
+function bocaDeFito(tipo) {
+  // El pico va cerrado o abierto según el ánimo: es lo que más se nota de lejos.
+  if (tipo === 'sonrisota') {
+    return `<path d="M50 78 q10 14 20 0 q-10 6 -20 0" fill="${FITO.picoOscuro}"/>
+            <path d="M48 76 q12 -9 24 0 q-12 5 -24 0" fill="${FITO.pico}"/>`;
+  }
+  if (tipo === 'sonrisa') {
+    return `<path d="M50 76 q10 -7 20 0 q-10 9 -20 0" fill="${FITO.pico}"/>`;
+  }
+  if (tipo === 'triste') {
+    return `<path d="M50 80 q10 -8 20 0 q-10 -3 -20 0" fill="${FITO.pico}"/>
+            <path d="M52 84 q8 5 16 0" stroke="${FITO.picoOscuro}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  }
+  if (tipo === 'seca') {
+    return `<path d="M50 76 q10 -6 20 0 q-10 8 -20 0" fill="${FITO.pico}"/>
+            <path d="M54 82 h12" stroke="${FITO.picoOscuro}" stroke-width="2" stroke-linecap="round"/>`;
+  }
+  if (tipo === 'chica') {
+    return `<path d="M54 77 q6 -4 12 0 q-6 6 -12 0" fill="${FITO.pico}"/>`;
+  }
+  return `<path d="M51 76 q9 -6 18 0 q-9 7 -18 0" fill="${FITO.pico}"/>`;
 }
 
-/** El personaje entero, listo para meter en el DOM. */
+function ojoDeFito(cx, a) {
+  const [mx, my] = a.mirada;
+  const px = cx + mx * 2.5;
+  const py = 56 + my * 1.8;
+
+  // El párpado es un semicírculo que baja sobre el ojo: con 0.75 queda casi
+  // dormido, con 0 bien despierto.
+  const parpado = a.parpado > 0
+    ? `<path d="M${cx - 14.5} 56 a14.5 14.5 0 0 1 29 0 z" fill="${a.color}"
+         transform="translate(0 ${-15 + a.parpado * 32})"/>`
+    : '';
+
+  if (a.ojosFelices) {
+    return `<path d="M${cx - 11} 58 q11 -13 22 0" stroke="${FITO.pupila}" stroke-width="4"
+              fill="none" stroke-linecap="round"/>`;
+  }
+
+  return `
+    <circle cx="${cx}" cy="56" r="14" fill="${FITO.ojo}"/>
+    <circle cx="${px}" cy="${py}" r="7" fill="${FITO.pupila}"/>
+    <circle cx="${px - 2.4}" cy="${py - 2.6}" r="2.4" fill="#ffffff" opacity=".95"/>
+    ${a.ojeras ? `<path d="M${cx - 9} 66 q9 4 18 0" stroke="#7d8f73" stroke-width="2" fill="none" opacity=".55" stroke-linecap="round"/>` : ''}
+    ${parpado}`;
+}
+
+/** Fito entero, listo para meter en el DOM. */
 function svgMascota(animo = 'neutral', tam = 96) {
-  const c = CARAS[animo] || CARAS.neutral;
+  const a = ANIMOS[animo] || ANIMOS.neutral;
 
-  const zzz = c.zzz
-    ? '<g opacity=".75" font-size="11" font-weight="700" fill="currentColor" stroke="none">' +
-      '<text x="74" y="26">z</text><text x="82" y="17">z</text></g>'
+  const cejas = `
+    <g stroke="${oscurecer(a.color)}" stroke-width="3.6" stroke-linecap="round" fill="none">
+      <path d="M34 31 q8 -4 15 -2" transform="rotate(${a.ceja} 42 30) translate(0 ${a.cejaY})"/>
+      <path d="M71 29 q7 -2 15 2" transform="rotate(${-a.ceja} 78 30) translate(0 ${a.cejaY})"/>
+    </g>`;
+
+  const mejillas = a.mejillas
+    ? `<circle cx="30" cy="70" r="6" fill="${FITO.mejilla}" opacity=".5"/>
+       <circle cx="90" cy="70" r="6" fill="${FITO.mejilla}" opacity=".5"/>`
     : '';
 
-  const gota = c.gota
-    ? '<path d="M74 40 q4 6 0 9 q-4 -3 0 -9" fill="currentColor" stroke="none" opacity=".7"/>'
+  const zzz = a.zzz
+    ? `<g fill="${FITO.pupila}" opacity=".5" font-family="system-ui" font-weight="700">
+         <text x="94" y="30" font-size="13">z</text>
+         <text x="103" y="19" font-size="10">z</text>
+       </g>`
     : '';
 
-  const brillo = c.brillo
-    ? '<g opacity=".9" fill="currentColor" stroke="none">' +
-      '<path d="M16 30 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2z"/>' +
-      '<path d="M84 62 l1.5 4 4 1.5 -4 1.5 -1.5 4 -1.5 -4 -4 -1.5 4 -1.5z"/></g>'
+  const lagrima = a.lagrima
+    ? `<path d="M55 68 q3 7 0 10 q-3 -3 0 -10" fill="#7ec8f0" opacity=".8"/>`
     : '';
 
-  return `<svg viewBox="0 0 100 100" width="${tam}" height="${tam}" class="mascota-svg" role="img"
-    aria-label="${MASCOTA_NOMBRE}, ${animo}" style="color:${c.color}">
-    <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-      <circle cx="50" cy="52" r="30" fill="currentColor" fill-opacity=".14"/>
-      <path d="M50 22 v-8" /><circle cx="50" cy="11" r="3.5" fill="currentColor" stroke="none"/>
-      ${ojosSvg(c.ojos)}
-      ${bocaSvg(c.boca)}
-      <path d="M22 58 q-7 3 -7 10" /><path d="M78 58 q7 3 7 10" />
-      ${zzz}${gota}${brillo}
-    </g>
+  const gota = a.gota
+    ? `<path d="M96 44 q5 8 0 12 q-5 -4 0 -12" fill="#7ec8f0" opacity=".85"/>`
+    : '';
+
+  const brillos = a.brillos
+    ? `<g fill="#ffe066">
+         <path d="M18 34 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5z"/>
+         <path d="M100 62 l1.8 4.2 4.2 1.8 -4.2 1.8 -1.8 4.2 -1.8 -4.2 -4.2 -1.8 4.2 -1.8z"/>
+       </g>`
+    : '';
+
+  // La panza cae un poco más cuando está pesado: es el único guiño al cuerpo, y
+  // es postura, no forma.
+  const panzaY = a.pesado ? 84 : 82;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="${tam}" height="${tam}" class="mascota-svg"
+    role="img" aria-label="${MASCOTA_NOMBRE}, ${animo}">
+
+    <ellipse cx="60" cy="112" rx="30" ry="5" fill="${FITO.pupila}" opacity=".12"/>
+
+    <path d="M62 22 q10 -12 20 -6 q-6 12 -18 10z" fill="${FITO.hoja}"/>
+    <path d="M60 30 q1 -8 3 -13" stroke="${FITO.cuerpoOscuro}" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+    <ellipse cx="24" cy="72" rx="9" ry="13" fill="${a.color}" transform="rotate(-16 24 72)"/>
+    <ellipse cx="96" cy="72" rx="9" ry="13" fill="${a.color}" transform="rotate(16 96 72)"/>
+
+    <ellipse cx="60" cy="64" rx="40" ry="42" fill="${a.color}"/>
+    <ellipse cx="60" cy="${panzaY}" rx="27" ry="24" fill="${FITO.panza}"/>
+
+    ${ojoDeFito(42, a)}
+    ${ojoDeFito(78, a)}
+    ${cejas}
+    ${mejillas}
+    ${bocaDeFito(a.boca)}
+
+    <ellipse cx="46" cy="105" rx="10" ry="5" fill="${FITO.pico}"/>
+    <ellipse cx="74" cy="105" rx="10" ry="5" fill="${FITO.pico}"/>
+
+    ${zzz}${gota}${lagrima}${brillos}
   </svg>`;
 }
