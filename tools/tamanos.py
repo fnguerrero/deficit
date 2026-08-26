@@ -19,6 +19,7 @@ LIMITES = [
     ('analisis.js', 900),
     ('modos.js', 800),
     ('mascota.js', 400),
+    ('graficos.js', 400),
     ('sync.js', 600),
     ('auth.js', 300),
     ('tests.js', 6000),   # la suite crece con cada feature; partirla no aporta

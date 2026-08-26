@@ -109,6 +109,7 @@ function irTab(name) {
   });
   if (name === 'historial') renderHistorial();
   if (name === 'hoy') renderHoy();
+  if (name === 'progreso') renderProgreso();
   if (name === 'ajustes') renderAjustes();
   window.scrollTo(0, 0);
 }

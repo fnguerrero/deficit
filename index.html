@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=159">
+<link rel="stylesheet" href="styles.css?v=163">
 </head>
 <body>
 
@@ -229,6 +229,37 @@
       <ul class="kv" id="resumenSemana"></ul>
       <p class="hint" id="avisoTdee"></p>
     </div>
+  </section>
+
+  <!-- ============ PROGRESO ============ -->
+  <section id="tab-progreso" class="tab">
+
+    <div class="periodos" id="selPeriodo"></div>
+
+    <div class="card">
+      <div class="card-head"><h2>Peso</h2><span id="pesoDelta" class="pill"></span></div>
+      <div id="grPeso"></div>
+      <p class="hint" id="pesoNota"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Calorías</h2><span id="kcalPill" class="pill"></span></div>
+      <div id="grKcal"></div>
+      <p class="hint">La línea punteada es tu objetivo. En rojo, los que se pasaron.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Adherencia</h2><span id="adhPill" class="pill"></span></div>
+      <div id="grAdherencia"></div>
+      <p class="hint">Qué parte de los días registrados quedó dentro del objetivo.</p>
+    </div>
+
+    <div class="card" id="cardGrModo" hidden>
+      <div class="card-head"><h2 id="grModoTitulo"></h2><span id="grModoPill" class="pill"></span></div>
+      <div id="grModo"></div>
+      <p class="hint" id="grModoNota"></p>
+    </div>
+
   </section>
 
   <!-- ============ PERFIL ============ -->
@@ -550,6 +581,34 @@
       <p class="hint" id="syncEstado"></p>
     </div>
 
+    <div class="card">
+      <div class="card-head"><h2>Actividades</h2><span class="pill" id="actPill"></span></div>
+      <p class="hint">Tocá una para elegir si va en Hoy y cuánto dura. Las de un toque son las tres primeras.</p>
+      <div id="listaActEditar"></div>
+
+      <details class="avanzado">
+        <summary>Agregar una actividad propia</summary>
+        <div class="form-grid">
+          <label>Nombre
+            <input type="text" id="actNombre" placeholder="Escalada" maxlength="24">
+          </label>
+          <label>Minutos
+            <input type="number" id="actMinutos" inputmode="numeric" placeholder="60">
+          </label>
+          <label>Intensidad
+            <select id="actMet">
+              <option value="3">Suave (caminar)</option>
+              <option value="5">Moderada (pesas)</option>
+              <option value="6.5" selected>Fuerte (funcional)</option>
+              <option value="9">Muy fuerte (correr)</option>
+              <option value="11">Máxima (HIIT)</option>
+            </select>
+          </label>
+        </div>
+        <button id="btnAgregarAct" class="primary small">Agregar</button>
+      </details>
+    </div>
+
     <div class="card" id="cardCalibracion">
       <div class="card-head"><h2>Calibrar la estimación</h2><span id="calibPill" class="pill"></span></div>
       <p class="hint" style="margin:0 0 12px">
@@ -610,6 +669,7 @@
 <nav class="tabbar" role="tablist" aria-label="Secciones">
   <button class="tab-btn active" role="tab" aria-selected="true" data-tab="hoy"><span>🍽️</span>Hoy</button>
   <button class="tab-btn" role="tab" aria-selected="false" data-tab="historial"><span>📈</span>Historial</button>
+  <button class="tab-btn" role="tab" aria-selected="false" data-tab="progreso"><span>📊</span>Progreso</button>
   <button class="tab-btn" role="tab" aria-selected="false" data-tab="perfil"><span>👤</span>Perfil</button>
   <button class="tab-btn" role="tab" aria-selected="false" data-tab="ajustes"><span>⚙️</span>Ajustes</button>
 </nav>
@@ -782,28 +842,31 @@
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=159"></script>
-<script src="core.js?v=159"></script>
-<script src="modos.js?v=159"></script>
-<script src="mascota.js?v=159"></script>
-<script src="analisis.js?v=159"></script>
-<script src="claude.js?v=159"></script>
-<script src="productos.js?v=159"></script>
-<script src="sync.js?v=159"></script>
-<script src="auth.js?v=159"></script>
-<script src="app.js?v=159"></script>
-<script src="ui/general.js?v=159"></script>
-<script src="ui/hoy.js?v=159"></script>
-<script src="ui/objetivos.js?v=159"></script>
-<script src="ui/comidas.js?v=159"></script>
-<script src="ui/escaner.js?v=159"></script>
-<script src="ui/asistente.js?v=159"></script>
-<script src="ui/historial.js?v=159"></script>
-<script src="ui/perfil.js?v=159"></script>
-<script src="ui/sincronizacion.js?v=159"></script>
-<script src="ui/cuenta.js?v=159"></script>
-<script src="ui/calibracion.js?v=159"></script>
-<script src="ui/ajustes.js?v=159"></script>
-<script src="arranque.js?v=159"></script>
+<script src="config.js?v=163"></script>
+<script src="core.js?v=163"></script>
+<script src="modos.js?v=163"></script>
+<script src="mascota.js?v=163"></script>
+<script src="graficos.js?v=163"></script>
+<script src="analisis.js?v=163"></script>
+<script src="claude.js?v=163"></script>
+<script src="productos.js?v=163"></script>
+<script src="sync.js?v=163"></script>
+<script src="auth.js?v=163"></script>
+<script src="app.js?v=163"></script>
+<script src="ui/general.js?v=163"></script>
+<script src="ui/hoy.js?v=163"></script>
+<script src="ui/objetivos.js?v=163"></script>
+<script src="ui/comidas.js?v=163"></script>
+<script src="ui/escaner.js?v=163"></script>
+<script src="ui/asistente.js?v=163"></script>
+<script src="ui/historial.js?v=163"></script>
+<script src="ui/progreso.js?v=163"></script>
+<script src="ui/perfil.js?v=163"></script>
+<script src="ui/sincronizacion.js?v=163"></script>
+<script src="ui/cuenta.js?v=163"></script>
+<script src="ui/calibracion.js?v=163"></script>
+<script src="ui/actividades.js?v=163"></script>
+<script src="ui/ajustes.js?v=163"></script>
+<script src="arranque.js?v=163"></script>
 </body>
 </html>
