@@ -1,5 +1,7 @@
 # Déficit
 
+> **Estado: Activo** — en uso diario.
+
 PWA de déficit calórico con análisis de comidas **por foto** (Claude vision).
 Sin build y sin dependencias: todo corre en el navegador.
 
