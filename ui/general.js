@@ -283,8 +283,17 @@ $('btnActualizar').onclick = () => {
 };
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  /* El registro se guarda acá afuera a propósito: el listener de
+     `visibilitychange` de más abajo lo necesita, y antes lo tomaba de la
+     variable del `.then`, que no existe en ese alcance. El resultado era un
+     ReferenceError cada vez que se volvía a la app — o sea que el chequeo de
+     versión nueva no corría NUNCA, y quien deja la app abierta días en el
+     celular se quedaba en una versión vieja sin enterarse. */
+  let registro = null;
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
+      registro = reg;
       // ya había una esperando de una visita anterior
       if (reg.waiting && navigator.serviceWorker.controller) avisarActualizacion(reg.waiting);
 
@@ -301,7 +310,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     // Al volver a la app conviene mirar si hay algo nuevo: quien la deja abierta
     // días en el celular no dispara nunca el load, y se queda en una versión vieja.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      if (document.visibilityState === 'visible' && registro) registro.update().catch(() => {});
     });
 
     // cuando el worker nuevo toma el control, recargamos una sola vez

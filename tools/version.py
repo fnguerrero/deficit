@@ -48,4 +48,19 @@ if faltan:
         print('  - ' + f)
     print('Sin eso la app no arranca offline.')
 
+# Una variable de color que un tema define y otro no es invisible hasta que
+# alguien abre ese tema: `var(--x)` sin definir vale `inherit`, y adentro de un
+# <button> eso cae al color del sistema. Paso con --txt2, que estaba en 6 temas
+# de 9 y dejaba el texto del personaje ilegible en oscuro.
+css = leer('styles.css')
+bloques = re.findall(r'(:root[^{]*)\{([^}]*)\}', css)
+con_txt = [(sel.strip(), cuerpo) for sel, cuerpo in bloques if '--txt:' in cuerpo]
+sin_txt2 = [sel for sel, cuerpo in con_txt if '--txt2:' not in cuerpo]
+
+if sin_txt2:
+    print('OJO: estos temas definen --txt pero no --txt2:')
+    for sel in sin_txt2:
+        print('  - ' + sel)
+    print('El texto secundario de ese tema queda con el color del sistema.')
+
 print('version %d -> %d' % (actual, nueva))

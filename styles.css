@@ -11,6 +11,7 @@
   --card2: #222a35;
   --line: #2c3542;
   --txt: #e6edf3;
+  --txt2: #c3cede;           /* texto secundario: entre --txt y --dim */
   --dim: #99a7b8;
   --acc: #4ade80;
   --acc2: #22c55e;
@@ -33,6 +34,7 @@
     --card2: #eef1f7;
     --line: #d9e0ea;
     --txt: #16202c;
+    --txt2: #3c4a5a;
     --dim: #5b6878;
     --acc: #0f6a31;
     --acc2: #15803d;
@@ -54,7 +56,8 @@
   --card2: #eef1f7;
   --line: #d9e0ea;
   --txt: #16202c;
-  --dim: #5b6878;
+  --txt2: #3c4a5a;
+    --dim: #5b6878;
   --acc: #0f6a31;
   --acc2: #15803d;
   --sobre-acc: #ffffff;
@@ -103,7 +106,7 @@ main { padding: 0 14px; max-width: 620px; margin: 0 auto; }
 
 .tabbar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   background: var(--bg2); border-top: 1px solid var(--line);
   padding: 6px 0 max(6px, env(safe-area-inset-bottom));
 }
@@ -798,8 +801,14 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   #tab-hoy .objetivo { padding: 7px 2px; }
   #tab-hoy .objetivo b { font-size: 10px; }
   #tab-hoy .objetivo small { font-size: 8.5px; }
-  #cardComidas { flex: 1 1 auto; min-height: 96px; display: flex; flex-direction: column; overflow: hidden; }
-  #listaComidas { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+  /* La lista de comidas NO tiene scroll propio.
+     Lo tuvo, y era peor: con seis comidas cargadas la caja quedaba en 52 px y
+     se veia una fila y media, mientras el resto de la pantalla estaba lleno de
+     tarjetas fijas. Ahora la lista mide lo que mide y, si el dia es pesado, se
+     scrollea la pantalla — que es lo que uno espera que pase. Con un dia normal
+     de dos o tres comidas sigue entrando todo sin scroll. */
+  #cardComidas { flex: 0 0 auto; display: flex; flex-direction: column; }
+  #listaComidas { flex: 0 0 auto; min-height: 0; max-height: none; overflow: visible; }
   .resumen { grid-template-columns: minmax(0, 132px) 1fr; }
 }
 
@@ -932,6 +941,9 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   border-radius: 16px; border: 1px solid var(--line); background: var(--card);
 }
 .mascota:active { transform: scale(.995); }
+/* Un <button> no hereda el color del texto: sin esto se queda con el del
+   sistema, que en oscuro es casi negro sobre la tarjeta oscura. */
+.mascota, .objetivo { color: var(--txt); }
 .mascota-dibujo { flex: 0 0 auto; line-height: 0; }
 .mascota-svg { display: block; }
 .mascota-texto { min-width: 0; flex: 1; }
@@ -942,6 +954,50 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .mascota-nivel #mascotaLvl { margin-left: auto; white-space: nowrap; }
 .mascota-barra { display: block; height: 4px; border-radius: 3px; background: var(--card2); overflow: hidden; margin-top: 5px; }
 .mascota-barra i { display: block; height: 100%; background: var(--acc); border-radius: 3px; transition: width .4s ease; }
+
+/* La fase, al lado del titulo. El color lo pone el JS: cambia con la fase. */
+.fase-chip {
+  display: inline-block; margin-left: 6px; vertical-align: 1px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase;
+  border: 1px solid; border-radius: 20px; padding: 1px 6px;
+}
+
+/* El +XP que sube cuando se completa un objetivo. Sin esto, cumplir no se
+   sentia: el casillero se ponia verde y nada mas. */
+.objetivo { position: relative; }
+.xp-flotante {
+  position: absolute; left: 50%; top: 2px; transform: translateX(-50%);
+  font-size: 12px; font-weight: 800; color: var(--acc); pointer-events: none;
+  animation: subeXp 1.1s cubic-bezier(.2, .8, .3, 1) forwards;
+}
+@keyframes subeXp {
+  0% { opacity: 0; transform: translate(-50%, 6px) scale(.8); }
+  25% { opacity: 1; transform: translate(-50%, -2px) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -34px) scale(1); }
+}
+.objetivo.festeja { animation: pum .45s ease; }
+@keyframes pum { 50% { transform: scale(1.13); } }
+@media (prefers-reduced-motion: reduce) {
+  .xp-flotante, .objetivo.festeja { animation: none; }
+  .xp-flotante { display: none; }
+}
+
+/* La fila de chips de arriba: el modo activo y el ayuno. */
+.tiras { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.tira {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; color: var(--txt);
+  background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+  padding: 5px 11px; cursor: pointer;
+}
+.tira i { font-style: normal; font-size: 12px; }
+.tira small { color: var(--dim); font-weight: 500; }
+.tira.activa { border-color: var(--acc); color: var(--acc); }
+/* El ayuno en curso late: es lo unico de la pantalla que corre solo. */
+.tira.corriendo { border-color: var(--warn); color: var(--warn); }
+.tira.corriendo i { animation: latir 2s ease-in-out infinite; }
+@keyframes latir { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .tira.corriendo i { animation: none; } }
 
 /* Las cuatro rachas. Las apagadas se ven, no desaparecen: un hueco donde antes
    había un número dice más que no mostrar nada. */

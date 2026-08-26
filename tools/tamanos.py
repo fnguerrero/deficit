@@ -21,6 +21,7 @@ LIMITES = [
     ('mascota.js', 400),
     ('cuerpo.js', 250),
     ('personaje.js', 500),
+    ('transformacion.js', 250),
     ('juego.js', 500),
     ('sonidos.js', 250),
     ('voz.js', 350),

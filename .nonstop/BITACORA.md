@@ -188,3 +188,25 @@ Nico sumo despues el veredicto honesto de si va bien.
 #15 — Siete archivos nuevos entraron en index.html y NO en el shell del service worker: eso no falla en el navegador, falla sin internet y semanas despues. Se agregaron, y version.py ahora avisa cuando pasa. Se probo que la guardia dispare de verdad
 
 #16 — Verificacion final contra los criterios de la SPEC: 682 tests en verde, 0 errores de consola, los 15 criterios cumplidos. Ciclo cerrado en 14 iteraciones de 55
+
+## Ajustes despues de que Nico la probo
+
+#17 — Dos bugs que el uso real destapo enseguida. La barra de abajo tenia cinco botones en una grilla de CUATRO columnas, asi que Ajustes caia solo a una segunda fila. Y --txt2 estaba definido en 6 de los 9 temas: una variable de color indefinida vale `inherit`, y adentro de un <button> eso cae al color del sistema, o sea casi negro sobre la tarjeta oscura. Por eso el texto del personaje era ilegible en oscuro y se veia bien en claro. Verif: los 8 temas dan entre 7.1 y 10.3 de contraste
+
+#18 — El personaje se quedo sin nombre: el muneco es Nico, asi que la app le habla en segunda persona. "Vas a pleno", "Te falta agua". Se reescribio todo el repertorio de voz
+
+#19 — El cuerpo llegaba al tope demasiado pronto: la curva del IMC pasa a dos tramos (rapido hasta 35, lento hasta 50) y el extremo se ensancho de verdad. DIAS_RUTINA bajo de 10 a 6, porque con 10 el eje de musculo casi nunca llegaba arriba
+
+#20 — Las fases, pedido de Nico: la escalera de dias perfectos seguidos, con aura, pelo encendido y rayos. Va en el pelo y el aura y NO en el cuerpo: si cumplir un dia te dibujara flaco, la app estaria diciendo que ya adelgazaste. Lo unico que el dia perfecto le presta al cuerpo es un plus de musculo chico y temporal
+
+#20b — Las puntas del pelo se leian como una corona por dos motivos seguidos: primero los valles del zigzag quedaban por debajo del borde del craneo y los tapaba la tapa del pelo; despues, ya corregidos, los picos se salian del lienzo y quedaban cortados al ras. El lienzo se estiro 26 px para arriba
+
+#21 — El ayuno salio de los objetivos: un objetivo es algo que la app te pide todos los dias, y el ayuno es algo que haces cuando queres. Ahora es un chip arriba, al lado del modo activo, que tampoco se veia en ningun lado
+
+#22 — Los sonidos pasan a venir prendidos, con `sonidoElegido` para que el cambio de default llegue a quien ya tenia estado guardado sin pisar una decision tomada a mano. Y cumplir un objetivo ahora se siente: el casillero pega un salto y sube un +15
+
+#23 — La lista de comidas tenia scroll propio y con seis comidas quedaba en 52 px. Se le saco: la lista mide lo que mide y si el dia es pesado se scrollea la pantalla, que es lo que uno espera
+
+#24 — Bug viejo que aparecio de paso: el chequeo de version nueva al volver a la app usaba `reg` fuera de su alcance y tiraba ReferenceError cada vez. O sea que no corria nunca, y quien deja la app abierta dias en el celular se quedaba en una version vieja sin enterarse
+
+#25 — version.py suma una segunda guardia: avisa si un tema define --txt pero no --txt2. Se probo que dispare

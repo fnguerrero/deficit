@@ -36,8 +36,13 @@ const DEFAULT_STATE = {
   cfg: {
     apiKey: '', modelo: 'claude-opus-5', precision: 'normal', tema: 'auto',
     recordatorios: false, horarios: null,
-    /* Los sonidos arrancan apagados a propósito: ver sonidos.js. */
-    sonido: false,
+    /* Los sonidos arrancan PRENDIDOS: pedido explícito de Nico, que quiere que
+       la app haga ruido al cumplir. Se apagan de un toque en Ajustes, y
+       `prefers-reduced-motion` los silencia igual sin preguntar.
+       `sonidoElegido` marca que el interruptor se tocó a mano: sin eso, cambiar
+       el valor por defecto no llegaría nunca a quien ya tiene estado guardado,
+       y con eso puesto un cambio futuro tampoco pisa una decisión tomada. */
+    sonido: true, sonidoElegido: false,
     topeGasto: TOPE_DEFECTO,
     avisoKeyOculto: false, onboardingHecho: false
   }
@@ -61,6 +66,7 @@ function migrar(guardado) {
   /* Un estado del ciclo 5 no trae `juego`: se completa con los valores vacíos y
      el primer recálculo lo llena contra el historial que ya existe. */
   s.juego = { ...s.juego, ...(guardado.juego || {}) };
+  if (!s.cfg.sonidoElegido) s.cfg.sonido = DEFAULT_STATE.cfg.sonido;
   if (!Array.isArray(s.cfg.horarios) || !s.cfg.horarios.length) s.cfg.horarios = clonar(RECORDATORIOS_DEFAULT);
   s.dias = {};
 

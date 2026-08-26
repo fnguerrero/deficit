@@ -52,9 +52,20 @@ test('la contextura es continua: un kilo la mueve', () => {
 
 test('la contextura clampea en los extremos', () => {
   esperar(contexturaDe(10), 0);
-  esperar(contexturaDe(50), 1);
   esperar(contexturaDe(17), 0);
-  esperar(contexturaDe(35), 1);
+  esperar(contexturaDe(50), 1);
+  esperar(contexturaDe(80), 1);
+});
+
+test('la contextura sube en dos tramos: rapido hasta 35, lento hasta 50', () => {
+  /* El tramo donde de verdad se mueve la gente tiene que notarse; arriba de 35
+     el dibujo sigue creciendo pero cada vez menos, porque un muneco de 120 px
+     no puede representar un IMC de 60 y seguir siendo una persona. */
+  esperar(contexturaDe(35), PESO_TRAMO_BAJO);
+  esperarQue(contexturaDe(26) > 0.35 && contexturaDe(26) < 0.45, 'IMC 26: ' + contexturaDe(26));
+
+  const porPunto = (a, b) => (contexturaDe(b) - contexturaDe(a)) / (b - a);
+  esperarQue(porPunto(20, 30) > porPunto(38, 48), 'el tramo de abajo tiene que subir mas rapido');
 });
 
 test('no hay salto brusco al cruzar una banda', () => {
@@ -64,8 +75,11 @@ test('no hay salto brusco al cruzar una banda', () => {
 });
 
 test('la musculatura sale de los dias entrenados', () => {
+  /* DIAS_RUTINA bajo de 10 a 6 en el ciclo 6: con 10 el eje casi nunca llegaba
+     arriba, y quien entrena tres veces por semana ya entrena en serio. */
   esperar(musculaturaDe(0), 0);
-  esperar(musculaturaDe(4), 0.4);
+  esperar(musculaturaDe(3), 0.5);
+  esperar(musculaturaDe(6), 1);
   esperar(musculaturaDe(12), 1);
 });
 
@@ -234,7 +248,7 @@ test('el dibujo se puede meter en el DOM y rasterizar', () => {
   const svg = svgPersonaje('bien', 74, CUERPO_BLANDO);
   esperarQue(svg.startsWith('<svg'), 'arranca en svg');
   esperarQue(/xmlns=/.test(svg), 'sin xmlns no se puede rasterizar');
-  esperarQue(/viewBox="0 0 120 176"/.test(svg));
+  esperarQue(/viewBox="0 -26 120 202"/.test(svg), 'el lienzo se estiro para arriba por el pelo de las fases');
 });
 
 test('ninguna combinacion de cuerpo y animo genera NaN', () => {
@@ -262,7 +276,7 @@ test('ningun path sale con doble signo', () => {
 test('el tamano pedido manda, y la figura es mas alta que ancha', () => {
   const svg = svgPersonaje('neutral', 100, CUERPO_BLANDO);
   esperarQue(/height="100"/.test(svg));
-  esperarQue(/width="72"/.test(svg), 'una persona parada no es cuadrada');
+  esperarQue(/width="59"/.test(svg), 'una persona parada no es cuadrada');
 });
 
 
@@ -749,4 +763,157 @@ test('un dia que llega de otro dispositivo suma su XP', () => {
   const despues = recalcularJuego(dias, null, OPTS_J).juego.xp;
 
   esperarQue(despues > antes, 'bajar un dia del otro celular tiene que sumar');
+});
+
+
+/* ============================================================
+   Las fases: la escalera de dias perfectos seguidos
+   ============================================================ */
+
+test('sin dias perfectos no hay fase', () => {
+  esperar(diasPerfectos(diasJ({ 0: 'comida' }), OPTS_J), 0);
+  esperar(faseDe(0).n, 0);
+  esperar(bonusDePerfectos(0), 0);
+});
+
+test('los dias perfectos se cuentan seguidos hacia atras', () => {
+  esperar(diasPerfectos(diasJ({ 0: 'todo', 1: 'todo', 2: 'todo' }), OPTS_J), 3);
+  esperar(diasPerfectos(diasJ({ 0: 'todo', 1: 'todo', 3: 'todo' }), OPTS_J), 2, 'el hueco corta');
+});
+
+test('un dia incompleto hoy no corta la escalera', () => {
+  const dias = diasJ({ 0: 'agua', 1: 'todo', 2: 'todo' });
+  esperar(diasPerfectos(dias, OPTS_J), 2, 'hoy todavia se puede completar');
+});
+
+test('falta una sola cosa y el dia no es perfecto', () => {
+  esperar(diasPerfectos(diasJ({ 0: 'agua comida ejercicio' }), OPTS_J), 0, 'sin sueno no cuenta');
+});
+
+test('cada dia perfecto sube una fase, hasta el tope', () => {
+  esperar(faseDe(1).n, 1);
+  esperar(faseDe(4).n, 4);
+  esperar(faseDe(FASE_MAX).n, FASE_MAX);
+  esperar(faseDe(99).n, FASE_MAX, 'arriba del tope se queda en la ultima');
+});
+
+test('todas las fases tienen nombre, y de la 1 para arriba tienen color', () => {
+  esperar(FASES.length, FASE_MAX + 1);
+  for (const f of FASES) {
+    esperarQue(!!f.nombre, 'fase ' + f.n + ' sin nombre');
+    if (f.n > 0) esperarQue(/^#[0-9a-f]{6}$/i.test(f.color), 'fase ' + f.n + ' sin color');
+  }
+  esperar(new Set(FASES.map(f => f.nombre)).size, FASES.length, 'dos fases con el mismo nombre');
+});
+
+test('los rayos aparecen recien en la fase 2', () => {
+  esperarQue(!FASES[1].rayos, 'la fase 1 todavia no');
+  esperarQue(FASES[2].rayos && FASES[FASE_MAX].rayos, 'de la 2 para arriba si');
+});
+
+test('el bonus de musculo sube con los dias y tiene tope', () => {
+  esperar(bonusDePerfectos(1), BONUS_POR_PERFECTO);
+  esperarQue(bonusDePerfectos(2) > bonusDePerfectos(1));
+  esperar(bonusDePerfectos(50), BONUS_TOPE, 'no puede crecer para siempre');
+});
+
+test('el bonus es chico: no reemplaza a entrenar', () => {
+  /* Si un dia perfecto igualara a dos semanas de gimnasio, el eje de
+     entrenamiento dejaria de significar algo. */
+  esperarQue(BONUS_TOPE < 0.5, 'el tope del bonus tiene que ser menor que medio eje');
+});
+
+test('el bonus entra en el cuerpo y se va al cortarse la racha', () => {
+  const perfil = { altura: 178, peso: 80 };
+  const dias = diasCuerpo();
+
+  const sinRacha = cuerpoDe(perfil, dias, HOY_CUERPO, { bonus: 0 });
+  const conRacha = cuerpoDe(perfil, dias, HOY_CUERPO, { bonus: bonusDePerfectos(3) });
+
+  esperarQue(conRacha.musculatura > sinRacha.musculatura, 'la racha tiene que verse');
+  esperar(conRacha.imc, sinRacha.imc, 'pero el IMC no se toca');
+  esperarQue(conRacha.efectiva < sinRacha.efectiva, 'y el cuerpo se ve mas firme');
+});
+
+test('el bonus no puede pasar el tope del eje', () => {
+  const c = cuerpoDe({ altura: 178, peso: 80 }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO, { bonus: 1 });
+  esperar(c.musculatura, 1);
+});
+
+/* ---- el dibujo de la fase ---- */
+
+test('la fase cambia el dibujo sin tocar el cuerpo', () => {
+  const cu = { efectiva: .4, musculatura: .4 };
+  const torsoDe = (svg) => svg.split('<path d="M ')[1].split('"')[0];
+
+  const normal = svgPersonaje('bien', 96, cu, faseDe(0));
+  const encendido = svgPersonaje('bien', 96, cu, faseDe(3));
+
+  esperar(torsoDe(normal), torsoDe(encendido), 'la fase no puede cambiar la silueta');
+  esperarQue(normal !== encendido, 'pero algo tiene que verse');
+});
+
+test('cada fase dibuja distinto de las demas', () => {
+  const cu = { efectiva: .4, musculatura: .4 };
+  const vistos = new Set(FASES.map(f => svgPersonaje('bien', 96, cu, f)));
+  esperar(vistos.size, FASES.length);
+});
+
+test('sin fase el pelo va del color de siempre', () => {
+  const svg = svgPersonaje('bien', 96, null, faseDe(0));
+  esperarQue(svg.includes(PALETA.pelo), 'el pelo normal');
+  esperarQue(!svg.includes('class="aura"'), 'y sin aura');
+});
+
+test('con fase hay aura, y crece con el numero', () => {
+  const cu = { efectiva: .4, musculatura: .4 };
+  const radio = (n) => Number(svgPersonaje('bien', 96, cu, faseDe(n)).split('rx="')[1].split('"')[0]);
+  esperarQue(svgPersonaje('bien', 96, cu, faseDe(1)).includes('class="aura"'));
+  esperarQue(radio(6) > radio(1), 'el aura de la fase 6 tiene que ser mas grande');
+});
+
+test('las puntas del pelo no se salen del lienzo', () => {
+  /* Paso de verdad: las puntas subian mas que el lienzo, quedaban cortadas al
+     ras y volvian a leerse como una corona de barritas. */
+  const cu = { efectiva: 1, musculatura: 1 };
+  for (const f of FASES) {
+    const svg = svgPersonaje('bien', 96, cu, f);
+    const ys = [...svg.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map(m => Number(m[2]));
+    const masAlto = Math.min(...ys);
+    esperarQue(masAlto >= VB.y, 'fase ' + f.n + ': algo dibuja en y=' + masAlto + ', arriba del lienzo (' + VB.y + ')');
+  }
+});
+
+test('ninguna fase genera NaN ni doble signo', () => {
+  for (const f of FASES) {
+    for (const c of [null, 0, 1]) {
+      const svg = svgPersonaje('genial', 96, c == null ? null : { efectiva: c, musculatura: c }, f);
+      esperarQue(!/NaN|undefined/.test(svg), 'fase ' + f.n + ' con ' + c);
+      esperarQue(!svg.includes('--'), 'fase ' + f.n + ' con ' + c + ': doble signo');
+    }
+  }
+});
+
+/* ---- la voz de las fases ---- */
+
+test('hay frases para subir de fase y para perderla', () => {
+  esperarQue(VOZ.fase.length >= 3 && VOZ.faseCaida.length >= 3);
+  const t = decir('fase', { fase: 'Bestia', n: 4 }, {});
+  esperarQue(t.includes('Bestia'), t);
+  esperarQue(!/\{/.test(t), t);
+});
+
+test('perder la fase no se cuenta como un fracaso', () => {
+  /* Se pierde sola con no cumplir un dia: si encima la app te trata mal, el
+     dia malo se vuelve motivo para no volver. */
+  const duras = /fracas|perdiste todo|desperdici|inutil|inútil/i;
+  for (const f of VOZ.faseCaida) esperarQue(!duras.test(f), f);
+});
+
+/* ---- el modo, visible ---- */
+
+test('los 16 modos tienen emoji para el chip de Hoy', () => {
+  for (const m of listaModos()) {
+    esperarQue(!!m.emoji, m.id + ' sin emoji');
+  }
 });
