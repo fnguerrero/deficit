@@ -50,6 +50,13 @@ function objetivosDelDia() {
         : (d.ayuno ? d.ayuno.horas.toFixed(1) + ' h' : '')
     },
     {
+      id: 'sueno',
+      emoji: '😴',
+      nombre: 'Sueño',
+      listo: !!(d.sueno && d.sueno.horas),
+      valor: d.sueno?.horas ? d.sueno.horas + ' h' : ''
+    },
+    {
       id: 'animo',
       emoji: '🙂',
       nombre: 'Ánimo',
@@ -82,6 +89,7 @@ const TITULOS_OBJ = {
   agua: 'Agua',
   ejercicio: 'Ejercicio',
   ayuno: 'Ayuno',
+  sueno: 'Sueño',
   animo: '¿Cómo venís hoy?'
 };
 
@@ -96,6 +104,7 @@ function abrirObjetivo(id) {
   if (id === 'agua') renderAgua();
   if (id === 'ejercicio') { renderEjercicio(); renderActividades(); }
   if (id === 'ayuno') renderAyuno();
+  if (id === 'sueno') renderSueno();
   if (id === 'animo') renderCaritas();
 
   $('modalObjetivo').classList.add('open');
@@ -106,6 +115,7 @@ function cerrarObjetivo() {
   $('modalObjetivo').classList.remove('open');
   devolverFoco();
   renderObjetivos();
+  renderMascota();
 }
 
 $('btnCerrarObjetivo').onclick = cerrarObjetivo;
@@ -243,3 +253,84 @@ $('btnAyuno').onclick = () => {
   renderAyuno();
   renderObjetivos();
 };
+
+/* ---------------- el personaje ---------------- */
+
+function renderMascota() {
+  const cont = $('mascotaDibujo');
+  if (!cont) return;
+
+  const d = dia();
+  const racha = rachaActual(state.dias);
+  const est = estadoMascota(d, {
+    objetivo: calcular(),
+    objetivoVasos: vasosObjetivo(state.perfil.peso),
+    racha
+  });
+
+  cont.innerHTML = svgMascota(est.animo, 74);
+  $('mascotaTitulo').textContent = est.titulo;
+  $('mascotaDetalle').textContent = est.texto;
+
+  // el nivel sube por días registrados, no por días perfectos
+  const diasCargados = Object.values(state.dias || {})
+    .filter(x => (x.comidas || []).length || x.peso || x.agua || x.ejercicio || x.animo || x.sueno).length;
+  const lvl = nivelDe(diasCargados);
+
+  $('mascotaRacha').textContent = racha ? `🔥 ${racha}` : '';
+  $('mascotaBarra').style.width = Math.round(lvl.pct * 100) + '%';
+  $('mascotaLvl').textContent = `Nv ${lvl.nivel} · ${lvl.nombre}`;
+
+  $('mascotaCard').onclick = () => abrirObjetivo(est.dim === 'sueno' ? 'sueno' : (est.dim || 'animo'));
+}
+
+/* ---------------- sueño ---------------- */
+
+const HORAS_SUENO = [4, 5, 6, 7, 8, 9, 10];
+
+const CALIDAD_SUENO = [
+  { id: 'mal', emoji: '😵', texto: 'Pésimo' },
+  { id: 'flojo', emoji: '😪', texto: 'Cortado' },
+  { id: 'normal', emoji: '😐', texto: 'Normal' },
+  { id: 'bien', emoji: '😴', texto: 'Bien' },
+  { id: 'genial', emoji: '🌟', texto: 'De un tirón' }
+];
+
+function renderSueno() {
+  const d = dia();
+  const s = d.sueno || {};
+
+  const horas = $('horasSueno');
+  horas.innerHTML = '';
+  for (const h of HORAS_SUENO) {
+    const b = document.createElement('button');
+    b.className = 'chip' + (s.horas === h ? ' activo' : '');
+    b.textContent = h === 10 ? '10+ h' : h + ' h';
+    b.onclick = () => {
+      const dd = dia();
+      dd.sueno = { ...(dd.sueno || {}), horas: dd.sueno?.horas === h ? null : h };
+      if (!dd.sueno.horas && !dd.sueno.calidad) dd.sueno = null;
+      dd.act = Date.now();
+      save(); renderSueno(); renderObjetivos(); renderMascota();
+    };
+    horas.appendChild(b);
+  }
+
+  const cal = $('calidadSueno');
+  cal.innerHTML = '';
+  for (const c of CALIDAD_SUENO) {
+    const b = document.createElement('button');
+    b.className = 'carita' + (s.calidad === c.id ? ' elegida' : '');
+    b.textContent = c.emoji;
+    b.title = c.texto;
+    b.setAttribute('aria-label', c.texto);
+    b.onclick = () => {
+      const dd = dia();
+      dd.sueno = { ...(dd.sueno || {}), calidad: dd.sueno?.calidad === c.id ? null : c.id };
+      if (!dd.sueno.horas && !dd.sueno.calidad) dd.sueno = null;
+      dd.act = Date.now();
+      save(); renderSueno(); renderObjetivos(); renderMascota();
+    };
+    cal.appendChild(b);
+  }
+}

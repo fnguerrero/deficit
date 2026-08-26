@@ -4912,6 +4912,176 @@ test('sin veredicto no hay etiqueta', () => {
   esperar(etiquetaApta(null, 'keto'), '');
 });
 
+
+/* ============================================================
+   El personaje
+   ============================================================ */
+
+function diaMascota(x = {}) {
+  return { peso: null, agua: 0, ejercicio: 0, nota: '', animo: null, sueno: null, comidas: [], act: 0, ...x };
+}
+
+const OBJ_MASC = { kcal: 2000 };
+
+test('con el dia en blanco no opina', () => {
+  const e = estadoMascota(diaMascota(), { objetivo: OBJ_MASC });
+  esperar(e.animo, 'neutral');
+  esperarQue(/esperando/.test(e.titulo), e.titulo);
+});
+
+test('dormir poco es lo que mas pesa', () => {
+  const e = estadoMascota(diaMascota({ sueno: { horas: 4 }, agua: 12, ejercicio: 400 }), { objetivo: OBJ_MASC, objetivoVasos: 12 });
+  esperar(e.animo, 'cansado');
+  esperar(e.dim, 'sueno');
+  esperarQue(/4/.test(e.texto), 'tiene que decir cuanto durmio: ' + e.texto);
+});
+
+test('pasarse de calorias lo deja pesado', () => {
+  const e = estadoMascota(diaMascota({
+    sueno: { horas: 8 },
+    comidas: [{ kcal: 3000 }]
+  }), { objetivo: OBJ_MASC });
+  esperar(e.animo, 'pesado');
+  esperarQue(/pasaste/.test(e.texto), e.texto);
+});
+
+test('el dia completo lo pone a pleno', () => {
+  const e = estadoMascota(diaMascota({
+    sueno: { horas: 8 }, agua: 12, ejercicio: 400,
+    comidas: [{ kcal: 1800 }]
+  }), { objetivo: OBJ_MASC, objetivoVasos: 12 });
+  esperar(e.animo, 'genial');
+  esperarQue(/pleno/.test(e.titulo), e.titulo);
+});
+
+test('el estado siempre explica por que', () => {
+  for (const d of [
+    diaMascota({ sueno: { horas: 4 } }),
+    diaMascota({ sueno: { horas: 8 }, comidas: [{ kcal: 3000 }] }),
+    diaMascota({ sueno: { horas: 8 }, agua: 12, ejercicio: 300, comidas: [{ kcal: 1800 }] })
+  ]) {
+    const e = estadoMascota(d, { objetivo: OBJ_MASC, objetivoVasos: 12 });
+    esperarQue(e.texto && e.texto.length > 3, 'sin explicacion no sirve: ' + JSON.stringify(e));
+  }
+});
+
+test('sin dato de sueno no se lo inventa', () => {
+  const e = estadoMascota(diaMascota({ comidas: [{ kcal: 1800 }] }), { objetivo: OBJ_MASC });
+  esperarQue(e.animo !== 'cansado', 'no puede decir que esta cansado sin saberlo');
+});
+
+/* ---- niveles ---- */
+
+test('el nivel arranca en cero y sube por dias registrados', () => {
+  esperar(nivelDe(0).nivel, 0);
+  esperar(nivelDe(3).nivel, 1);
+  esperar(nivelDe(7).nivel, 2);
+  esperarQue(nivelDe(250).nivel >= 10);
+});
+
+test('cada nivel tiene nombre y cuanto falta para el proximo', () => {
+  const n = nivelDe(5);
+  esperarQue(!!n.nombre, 'sin nombre no motiva');
+  esperar(n.faltan, 2, 'de 5 a 7 faltan 2');
+  esperarQue(n.pct > 0 && n.pct < 1);
+});
+
+test('en el ultimo nivel no falta nada', () => {
+  const n = nivelDe(9999);
+  esperar(n.faltan, 0);
+  esperar(n.pct, 1);
+});
+
+/* ---- racha ---- */
+
+test('la racha cuenta dias seguidos con algo cargado', () => {
+  const dias = {};
+  for (let i = 0; i < 5; i++) dias[sumarDias(FIN_FIXTURE, -i)] = diaMascota({ comidas: [{ kcal: 500 }] });
+  esperar(rachaActual(dias, FIN_FIXTURE), 5);
+});
+
+test('un dia vacio en el medio corta la racha', () => {
+  const dias = {};
+  for (let i = 0; i < 5; i++) {
+    if (i === 2) continue;
+    dias[sumarDias(FIN_FIXTURE, -i)] = diaMascota({ comidas: [{ kcal: 500 }] });
+  }
+  esperar(rachaActual(dias, FIN_FIXTURE), 2, 'corta en el hueco');
+});
+
+test('el dia de hoy sin cargar todavia no corta la racha', () => {
+  const dias = {};
+  for (let i = 1; i <= 4; i++) dias[sumarDias(FIN_FIXTURE, -i)] = diaMascota({ comidas: [{ kcal: 500 }] });
+  esperar(rachaActual(dias, FIN_FIXTURE), 4, 'el dia todavia puede completarse');
+});
+
+test('sin nada cargado la racha es cero', () => {
+  esperar(rachaActual({}, FIN_FIXTURE), 0);
+});
+
+/* ---- el dibujo ---- */
+
+test('cada animo dibuja algo distinto', () => {
+  const vistos = new Set();
+  for (const a of ['neutral', 'bien', 'genial', 'flojo', 'cansado', 'seco', 'pesado', 'triste']) {
+    const svg = svgMascota(a);
+    esperarQue(svg.startsWith('<svg'), 'tiene que ser un svg');
+    vistos.add(svg);
+  }
+  esperar(vistos.size, 8, 'los ocho animos no pueden dibujarse igual');
+});
+
+test('el dibujo lleva su descripcion accesible', () => {
+  esperarQue(/aria-label="Fito, cansado"/.test(svgMascota('cansado')));
+});
+
+test('un animo desconocido no rompe el dibujo', () => {
+  esperarQue(svgMascota('inventado').startsWith('<svg'));
+});
+
+/* ---- los modos nuevos ---- */
+
+test('los 16 modos estan disponibles', () => {
+  esperar(listaModos().length, 16);
+});
+
+test('paleo saca cereales y lacteos', () => {
+  esperarQue(!comidaApta({ kcal: 500, prot: 20, carb: 60, gras: 15, perfil: perfilPlato({ cereales: true }) }, 'paleo').apta);
+  esperarQue(!comidaApta({ kcal: 400, prot: 25, carb: 20, gras: 20, perfil: perfilPlato({ lacteos: true }) }, 'paleo').apta);
+});
+
+test('DASH mira el sodio', () => {
+  const alto = comidaApta({ kcal: 400, prot: 20, carb: 40, gras: 12, sodio: 1200, perfil: perfilPlato({ vegetales: true }) }, 'dash');
+  esperarQue(!alto.apta);
+  esperarQue(/sodio/.test(alto.motivo), alto.motivo);
+
+  const bajo = comidaApta({ kcal: 400, prot: 20, carb: 40, gras: 12, sodio: 200, perfil: perfilPlato({ vegetales: true }) }, 'dash', OBJ_M);
+  esperarQue(bajo.apta);
+});
+
+test('flexitariana avisa por la carne pero no la prohibe', () => {
+  const r = comidaApta({ kcal: 500, prot: 40, carb: 15, gras: 30, perfil: perfilPlato({ carneRoja: true, vegetariano: false }) }, 'flexi', OBJ_M);
+  esperarQue(r.apta, 'no se prohibe');
+  esperar(r.nivel, 'justo');
+});
+
+test('sin lactosa saca los lacteos', () => {
+  esperarQue(!comidaApta({ kcal: 300, prot: 15, carb: 20, gras: 15, perfil: perfilPlato({ lacteos: true }) }, 'sinlactosa').apta);
+});
+
+test('antiinflamatoria saca azucar, fritos y procesados', () => {
+  for (const x of [{ azucarAgregada: true }, { frito: true }, { ultraprocesado: true }]) {
+    esperarQue(!comidaApta({ kcal: 400, prot: 15, carb: 40, gras: 18, perfil: perfilPlato(x) }, 'antiinflamatoria').apta,
+      'tendria que rechazar ' + JSON.stringify(x));
+  }
+});
+
+test('antiinflamatoria aprueba las grasas buenas', () => {
+  const r = comidaApta({ kcal: 450, prot: 30, carb: 15, gras: 28, perfil: perfilPlato({ pescado: true, aceiteOliva: true }) }, 'antiinflamatoria', OBJ_M);
+  esperarQue(r.apta);
+  esperar(r.nivel, 'si');
+});
+
 /* ============================================================
    Resultado
    ============================================================ */

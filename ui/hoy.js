@@ -7,6 +7,7 @@
 
 function renderHoy() {
   if (typeof renderObjetivos === 'function') renderObjetivos();
+  if (typeof renderMascota === 'function') renderMascota();
   $('dateLabel').textContent = etiquetaFecha(fecha);
   $('nextDay').disabled = fecha >= hoyISO();
 
