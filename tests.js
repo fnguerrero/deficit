@@ -4805,6 +4805,113 @@ testAsync('sin usuario, las filas no inventan un dueno', async () => {
   esperarQue(subidas.every(f => !('user_id' in f)), 'no puede mandar user_id nulo');
 });
 
+
+/* ---- patrones alimentarios: se juzga lo que TIENE el plato ---- */
+
+/* Un perfil vacio: todo en false salvo lo que cada test encienda. */
+function perfilPlato(extra = {}) {
+  const base = {
+    vegetales: false, frutas: false, legumbres: false, pescado: false, carneRoja: false,
+    aveOHuevo: false, lacteos: false, cereales: false, integral: false, aceiteOliva: false,
+    frutosSecos: false, ultraprocesado: false, azucarAgregada: false, frito: false,
+    gluten: false, vegetariano: true
+  };
+  return { ...base, ...extra };
+}
+
+test('los patrones alimentarios estan disponibles como modo', () => {
+  const ids = listaModos().map(m => m.id);
+  for (const esperado of ['keto', 'mediterranea', 'lowcarb', 'altaproteina', 'vegetariana', 'singluten']) {
+    esperarQue(ids.includes(esperado), 'falta el modo ' + esperado);
+  }
+});
+
+test('vegetariana: un plato con carne no entra', () => {
+  const r = comidaApta({ kcal: 600, prot: 40, carb: 20, gras: 30, perfil: perfilPlato({ carneRoja: true, vegetariano: false }) }, 'vegetariana');
+  esperarQue(!r.apta);
+  esperarQue(/carne/.test(r.motivo), r.motivo);
+});
+
+test('vegetariana: legumbres con verduras entra', () => {
+  const r = comidaApta({ kcal: 500, prot: 25, carb: 60, gras: 12, perfil: perfilPlato({ legumbres: true, vegetales: true }) }, 'vegetariana', OBJ_M);
+  esperarQue(r.apta);
+});
+
+test('sin gluten: lo que tiene trigo no entra', () => {
+  const r = comidaApta({ kcal: 400, prot: 12, carb: 60, gras: 8, perfil: perfilPlato({ cereales: true, gluten: true }) }, 'singluten');
+  esperarQue(!r.apta);
+  esperarQue(/gluten/.test(r.motivo), r.motivo);
+});
+
+test('sin gluten: lo que no lo tiene entra', () => {
+  const r = comidaApta({ kcal: 400, prot: 30, carb: 30, gras: 15, perfil: perfilPlato({ pescado: true, vegetales: true }) }, 'singluten', OBJ_M);
+  esperarQue(r.apta);
+});
+
+test('mediterranea: lo ultraprocesado no entra', () => {
+  const r = comidaApta({ kcal: 500, prot: 20, carb: 40, gras: 25, perfil: perfilPlato({ ultraprocesado: true }) }, 'mediterranea');
+  esperarQue(!r.apta);
+  esperarQue(/ultraprocesado/.test(r.motivo), r.motivo);
+});
+
+test('mediterranea: pescado con verduras y oliva es justo lo que busca', () => {
+  const r = comidaApta({ kcal: 520, prot: 35, carb: 25, gras: 28, perfil: perfilPlato({ pescado: true, vegetales: true, aceiteOliva: true }) }, 'mediterranea', OBJ_M);
+  esperarQue(r.apta);
+  esperar(r.nivel, 'si');
+});
+
+test('mediterranea: la carne roja entra pero avisando', () => {
+  const r = comidaApta({ kcal: 500, prot: 40, carb: 10, gras: 32, perfil: perfilPlato({ carneRoja: true, vegetales: true, vegetariano: false }) }, 'mediterranea', OBJ_M);
+  esperarQue(r.apta, 'no se prohibe');
+  esperar(r.nivel, 'justo');
+});
+
+test('mediterranea: el azucar agregada la saca', () => {
+  const r = comidaApta({ kcal: 300, prot: 5, carb: 55, gras: 8, perfil: perfilPlato({ azucarAgregada: true }) }, 'mediterranea');
+  esperarQue(!r.apta);
+});
+
+test('alta proteina: una comida grande sin proteina no entra', () => {
+  const r = comidaApta({ kcal: 600, prot: 8, carb: 90, gras: 20, perfil: perfilPlato({ cereales: true }) }, 'altaproteina', OBJ_M);
+  esperarQue(!r.apta);
+  esperarQue(/proteína/.test(r.motivo), r.motivo);
+});
+
+test('alta proteina: con buena proteina entra', () => {
+  const r = comidaApta({ kcal: 500, prot: 45, carb: 30, gras: 15, perfil: perfilPlato({ aveOHuevo: true, vegetales: true, vegetariano: false }) }, 'altaproteina', OBJ_M);
+  esperarQue(r.apta);
+  esperar(r.nivel, 'si');
+});
+
+test('alta proteina: un snack chico no se juzga por proteina', () => {
+  const r = comidaApta({ kcal: 120, prot: 2, carb: 20, gras: 4, perfil: perfilPlato({ frutas: true }) }, 'altaproteina', OBJ_M);
+  esperarQue(r.apta, 'una fruta no tiene por que llevar proteina');
+});
+
+test('low carb permite mas carbohidratos que keto', () => {
+  const comida = { kcal: 500, prot: 30, carb: 60, gras: 20, perfil: perfilPlato() };
+  const objLow = objetivoDeModo(PERFIL_M, 'lowcarb');
+  esperarQue(!comidaApta(comida, 'keto', OBJ_KETO, { carb: 0 }).apta, 'en keto 60 g no entran');
+  esperarQue(comidaApta(comida, 'lowcarb', objLow, { carb: 0 }).apta, 'en low carb si');
+});
+
+test('sin perfil, las reglas de patron no rompen nada', () => {
+  const r = comidaApta({ kcal: 500, prot: 30, carb: 40, gras: 18 }, 'mediterranea', OBJ_M);
+  esperarQue(r.apta !== undefined, 'tiene que devolver algo coherente igual');
+});
+
+/* ---- la etiqueta que se muestra ---- */
+
+test('la etiqueta dice el modo', () => {
+  esperar(etiquetaApta({ apta: true, nivel: 'si' }, 'keto'), 'Apto keto');
+  esperar(etiquetaApta({ apta: false, nivel: 'no' }, 'keto'), 'No apto keto');
+  esperar(etiquetaApta({ apta: true, nivel: 'justo' }, 'mediterranea'), 'Justo para mediterránea');
+});
+
+test('sin veredicto no hay etiqueta', () => {
+  esperar(etiquetaApta(null, 'keto'), '');
+});
+
 /* ============================================================
    Resultado
    ============================================================ */

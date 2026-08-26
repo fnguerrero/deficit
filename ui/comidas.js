@@ -168,6 +168,7 @@ $('inputCorreccion').onkeydown = (e) => { if (e.key === 'Enter') $('btnCorregir'
 /* ---------------- flujo foto ---------------- */
 
 let ultimaImagen = null;   // base64 del último análisis, para poder corregirlo
+let ultimaComidaId = null; // la última guardada, para poder abrirla desde el aviso
 let modoAnalisis = 'plato';
 
 function pedirFoto(modo) {
@@ -284,9 +285,24 @@ const recibirFotos = async (e) => {
     registrarUso(r, modo === 'etiqueta' ? 'etiqueta' : 'foto');
     if (r.deCache) toast('Esta foto ya la habías analizado: no gastaste API');
     pendiente = { ...r, thumb, foto, momento: momentoDe(Date.now()), kcalIA: sumarItems(r.items).calorias };
-    $('modalTitle').textContent = 'Revisá y guardá';
-    mostrarResultado(pendiente);
-    mostrarEstado('result');
+
+    /*
+     * Guardado directo. Confirmar cada foto era el peaje que hacia abandonar:
+     * sacas la foto, esperas, y encima tenes que revisar y apretar Guardar.
+     *
+     * La excepcion es la confianza baja: ahi el propio modelo esta avisando que
+     * no vio bien, y meter ese numero a ciegas seria ensuciar el historial sin
+     * que la persona se entere. Eso si se revisa.
+     */
+    if (r.confianza === 'baja') {
+      $('modalTitle').textContent = 'Revisá esto';
+      mostrarResultado(pendiente);
+      mostrarEstado('result');
+      toast('No se vio del todo bien: revisalo antes de guardar');
+      return;
+    }
+
+    guardarComidaPendiente({ avisar: true });
   } catch (err) {
     frenar();
     if (err.name === 'AbortError') return;   // lo canceló la persona: el modal ya se cerró
@@ -507,7 +523,12 @@ $('btnAddItem').onclick = () => {
   pintarItems(pendiente);
 };
 
-$('btnGuardarComida').onclick = () => {
+$('btnGuardarComida').onclick = () => guardarComidaPendiente();
+
+/**
+ * Guarda lo que quedo en `pendiente`. La usan el boton y el guardado directo.
+ */
+function guardarComidaPendiente({ avisar = false } = {}) {
   if (!pendiente) return;
   const items = pendiente.items
     .filter(i => i.nombre.trim() || i.calorias)
@@ -560,8 +581,11 @@ $('btnGuardarComida').onclick = () => {
     }
   }
 
+  const nuevoId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  ultimaComidaId = nuevoId;
+
   dia().comidas.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    id: nuevoId,
     // en un día pasado se usa la hora típica del momento, no la hora actual
     ts: tsParaFecha(fecha, pendiente.momento || momentoDe(Date.now())),
     titulo: pendiente.titulo?.trim() || items[0].nombre || 'Comida',
@@ -576,14 +600,87 @@ $('btnGuardarComida').onclick = () => {
     sodio: suma('sodio'),
     thumb: pendiente.thumb || null,
     foto: pendiente.foto || null,
-    notas: pendiente.notas || ''
+    notas: pendiente.notas || '',
+    // de qué está hecho el plato: es lo que permite decir si entra en el modo
+    perfil: pendiente.perfil || null
   });
 
   save();
+
+  /* Lo que hace falta para el aviso se toma ANTES de cerrar: cerrarModal limpia
+     `pendiente`, y leerlo despues dejaba el resumen con el nombre del primer
+     alimento en vez del titulo del plato. */
+  const datosAviso = avisar ? {
+    titulo: pendiente.titulo?.trim() || items[0]?.nombre || 'Comida',
+    kcal: suma('calorias'),
+    comida: {
+      kcal: suma('calorias'),
+      prot: suma('proteinas'),
+      carb: suma('carbohidratos'),
+      gras: suma('grasas'),
+      perfil: pendiente.perfil || null
+    },
+    id: ultimaComidaId
+  } : null;
+
   cerrarModal(true);
   renderHoy();
   programarRecordatorios();
   // con datos cargados ya vale la pena pedirle al navegador que no los borre
   if (typeof pedirPersistencia === 'function') pedirPersistencia();
-  toast('Comida guardada');
-};
+
+  if (datosAviso) avisarComidaGuardada(datosAviso);
+  else toast('Comida guardada');
+}
+
+/**
+ * El resumen de lo que se guardó solo.
+ *
+ * Como ya no hay pantalla de revisión, este aviso es lo único que la persona ve
+ * del análisis: tiene que decir qué entendió, cuánto sumó, si entra en el modo,
+ * y dejar la puerta abierta para corregirlo.
+ */
+function avisarComidaGuardada({ titulo, kcal, comida, id }) {
+  /* El resto del día ya incluye esta comida, así que para juzgarla se descuenta:
+     si no, en keto una comida se compararía contra sus propios carbohidratos. */
+  const hoy = totalesDia();
+  const previo = { carb: Math.max(0, (hoy.carb || 0) - (comida.carb || 0)) };
+
+  const v = comidaApta(comida, state.perfil.modo, calcular(), previo);
+  mostrarResumenComida({ titulo, kcal, veredicto: v, etiqueta: etiquetaApta(v, state.perfil.modo), id });
+}
+
+/* ---------------- el resumen de lo que se guardó ---------------- */
+
+function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
+  $('resumenTitulo').textContent = titulo;
+  $('resumenKcal').textContent = fmtNum(Math.round(kcal));
+
+  const marca = $('resumenApta');
+  if (etiqueta) {
+    marca.textContent = etiqueta;
+    marca.className = 'marca-apta grande ' + (veredicto.nivel === 'si' ? '' : veredicto.nivel);
+    marca.hidden = false;
+  } else {
+    marca.hidden = true;
+  }
+
+  $('resumenIcono').textContent = veredicto?.nivel === 'no' ? '⚠️' : '✓';
+  $('resumenMotivo').textContent = veredicto?.motivo || '';
+
+  $('btnResumenEditar').onclick = () => {
+    cerrarResumen();
+    if (id) editarComida(id);
+  };
+
+  $('modalResumen').classList.add('open');
+  tomarFoco($('modalResumen'));
+}
+
+function cerrarResumen() {
+  $('modalResumen').classList.remove('open');
+  devolverFoco();
+}
+
+$('btnResumenListo').onclick = cerrarResumen;
+$('modalResumen').onclick = (e) => { if (e.target.id === 'modalResumen') cerrarResumen(); };

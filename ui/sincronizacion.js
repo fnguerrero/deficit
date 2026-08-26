@@ -67,7 +67,17 @@ function renderSync() {
 
   // Ahora que corre sola, tiene que verse cuándo está pasando algo: si no, la
   // app hace pedidos de red que la persona no pidió y no ve por ningún lado.
-  $('syncPill').textContent = sincronizando ? 'sincronizando…' : (cfg.ultimoSync ? 'activa' : 'lista');
+  const conSesion = typeof sesionActual === 'function' && !!sesionActual();
+  $('syncPill').textContent = sincronizando ? 'sincronizando…'
+    : (!conSesion ? 'sin cuenta' : (cfg.ultimoSync ? 'activa' : 'lista'));
+
+  if (!sincronizando && !conSesion) {
+    $('syncEstado').textContent = 'Entrá con tu cuenta para que los datos viajen entre tus dispositivos.';
+    $('syncEstado').className = 'hint';
+    $('btnSincronizar').hidden = true;
+    return;
+  }
+  $('btnSincronizar').hidden = false;
 
   if (sincronizando) {
     $('syncEstado').textContent = 'Sincronizando…';
@@ -157,6 +167,15 @@ async function correrSync({ silencioso = false } = {}) {
   if (!cfg.url || !cfg.anonKey) {
     if (!silencioso) toast('Faltan la URL y la clave');
     return { salteada: 'sin credenciales' };
+  }
+
+  /* Desde que los datos son de un usuario y no de un dispositivo, sin sesion no
+     hay nada que sincronizar: el servidor devuelve 401 y punto. Intentarlo
+     igual llenaba la consola de errores en cada guardado. */
+  const haySesion = typeof sesionActual === 'function' && sesionActual();
+  if (!haySesion) {
+    if (!silencioso) toast('Entrá con tu cuenta para sincronizar', { texto: 'Ir', accion: () => irTab('ajustes') });
+    return { salteada: 'sin sesión' };
   }
 
   sincronizando = true;

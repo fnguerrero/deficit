@@ -79,6 +79,65 @@ const MODOS = {
     aviso: 'Los primeros días suele haber cansancio. Conviene consultarlo si tomás medicación o tenés algo de base.'
   },
 
+  /* Los que siguen son patrones alimentarios: no cambian tanto CUANTO comes
+     como QUE comes. Igual llevan su deficit, porque la persona quiere una sola
+     decision y no dos. */
+
+  mediterranea: {
+    id: 'mediterranea',
+    nombre: 'Mediterránea',
+    resumen: 'Pescado, verduras y aceite de oliva',
+    detalle: 'La dieta con más respaldo para la salud cardiovascular: mucho vegetal, legumbres, pescado y aceite de oliva; poca carne roja y casi nada ultraprocesado.',
+    deficitPct: 0.15,
+    macros: { prot: 0.25, carb: 0.40, gras: 0.35 },
+    proteinaPorKg: 1.6,
+    regla: 'mediterranea'
+  },
+
+  lowcarb: {
+    id: 'lowcarb',
+    nombre: 'Low carb',
+    resumen: 'Pocos carbohidratos, sin llegar a keto',
+    detalle: 'Hasta unos 100 g de carbohidratos por día. Más llevadera que keto y con buena parte del beneficio.',
+    deficitPct: 0.20,
+    carbosMaxDia: 100,
+    macros: { prot: 0.30, carb: 0.20, gras: 0.50 },
+    proteinaPorKg: 1.8
+  },
+
+  altaproteina: {
+    id: 'altaproteina',
+    nombre: 'Alta proteína',
+    resumen: 'Proteína en todas las comidas',
+    detalle: 'Sacia más y cuida el músculo. Cada comida tiene que aportar su parte, no toda la proteína en la cena.',
+    deficitPct: 0.20,
+    macros: { prot: 0.40, carb: 0.30, gras: 0.30 },
+    proteinaPorKg: 2.2,
+    regla: 'proteina'
+  },
+
+  vegetariana: {
+    id: 'vegetariana',
+    nombre: 'Vegetariana',
+    resumen: 'Sin carne, ave ni pescado',
+    detalle: 'Cuidando la proteína, que es lo que más cuesta cubrir: legumbres, huevo, lácteos y frutos secos.',
+    deficitPct: 0.15,
+    macros: { prot: 0.25, carb: 0.45, gras: 0.30 },
+    proteinaPorKg: 1.6,
+    regla: 'vegetariana'
+  },
+
+  singluten: {
+    id: 'singluten',
+    nombre: 'Sin gluten',
+    resumen: 'Sin trigo, avena, cebada ni centeno',
+    detalle: 'Para celiaquía o sensibilidad. Ojo con el gluten escondido en salsas, embutidos y rebozados.',
+    deficitPct: 0.15,
+    macros: { prot: 0.30, carb: 0.40, gras: 0.30 },
+    proteinaPorKg: 1.8,
+    regla: 'singluten'
+  },
+
   volumen: {
     id: 'volumen',
     nombre: 'Volumen limpio',
@@ -185,6 +244,16 @@ function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy
   const kcal = Number(comida?.kcal) || 0;
   const carb = Number(comida?.carb) || 0;
   const prot = Number(comida?.prot) || 0;
+
+  /* Lo que el analisis vio en el plato. Sin esto no se puede juzgar un patron
+     alimentario, solo numeros: 600 kcal pueden ser salmon con ensalada o una
+     hamburguesa de kiosco, y para mediterranea no es lo mismo. */
+  const p = comida?.perfil || null;
+
+  if (p && modo.regla) {
+    const veredicto = porPatron(modo.regla, p, { kcal, prot });
+    if (veredicto) return veredicto;
+  }
 
   // keto: el carbohidrato es la regla, no una sugerencia
   if (modo.carbosMaxDia) {
@@ -522,4 +591,81 @@ function cerrarAyuno(inicio, fin = Date.now(), horasObjetivo = 16) {
     objetivo: horasObjetivo,
     cumplido: e.completo
   };
+}
+
+
+/* ---------------- reglas de cada patron alimentario ---------------- */
+
+/**
+ * Juzga el plato por lo que TIENE, no por sus numeros.
+ *
+ * Devuelve null cuando la regla no tiene nada que decir, y ahi sigue la logica
+ * general de calorias. Es a proposito: una comida puede estar bien para el
+ * patron y ser igual demasiado grande.
+ */
+function porPatron(regla, p, { kcal = 0, prot = 0 } = {}) {
+  if (regla === 'vegetariana') {
+    if (p.vegetariano === false) {
+      return { apta: false, nivel: 'no', motivo: 'Tiene carne, ave o pescado.' };
+    }
+    return null;
+  }
+
+  if (regla === 'singluten') {
+    if (p.gluten) {
+      return { apta: false, nivel: 'no', motivo: 'Tiene gluten: trigo, avena, cebada o centeno.' };
+    }
+    return null;
+  }
+
+  if (regla === 'mediterranea') {
+    // lo que la saca de una: procesados y azucar agregada
+    if (p.ultraprocesado) {
+      return { apta: false, nivel: 'no', motivo: 'Es ultraprocesado, que es lo que esta dieta evita.' };
+    }
+    if (p.azucarAgregada) {
+      return { apta: false, nivel: 'no', motivo: 'Tiene azúcar agregada.' };
+    }
+    if (p.frito) {
+      return { apta: true, nivel: 'justo', motivo: 'Frito: entra, pero no es lo habitual en esta dieta.' };
+    }
+    if (p.carneRoja) {
+      return { apta: true, nivel: 'justo', motivo: 'Carne roja: acá va poco y de vez en cuando.' };
+    }
+    // lo que la define
+    if (p.pescado || p.legumbres || (p.vegetales && p.aceiteOliva)) {
+      return { apta: true, nivel: 'si', motivo: 'Justo lo que busca esta dieta.' };
+    }
+    if (!p.vegetales) {
+      return { apta: true, nivel: 'justo', motivo: 'Sin verduras a la vista.' };
+    }
+    return null;
+  }
+
+  if (regla === 'proteina') {
+    // una comida de tamaño real tiene que aportar proteina
+    if (kcal > 250) {
+      const pctProt = (prot * 4) / kcal;
+      if (pctProt < 0.15) {
+        return { apta: false, nivel: 'no', motivo: `Solo ${Math.round(prot)} g de proteína para ${Math.round(kcal)} kcal.` };
+      }
+      if (pctProt < 0.25) {
+        return { apta: true, nivel: 'justo', motivo: `${Math.round(prot)} g de proteína: podría tener más.` };
+      }
+      return { apta: true, nivel: 'si', motivo: `${Math.round(prot)} g de proteína.` };
+    }
+    return null;
+  }
+
+  return null;
+}
+
+/** El texto corto para el cartelito: "Apto keto", "No apto keto". */
+function etiquetaApta(veredicto, idModo = MODO_DEFECTO) {
+  const modo = modoDe(idModo);
+  if (!veredicto) return '';
+
+  if (veredicto.nivel === 'no') return 'No apto ' + modo.nombre.toLowerCase();
+  if (veredicto.nivel === 'justo') return 'Justo para ' + modo.nombre.toLowerCase();
+  return 'Apto ' + modo.nombre.toLowerCase();
 }

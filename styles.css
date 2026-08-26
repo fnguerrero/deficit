@@ -890,3 +890,20 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* El resumen de lo que se guardó solo. Grande y de un vistazo: no hay nada que
+   revisar, solo confirmar que entendió bien. */
+.resumen-comida { text-align: center; padding: 22px 18px max(18px, env(safe-area-inset-bottom)); }
+.resumen-icono { font-size: 34px; line-height: 1; margin-bottom: 6px; }
+.resumen-comida h2 { margin: 0 0 10px; font-size: 17px; }
+.resumen-kcal { display: flex; align-items: baseline; justify-content: center; gap: 5px; margin-bottom: 12px; }
+.resumen-kcal strong { font-size: 40px; font-weight: 700; letter-spacing: -1.5px; }
+.resumen-kcal span { font-size: 13px; color: var(--dim); }
+.marca-apta.grande {
+  display: inline-block; font-size: 13px; padding: 5px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--acc) 18%, transparent); color: var(--acc);
+  margin-bottom: 8px;
+}
+.marca-apta.grande.no { background: color-mix(in srgb, var(--err) 18%, transparent); color: var(--err); }
+.marca-apta.grande.justo { background: color-mix(in srgb, var(--warn) 20%, transparent); color: var(--warn); }
+.resumen-comida .actions-row { margin-top: 14px; }

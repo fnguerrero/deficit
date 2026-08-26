@@ -31,6 +31,7 @@ function escribiendo() {
 function hayModalAbierto() {
   return $('modal').classList.contains('open') ||
     $('modalOrigenFoto').classList.contains('open') ||
+    $('modalResumen').classList.contains('open') ||
     !$('visorFoto').hidden ||
     !$('onboarding').hidden;
 }
@@ -41,6 +42,7 @@ document.addEventListener('keydown', (e) => {
   // Escape cierra lo que esté abierto, incluso desde un campo de texto
   if (e.key === 'Escape') {
     if (!$('visorFoto').hidden) { cerrarVisor(); e.preventDefault(); return; }
+    if ($('modalResumen').classList.contains('open')) { cerrarResumen(); e.preventDefault(); return; }
     if ($('modalOrigenFoto').classList.contains('open')) { cerrarOrigenFoto(); e.preventDefault(); return; }
     if ($('modal').classList.contains('open')) { cerrarModal(); e.preventDefault(); return; }
     if (escribiendo()) document.activeElement.blur();
@@ -344,6 +346,7 @@ function enfocables(cont) {
 /** El contenedor de modal visible en este momento, si hay alguno. */
 function modalActivo() {
   if (!$('visorFoto').hidden) return $('visorFoto');
+  if ($('modalResumen').classList.contains('open')) return $('modalResumen');
   if ($('modalOrigenFoto').classList.contains('open')) return $('modalOrigenFoto');
   if ($('modal').classList.contains('open')) return $('modal');
   if (!$('onboarding').hidden) return $('onboarding');

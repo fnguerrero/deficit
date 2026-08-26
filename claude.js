@@ -106,9 +106,37 @@ const SCHEMA_COMIDA = {
         additionalProperties: false
       }
     },
-    notas: { type: 'string', description: 'Qué supuestos hiciste o qué no se ve bien en la foto' }
+    notas: { type: 'string', description: 'Qué supuestos hiciste o qué no se ve bien en la foto' },
+    /* De qué está hecho el plato. Con esto las reglas de cada patrón —keto,
+       mediterráneo, vegetariano— se resuelven localmente: una sola llamada
+       alcanza para juzgar cualquier modo, presente o futuro. */
+    perfil: {
+      type: 'object',
+      properties: {
+        vegetales: { type: 'boolean', description: 'Tiene verduras o ensalada en cantidad visible' },
+        frutas: { type: 'boolean' },
+        legumbres: { type: 'boolean', description: 'Lentejas, garbanzos, porotos' },
+        pescado: { type: 'boolean' },
+        carneRoja: { type: 'boolean', description: 'Vaca, cerdo o cordero' },
+        aveOHuevo: { type: 'boolean' },
+        lacteos: { type: 'boolean' },
+        cereales: { type: 'boolean', description: 'Pan, pasta, arroz, avena' },
+        integral: { type: 'boolean', description: 'Los cereales que hay son integrales' },
+        aceiteOliva: { type: 'boolean' },
+        frutosSecos: { type: 'boolean' },
+        ultraprocesado: { type: 'boolean', description: 'Fiambres, snacks de paquete, gaseosa, congelados listos' },
+        azucarAgregada: { type: 'boolean', description: 'Azúcar, dulce, postre, bebida azucarada' },
+        frito: { type: 'boolean' },
+        gluten: { type: 'boolean', description: 'Trigo, avena, cebada o centeno' },
+        vegetariano: { type: 'boolean', description: 'No tiene carne, ave ni pescado' }
+      },
+      required: ['vegetales', 'frutas', 'legumbres', 'pescado', 'carneRoja', 'aveOHuevo',
+                 'lacteos', 'cereales', 'integral', 'aceiteOliva', 'frutosSecos',
+                 'ultraprocesado', 'azucarAgregada', 'frito', 'gluten', 'vegetariano'],
+      additionalProperties: false
+    }
   },
-  required: ['titulo', 'confianza', 'items', 'notas'],
+  required: ['titulo', 'confianza', 'items', 'notas', 'perfil'],
   additionalProperties: false
 };
 
@@ -126,7 +154,8 @@ Pautas:
 - Poné confianza "baja" si la foto es ambigua, tiene mala luz o el alimento está tapado.
 - Los números tienen que ser realistas y coherentes: 4 kcal por gramo de proteína y de carbohidratos, 9 por gramo de grasa.
 - Fibra, azúcar y sodio: estimalos si el alimento los tiene de forma evidente (una fruta tiene fibra, una gaseosa azúcar, un embutido sodio). Si no podés, poné 0; es mejor que inventar.
-- Respondé todo en español.`;
+- Respondé todo en español.
+- El campo "perfil" describe de qué está hecho el plato, para poder juzgarlo contra distintas dietas. Marcá cada cosa solo si está presente de forma clara: no adivines.`;
 
 const PROMPT_ETIQUETA = `Sos un nutricionista leyendo la etiqueta nutricional de un producto envasado.
 
