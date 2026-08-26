@@ -2750,9 +2750,11 @@ test('guardarEnCache y leerDeCache van y vuelven', () => {
 
 test('el cache ignora las entradas viejas', () => {
   const c = guardarEnCache({}, 'h1', { titulo: 'Pizza' }, 0);
-  const treintaYUnDias = 31 * 86400000;
-  esperar(leerDeCache(c, 'h1', treintaYUnDias), null, 'a los 31 días ya no vale');
-  esperarQue(!!leerDeCache(c, 'h1', 29 * 86400000), 'a los 29 sí');
+  const dia = 86400000;
+  // el default pasó a 90 días: una foto vieja sigue valiendo mucho más tiempo
+  esperar(leerDeCache(c, 'h1', 91 * dia), null, 'a los 91 días ya no vale');
+  esperarQue(!!leerDeCache(c, 'h1', 89 * dia), 'a los 89 sí');
+  esperar(leerDeCache(c, 'h1', 31 * dia, 30), null, 'y el plazo sigue siendo configurable');
 });
 
 test('el cache guarda copias, no referencias', () => {
@@ -5080,6 +5082,116 @@ test('antiinflamatoria aprueba las grasas buenas', () => {
   const r = comidaApta({ kcal: 450, prot: 30, carb: 15, gras: 28, perfil: perfilPlato({ pescado: true, aceiteOliva: true }) }, 'antiinflamatoria', OBJ_M);
   esperarQue(r.apta);
   esperar(r.nivel, 'si');
+});
+
+
+/* ---- el efecto del sueno: honesto o callado ---- */
+
+/* Arma dias alternando sueno corto y largo, con las calorias que se le pidan. */
+function diasSueno({ nCortos = 6, nLargos = 6, kcalCorto = 2000, kcalLargo = 2000 } = {}) {
+  const dias = {};
+  let i = 0;
+
+  for (let n = 0; n < nCortos; n++, i++) {
+    const f = sumarDias(FIN_FIXTURE, -i);
+    dias[f] = { peso: null, agua: 0, ejercicio: 0, nota: '', animo: null, act: 1,
+      sueno: { horas: 5 },
+      comidas: [{ id: 'c' + i, ts: 1, momento: 'almuerzo', titulo: 'x', items: [], kcal: kcalCorto, prot: 100, carb: 100, gras: 50 }] };
+  }
+  for (let n = 0; n < nLargos; n++, i++) {
+    const f = sumarDias(FIN_FIXTURE, -i);
+    dias[f] = { peso: null, agua: 0, ejercicio: 0, nota: '', animo: null, act: 1,
+      sueno: { horas: 8 },
+      comidas: [{ id: 'l' + i, ts: 1, momento: 'almuerzo', titulo: 'x', items: [], kcal: kcalLargo, prot: 100, carb: 100, gras: 50 }] };
+  }
+  return dias;
+}
+
+test('sin suficientes dias no se pronuncia', () => {
+  const r = efectoDelSueno(diasSueno({ nCortos: 2, nLargos: 8 }), OBJ_M, FIN_FIXTURE);
+  esperarQue(!r.hayDatos, 'con 2 dias cortos no hay nada que comparar');
+  esperarQue(/Hacen falta/.test(r.texto), r.texto);
+});
+
+test('dice cuantos dias faltan, no dice "pocos"', () => {
+  const r = efectoDelSueno(diasSueno({ nCortos: 1, nLargos: 9 }), OBJ_M, FIN_FIXTURE);
+  esperarQue(/faltan unos 3/.test(r.texto), 'de 1 a 4 faltan 3: ' + r.texto);
+});
+
+test('sin ningun dia con sueno cargado tampoco inventa', () => {
+  const r = efectoDelSueno({}, OBJ_M, FIN_FIXTURE);
+  esperarQue(!r.hayDatos);
+});
+
+test('detecta que dormir poco te hace comer mas', () => {
+  const r = efectoDelSueno(diasSueno({ kcalCorto: 2600, kcalLargo: 2000 }), OBJ_M, FIN_FIXTURE);
+  esperarQue(r.hayDatos);
+  esperar(r.estado, 'come-mas');
+  esperar(r.datos.dif, 600);
+  esperar(r.datos.pct, 30);
+  esperarQue(/600/.test(r.titulo), 'el titulo tiene que traer el numero: ' + r.titulo);
+});
+
+test('no afirma de mas: aclara que son pocos dias', () => {
+  const r = efectoDelSueno(diasSueno({ kcalCorto: 2600, kcalLargo: 2000 }), OBJ_M, FIN_FIXTURE);
+  esperarQue(/pista, no como una ley/.test(r.texto), 'tiene que relativizar: ' + r.texto);
+  esperarQue(/12 d[ií]as/.test(r.texto), 'y decir sobre cuantos dias habla: ' + r.texto);
+});
+
+test('con diferencia chica dice que no hay efecto', () => {
+  const r = efectoDelSueno(diasSueno({ kcalCorto: 2050, kcalLargo: 2000 }), OBJ_M, FIN_FIXTURE);
+  esperar(r.estado, 'sin-efecto');
+  esperarQue(/demasiado chica/.test(r.texto), r.texto);
+});
+
+test('el caso al reves tambien se detecta, y se relativiza', () => {
+  const r = efectoDelSueno(diasSueno({ kcalCorto: 1500, kcalLargo: 2200 }), OBJ_M, FIN_FIXTURE);
+  esperar(r.estado, 'come-menos');
+  esperarQue(/casualidad|saltees/.test(r.texto), 'no puede presentarlo como un hallazgo firme: ' + r.texto);
+});
+
+test('los dias sin comida registrada no cuentan', () => {
+  const dias = diasSueno({ nCortos: 6, nLargos: 6 });
+  // se vacian tres dias cortos: quedan 3 y ya no alcanza
+  let vaciados = 0;
+  for (const f of Object.keys(dias)) {
+    if (dias[f].sueno.horas === 5 && vaciados < 3) { dias[f].comidas = []; vaciados++; }
+  }
+  const r = efectoDelSueno(dias, OBJ_M, FIN_FIXTURE);
+  esperarQue(!r.hayDatos, 'un dia sin comidas no sirve para comparar cuanto comio');
+});
+
+test('trae los numeros en que se apoya', () => {
+  const r = efectoDelSueno(diasSueno({ kcalCorto: 2600, kcalLargo: 2000 }), OBJ_M, FIN_FIXTURE);
+  esperar(r.datos.kcalCortos, 2600);
+  esperar(r.datos.kcalLargos, 2000);
+  esperar(r.datos.cortos, 6);
+  esperar(r.datos.largos, 6);
+});
+
+
+/* ---- el aviso de dormir ---- */
+
+test('avisa cuando falta poco para la hora de dormir', () => {
+  esperarQue(tocaDormir('23:30', new Date('2026-08-26T23:05:00'), false));
+  esperarQue(tocaDormir('23:30', new Date('2026-08-26T23:29:00'), false));
+});
+
+test('no avisa horas antes', () => {
+  esperarQue(!tocaDormir('23:30', new Date('2026-08-26T20:00:00'), false));
+});
+
+test('no avisa cuando ya paso demasiado', () => {
+  esperarQue(!tocaDormir('23:30', new Date('2026-08-27T02:30:00'), false),
+    'a las 2:30 el aviso llega tarde y solo molesta');
+});
+
+test('no avisa si el sueno ya esta cargado', () => {
+  esperarQue(!tocaDormir('23:30', new Date('2026-08-26T23:05:00'), true));
+});
+
+test('sin hora configurada usa la de siempre', () => {
+  esperarQue(tocaDormir(null, new Date('2026-08-26T23:20:00'), false), 'cae en 23:30 por defecto');
 });
 
 /* ============================================================

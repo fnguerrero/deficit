@@ -1,118 +1,140 @@
 # Informe — ciclo 5: modos, simplificar y que se pueda cumplir
 
-## Estado: 26 de 36 ítems. Frenado por contexto, no por bloqueo.
+## 36 de 36 ítems. Terminado.
 
-El ciclo quedó **más grande que el presupuesto de contexto de una sesión**. Todo lo hecho
-está verificado, en verde y publicado; lo que falta está intacto en el TODO y se puede
-retomar sin recomponer nada.
+El ciclo se cerró en dos tandas: la primera llegó a 26 y frenó por contexto; esta retomó los
+10 que quedaban y los completó.
 
 ## Qué se construyó
 
-### Modos — el corazón del ciclo
+### Los modos — 16 en total
 
-Seis modos: mantenimiento, déficit moderado, déficit agresivo, definición, keto y volumen
-limpio. El objetivo **sale del cuerpo de cada uno** (Mifflin-St Jeor por factor de
-actividad), no de una constante: dos personas distintas nunca reciben el mismo número. La
-proteína se prescribe por kilo de peso, que es como se hace de verdad, y keto fija 30 g de
-carbohidratos y llena el resto con grasa.
+Seis de objetivo calórico (mantenimiento, moderado, agresivo, definición, keto, volumen) y
+diez patrones alimentarios (mediterránea, low carb, alta proteína, vegetariana, sin gluten,
+paleo, DASH, flexitariana, sin lactosa, antiinflamatoria).
 
-**Pisos de seguridad**: ningún modo baja de 1.500 kcal en varones ni de 1.200 en mujeres, ni
-por debajo del metabolismo basal. Cuando la cuenta da menos, corta ahí y explica que bajar
-más rápido haría perder músculo en vez de grasa.
+El objetivo **sale del cuerpo de cada uno** —Mifflin-St Jeor por factor de actividad—, la
+proteína se prescribe por kilo de peso, y ningún modo baja de 1.500/1.200 kcal ni del
+metabolismo basal.
 
-**Apta o no apta**: cada comida se juzga contra el modo, con lo que el análisis ya devolvió.
-No cuesta ni una llamada extra. En keto los carbohidratos son un tope duro que cuenta lo ya
-consumido en el día; en el resto, una comida que se lleva más del 60% del objetivo no entra.
+**Apta o no apta**: el análisis devuelve de qué está hecho el plato (vegetales, pescado,
+gluten, ultraprocesado, frito…) y con eso las reglas se resuelven **localmente, sin una sola
+llamada extra a la API**. La misma pizza sale "no apto" por carbohidratos en keto, por
+ultraprocesado en mediterránea y por gluten en sin gluten.
 
-### El veredicto honesto
+### La pantalla Hoy, como tablero
 
-Lo último que pidió Nico y lo más delicado. Con menos de 10 días de peso y 7 de registro
-**dice cuántos faltan en vez de inventar una tendencia** — el peso se mueve un kilo por agua
-y sal, y afirmar algo con cuatro días sería una moneda al aire disfrazada de dato. Con datos
-suficientes detecta cuatro situaciones, incluida la incómoda: si el peso no se mueve dice
-*"No estás bajando"* y da la explicación más probable, que es que las porciones a ojo se
-subestiman siempre para el mismo lado.
+Tres botones de carga en una fila, seis objetivos que se marcan en verde y se apagan, las
+comidas sin descripción, y el resto a un menú. **Entra sin scroll en 375×812** — no
+persiguiendo alturas fijas, sino dejando que la lista de comidas se quede con lo que sobra.
 
-### Hoy, como tablero
+### Fito
 
-- Los tres botones de carga —foto, código, etiqueta— en una fila.
-- **Cinco objetivos que se marcan en verde y se apagan**: peso, agua, ejercicio, ayuno y ánimo.
-- Sugerencias, repetir, carga manual y kcal sueltas se fueron a *Más opciones*.
-- Las comidas sin descripción en la lista; los alimentos se ven al tocar.
-- **Entra sin scroll en 375×812.** No persiguiendo alturas fijas —eso siempre queda corto—
-  sino dejando que la lista de comidas se quede con lo que sobra. Verificado con 2, 5 y 10
-  comidas: la página nunca se mueve.
+El día traducido a una cara: cansado si dormiste poco, seco si no tomaste agua, pesado si te
+pasaste. Cada dimensión se evalúa por separado y gana la que más pesa, así que siempre puede
+decir **por qué** está como está. Con niveles y racha.
 
-### Menos fricción para cargar
+Dos decisiones deliberadas: refleja **energía y ánimo, nunca forma corporal**; y el nivel sube
+por **días registrados, no por días perfectos** — premiar solo la perfección hace que un mal
+día se sienta como perder todo, que es cuando se abandona.
 
-- **Agua**: se toca el vaso al que llegaste. Sin `+` ni `−`, que era un toque por vaso.
-- **Ejercicio por actividad**: elegís "funcional" y la app calcula 510 kcal con tu peso
-  (MET × peso × horas). Cargar "45 minutos de fútbol" es algo que alguien sabe; "480 kcal" no.
-- **Ánimo por caritas**, con nota opcional.
-- **Peso precargado** con el último conocido.
-- **Ayuno**: botón, cronómetro y cuatro ventanas.
+### La sección Progreso
+
+Cuatro gráficos en SVG a mano —una librería de charts pesa más que toda la app—: peso,
+calorías contra objetivo, adherencia, y uno que depende del modo. Selector de día/semana/mes
+que agrupa promediando, porque mirar el peso día a día es mirar ruido.
+
+**Los huecos cortan la línea** en vez de inventar el tramo: dibujar una recta entre dos pesos
+con una semana de hueco es inventar una tendencia que nadie midió.
+
+### Sueño, y lo que hace con la comida
+
+Auto-reportado (horas + calidad), con aviso opcional de hora de dormir. Y **`efectoDelSueno()`**,
+que compara los días de poco sueño contra los demás. La mayor parte de esa función es negarse
+a responder: con menos de 4 días de cada tipo dice cuántos faltan, y cuando responde aclara
+que son pocos días y que es una pista, no una ley.
 
 ### Menos gasto de API
 
-Sonnet por defecto (un tercio de Opus) y **Haiku para etiquetas**, que es transcribir y no
-estimar. El análisis pasa de **US$ 0,018 a ~0,006**. Se ofrece Opus solo cuando el modelo
-devuelve confianza baja: se paga precisión únicamente cuando hace falta.
+Sonnet por defecto, Haiku en etiquetas, Opus solo si la confianza vuelve baja. Imagen de 1024
+a 768 px y cache de 30 a 90 días. **El análisis pasó de US$ 0,018 a ~0,006.**
 
 ### Y además
 
-Cinco temas (automático, claro, oscuro, negro OLED y cálido) y recomendaciones por modo.
+Nueve temas, ayuno intermitente con cronómetro, agua táctil, ejercicio por MET con
+actividades editables, ánimo por caritas, peso precargado, veredicto honesto de progreso y
+recomendaciones por modo.
 
 ## Los bugs que aparecieron verificando
 
-1. **Tres tests tenían el precio de Opus escrito a mano** y fallaron al cambiar el modelo. El
-   costo bajó exactamente a 0,6 del anterior — la relación Sonnet/Opus. Se corrigieron los
-   tests, no el código.
-2. **La tarjeta de macros quedó fuera de su contenedor** al mover las stats, y por eso no se
-   acomodaba al lado del anillo.
-3. **Marqué un ítem como hecho sin estarlo** (el selector de modo en Perfil). Lo devolví a
-   pendiente y lo implementé. Queda anotado porque es el error más fácil de repetir.
+Ninguno estaba previsto, y varios solo se ven mirando el render:
 
-## Verificación
+1. **`hidden` no ocultaba nada** en 6 elementos: es solo `display:none` del navegador y
+   cualquier clase con `display` se lo comía. El peor caso era la fila de nutrientes, que se
+   suponía oculta sin datos y se veía siempre.
+2. **La adherencia pintaba de rojo el 100%** y de verde el 0%, por reusar la regla de
+   calorías donde pasarse es malo.
+3. **El eje del peso imprimía "86, 85, 85"** al redondear a entero un rango de menos de un kilo.
+4. **El anillo de calorías** estaba roto en los dos tamaños por la misma causa: su contenedor
+   seguía fijo en 190 px mientras el SVG se había achicado a 104.
+5. **Sin sesión la app seguía sincronizando** y se comía un 401 en cada guardado, desde que
+   las políticas RLS exigen usuario.
+6. **El handler de sincronizar copiaba las credenciales globales** al estado local.
+7. **Dos bugs que introduje yo mismo** con el menú de cámara: no respondía a Escape ni contaba
+   como modal abierto.
+
+## Tres tests en rojo que estaban mal ellos, no el código
+
+- El costo esperado tenía el precio de Opus escrito a mano y bajó a 0,6 al pasar a Sonnet:
+  exactamente la relación entre ambos.
+- El cache esperaba expirar a los 31 días, cuando el cambio a 90 fue deliberado.
+- `alertaProteina` recibía la fecha por defecto (hoy real) contra un fixture del 2026-08-20:
+  empezó a fallar sola cuando el calendario pasó esa fecha.
+
+En los tres se corrigió la prueba. "Arreglar" código que funciona para hacer pasar un test
+defectuoso rompe algo que andaba y encima queda en verde.
+
+## Verificación final
 
 | Criterio | Resultado |
 |---|---|
-| 1. Suite en verde | **518 tests, 0 fallos** (eran 503 al empezar) |
-| 2. Sin errores de consola | 0 recursos con error, escritorio y móvil |
-| 4. El objetivo sale del cuerpo | dos pesos distintos dan objetivos con 300+ kcal de diferencia |
-| 5. Keto marca lo que no entra | 45 g de carbos → no entra, con el número en el motivo |
-| 6. Pisos de seguridad | perfil chico en agresivo corta en 1.200 y explica por qué |
-| 7. Hoy sin scroll en 375×812 | diferencia 0 px con 5 objetivos y 3 comidas |
-| 8. Tres botones en una fila | mismo `offsetTop` los tres |
-| 9. Objetivos que se marcan | peso, ejercicio, ayuno y ánimo pasan a verde |
-| 10. Modelo por tipo | plato pide `sonnet`, etiqueta pide `haiku` en el body real |
+| 1. Suite en verde | **587 tests, 0 fallos** (eran 503 al empezar) |
+| 2. Sin errores de consola | 0 recursos con error |
+| 4. El objetivo sale del cuerpo | dos pesos distintos dan 300+ kcal de diferencia |
+| 5. Keto marca lo que no entra | 68 g de carbos → no entra, con el número |
+| 6. Pisos de seguridad | perfil chico en agresivo corta en 1.200 |
+| 7. Hoy sin scroll en 375×812 | entra con 6 objetivos y Fito |
+| 8. Tres botones en una fila | los tres en `top: 402` |
+| 9. Objetivos que se marcan | 4 en verde con el día cargado |
+| 10. Modelo por tipo | plato→sonnet, etiqueta→haiku |
 | 11. Ejercicio por MET | funcional = 510 kcal para 85 kg |
-| 12. Cinco temas | los cuatro fondos distintos, sobreviven a recargar |
-| 14. Recomendaciones por modo | keto habla de carbohidratos, volumen de entrenar |
-| 15. Veredicto en cuatro estados | verificado por DOM los tres con datos y el "faltan datos" |
+| 12. Temas | 9, todos con fondo distinto |
+| 13. Gráficos y período | 4 gráficos, 3 períodos |
+| 14. Recomendaciones por modo | cambian con el modo |
+| 15. Veredicto en 4 estados | verificado por DOM |
 
-## Lo que quedó pendiente
+## Desvíos de la SPEC
 
-Nada bloqueado: solo no llegó el contexto.
-
-- **Gráficos con selector de período** (ítems 28-30) — el más grande de los que faltan.
-- **Sueño auto-reportado y recordatorio de dormir** (34-36).
-- **Aviso antes de guardar** una comida que rompe el modo (8) — hoy se marca en la lista,
-  falta el aviso previo.
-- **Optimizaciones de imagen y prompt** (16) y mostrar el ahorro en Ajustes (17).
-- **Editar actividades** desde Ajustes (20) — se pueden agregar por código, falta la pantalla.
-
-## Sobre sueño y ayuno: qué es viable y qué no
-
-Nico preguntó a mitad del ciclo. La respuesta honesta:
-
-- **Ayuno**: hecho. Es un cronómetro, y justamente por eso funciona.
-- **Sueño auto-reportado**: viable, queda pendiente.
-- **Movimiento nocturno y ronquidos**: **imposible en una PWA.** El navegador suspende todo
-  con la pantalla apagada y no hay acceso al micrófono en segundo plano. Eso necesita una app
-  nativa o un reloj. No es una limitación que se pueda sortear con más trabajo.
+1. **El criterio 8 se midió mal hasta el final.** Usaba `offsetTop`, que dejó de servir cuando
+   el botón de foto pasó a vivir dentro del contenedor de su flechita. Se corrigió el criterio
+   —ahora usa la posición real en pantalla—, no el código.
+2. **`ui/ajustes.js` se partió dos veces**: salieron `ui/actividades.js` y `ui/recordatorios.js`.
+   No estaba planeado, pero el control de tamaños existe justamente para que el corte se
+   decida cuando corresponde.
+3. **El login multiusuario entró**, cuando estaba explícitamente fuera del alcance. Nico lo
+   pidió a mitad del ciclo al ver que sus comidas quedaban atadas a un dispositivo.
+4. **Fito, los patrones alimentarios y el guardado directo de fotos** tampoco estaban: se
+   sumaron sobre la marcha.
 
 ## Números
 
-- **26 ítems** completados, 0 bloqueados, de 36 (el TODO creció de 31 a 36 en el camino).
-- **518 tests**, 0 fallos. Se sumaron 55 en el ciclo.
+- **36 ítems** completados, 0 bloqueados. El TODO creció de 31 a 36 en el camino.
+- **587 tests**, 0 fallos. Se sumaron 84 en el ciclo.
 - El análisis por foto cuesta **un tercio** de lo que costaba.
+
+## Lo que sigue pendiente, y es de Nico
+
+- **Crear la cuenta** en Ajustes → Tu cuenta. El SQL ya está corrido; en el primer login se
+  adoptan las comidas que ya subió.
+- **Usar la app.** La estimación de un plato servido sigue sin medirse contra la realidad, y
+  es lo único que ninguna cantidad de trabajo mío puede reemplazar.

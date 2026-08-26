@@ -113,7 +113,10 @@ function cancelarAnalisis() {
 
 /* ---------------- modal ---------------- */
 
-function abrirModal() { $('modal').classList.add('open'); }
+function abrirModal() {
+  if ($('avisoModo')) $('avisoModo').hidden = true;
+  $('modal').classList.add('open');
+}
 
 /** Hay algo cargado que se perdería al cerrar sin guardar. */
 function hayDatosSinGuardar() {
@@ -265,7 +268,10 @@ const recibirFotos = async (e) => {
     for (const file of archivos) {
       const original = await leerArchivo(file);
       procesadas.push({
-        grande: await redimensionar(original, 1024, 0.82),
+        /* 768 px alcanza para ver un plato: la porción se estima por el tamaño
+           relativo a los cubiertos, no por el detalle fino. Bajar de 1024 a 768
+           recorta casi la mitad de los tokens de entrada de cada análisis. */
+        grande: await redimensionar(original, 768, 0.78),
         foto: await redimensionar(original, 384, 0.62),   // para el visor
         thumb: await redimensionar(original, 128, 0.55)   // para la lista
       });
@@ -523,7 +529,32 @@ $('btnAddItem').onclick = () => {
   pintarItems(pendiente);
 };
 
-$('btnGuardarComida').onclick = () => guardarComidaPendiente();
+/*
+ * Cuando se guarda a mano —desde la pantalla de revisión— y la comida rompe el
+ * modo, se avisa antes de cerrar. No bloquea: la persona come lo que quiere y la
+ * app registra, no vigila. Pero enterarse después de guardar no sirve de nada.
+ */
+$('btnGuardarComida').onclick = () => {
+  if (pendiente && !pendiente.avisado) {
+    const items = (pendiente.items || []).filter(i => i.nombre?.trim() || i.calorias);
+    const suma = (k) => items.reduce((a, i) => a + (Number(i[k]) || 0), 0);
+
+    const v = comidaApta({
+      kcal: suma('calorias'), prot: suma('proteinas'),
+      carb: suma('carbohidratos'), gras: suma('grasas'),
+      sodio: suma('sodio'), perfil: pendiente.perfil || null
+    }, state.perfil.modo, calcular(), totalesDia());
+
+    if (v.nivel === 'no') {
+      pendiente.avisado = true;   // al segundo toque guarda sin repetir el aviso
+      $('avisoModo').textContent = `${etiquetaApta(v, state.perfil.modo)}: ${v.motivo} Tocá Guardar de nuevo si va igual.`;
+      $('avisoModo').hidden = false;
+      return;
+    }
+  }
+
+  guardarComidaPendiente();
+};
 
 /**
  * Guarda lo que quedo en `pendiente`. La usan el boton y el guardado directo.

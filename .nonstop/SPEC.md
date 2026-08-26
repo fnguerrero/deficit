@@ -87,7 +87,9 @@ Sin cambios de stack: HTML/CSS/JS vanilla, sin build, una pantalla por archivo e
    carbos se marca **apta**, con el motivo escrito.
 6. Ningún modo devuelve un objetivo por debajo del piso de seguridad.
 7. La pantalla Hoy entra **sin scroll en 375×812** con el día a medio cargar.
-8. Los tres botones de carga están en una sola fila y funcionan.
+8. Los tres botones de carga están en una sola fila y funcionan. (Se mide con la
+   posición real en pantalla: `offsetTop` dejó de servir cuando el botón de foto pasó a
+   vivir dentro del contenedor de su flechita.)
 9. Cargar el peso, el agua, el ejercicio y el ánimo marca cada objetivo en verde.
 10. Una foto de plato usa Sonnet; una etiqueta usa Haiku; con confianza baja aparece la
     opción de reanalizar mejor.

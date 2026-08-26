@@ -748,7 +748,9 @@ function objetivoEfectivo(objetivo, ejercicio) {
 
 /* ---------------- cache de análisis ---------------- */
 
-const MAX_CACHE = 24;
+/* Cada entrada es un analisis ya pagado: guardar mas es plata que no se
+   vuelve a gastar. 60 entradas siguen siendo pocos KB. */
+const MAX_CACHE = 60;
 
 /**
  * Huella de una imagen para reconocerla sin guardarla entera.
@@ -784,7 +786,7 @@ function guardarEnCache(cache, huella, valor, ts = Date.now()) {
 }
 
 /** Busca en el cache. Las entradas viejas se ignoran. */
-function leerDeCache(cache, huella, ts = Date.now(), diasValidez = 30) {
+function leerDeCache(cache, huella, ts = Date.now(), diasValidez = 90) {
   const entrada = (cache || {})[huella];
   if (!entrada) return null;
   if (ts - entrada.ts > diasValidez * 86400000) return null;
@@ -937,6 +939,25 @@ const RECORDATORIOS_DEFAULT = [
   { momento: 'almuerzo', hora: '13:30' },
   { momento: 'cena', hora: '21:30' }
 ];
+
+/* La hora de dormir no es un momento de comida, pero es el mismo mecanismo:
+   un aviso a una hora fija. Va aparte porque su regla de "ya está hecho" es
+   distinta: no se mira si cargaste una comida sino si ya te fuiste a dormir. */
+const RECORDATORIO_DORMIR = { momento: 'dormir', hora: '23:30' };
+
+/** Un aviso de irse a dormir tiene sentido si falta poco y todavía no cargaste el sueño. */
+function tocaDormir(horaObjetivo, ahora = new Date(), suenoCargado = false) {
+  if (suenoCargado) return false;
+
+  const [h, m] = String(horaObjetivo || '23:30').split(':').map(Number);
+  const objetivo = new Date(ahora);
+  objetivo.setHours(h, m, 0, 0);
+
+  const faltan = objetivo - ahora;
+  // desde media hora antes y hasta dos horas después: fuera de esa franja el
+  // aviso llega tarde o molesta sin sentido
+  return faltan <= 30 * 60000 && faltan > -120 * 60000;
+}
 
 /** Convierte "13:30" en minutos desde medianoche. */
 function minutosDeHora(hhmm) {
@@ -1290,6 +1311,7 @@ if (typeof window !== 'undefined') {
     medirCalibracion, veredictoCalibracion, textoSesgo,
     MAX_CORRECCIONES, registrarCorreccion, sesgoAprendido,
     MAX_ERRORES, registrarError, armarDiagnostico, diagnosticoATexto,
+    RECORDATORIO_DORMIR, tocaDormir,
     sePuedeActualizarSolo,
 
     comidasCopiadas, diasConComidas,
