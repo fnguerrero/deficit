@@ -1,109 +1,91 @@
-# TODO — ciclo 5: modos, simplificar y que se pueda cumplir
+# TODO — ciclo 6: Fito humano y el sistema que engancha
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-## Modos (el corazón del ciclo, va primero porque todo lo demás depende del objetivo)
+## Deuda que bloquea
 
-- [x] 1. Gasto basal y TDEE con Mifflin-St Jeor por altura, peso, edad, género y actividad
-      · verif: tests contra valores calculados a mano para 3 perfiles distintos
-- [x] 2. Catálogo de modos: mantenimiento, déficit moderado, déficit agresivo, definición,
-      keto y volumen limpio, cada uno con su reparto de macros
-      · verif: test de que cada modo devuelve kcal y macros coherentes entre sí
-- [x] 3. Pisos de seguridad: ningún modo baja de 1.500 / 1.200 kcal, y avisa por qué
-      · verif: test con un perfil chico en modo agresivo, que tiene que cortar en el piso
-- [x] 4. Elegir el modo en Perfil, con lo que implica cada uno explicado en una línea
-      · verif: por DOM, cambiar de modo cambia el objetivo que se ve en Hoy
-- [x] 5. Migración: el estado del ciclo 4 estrena modo sin perder el objetivo que ya tenía
+- [x] 0. `ui/comidas.js` está 18 líneas pasado del límite: partirlo antes de agregar nada
+      · verif: `tools/tamanos.py` sin "SE PASO" y la suite en verde
+
+## El cuerpo: los datos antes del dibujo
+
+- [x] 1. IMC desde peso registrado y altura del perfil, con banda y el caso sin peso
+      · verif: tests de las cuatro bandas y del caso sin dato
+- [x] 2. Contextura continua: IMC clampeado a 17–35 mapeado a 0–1, sin saltos por umbral
+      · verif: test de que un kilo mueve el valor y de que los extremos clampean
+- [x] 3. Musculatura desde los días entrenados en los últimos 14
+      · verif: test con 0, 4 y 12 días de entrenamiento
+- [x] 4. IMC ajustado: cuando hay entrenamiento sostenido, decir por texto que el número
+      subestima · verif: test de que el aviso aparece entrenando y no aparece sin entrenar
+
+## El personaje humano
+
+- [x] 5. `personaje.js`: esqueleto paramétrico del cuerpo (hombros, cintura, cadera,
+      brazos, piernas) que sale de contextura y musculatura
+      · verif: test de que dos contexturas distintas dan cinturas distintas
+- [x] 6. La cara: ojos, cejas y boca con los ocho ánimos del ciclo 5
+      · verif: test de que los ocho generan SVG distinto entre sí
+- [x] 7. Postura por ánimo: hombros caídos, pecho arriba, cabeza colgando
+      · verif: test de que la postura cambia con el ánimo y no con el cuerpo
+- [x] 8. Pelo, ropa y detalles para que se lea como persona y no como maniquí
+      · verif: rasterizar a PNG y mirarlo
+- [x] 9. Los tres ejes juntos, y el cuerpo NO reacciona a la comida del día
+      · verif: test de que mismo peso con distinta comida da el mismo cuerpo
+- [x] 10. Reemplazar la lechuza en Hoy y actualizar los tests que la daban por hecha
+      · verif: la suite en verde y el personaje en pantalla
+- [x] 11. Sin peso cargado: cuerpo medio y pedido de peso, sin inventar contextura
+      · verif: por DOM con perfil sin peso
+
+## Rachas por actividad
+
+- [x] 12. Modelo `state.juego` con migración desde un estado del ciclo 5
       · verif: test de migración desde un state viejo
+- [x] 13. Las cuatro rachas —agua, entrenamiento, registro y sueño— cada una con su regla
+      · verif: tests de que suben, se cortan y son independientes entre sí
+- [x] 14. Protección de racha: una cada 7 días registrados, hasta 2, se gasta sola
+      · verif: tests de ganarla, gastarla y del tope
+- [x] 15. Las rachas en Hoy, chiquitas y legibles
+      · verif: por DOM, las cuatro con su número
 
-## Apta o no apta
+## XP, niveles y logros
 
-- [x] 6. Reglas por modo: qué hace que una comida entre o no (carbos en keto, proteína en
-      definición, calorías sueltas) · verif: tests con comidas límite en cada modo
-- [x] 7. Marca visible en la comida, con el motivo en una línea
-      · verif: por DOM, una comida con 40 g de carbos en keto sale marcada y dice por qué
-- [x] 8. Aviso antes de guardar si la comida rompe el modo, sin bloquear
-      · verif: por DOM, aparece el aviso y se puede guardar igual
+- [x] 16. XP por objetivo cumplido y por registrar, con el nivel calculado desde el XP
+      · verif: tests de la tabla de niveles y de que registrar suma aunque el día sea malo
+- [x] 17. Catálogo de logros con sus condiciones
+      · verif: tests de desbloqueo de cada familia de logro
+- [x] 18. Detectar y anunciar el logro nuevo en el momento
+      · verif: por DOM, completar la condición muestra el cartel
+- [x] 19. Pantalla de rachas, nivel y logros
+      · verif: por DOM, se ven los cuatro fuegos, el nivel y los logros ganados y pendientes
 
-## Pantalla Hoy como tablero
+## Sonidos
 
-- [x] 9. Los tres botones de carga en una fila: foto, código de barras, etiqueta
-      · verif: por DOM, misma fila (mismo `offsetTop`) y los tres abren lo suyo
-- [x] 10. Sugerencias, repetir y carga manual pasan a un menú secundario
-      · verif: por DOM no están en Hoy, y desde el menú siguen funcionando
-- [x] 11. Grilla de objetivos del día: peso, agua, ejercicio y ánimo, que se marcan al
-      completarse · verif: por DOM, completar cada uno lo pasa a verde
-- [x] 12. Las comidas del día sin descripción; al tocarlas se abre el detalle completo
-      · verif: por DOM, la fila muestra momento y kcal; el detalle muestra los alimentos
-- [x] 13. Todo Hoy entra sin scroll en 375×812 con el día a medio cargar
+- [x] 20. `sonidos.js` con WebAudio: completar, subir de nivel, racha y fallar
+      · verif: test con AudioContext simulado de que cada sonido programa lo suyo
+- [x] 21. Interruptor en Ajustes, apagado por defecto, y que no explote si el navegador
+      bloquea el audio · verif: test de que apagado no programa nada y de que el error se traga
+- [x] 22. Respetar `prefers-reduced-motion` como señal de no molestar
+      · verif: test con la media query simulada
+
+## La voz de Fito
+
+- [x] 23. `voz.js`: repertorio de mensajes por situación, con personalidad
+      · verif: test de que hay varios por situación y de que no repite el anterior
+- [x] 24. Reclamo al abrir la app según lo que falta del día
+      · verif: por DOM, con el día vacío reclama y con el día completo festeja
+- [x] 25. Insistencia adentro: si algo queda pendiente hace rato, vuelve a la carga
+      · verif: por DOM con el reloj simulado
+- [x] 26. Los recordatorios hablan con su voz en vez del texto genérico
+      · verif: por DOM, el texto del aviso sale del repertorio
+
+## Cierre
+
+- [x] 27. El juego se reconstruye en otro dispositivo desde los días que ya se
+      sincronizan, sin tabla nueva (ver Supuestos)
+      · verif: test de que los mismos días dan el mismo XP, nivel y logros
+- [x] 28. Hoy sigue entrando sin scroll en 375×812 con rachas y personaje
       · verif: `scrollHeight <= clientHeight` en viewport móvil
-
-## Menos gasto de API
-
-- [x] 14. Sonnet por defecto en platos, Haiku en etiquetas y códigos
-      · verif: test de que cada modo de análisis pide el modelo que corresponde
-- [x] 15. Escalar a Opus (la decision; falta ofrecerlo en pantalla) solo si la confianza vuelve baja, ofreciéndolo, no automático
-      · verif: test con respuesta de confianza baja y con confianza alta
-- [x] 16. Optimizaciones sin tocar el modelo: imagen más chica, prompt más corto, cache más
-      largo · verif: medir el tamaño del request antes y después
-- [x] 17. Mostrar el ahorro real en Ajustes: gasto por análisis y del mes
-      · verif: por DOM con historial simulado
-
-## Ejercicio por actividad
-
-- [x] 18. Tabla de actividades con METs y duración por defecto (funcional 1 h, running 30
-      min, fútbol 1 h) · verif: test de kcal = MET × peso × horas contra valores conocidos
-- [x] 19. Favoritas en Hoy, de un toque; el resto en un selector
-      · verif: por DOM, tocar una favorita carga el ejercicio del día
-- [x] 20. Editar actividades y duraciones fuera de la pantalla principal
-      · verif: por DOM en Ajustes, agregar una actividad propia y usarla
-
-## Agua
-
-- [x] 21. Vasos táctiles: se toca el vaso al que llegaste, sin `+` ni `−`
-      · verif: por DOM, tocar el 4º vaso deja 4; tocar el 4º de nuevo baja a 3
-- [x] 22. El objetivo de vasos sale del peso, y se marca al llegar
-      · verif: test del cálculo y por DOM el estado completado
-
-## Ánimo, peso y objetivos
-
-- [x] 23. Nota del día por caritas, con opción de escribir si hace falta
-      · verif: por DOM, elegir una carita guarda y marca el objetivo
-- [x] 24. Peso precargado con el último valor conocido
-      · verif: por DOM, abrir el campo con un peso anterior lo muestra
-
-## Recomendaciones y veredicto
-
-- [x] 25. Recomendaciones por modo, concretas y accionables
-      · verif: por DOM, cambiar de modo cambia lo que dice
-- [x] 26. Veredicto honesto: en camino, más lento, o sin déficit — y "faltan datos" cuando
-      no alcanza para afirmar nada · verif: tests de los cuatro casos con series armadas
-- [x] 27. El veredicto explica en qué se basa, sin adornos
-      · verif: por DOM, el texto nombra el dato concreto que lo sostiene
-
-## Gráficos
-
-- [x] 28. Sección propia con peso, calorías contra objetivo y adherencia
-      · verif: por DOM con datos simulados, los tres gráficos dibujan
-- [x] 29. Selector de período: diario, semanal y mensual
-      · verif: por DOM, cambiar el período cambia la cantidad de puntos
-- [x] 30. Gráfico propio del modo cuando aplica (carbohidratos en keto, proteína en
-      definición) · verif: por DOM en keto aparece la línea de carbos
-
-## Temas
-
-- [x] 31. Cuatro temas: claro, oscuro, negro OLED y cálido
-      · verif: por DOM, cada uno cambia el fondo y sobrevive a recargar
-
-## Ayuno y sueño (pedido de Nico a mitad del ciclo)
-
-- [x] 32. Ayuno intermitente: botón iniciar/cortar con cronómetro en vivo y ventanas
-      típicas (16:8, 18:6, 20:4) · verif: test del cálculo de horas y por DOM el contador
-- [x] 33. El ayuno como objetivo del día, con su historial · verif: por DOM, un ayuno en
-      curso se ve en el tablero y al cortarlo queda registrado
-- [x] 34. Sueño auto-reportado: al abrir la app a la mañana, horas y calidad en caritas
-      · verif: por DOM, cargar el sueño marca el objetivo
-- [x] 35. Recordatorio de hora de dormir, con los recordatorios que ya existen
-      · verif: se programa y aparece en la lista de recordatorios
-- [x] 36. Cruzar sueño con adherencia: si dormís poco, ¿comés peor? · verif: test con
-      series donde la relación existe y donde no existe, sin afirmar de más
+- [x] 29. Verificación visual: rasterizar el personaje en varias combinaciones y mirarlo
+      · verif: PNG de la grilla de contexturas por ánimos
+- [x] 30. Tamaños, versión y suite completa
+      · verif: `tamanos.py` limpio, `version.py` corrido y la suite entera en verde

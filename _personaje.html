@@ -1,0 +1,50 @@
+<!doctype html>
+<!-- Página de taller: dibuja a Fito en todas sus combinaciones para poder mirarlo.
+     No entra en la app ni en el service worker; existe para verificar el SVG. -->
+<meta charset="utf-8">
+<title>Fito — taller</title>
+<style>
+  body { background: #fff; font: 11px system-ui; margin: 0; padding: 8px; }
+  .fila { display: flex; gap: 2px; }
+  .celda { text-align: center; color: #555; }
+</style>
+<div id="app"></div>
+
+<script src="core.js"></script>
+<script src="mascota.js"></script>
+<script src="cuerpo.js"></script>
+<script src="personaje.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const modo = params.get('modo') || 'cuerpo';
+  const alto = Number(params.get('alto')) || 150;
+
+  const CUERPOS = [
+    ['flaco', { efectiva: 0, musculatura: 0 }],
+    ['medio', { efectiva: .45, musculatura: 0 }],
+    ['grande', { efectiva: .8, musculatura: 0 }],
+    ['máximo', { efectiva: 1, musculatura: 0 }],
+    ['fibra', { efectiva: .2, musculatura: 1 }],
+    ['macizo', { efectiva: .55, musculatura: 1 }],
+    ['fuerte+', { efectiva: 1, musculatura: 1 }]
+  ];
+
+  const ANIMOS = ['neutral', 'bien', 'genial', 'flojo', 'cansado', 'seco', 'pesado', 'triste'];
+
+  function celda(etiqueta, svg) {
+    return '<div class="celda">' + svg + '<div>' + etiqueta + '</div></div>';
+  }
+
+  let html = '';
+  if (modo === 'cuerpo') {
+    html = '<div class="fila">' +
+      CUERPOS.map(([n, c]) => celda(n, svgPersonaje('neutral', alto, c))).join('') +
+      '</div>';
+  } else {
+    const cuerpo = { efectiva: .45, musculatura: .3 };
+    html = '<div class="fila">' +
+      ANIMOS.map(a => celda(a, svgPersonaje(a, alto, cuerpo))).join('') +
+      '</div>';
+  }
+  document.getElementById('app').innerHTML = html;
+</script>

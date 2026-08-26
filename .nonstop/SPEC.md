@@ -1,106 +1,103 @@
-# SPEC — ciclo 5: modos, simplificar y que se pueda cumplir
+# SPEC — ciclo 6: Fito humano y el sistema que engancha
 
 ## Objetivo
 
-La app tiene todo lo que hace falta y no se usa. El diagnóstico de Nico es preciso: pide
-demasiado (cargar cada vaso de agua, escribir una nota, elegir entre seis botones) y muestra
-demasiado (descripciones, opciones que no usa, todo apilado y con scroll).
+Dos cosas que van juntas. Primero, **el personaje pasa a ser una persona** cuyo cuerpo
+refleja el cuerpo real de Nico: su IMC medido y sus entrenamientos, no su conducta del día.
+Segundo, **el andamiaje que hace que se vuelva**: rachas por actividad, XP, niveles, logros,
+sonidos y un personaje que reclama con voz propia.
 
-Este ciclo cambia el eje: de "registrar con precisión" a **"que se pueda cumplir todos los
-días"**. Menos entradas, más grandes, con el objetivo del día a la vista y marcándose en
-verde a medida que se completa. Y encima, **modos** (keto, déficit agresivo, definición…)
-que fijan el objetivo según el cuerpo de cada uno y dicen si lo que comiste entra o no.
+El ciclo 5 dejó la app cumplible. Este la vuelve difícil de abandonar.
 
 ## Alcance
 
-**Entra, en el orden en que Nico lo pidió:**
+**Entra:**
 
-1. **Modos** con objetivo calculado por altura, peso, edad y género.
-2. **Apta / no apta** por comida según el modo.
-3. **Pantalla Hoy como tablero de objetivos**: se completan y se apagan.
-4. Los tres botones de carga —foto, código de barras, etiqueta— en una fila.
-5. Sugerencias, repetir y carga manual pasan a un menú secundario.
-6. Las comidas del día sin descripción; al tocarlas se ve todo.
-7. **Menos gasto de API**: Sonnet + optimizaciones + escalado según confianza.
-8. **Ejercicio por actividad** (funcional, running, fútbol…) con favoritas y duración propia.
-9. **Agua por vasos táctiles**, sin más y sin menos.
-10. **Recomendaciones según el modo**.
-11. **Nota del día con caritas**.
-12. **Peso** con el último valor precargado.
-13. **Objetivos diarios** que se marcan en verde al completarse.
-14. **Temas**: claro, oscuro y dos más.
-15. **Sección de gráficos** con período elegible.
-16. **Un veredicto honesto de si vas bien**, contra el objetivo del modo.
-
-17. **Ayuno intermitente** con cronometro, y **sueno auto-reportado** (pedido a mitad
-    del ciclo).
+1. **Personaje humano** (sigue llamándose Fito) en SVG paramétrico, con tres ejes:
+   contextura por IMC, musculatura por entrenamiento, y cara/postura por el día.
+2. **Rachas por actividad** separadas: agua, entrenamiento, registro y sueño.
+3. **Protección de racha** que se gana con uso.
+4. **XP, niveles y logros.**
+5. **Sonidos** sintetizados con WebAudio, con interruptor.
+6. **Voz propia del personaje**: reclama, insiste, festeja. Cargoso y divertido.
+7. Pantalla donde se ven rachas, nivel y logros.
 
 **No entra:**
-- **Registro automatico de sueno**: movimiento nocturno y ronquidos son imposibles en una
-  PWA. El navegador suspende todo con la pantalla apagada, y el microfono toda la noche
-  no se puede en segundo plano. Eso necesita app nativa o un reloj. Lo que si entra es el
-  auto-reporte, que ademas es lo unico que se sostiene sin comprar nada.
-- **Login multiusuario** — decisión de Nico: va en el ciclo 6, sobre una app ya estable.
-  Igual el modelo de datos se deja preparado para que entre sin migración dolorosa.
-- Sincronizar fotos.
+
+- **Push real con servidor.** Los avisos de hoy son `setTimeout` + `Notification`: solo
+  suenan con la app abierta. Perseguir a Nico con el celular en el bolsillo necesita un
+  push service y un backend que despierte, y eso es un proyecto propio. Lo que sí se
+  exprime es todo lo que se puede hacer sin eso: que reclame al abrir, que insista adentro.
+- **Ligas y competencia.** Duolingo las usa porque tiene millones de usuarios; acá hay uno.
+  Una liga de una persona es un espejo, no un incentivo.
+- **Vidas o corazones.** Castigar quitando acceso a la app hace que se registre menos, que
+  es exactamente lo contrario de lo que sirve acá.
 - Medir la estimación de platos servidos: sigue necesitando las fotos de Nico.
 
 ## Stack y decisiones
 
-Sin cambios de stack: HTML/CSS/JS vanilla, sin build, una pantalla por archivo en `ui/`.
+Sin cambios: HTML/CSS/JS vanilla, sin build ni dependencias, una pantalla por archivo.
+El personaje se dibuja en SVG generado en JS, y los sonidos se sintetizan con WebAudio —
+ni una imagen ni un `.mp3` que descargar.
 
 ## Supuestos
 
-1. **Los modos calculan con Mifflin-St Jeor**, que es la fórmula estándar para gasto basal,
-   por factor de actividad. Es una calculadora, no una prescripción: la app lo dice y
-   recomienda consultar a un profesional antes de un déficit agresivo o de keto.
-2. **Con pisos de seguridad**: ningún modo baja de 1.500 kcal en varones ni de 1.200 en
-   mujeres, por más agresivo que sea el objetivo. Si la cuenta da menos, se corta ahí y se
-   avisa por qué.
-3. **"Apta o no apta" se calcula localmente**, sobre los macros que el análisis ya devuelve.
-   No cuesta una sola llamada extra a la API.
-4. **El escalado de modelo es después, no antes.** Preguntar "¿esto es complejo?" costaría
-   una llamada extra por foto. En cambio: etiquetas y códigos con Haiku (transcribir no
-   necesita más), platos con Sonnet, y si vuelve con confianza baja se ofrece reanalizar con
-   Opus. Se paga precisión solo cuando hace falta.
-5. **El agua es táctil y aproximada**: se toca el vaso al que llegaste, no se suma de a uno.
-   Nico eligió esto sobre las caritas; sin `+` ni `−`.
-6. **Las actividades usan METs**, la tabla estándar de gasto energético: kcal = MET × peso ×
-   horas. Es la misma base que usa cualquier reloj deportivo.
-7. **Lo que se saca de la pantalla principal no se borra**: sugerencias, repetir y carga
-   manual siguen existiendo en un menú. Sacarlas del camino no es lo mismo que perderlas.
-8. **Los cuatro temas son claro, oscuro, negro OLED y cálido.** OLED ahorra batería real en
-   el celular; cálido baja el azul para la noche.
-9. **El veredicto es honesto o calla.** Con menos de 10 días de peso y 7 de registro no se
-   puede hablar de tendencia: en vez de inventar una, dice cuántos días faltan. Y cuando hay
-   datos, si no estás en déficit lo dice sin adornos, porque un "vas bien" falso es peor que
-   no decir nada.
+1. **El cuerpo sale del dato medido, nunca de la conducta del día.** Comer de más pone la
+   cara de culpa; engorda al personaje solo si la balanza dice que engordaste. Es la
+   decisión de diseño central del ciclo: sin esa separación el muñeco se vuelve un reproche
+   diario y deja de ser creíble.
+2. **El IMC solo miente en quien entrena**, porque el músculo pesa. Por eso la musculatura
+   corrige a la contextura: mismo IMC, entrenando, se ve macizo; sin entrenar, blando. Y
+   cuando hay entrenamiento sostenido la app lo dice en texto, en vez de dejar que el número
+   solo acuse falsamente.
+3. **La contextura es continua, no cuatro dibujos.** Se interpola entre extremos con el IMC
+   clampeado a 17–35, para que un kilo se note un poco y no haya saltos bruscos al cruzar
+   un umbral.
+4. **Rango realista y digno**: el personaje con IMC alto es una persona corpulenta, no una
+   caricatura. Sin panzas de dibujito ni deformaciones. Es el cuerpo de Nico.
+5. **Sin dato de peso no se inventa contextura**: se dibuja la media y se pide el peso.
+6. **El XP se gana por registrar, no por cumplir.** Cumplir da más, pero un día malo
+   registrado también suma: lo que sostiene el hábito es volver, no no fallar nunca. Es el
+   mismo principio del nivel del ciclo 5, que ahora pasa a medirse en XP.
+7. **La protección de racha se gana, no se compra ni se regala.** Una cada 7 días
+   registrados, hasta 2 guardadas. Se gasta sola cuando se pierde un día.
+8. **Las rachas por actividad son independientes**: perder la de agua no toca la de
+   entrenamiento. Cuatro rachas chicas se recuperan; una sola grande, cuando se rompe,
+   se abandona.
+9. **El sonido arranca apagado** hasta que Nico lo prenda, y respeta `prefers-reduced-motion`
+   como señal de que no quiere estímulos. Un sonido inesperado en el colectivo se apaga
+   para siempre.
+10. **El juego no se sincroniza como tabla propia.** XP, nivel, rachas y logros
+    se derivan de los días, que ya se sincronizan: otro dispositivo los
+    reconstruye solo, sin migración de base. Lo único que queda por dispositivo
+    son los escudos gastados y qué logros ya se festejaron, y el precio de eso
+    es que en el peor caso un escudo se gaste dos veces. Una tabla nueva para
+    dos campos, con el SQL que Nico tendría que correr a mano, no lo vale.
+11. **La voz reclama pero no humilla.** Insistente, dramática y con humor; nunca desprecio
+    ni culpa por el cuerpo. La diferencia entre que dé gracia volver y que dé bronca abrir.
 
 ## Criterios de aceptación
 
 1. La suite entera pasa, con tests nuevos por cada ítem con lógica.
 2. Sin errores de consola, en escritorio y en móvil.
-3. Un estado del ciclo 4 migra sin perder nada y estrena los campos nuevos.
-4. Elegir un modo cambia el objetivo diario, y el número sale de la altura, el peso, la edad
-   y el género de la persona — no de una constante.
-5. Con modo keto, una comida con muchos carbohidratos se marca **no apta** y una baja en
-   carbos se marca **apta**, con el motivo escrito.
-6. Ningún modo devuelve un objetivo por debajo del piso de seguridad.
-7. La pantalla Hoy entra **sin scroll en 375×812** con el día a medio cargar.
-8. Los tres botones de carga están en una sola fila y funcionan. (Se mide con la
-   posición real en pantalla: `offsetTop` dejó de servir cuando el botón de foto pasó a
-   vivir dentro del contenedor de su flechita.)
-9. Cargar el peso, el agua, el ejercicio y el ánimo marca cada objetivo en verde.
-10. Una foto de plato usa Sonnet; una etiqueta usa Haiku; con confianza baja aparece la
-    opción de reanalizar mejor.
-11. El ejercicio se carga eligiendo una actividad y calcula las calorías por MET y peso.
-12. Los cuatro temas se aplican y sobreviven a recargar.
-13. La sección de gráficos muestra peso, calorías y adherencia, y el período se cambia entre
-    diario, semanal y mensual.
-14. Las recomendaciones cambian según el modo activo.
-15. El veredicto dice "faltan datos" con pocos días, y con datos suficientes detecta los tres
-    casos: en camino, más lento de lo previsto, y sin déficit.
+3. Un estado del ciclo 5 migra sin perder nada y estrena los campos nuevos.
+4. El personaje es reconociblemente humano y se lee bien a 96 px.
+5. Dos pesos muy distintos, misma altura, dibujan cuerpos visiblemente distintos —
+   verificado sobre las medidas que genera el SVG, no a ojo.
+6. Con entrenamiento sostenido el mismo IMC dibuja un cuerpo más macizo, y la app aclara
+   por texto que el IMC subestima a quien entrena.
+7. Comer de más NO cambia el cuerpo: cambia la cara. Verificado comparando dos días con el
+   mismo peso y distinta comida.
+8. Los ocho ánimos siguen siendo distinguibles entre sí en el personaje nuevo.
+9. Las cuatro rachas suben y se cortan por separado.
+10. La protección de racha se gana cada 7 días, tapa un día perdido y se consume.
+11. El XP sube al completar objetivos, el nivel sube con el XP, y los logros se desbloquean.
+12. Los sonidos suenan con el interruptor prendido y no suenan apagado, sin errores si el
+    navegador bloquea el audio.
+13. El personaje dice cosas distintas según el día, y ninguna repite dos veces seguidas.
+14. La pantalla Hoy sigue entrando sin scroll en 375×812.
+15. Ningún archivo pasa su límite de líneas.
 
 ## Presupuesto
 
-45 iteraciones.
+55 iteraciones.

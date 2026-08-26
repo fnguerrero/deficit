@@ -777,11 +777,27 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    cualquier número queda corto. Acá la estructura ocupa lo suyo y la lista se
    queda con lo que sobra, así entra siempre — con dos comidas o con ocho. */
 @media (max-width: 480px) {
-  main { display: flex; flex-direction: column; min-height: 0; }
-  #tab-hoy:not([hidden]) {
-    display: flex; flex-direction: column; min-height: 0;
-    height: calc(100dvh - 216px);   /* header + barra de fecha + nav + respiro */
+  /* Antes esto era `calc(100dvh - 216px)`. El 216 era una suma a ojo del alto
+     del header, la barra de fecha y la nav, y quedaba corto: sobraban 120 px de
+     pantalla vacia abajo mientras la lista de comidas se ahogaba en 37 px.
+     Ahora el alto lo reparte el navegador, que sabe cuanto miden de verdad. */
+  /* Alto exacto, no minimo: con `min-height` el padding de abajo se sumaba y
+     el documento terminaba midiendo mas que la pantalla. El respiro para la
+     barra de navegacion ya lo pone `main`. */
+  body { display: flex; flex-direction: column; height: 100dvh; padding-bottom: 0; overflow: hidden; }
+  /* El scroll se muda del documento a `main`: el body ahora mide exactamente
+     una pantalla, y sin esto Historial, Progreso, Perfil y Ajustes —que son
+     mas largos que la pantalla— quedaban sin poder scrollear. */
+  main { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+  #tab-hoy.active {
+    display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; height: auto;
   }
+  /* Los seis objetivos entran en una sola fila. En dos filas se comian 80 px
+     que salian de la lista de comidas, que quedaba en una fila y media. */
+  #tab-hoy .objetivos { grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  #tab-hoy .objetivo { padding: 7px 2px; }
+  #tab-hoy .objetivo b { font-size: 10px; }
+  #tab-hoy .objetivo small { font-size: 8.5px; }
   #cardComidas { flex: 1 1 auto; min-height: 96px; display: flex; flex-direction: column; overflow: hidden; }
   #listaComidas { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
   .resumen { grid-template-columns: minmax(0, 132px) 1fr; }
@@ -922,9 +938,26 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .mascota-texto b { display: block; font-size: 13.5px; margin-bottom: 2px; }
 .mascota-texto small { display: block; font-size: 11.5px; color: var(--txt2); line-height: 1.35; }
 
-.mascota-nivel { display: flex; align-items: center; gap: 7px; margin-top: 7px; font-size: 10.5px; color: var(--dim); }
-.mascota-barra { flex: 1; height: 5px; border-radius: 3px; background: var(--card2); overflow: hidden; }
+.mascota-nivel { display: flex; align-items: center; gap: 6px; margin-top: 5px; font-size: 10px; color: var(--dim); }
+.mascota-nivel #mascotaLvl { margin-left: auto; white-space: nowrap; }
+.mascota-barra { display: block; height: 4px; border-radius: 3px; background: var(--card2); overflow: hidden; margin-top: 5px; }
 .mascota-barra i { display: block; height: 100%; background: var(--acc); border-radius: 3px; transition: width .4s ease; }
+
+/* Las cuatro rachas. Las apagadas se ven, no desaparecen: un hueco donde antes
+   había un número dice más que no mostrar nada. */
+.rachas { display: flex; gap: 4px; }
+.racha {
+  display: inline-flex; align-items: center; gap: 2px;
+  font-size: 10.5px; font-weight: 700; color: var(--dim);
+  background: var(--card2); border-radius: 20px; padding: 2px 7px 2px 5px;
+  opacity: .55; transition: opacity .2s, background .2s;
+}
+.racha i { font-style: normal; font-size: 11px; filter: grayscale(1); }
+.racha.viva { opacity: 1; color: var(--txt); }
+.racha.viva i { filter: none; }
+/* La que ya se cumplió HOY se marca aparte: la racha dice qué venís haciendo,
+   esto dice qué te falta ahora. */
+.racha.hoy { background: color-mix(in srgb, var(--ok) 22%, transparent); }
 
 /* El personaje respira: quieto del todo parece un ícono, no un bicho. */
 @keyframes respirar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
@@ -984,3 +1017,54 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .fila-dormir { display: flex; align-items: center; gap: 9px; margin-top: 10px; font-size: 13px; }
 .fila-dormir span { flex: 1; }
 .fila-dormir input[type="time"] { width: auto; }
+
+
+/* ---------------- nivel, rachas grandes y logros ---------------- */
+
+.nivel-barra { height: 9px; border-radius: 5px; background: var(--card2); overflow: hidden; margin: 2px 0 8px; }
+.nivel-barra i { display: block; height: 100%; background: var(--acc); border-radius: 5px; transition: width .5s ease; }
+
+.rachas-grande { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.racha-g {
+  background: var(--card2); border-radius: 10px; padding: 8px 4px; text-align: center;
+  opacity: .5; transition: opacity .2s;
+}
+.racha-g.viva { opacity: 1; }
+.racha-g b { display: block; font-size: 17px; line-height: 1.1; }
+.racha-g i { font-style: normal; font-size: 16px; filter: grayscale(1); }
+.racha-g.viva i { filter: none; }
+.racha-g small { display: block; font-size: 9.5px; color: var(--dim); margin-top: 1px; }
+/* El récord solo aparece cuando la racha viva no lo alcanzó: si son iguales,
+   repetir el número dos veces es ruido. */
+.racha-g em { font-style: normal; font-size: 9px; color: var(--dim); opacity: .8; }
+
+.logros { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 7px; }
+.logro {
+  background: var(--card2); border-radius: 10px; padding: 9px 5px; text-align: center;
+  opacity: .38; filter: grayscale(1);
+}
+.logro.ganado { opacity: 1; filter: none; }
+.logro i { font-style: normal; font-size: 21px; display: block; }
+.logro b { display: block; font-size: 10px; margin-top: 3px; line-height: 1.25; }
+.logro small { display: block; font-size: 8.5px; color: var(--dim); margin-top: 2px; line-height: 1.25; }
+
+/* El cartel de logro nuevo. Se muestra sobre todo lo demás y se va solo: pedir
+   que lo cierren a mano convierte un premio en un trámite. */
+.festejo {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .55); z-index: 90; padding: 24px;
+  animation: aparecer .2s ease;
+}
+.festejo-caja {
+  background: var(--card); border-radius: 18px; padding: 22px 20px; text-align: center;
+  max-width: 300px; box-shadow: 0 18px 50px rgba(0, 0, 0, .4);
+  animation: subir .35s cubic-bezier(.2, 1.3, .4, 1);
+}
+.festejo-caja .icono { font-size: 46px; line-height: 1; }
+.festejo-caja h3 { margin: 10px 0 4px; font-size: 17px; }
+.festejo-caja p { margin: 0; font-size: 12.5px; color: var(--dim); }
+@keyframes aparecer { from { opacity: 0; } }
+@keyframes subir { from { transform: translateY(18px) scale(.9); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .festejo, .festejo-caja { animation: none; }
+}

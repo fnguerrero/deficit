@@ -307,6 +307,7 @@ function renderAjustes() {
   renderCalibracion();
   renderRevision();
   renderAtajos();
+  renderSonido();
   renderRecordatorios();
   renderAvisoDormir();
   renderTema();
@@ -398,4 +399,33 @@ function renderTema() {
   }
 
   $('temaDetalle').textContent = (TEMAS[actual] || TEMAS.auto).detalle;
+}
+
+
+/* ---------------- sonidos ---------------- */
+
+/*
+ * El interruptor prueba el sonido al prenderlo. No es un adorno: es la única
+ * forma de saber qué se está aceptando antes de que suene solo en el colectivo.
+ */
+function renderSonido() {
+  const chk = $('chkSonido');
+  if (!chk) return;
+
+  const quieto = prefiereQuieto();
+  chk.checked = !!state.cfg.sonido;
+  chk.disabled = quieto;
+
+  $('sonidoPill').textContent = quieto ? 'silenciado' : (state.cfg.sonido ? 'activados' : 'apagados');
+
+  $('sonidoNota').textContent = quieto
+    ? 'Tu sistema está configurado para menos estímulos, así que la app no hace ruido. Eso manda sobre este interruptor.'
+    : 'Arrancan apagados. Al prenderlos vas a escuchar cómo suenan.';
+
+  chk.onchange = () => {
+    state.cfg.sonido = chk.checked;
+    save();
+    if (chk.checked) sonidos.probar();
+    renderSonido();
+  };
 }

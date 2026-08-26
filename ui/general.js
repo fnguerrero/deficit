@@ -1,3 +1,11 @@
+/* El reproductor de sonidos, uno solo para toda la app. Arranca apagado: hasta
+   que Nico lo prenda en Ajustes, `activo()` devuelve false y ni siquiera se
+   crea el AudioContext. */
+const sonidos = crearSonidos({
+  activo: () => !!state.cfg.sonido,
+  reducido: prefiereQuieto
+});
+
 /* ============================================================
    Transversales: navegación entre pestañas, toast, atajos de teclado,
    cambio de día, onboarding y service worker.
@@ -109,7 +117,7 @@ function irTab(name) {
   });
   if (name === 'historial') renderHistorial();
   if (name === 'hoy') renderHoy();
-  if (name === 'progreso') renderProgreso();
+  if (name === 'progreso') { renderProgreso(); renderLogros(); }
   if (name === 'ajustes') renderAjustes();
   window.scrollTo(0, 0);
 }

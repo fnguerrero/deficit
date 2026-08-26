@@ -260,6 +260,8 @@ function renderMascota() {
   const cont = $('mascotaDibujo');
   if (!cont) return;
 
+  actualizarJuego();
+
   const d = dia();
   const racha = rachaActual(state.dias);
   const est = estadoMascota(d, {
@@ -268,20 +270,124 @@ function renderMascota() {
     racha
   });
 
-  cont.innerHTML = svgMascota(est.animo, 74);
+  /* El cuerpo sale de la balanza y de los entrenamientos; la cara, del dia de
+     hoy. Son dos fuentes distintas a proposito: ver arriba de personaje.js. */
+  const cuerpo = cuerpoDe(state.perfil, state.dias);
+
+  cont.innerHTML = svgPersonaje(est.animo, 70, cuerpo);
   $('mascotaTitulo').textContent = est.titulo;
-  $('mascotaDetalle').textContent = est.texto;
 
-  // el nivel sube por días registrados, no por días perfectos
-  const diasCargados = Object.values(state.dias || {})
-    .filter(x => (x.comidas || []).length || x.peso || x.agua || x.ejercicio || x.animo || x.sueno).length;
-  const lvl = nivelDe(diasCargados);
+  /* Sin peso no se puede dibujar SU cuerpo: se dibuja uno medio y se pide el
+     dato, en vez de disimular que el muneco es cualquiera. */
+  $('mascotaDetalle').textContent = !cuerpo.hayDatos
+    ? 'Cargá tu peso y Fito va a tener tu cuerpo, no uno cualquiera.'
+    : (fraseDeFito(d) || est.texto);
 
-  $('mascotaRacha').textContent = racha ? `🔥 ${racha}` : '';
+  const lvl = nivelDe(state.juego?.xp || 0);
   $('mascotaBarra').style.width = Math.round(lvl.pct * 100) + '%';
-  $('mascotaLvl').textContent = `Nv ${lvl.nivel} · ${lvl.nombre}`;
+  /* En Hoy va solo el número: el nombre del nivel no entra al lado de las
+     cuatro rachas, y está entero en Progreso. */
+  $('mascotaLvl').textContent = `Nv ${lvl.nivel}`;
+
+  pintarRachas();
 
   $('mascotaCard').onclick = () => abrirObjetivo(est.dim === 'sueno' ? 'sueno' : (est.dim || 'animo'));
+}
+
+/* ---------------- lo que dice Fito ---------------- */
+
+/*
+ * La frase se elige cuando CAMBIA la situación, no en cada render.
+ *
+ * Sin esto, cada vez que se toca un vaso de agua el personaje diría otra cosa,
+ * y un personaje que cambia de opinión cada segundo no se lee como un
+ * personaje: se lee como un cartel rotativo.
+ */
+let vozActual = { situacion: null, texto: '', desde: 0, insistido: 0, falta: null };
+
+/* Cuánto aguanta antes de volver a la carga con lo mismo. Doce minutos es
+   suficiente para que se note que insiste y poco para que canse. */
+const MS_INSISTENCIA = 12 * 60 * 1000;
+
+function fraseDeFito(d, ahora = Date.now()) {
+  const r = reclamoDelDia(d, { vasos: vasosObjetivo(state.perfil.peso) });
+
+  if (r.situacion !== vozActual.situacion) {
+    vozActual = { situacion: r.situacion, texto: r.texto, desde: ahora, insistido: 0, falta: r.falta || null };
+    return vozActual.texto;
+  }
+
+  const desdeCuando = Math.max(vozActual.desde, vozActual.insistido);
+  if (r.situacion && ahora - desdeCuando > MS_INSISTENCIA) {
+    vozActual.insistido = ahora;
+    vozActual.texto = decir('insiste', { que: NOMBRE_ACTIVIDAD[r.falta] || 'lo que te falta' });
+  }
+
+  return vozActual.texto;
+}
+
+/**
+ * Recalcula rachas, XP y logros contra el historial y guarda si algo cambió.
+ *
+ * Se recalcula entero en vez de acumular: así borrar una comida cargada por
+ * error no deja XP fantasma, y un logro no se puede ganar dos veces. Solo se
+ * guarda cuando hay diferencia, o cada render dispararía una escritura.
+ */
+function actualizarJuego() {
+  const antes = JSON.stringify(state.juego || {});
+  const nivelPrevio = nivelDe(state.juego?.xp || 0).nivel;
+
+  const r = recalcularJuego(state.dias, state.juego, {
+    vasos: vasosObjetivo(state.perfil.peso)
+  });
+
+  state.juego = { ...r.juego, anunciados: (state.juego?.anunciados || []).slice() };
+
+  if (JSON.stringify(state.juego) !== antes) save();
+  sonarObjetivosNuevos();
+  anunciarNovedades(r, nivelPrevio);
+  return r;
+}
+
+/* Qué actividades ya estaban cumplidas la última vez que se miró. Empieza en
+   null y no en vacío: si empezara vacío, abrir la app con el día ya completo
+   dispararía cuatro sonidos de golpe. */
+let cumplidasPrevias = null;
+
+function sonarObjetivosNuevos() {
+  const ahora = todasLasRachas(state.dias, {
+    vasos: vasosObjetivo(state.perfil.peso),
+    juego: state.juego
+  }).filter(r => r.hoyCumplido).map(r => r.id);
+
+  if (cumplidasPrevias === null) { cumplidasPrevias = ahora; return; }
+
+  const nuevas = ahora.filter(id => !cumplidasPrevias.includes(id));
+  cumplidasPrevias = ahora;
+
+  if (nuevas.length) sonidos.sonar(nuevas.length === RACHAS.length ? 'racha' : 'objetivo');
+}
+
+/**
+ * Las cuatro rachas, chiquitas.
+ *
+ * Se apagan en vez de desaparecer cuando están en cero: un hueco donde antes
+ * había un número dice más que no mostrar nada.
+ */
+function pintarRachas() {
+  const cont = $('rachasFila');
+  if (!cont) return;
+
+  const rachas = todasLasRachas(state.dias, {
+    vasos: vasosObjetivo(state.perfil.peso),
+    juego: state.juego
+  });
+
+  cont.innerHTML = rachas.map(r => {
+    const viva = r.actual > 0;
+    return `<span class="racha${viva ? ' viva' : ''}${r.hoyCumplido ? ' hoy' : ''}" title="${r.nombre}: ${r.actual} días">
+      <i>${r.icono}</i>${viva ? r.actual : '–'}</span>`;
+  }).join('');
 }
 
 /* ---------------- sueño ---------------- */

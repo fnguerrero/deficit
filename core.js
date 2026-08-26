@@ -21,6 +21,8 @@ const DEFAULT_STATE = {
     modo: 'moderado'
   },
   dias: {},
+  /* Rachas, XP y logros. Ver juego.js. */
+  juego: { xp: 0, logros: [], anunciados: [], escudosGastados: 0, escudosUsados: {} },
   frecuentes: [],
   recetas: [],
   cacheAnalisis: {},
@@ -34,6 +36,8 @@ const DEFAULT_STATE = {
   cfg: {
     apiKey: '', modelo: 'claude-opus-5', precision: 'normal', tema: 'auto',
     recordatorios: false, horarios: null,
+    /* Los sonidos arrancan apagados a propósito: ver sonidos.js. */
+    sonido: false,
     topeGasto: TOPE_DEFECTO,
     avisoKeyOculto: false, onboardingHecho: false
   }
@@ -54,6 +58,9 @@ function migrar(guardado) {
 
   s.perfil = { ...s.perfil, ...(guardado.perfil || {}) };
   s.cfg = { ...s.cfg, ...(guardado.cfg || {}) };
+  /* Un estado del ciclo 5 no trae `juego`: se completa con los valores vacíos y
+     el primer recálculo lo llena contra el historial que ya existe. */
+  s.juego = { ...s.juego, ...(guardado.juego || {}) };
   if (!Array.isArray(s.cfg.horarios) || !s.cfg.horarios.length) s.cfg.horarios = clonar(RECORDATORIOS_DEFAULT);
   s.dias = {};
 

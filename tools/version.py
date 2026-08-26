@@ -34,4 +34,18 @@ for archivo in ('index.html', 'tests.html'):
     html = re.sub(r"\?v=\d+", "?v=%d" % nueva, html)
     escribir(archivo, html)
 
+# Un archivo nuevo que entra en index.html y no en el shell del service worker
+# no falla en el navegador: falla SIN INTERNET, semanas despues, y ahi no hay
+# como darse cuenta. Paso en el ciclo 6 con siete archivos de una.
+indice = leer('index.html')
+en_html = set(re.findall(r'src="([^"?]+\.js)', indice))
+en_sw = set(re.findall(r"'\./([^'?]+\.js)", sw))
+faltan = sorted(en_html - en_sw)
+
+if faltan:
+    print('OJO: estos scripts estan en index.html pero no en el shell de sw.js:')
+    for f in faltan:
+        print('  - ' + f)
+    print('Sin eso la app no arranca offline.')
+
 print('version %d -> %d' % (actual, nueva))

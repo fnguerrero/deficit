@@ -1,0 +1,752 @@
+/* ============================================================
+   tests2.js — la suite del ciclo 6.
+
+   tests.js se paso de tamano. El corredor (test, esperar, esperarQue) sigue
+   viviendo alla y se carga antes; aca van los tests del cuerpo, el personaje,
+   el juego, los sonidos y la voz.
+   ============================================================ */
+
+
+/* ============================================================
+   El cuerpo del personaje
+   ============================================================ */
+
+const HOY_CUERPO = '2026-09-01';
+
+/* Arma dias con ejercicio en los primeros `entrenados` dias hacia atras. */
+function diasCuerpo({ entrenados = 0, pesos = {} } = {}) {
+  const dias = {};
+  for (let i = 0; i < 20; i++) {
+    const f = sumarDias(HOY_CUERPO, -i);
+    dias[f] = { peso: pesos[i] ?? null, agua: 0, ejercicio: i < entrenados ? 300 : 0,
+      nota: '', animo: null, sueno: null, comidas: [], act: 0 };
+  }
+  return dias;
+}
+
+test('el IMC sale de peso y altura', () => {
+  esperar(imcDe(85, 178), 26.8);
+  esperar(imcDe(60, 170), 20.8);
+});
+
+test('sin peso o sin altura no hay IMC', () => {
+  esperar(imcDe(null, 178), null);
+  esperar(imcDe(85, null), null);
+  esperar(imcDe(0, 178), null);
+});
+
+test('las cuatro bandas de IMC', () => {
+  esperar(bandaIMC(17).id, 'bajo');
+  esperar(bandaIMC(22).id, 'normal');
+  esperar(bandaIMC(27).id, 'sobrepeso');
+  esperar(bandaIMC(33).id, 'obesidad');
+  esperar(bandaIMC(null), null);
+});
+
+test('la contextura es continua: un kilo la mueve', () => {
+  const a = contexturaDe(imcDe(85, 178));
+  const b = contexturaDe(imcDe(86, 178));
+  esperarQue(b > a, 'un kilo mas tiene que subir la contextura');
+  esperarQue(b - a < 0.05, 'pero poquito, no un salto: ' + (b - a));
+});
+
+test('la contextura clampea en los extremos', () => {
+  esperar(contexturaDe(10), 0);
+  esperar(contexturaDe(50), 1);
+  esperar(contexturaDe(17), 0);
+  esperar(contexturaDe(35), 1);
+});
+
+test('no hay salto brusco al cruzar una banda', () => {
+  const antes = contexturaDe(24.9);
+  const despues = contexturaDe(25.1);
+  esperarQue(despues - antes < 0.02, 'cruzar de normal a sobrepeso no puede ser un salto');
+});
+
+test('la musculatura sale de los dias entrenados', () => {
+  esperar(musculaturaDe(0), 0);
+  esperar(musculaturaDe(4), 0.4);
+  esperar(musculaturaDe(12), 1);
+});
+
+test('solo cuentan los ultimos 14 dias', () => {
+  esperar(diasEntrenados(diasCuerpo({ entrenados: 20 }), HOY_CUERPO), 14);
+  esperar(diasEntrenados(diasCuerpo({ entrenados: 5 }), HOY_CUERPO), 5);
+});
+
+test('el peso sale del ultimo dia registrado antes que del perfil', () => {
+  const dias = diasCuerpo({ pesos: { 3: 82 } });
+  esperar(ultimoPesoConocido({ peso: 90 }, dias, HOY_CUERPO), 82);
+});
+
+test('sin peso en los dias cae al perfil', () => {
+  esperar(ultimoPesoConocido({ peso: 90 }, diasCuerpo(), HOY_CUERPO), 90);
+});
+
+test('sin peso en ningun lado no se inventa un cuerpo', () => {
+  const c = cuerpoDe({ altura: 178 }, diasCuerpo(), HOY_CUERPO);
+  esperar(c.contextura, null);
+  esperar(c.efectiva, null);
+  esperarQue(!c.hayDatos);
+});
+
+test('dos pesos muy distintos dan cuerpos distintos', () => {
+  const flaco = cuerpoDe({ altura: 178, peso: 62 }, diasCuerpo(), HOY_CUERPO);
+  const grande = cuerpoDe({ altura: 178, peso: 105 }, diasCuerpo(), HOY_CUERPO);
+  esperarQue(grande.efectiva - flaco.efectiva > 0.5, 'tienen que separarse mucho');
+});
+
+test('entrenar corrige la contextura hacia abajo', () => {
+  const quieto = cuerpoDe({ altura: 178, peso: 88 }, diasCuerpo({ entrenados: 0 }), HOY_CUERPO);
+  const activo = cuerpoDe({ altura: 178, peso: 88 }, diasCuerpo({ entrenados: 12 }), HOY_CUERPO);
+  esperar(quieto.imc, activo.imc);
+  esperarQue(activo.efectiva < quieto.efectiva, 'mismo IMC entrenando tiene que dar menos contextura');
+  esperar(activo.musculatura, 1);
+});
+
+test('avisa que el IMC exagera en quien entrena', () => {
+  const activo = cuerpoDe({ altura: 178, peso: 88 }, diasCuerpo({ entrenados: 12 }), HOY_CUERPO);
+  esperarQue(/exagera/.test(activo.aviso), activo.aviso);
+  esperarQue(/12 de los ultimos 14|12 de los últimos 14/.test(activo.aviso), activo.aviso);
+});
+
+test('sin entrenar no hay aviso, aunque el IMC sea alto', () => {
+  const quieto = cuerpoDe({ altura: 178, peso: 88 }, diasCuerpo({ entrenados: 0 }), HOY_CUERPO);
+  esperar(quieto.banda.id, 'sobrepeso');
+  esperar(quieto.aviso, '');
+});
+
+test('con IMC normal tampoco avisa, por mas que entrene', () => {
+  const c = cuerpoDe({ altura: 178, peso: 70 }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO);
+  esperar(c.aviso, '');
+});
+
+
+/* ============================================================
+   El personaje dibujado
+   ============================================================ */
+
+const CUERPO_FLACO = { efectiva: 0.05, musculatura: 0 };
+const CUERPO_GRANDE = { efectiva: 0.95, musculatura: 0 };
+const CUERPO_FIBRA = { efectiva: 0.35, musculatura: 1 };
+const CUERPO_BLANDO = { efectiva: 0.35, musculatura: 0 };
+
+test('dos contexturas distintas dan cinturas distintas', () => {
+  const flaco = medidasDe(CUERPO_FLACO.efectiva, 0);
+  const grande = medidasDe(CUERPO_GRANDE.efectiva, 0);
+  esperarQue(grande.cintura - flaco.cintura > 12, 'la cintura tiene que separarse de verdad');
+  esperarQue(grande.cadera > flaco.cadera);
+});
+
+test('con contextura alta la cintura pasa a los hombros', () => {
+  const grande = medidasDe(1, 0);
+  esperarQue(grande.cintura > grande.hombro, 'es lo que pasa en un cuerpo real');
+});
+
+test('entrenando los hombros ganan y la cintura afina', () => {
+  const fibra = medidasDe(0.35, 1);
+  const blando = medidasDe(0.35, 0);
+  esperarQue(fibra.hombro > blando.hombro + 5, 'hombros');
+  esperarQue(fibra.cintura < blando.cintura, 'cintura');
+  esperarQue(fibra.brazo > blando.brazo, 'brazos');
+});
+
+test('sin datos de cuerpo se dibuja una contextura media, no cero', () => {
+  const med = medidasDe(null, 0);
+  esperarQue(med.c > 0.2 && med.c < 0.7, 'ni flaco ni grande: ' + med.c);
+});
+
+test('la contextura clampea tambien en el dibujo', () => {
+  esperar(medidasDe(5, 0).c, 1);
+  esperar(medidasDe(-3, 0).c, 0);
+});
+
+test('el ancho del torso interpola entre las alturas de referencia', () => {
+  const med = medidasDe(0.9, 0);
+  const aMedio = anchoEn((Y.pecho + Y.cintura) / 2, med);
+
+  esperar(+anchoEn(Y.hombro, med).toFixed(2), +med.hombro.toFixed(2));
+  esperar(+anchoEn(Y.cintura, med).toFixed(2), +med.cintura.toFixed(2));
+  esperarQue(aMedio > Math.min(med.pecho, med.cintura) && aMedio < Math.max(med.pecho, med.cintura),
+    'un punto intermedio tiene que caer entre los dos');
+});
+
+test('por encima y por debajo del rango el ancho no se dispara', () => {
+  const med = medidasDe(0.35, 0);
+  esperar(anchoEn(0, med), med.hombro);
+  esperar(anchoEn(500, med), med.cadera);
+});
+
+test('la silueta se puede cortar a cualquier altura', () => {
+  const med = medidasDe(0.35, 0);
+  const corta = silueta(med, Y.hombro, Y.pecho);
+  const larga = silueta(med, Y.hombro, Y.cadera);
+  esperarQue(corta.startsWith('M ') && corta.endsWith('Z'));
+  esperarQue(larga.length > corta.length, 'mas alto, mas puntos');
+});
+
+test('dos pesos distintos dibujan cuerpos distintos', () => {
+  esperarQue(svgPersonaje('neutral', 96, CUERPO_FLACO) !== svgPersonaje('neutral', 96, CUERPO_GRANDE));
+});
+
+test('la comida del dia NO toca el cuerpo: solo la cara', () => {
+  /* El criterio central del ciclo. Mismo cuerpo medido, dos animos distintos:
+     la silueta del torso tiene que salir identica. */
+  const torsoDe = (svg) => svg.split('<path d="M ')[1].split('"')[0];
+  const tranquilo = svgPersonaje('bien', 96, CUERPO_BLANDO);
+  const culposo = svgPersonaje('pesado', 96, CUERPO_BLANDO);
+
+  esperar(torsoDe(tranquilo), torsoDe(culposo), 'comer de mas no puede engordar al muneco');
+  esperarQue(tranquilo !== culposo, 'pero algo tiene que cambiar: la cara');
+});
+
+test('los ocho animos siguen siendo ocho dibujos distintos', () => {
+  const vistos = new Set();
+  for (const a of Object.keys(CARAS)) vistos.add(svgPersonaje(a, 96, CUERPO_BLANDO));
+  esperar(vistos.size, 8);
+});
+
+test('cada animo tiene su pose', () => {
+  esperar(Object.keys(POSES).length, 8);
+  esperarQue(POSES.cansado.hombros > POSES.neutral.hombros, 'cansado se hunde');
+  esperarQue(POSES.genial.hombros < POSES.neutral.hombros, 'genial se estira');
+});
+
+test('la postura acompana al animo y no al cuerpo', () => {
+  const hundido = (s) => s.split('translate(0 ')[1].split(')')[0];
+  esperar(hundido(svgPersonaje('cansado', 96, CUERPO_FLACO)),
+    hundido(svgPersonaje('cansado', 96, CUERPO_GRANDE)),
+    'el mismo animo hunde lo mismo, pese al cuerpo');
+});
+
+test('la remera se apaga cuando el dia viene mal', () => {
+  esperarQue(svgPersonaje('genial', 96, CUERPO_BLANDO).includes(PALETA.remera), 'a pleno va el verde pleno');
+  esperarQue(!svgPersonaje('triste', 96, CUERPO_BLANDO).includes('"' + PALETA.remera + '"'), 'triste va apagado');
+});
+
+test('mezclar da un color intermedio valido', () => {
+  esperar(mezclar('#000000', '#ffffff', 0), '#000000');
+  esperar(mezclar('#000000', '#ffffff', 1), '#ffffff');
+  esperar(mezclar('#000000', '#ffffff', .5), '#808080');
+});
+
+test('el dibujo se puede meter en el DOM y rasterizar', () => {
+  const svg = svgPersonaje('bien', 74, CUERPO_BLANDO);
+  esperarQue(svg.startsWith('<svg'), 'arranca en svg');
+  esperarQue(/xmlns=/.test(svg), 'sin xmlns no se puede rasterizar');
+  esperarQue(/viewBox="0 0 120 176"/.test(svg));
+});
+
+test('ninguna combinacion de cuerpo y animo genera NaN', () => {
+  for (const a of Object.keys(CARAS)) {
+    for (const c of [null, 0, .5, 1]) {
+      const svg = svgPersonaje(a, 96, c == null ? null : { efectiva: c, musculatura: c });
+      esperarQue(!/NaN|undefined/.test(svg), a + ' con ' + c);
+    }
+  }
+});
+
+test('ningun path sale con doble signo', () => {
+  /* Un "--5.9" no es NaN pero el navegador tira el path entero. Aparecio de
+     verdad: la manga escribia el menos a mano y del lado izquierdo el valor ya
+     venia negativo. */
+  for (const a of Object.keys(CARAS)) {
+    for (const c of [null, 0, .5, 1]) {
+      const svg = svgPersonaje(a, 96, c == null ? null : { efectiva: c, musculatura: c });
+      esperarQue(!svg.includes('--'), a + ' con ' + c + ': doble signo en un path');
+      esperarQue(!/[\d.]-\d/.test(svg.replace(/e-\d/g, '')), a + ' con ' + c + ': numeros pegados');
+    }
+  }
+});
+
+test('el tamano pedido manda, y la figura es mas alta que ancha', () => {
+  const svg = svgPersonaje('neutral', 100, CUERPO_BLANDO);
+  esperarQue(/height="100"/.test(svg));
+  esperarQue(/width="72"/.test(svg), 'una persona parada no es cuadrada');
+});
+
+
+/* ============================================================
+   El juego: rachas, escudos, XP y logros
+   ============================================================ */
+
+const HOY_JUEGO = '2026-09-10';
+
+/* Un dia armado a pedido. `dias({0:'todo', 1:'agua'})` arma hoy completo y ayer
+   solo con agua; lo que no se nombra queda vacio. */
+function diaJ(que = '') {
+  const q = String(que);
+  const todo = q === 'todo';
+  return {
+    peso: null,
+    agua: todo || q.includes('agua') ? 12 : 0,
+    ejercicio: todo || q.includes('ejercicio') ? 300 : 0,
+    nota: '', animo: null, act: 0,
+    sueno: todo || q.includes('sueno') ? { horas: 8 } : null,
+    comidas: todo || q.includes('comida') ? [{ id: 'x', kcal: 600 }] : []
+  };
+}
+
+function diasJ(mapa, desde = HOY_JUEGO) {
+  const dias = {};
+  for (const [i, que] of Object.entries(mapa)) dias[sumarDias(desde, -Number(i))] = diaJ(que);
+  return dias;
+}
+
+const OPTS_J = { hoy: HOY_JUEGO, vasos: 8 };
+
+/* ---- las cuatro rachas ---- */
+
+test('hay cuatro rachas y cada una sabe como se cumple', () => {
+  esperar(RACHAS.length, 4);
+  for (const r of RACHAS) {
+    esperarQue(!!r.nombre && !!r.icono, r.id);
+    esperarQue(typeof r.cumple === 'function', r.id);
+  }
+});
+
+test('la racha cuenta dias seguidos hacia atras', () => {
+  const dias = diasJ({ 0: 'comida', 1: 'comida', 2: 'comida', 4: 'comida' });
+  esperar(rachaDe(dias, 'registro', OPTS_J).actual, 3, 'el hueco del dia 3 corta');
+});
+
+test('el dia de hoy sin cumplir no corta la racha', () => {
+  const dias = diasJ({ 1: 'comida', 2: 'comida', 3: 'comida' });
+  esperar(rachaDe(dias, 'registro', OPTS_J).actual, 3, 'hoy todavia puede completarse');
+  esperarQue(!rachaDe(dias, 'registro', OPTS_J).hoyCumplido);
+});
+
+test('las cuatro rachas son independientes entre si', () => {
+  const dias = diasJ({ 0: 'agua comida', 1: 'agua', 2: 'agua', 3: 'agua' });
+  esperar(rachaDe(dias, 'agua', OPTS_J).actual, 4);
+  esperar(rachaDe(dias, 'registro', OPTS_J).actual, 1, 'perder el agua no puede tocar el registro');
+  esperar(rachaDe(dias, 'entrenamiento', OPTS_J).actual, 0);
+});
+
+test('el agua se mide contra el objetivo de cada uno', () => {
+  const dias = diasJ({ 0: 'agua', 1: 'agua' });
+  esperar(rachaDe(dias, 'agua', { hoy: HOY_JUEGO, vasos: 8 }).actual, 2);
+  esperar(rachaDe(dias, 'agua', { hoy: HOY_JUEGO, vasos: 20 }).actual, 0, '12 vasos no alcanzan si el objetivo es 20');
+});
+
+test('dormir poco no suma a la racha de sueno', () => {
+  const dias = { [HOY_JUEGO]: { ...diaJ(), sueno: { horas: 5 } } };
+  esperar(rachaDe(dias, 'sueno', OPTS_J).actual, 0);
+});
+
+test('la mejor racha se acuerda del record aunque hoy este en cero', () => {
+  const dias = diasJ({ 10: 'comida', 11: 'comida', 12: 'comida', 13: 'comida', 14: 'comida' });
+  const r = rachaDe(dias, 'registro', OPTS_J);
+  esperar(r.actual, 0);
+  esperar(r.mejor, 5);
+});
+
+test('una racha que no existe no rompe nada', () => {
+  esperar(rachaDe({}, 'inventada', OPTS_J).actual, 0);
+});
+
+test('las cuatro se pueden pedir de un saque', () => {
+  const todas = todasLasRachas(diasJ({ 0: 'todo' }), OPTS_J);
+  esperar(todas.length, 4);
+  esperarQue(todas.every(r => r.hoyCumplido), 'un dia completo cumple las cuatro');
+});
+
+/* ---- los escudos ---- */
+
+test('se gana un escudo cada 7 dias registrados', () => {
+  const seis = {};
+  for (let i = 0; i < 6; i++) seis[i] = 'comida';
+  esperar(escudosDisponibles(diasJ(seis), JUEGO_VACIO), 0);
+
+  const siete = { ...seis, 6: 'comida' };
+  esperar(escudosDisponibles(diasJ(siete), JUEGO_VACIO), 1);
+});
+
+test('no se pueden juntar mas de dos', () => {
+  const muchos = {};
+  for (let i = 0; i < 60; i++) muchos[i] = 'comida';
+  esperar(escudosDisponibles(diasJ(muchos), JUEGO_VACIO), MAX_ESCUDOS);
+});
+
+test('el escudo tapa el dia perdido y la racha sigue', () => {
+  // seis dias de comida, ayer nada: alcanza para tener un escudo
+  const mapa = { 1: '', 2: 'comida', 3: 'comida', 4: 'comida', 5: 'comida', 6: 'comida', 7: 'comida', 8: 'comida' };
+  const dias = diasJ(mapa);
+  const juego = juegoDe({});
+
+  esperar(rachaDe(dias, 'registro', { ...OPTS_J, juego }).actual, 0, 'sin escudo la racha murio');
+
+  const salvadas = aplicarEscudos(dias, juego, OPTS_J);
+  esperar(salvadas.length, 1);
+  esperar(salvadas[0].id, 'registro');
+  esperar(juego.escudosGastados, 1);
+  esperarQue(rachaDe(dias, 'registro', { ...OPTS_J, juego }).actual >= 7, 'con el escudo la racha sigue viva');
+});
+
+test('el escudo no se gasta en una racha corta', () => {
+  const dias = diasJ({ 1: '', 2: 'comida', 3: 'comida' });
+  const juego = juegoDe({});
+  juego.escudosGastados = -5;   // como si sobraran escudos
+  esperar(aplicarEscudos(dias, juego, OPTS_J).length, 0, 'tapar una racha de 2 es tirar el escudo');
+});
+
+test('sin escudos disponibles no se tapa nada', () => {
+  const mapa = { 1: '', 2: 'comida', 3: 'comida', 4: 'comida', 5: 'comida' };
+  const juego = juegoDe({});
+  juego.escudosGastados = 99;
+  esperar(aplicarEscudos(diasJ(mapa), juego, OPTS_J).length, 0);
+});
+
+test('el mismo dia no se tapa dos veces', () => {
+  const mapa = { 1: '', 2: 'comida', 3: 'comida', 4: 'comida', 5: 'comida', 6: 'comida', 7: 'comida', 8: 'comida' };
+  const dias = diasJ(mapa);
+  const juego = juegoDe({});
+  aplicarEscudos(dias, juego, OPTS_J);
+  const gastados = juego.escudosGastados;
+  aplicarEscudos(dias, juego, OPTS_J);
+  esperar(juego.escudosGastados, gastados, 'correrlo de nuevo no puede cobrar otro escudo');
+});
+
+/* ---- XP y niveles ---- */
+
+test('registrar suma XP aunque el dia venga mal', () => {
+  const malo = { ...diaJ(), comidas: [{ id: 'x', kcal: 4000 }] };
+  esperarQue(xpDelDia(malo, { vasos: 8 }) > 0, 'volver tiene que pagar algo');
+});
+
+test('cumplir paga mas que solo registrar', () => {
+  esperarQue(xpDelDia(diaJ('todo'), { vasos: 8 }) > xpDelDia(diaJ('comida'), { vasos: 8 }));
+});
+
+test('el dia completo tiene su premio aparte', () => {
+  const completo = xpDelDia(diaJ('todo'), { vasos: 8 });
+  esperar(completo, XP.registrar + 4 * XP.objetivo + XP.diaCompleto);
+});
+
+test('un dia vacio no paga nada', () => {
+  esperar(xpDelDia(diaJ(), { vasos: 8 }), 0);
+  esperar(xpDelDia(null), 0);
+});
+
+test('el XP total suma los dias y los logros', () => {
+  const dias = diasJ({ 0: 'comida', 1: 'comida' });
+  const sinLogros = xpTotal(dias, { vasos: 8, logros: [] });
+  const conLogros = xpTotal(dias, { vasos: 8, logros: ['primer-dia', 'semana'] });
+  esperar(conLogros - sinLogros, 2 * XP.logro);
+});
+
+/* ---- logros ---- */
+
+test('el catalogo de logros esta completo y sin repetidos', () => {
+  esperarQue(LOGROS.length >= 15, 'pocos logros para medio ano de uso');
+  esperar(new Set(LOGROS.map(l => l.id)).size, LOGROS.length);
+  for (const l of LOGROS) {
+    esperarQue(!!l.nombre && !!l.detalle && !!l.icono, l.id);
+    esperarQue(typeof l.cumple === 'function', l.id);
+  }
+});
+
+test('el primer dia registrado ya desbloquea algo', () => {
+  const ctx = contextoLogros(diasJ({ 0: 'comida' }), JUEGO_VACIO, OPTS_J);
+  esperarQue(logrosGanados(ctx).includes('primer-dia'));
+});
+
+test('sin nada cargado no hay ningun logro', () => {
+  esperar(logrosGanados(contextoLogros({}, JUEGO_VACIO, OPTS_J)).length, 0);
+});
+
+test('los logros de racha miran el record, no el dia de hoy', () => {
+  const mapa = {};
+  for (let i = 3; i < 12; i++) mapa[i] = 'comida';
+  const ctx = contextoLogros(diasJ(mapa), JUEGO_VACIO, OPTS_J);
+  esperarQue(logrosGanados(ctx).includes('racha-7'), 'la racha se corto pero el record queda');
+});
+
+test('el dia perfecto pide las cuatro actividades', () => {
+  const casi = contextoLogros(diasJ({ 0: 'agua comida ejercicio' }), JUEGO_VACIO, OPTS_J);
+  esperarQue(!logrosGanados(casi).includes('perfecto'), 'faltando el sueno no es perfecto');
+
+  const perfecto = contextoLogros(diasJ({ 0: 'todo' }), JUEGO_VACIO, OPTS_J);
+  esperarQue(logrosGanados(perfecto).includes('perfecto'));
+});
+
+test('cada logro tiene su ficha buscable por id', () => {
+  esperar(logro('perfecto').nombre, 'Día perfecto');
+  esperar(logro('no-existe'), null);
+});
+
+/* ---- el recalculo entero ---- */
+
+test('recalcular llena el juego contra el historial', () => {
+  const r = recalcularJuego(diasJ({ 0: 'todo', 1: 'todo' }), null, OPTS_J);
+  esperarQue(r.juego.xp > 0);
+  esperarQue(r.juego.logros.includes('primer-dia'));
+  esperarQue(r.nuevos.includes('primer-dia'), 'la primera vez son todos nuevos');
+});
+
+test('recalcular dos veces no duplica nada', () => {
+  const dias = diasJ({ 0: 'todo', 1: 'todo' });
+  const a = recalcularJuego(dias, null, OPTS_J);
+  const b = recalcularJuego(dias, a.juego, OPTS_J);
+  esperar(b.juego.xp, a.juego.xp);
+  esperar(b.nuevos.length, 0, 'no puede volver a anunciar lo mismo');
+});
+
+test('borrar un dia devuelve el XP: no queda fantasma', () => {
+  const dias = diasJ({ 0: 'todo', 1: 'todo' });
+  const antes = recalcularJuego(dias, null, OPTS_J);
+  delete dias[sumarDias(HOY_JUEGO, -1)];
+  const despues = recalcularJuego(dias, antes.juego, OPTS_J);
+  esperarQue(despues.juego.xp < antes.juego.xp, 'el XP tiene que bajar al borrar el dia');
+});
+
+test('un estado del ciclo 5 sin juego migra sin romperse', () => {
+  const j = juegoDe({});
+  esperar(j.xp, 0);
+  esperar(j.logros.length, 0);
+  esperar(j.escudosGastados, 0);
+
+  const r = recalcularJuego(diasJ({ 0: 'comida' }), j, OPTS_J);
+  esperarQue(r.juego.xp > 0, 'el historial que ya existia tiene que contar');
+});
+
+test('un juego con basura adentro no rompe la migracion', () => {
+  const j = juegoDe({ juego: { xp: 'hola', logros: 'no-es-lista', escudosUsados: 5 } });
+  esperar(j.xp, 0);
+  esperar(j.logros.length, 0);
+  esperar(Object.keys(j.escudosUsados).length, 0);
+});
+
+test('los logros por anunciar son los que no se mostraron', () => {
+  const juego = { logros: ['primer-dia', 'semana'], anunciados: ['primer-dia'] };
+  esperar(logrosPorAnunciar(juego).join(), 'semana');
+  esperar(logrosPorAnunciar({}).length, 0);
+});
+
+
+/* ============================================================
+   Sonidos y voz
+   ============================================================ */
+
+/* Un AudioContext de mentira que anota lo que le piden en vez de hacer ruido. */
+function ctxFalso(registro) {
+  return function FakeCtx() {
+    this.state = 'running';
+    this.currentTime = 0;
+    this.destination = { tipo: 'salida' };
+    this.resume = () => { registro.resumido = true; };
+    this.createOscillator = () => {
+      const o = { type: '', frequency: { value: 0 }, connect() {}, start(t) { this.t0 = t; }, stop(t) { this.t1 = t; } };
+      registro.osciladores.push(o);
+      return o;
+    };
+    this.createGain = () => ({
+      gain: {
+        setValueAtTime() {}, linearRampToValueAtTime() {}, exponentialRampToValueAtTime() {}
+      },
+      connect() {}
+    });
+  };
+}
+
+function registroNuevo() {
+  return { osciladores: [], resumido: false };
+}
+
+test('cada sonido programa sus notas', () => {
+  const reg = registroNuevo();
+  const s = crearSonidos({ Ctx: ctxFalso(reg), activo: () => true });
+
+  esperarQue(s.sonar('objetivo'), 'tiene que sonar');
+  esperar(reg.osciladores.length, SONIDOS.objetivo.notas.length);
+  esperar(reg.osciladores[0].frequency.value, SONIDOS.objetivo.notas[0][0]);
+});
+
+test('los cinco sonidos existen y son distintos entre si', () => {
+  const ids = ['objetivo', 'nivel', 'racha', 'logro', 'fallo'];
+  for (const id of ids) esperarQue(!!SONIDOS[id], id);
+
+  const firmas = new Set(ids.map(id => JSON.stringify(SONIDOS[id].notas)));
+  esperar(firmas.size, ids.length, 'dos sonidos iguales no sirven de senal');
+});
+
+test('las buenas noticias suben y fallar baja', () => {
+  const sube = (id) => SONIDOS[id].notas.at(-1)[0] > SONIDOS[id].notas[0][0];
+  esperarQue(sube('objetivo'), 'objetivo');
+  esperarQue(sube('nivel'), 'nivel');
+  esperarQue(sube('logro'), 'logro');
+  esperarQue(!sube('fallo'), 'fallar tiene que bajar');
+});
+
+test('apagado no programa absolutamente nada', () => {
+  const reg = registroNuevo();
+  const s = crearSonidos({ Ctx: ctxFalso(reg), activo: () => false });
+
+  esperarQue(!s.sonar('objetivo'));
+  esperar(reg.osciladores.length, 0, 'ni siquiera crea el contexto');
+});
+
+test('si el sistema pidio menos estimulos, no suena aunque este prendido', () => {
+  const reg = registroNuevo();
+  const s = crearSonidos({ Ctx: ctxFalso(reg), activo: () => true, reducido: () => true });
+
+  esperarQue(!s.sonar('logro'));
+  esperar(reg.osciladores.length, 0);
+});
+
+test('un sonido que no existe se ignora sin romper', () => {
+  const s = crearSonidos({ Ctx: ctxFalso(registroNuevo()), activo: () => true });
+  esperarQue(!s.sonar('inventado'));
+});
+
+test('si el navegador bloquea el audio, se lo traga', () => {
+  const Explota = function () { throw new Error('no se puede'); };
+  const s = crearSonidos({ Ctx: Explota, activo: () => true });
+
+  esperarQue(!s.sonar('objetivo'), 'devuelve false, no explota');
+  esperarQue(!s.disponible, 'y se marca como no disponible');
+});
+
+test('sin AudioContext en el navegador tampoco rompe', () => {
+  const s = crearSonidos({ Ctx: null, activo: () => true });
+  // en el navegador de los tests SI existe, asi que solo se prueba que no tire
+  esperarQue(typeof s.sonar('objetivo') === 'boolean');
+});
+
+test('un contexto suspendido se reanuda antes de sonar', () => {
+  const reg = registroNuevo();
+  const Ctx = ctxFalso(reg);
+  const Suspendido = function () { Ctx.call(this); this.state = 'suspended'; };
+  const s = crearSonidos({ Ctx: Suspendido, activo: () => true });
+
+  s.sonar('racha');
+  esperarQue(reg.resumido, 'sin resume no suena en un navegador de verdad');
+});
+
+/* ---- la voz ---- */
+
+test('cada situacion tiene varias frases', () => {
+  for (const [k, lista] of Object.entries(VOZ)) {
+    esperarQue(Array.isArray(lista) && lista.length >= 3, k + ' tiene pocas frases');
+    esperar(new Set(lista).size, lista.length, k + ' tiene frases repetidas');
+  }
+});
+
+test('no repite la frase anterior', () => {
+  const mem = {};
+  let previa = null;
+  for (let i = 0; i < 30; i++) {
+    const f = decir('vacio', {}, mem);
+    esperarQue(f !== previa, 'repitio dos veces seguidas');
+    previa = f;
+  }
+});
+
+test('los marcadores se reemplazan con los datos', () => {
+  const f = decir('racha', { n: 12, que: 'agua' }, {});
+  esperarQue(!/\{\w+\}/.test(f), 'quedo un marcador sin reemplazar: ' + f);
+});
+
+test('un marcador sin dato queda en blanco, no en llaves', () => {
+  const f = decir('racha', {}, {});
+  esperarQue(!/\{/.test(f), f);
+});
+
+test('una situacion que no existe devuelve vacio', () => {
+  esperar(decir('no-existe', {}, {}), '');
+});
+
+test('con el dia completo festeja en vez de reclamar', () => {
+  const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 200, sueno: { horas: 8 } };
+  const r = reclamoDelDia(d, { vasos: 8, hora: 20, memoria: {} });
+  esperar(r.situacion, 'completo');
+  esperarQue(!!r.texto);
+});
+
+test('a la manana temprano no reclama nada', () => {
+  const vacio = { comidas: [], agua: 0, ejercicio: 0, sueno: null };
+  esperar(reclamoDelDia(vacio, { hora: 8, memoria: {} }).texto, '', 'reprochar a las 8 es molestar mal');
+});
+
+test('con el dia en blanco al mediodia si reclama', () => {
+  const vacio = { comidas: [], agua: 0, ejercicio: 0, sueno: null };
+  const r = reclamoDelDia(vacio, { hora: 13, memoria: {} });
+  esperar(r.situacion, 'vacio');
+});
+
+test('reclama primero lo mas facil de resolver', () => {
+  const d = { comidas: [], agua: 0, ejercicio: 0, sueno: { horas: 8 } };
+  esperar(reclamoDelDia(d, { vasos: 8, hora: 15, memoria: {} }).falta, 'agua');
+});
+
+test('cuando falta una sola cosa insiste con esa', () => {
+  const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 0, sueno: { horas: 8 } };
+  const r = reclamoDelDia(d, { vasos: 8, hora: 19, memoria: {} });
+  esperar(r.situacion, 'casi');
+  esperar(r.falta, 'entrenamiento');
+});
+
+test('celebrar un logro lo nombra', () => {
+  const t = celebrarLogro('perfecto', {});
+  esperarQue(t.includes('Día perfecto'), t);
+});
+
+test('un logro que no existe no celebra nada', () => {
+  esperar(celebrarLogro('no-existe', {}), '');
+});
+
+test('subir de nivel dice el numero y el nombre', () => {
+  const t = celebrarNivel(nivelDe(250), {});
+  esperarQue(/2/.test(t) && /Constante/.test(t), t);
+});
+
+test('el escudo se cuenta con la actividad que salvo', () => {
+  const t = contarEscudo({ id: 'agua', nombre: 'Agua', racha: 9 }, {});
+  esperarQue(/agua/.test(t), t);
+});
+
+test('ninguna frase del repertorio humilla por el cuerpo', () => {
+  /* La linea que separa que de gracia volver de que de bronca abrir. */
+  const prohibidas = /gord|obes|panz|asquer|verguenza|vergüenza|fracas|inutil|inútil/i;
+  for (const [k, lista] of Object.entries(VOZ)) {
+    for (const f of lista) esperarQue(!prohibidas.test(f), k + ': ' + f);
+  }
+});
+
+
+/* ---- el juego entre dispositivos ----
+
+   No se sincroniza como tabla propia, y es a proposito: XP, nivel, rachas y
+   logros se DERIVAN de los dias, que ya se sincronizan. Un celular que baja los
+   dias del otro reconstruye todo solo, sin migracion de base ni tabla nueva.
+
+   Lo unico que no se deriva son los escudos gastados y que logros ya se
+   festejaron. Eso queda por dispositivo, y el precio es chico: en el peor caso
+   un escudo se gasta dos veces o un logro se festeja de nuevo. */
+
+test('el juego se reconstruye entero desde los dias sincronizados', () => {
+  const dias = diasJ({ 0: 'todo', 1: 'todo', 2: 'todo', 3: 'comida', 4: 'comida' });
+
+  const original = recalcularJuego(dias, null, OPTS_J);
+  // otro dispositivo: los mismos dias, sin nada de juego guardado
+  const otro = recalcularJuego(clonar(dias), null, OPTS_J);
+
+  esperar(otro.juego.xp, original.juego.xp, 'el XP tiene que dar igual');
+  esperar(otro.juego.logros.join(), original.juego.logros.join());
+  esperar(nivelDe(otro.juego.xp).nivel, nivelDe(original.juego.xp).nivel);
+});
+
+test('las rachas tambien salen solas de los dias', () => {
+  const dias = diasJ({ 0: 'agua', 1: 'agua', 2: 'agua' });
+  esperar(rachaDe(clonar(dias), 'agua', OPTS_J).actual, 3);
+});
+
+test('un dia que llega de otro dispositivo suma su XP', () => {
+  const dias = diasJ({ 0: 'comida' });
+  const antes = recalcularJuego(dias, null, OPTS_J).juego.xp;
+
+  dias[sumarDias(HOY_JUEGO, -1)] = diaJ('todo');
+  const despues = recalcularJuego(dias, null, OPTS_J).juego.xp;
+
+  esperarQue(despues > antes, 'bajar un dia del otro celular tiene que sumar');
+});

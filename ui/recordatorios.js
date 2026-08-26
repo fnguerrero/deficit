@@ -39,8 +39,11 @@ function programarRecordatorios() {
     if (faltan > 0) {
       timersRecordatorios.push(setTimeout(() => {
         if (dia(hoyISO()).sueno?.horas) return;   // ya lo cargó: no molesta
+        /* El aviso habla con la voz de Fito y no con un texto fijo: si el
+           personaje reclama adentro de la app y afuera manda un comunicado,
+           son dos cosas distintas y ninguna de las dos convence. */
         new Notification('Déficit', {
-          body: 'Hora de ir cerrando el día. Dormir poco te sube el hambre de mañana.',
+          body: decir('sueno') || 'Hora de ir cerrando el día.',
           icon: 'icons/icon-192.png',
           tag: 'deficit-dormir'
         });
@@ -56,7 +59,7 @@ function programarRecordatorios() {
 
       const margen = margenDelDia();
       new Notification('Déficit', {
-        body: textoRecordatorio(r.momento, margen ? margen.kcal : null),
+        body: decir('comida') || textoRecordatorio(r.momento, margen ? margen.kcal : null),
         icon: 'icons/icon-192.png',
         tag: 'deficit-' + r.momento
       });

@@ -19,10 +19,16 @@ LIMITES = [
     ('analisis.js', 900),
     ('modos.js', 800),
     ('mascota.js', 400),
+    ('cuerpo.js', 250),
+    ('personaje.js', 500),
+    ('juego.js', 500),
+    ('sonidos.js', 250),
+    ('voz.js', 350),
     ('graficos.js', 400),
     ('sync.js', 600),
     ('auth.js', 300),
-    ('tests.js', 6000),   # la suite crece con cada feature; partirla no aporta
+    ('tests.js', 6000),   # la suite crece con cada feature
+    ('tests2.js', 6000),  # se partio en el ciclo 6, al pasarse la primera
     ('sw.js', 150),
     ('ui/*.js', 700),
     ('tools/*.py', 250),

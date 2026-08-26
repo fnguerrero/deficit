@@ -4925,8 +4925,11 @@ function diaMascota(x = {}) {
 
 const OBJ_MASC = { kcal: 2000 };
 
+/* La hora se fija en todos estos tests: a las 10 no se reprocha nada, a las 18
+   el dia vacio ya es un problema. Sin fijarla, el resultado dependia de a que
+   hora se corriera la suite. */
 test('con el dia en blanco no opina', () => {
-  const e = estadoMascota(diaMascota(), { objetivo: OBJ_MASC });
+  const e = estadoMascota(diaMascota(), { objetivo: OBJ_MASC, hora: 10 });
   esperar(e.animo, 'neutral');
   esperarQue(/esperando/.test(e.titulo), e.titulo);
 });
@@ -4972,26 +4975,35 @@ test('sin dato de sueno no se lo inventa', () => {
   esperarQue(e.animo !== 'cansado', 'no puede decir que esta cansado sin saberlo');
 });
 
-/* ---- niveles ---- */
+/* ---- niveles ----
+   El nivel paso de contarse por dias registrados a contarse por XP en el ciclo
+   6. El principio no cambio: se sube por volver, no por ser perfecto. Lo que
+   cambio es que ahora cumplir tambien paga. */
 
-test('el nivel arranca en cero y sube por dias registrados', () => {
+test('el nivel arranca en cero y sube con el XP', () => {
   esperar(nivelDe(0).nivel, 0);
-  esperar(nivelDe(3).nivel, 1);
-  esperar(nivelDe(7).nivel, 2);
-  esperarQue(nivelDe(250).nivel >= 10);
+  esperar(nivelDe(100).nivel, 1);
+  esperar(nivelDe(250).nivel, 2);
+  esperarQue(nivelDe(9000).nivel >= 10);
 });
 
 test('cada nivel tiene nombre y cuanto falta para el proximo', () => {
-  const n = nivelDe(5);
+  const n = nivelDe(60);
   esperarQue(!!n.nombre, 'sin nombre no motiva');
-  esperar(n.faltan, 2, 'de 5 a 7 faltan 2');
+  esperar(n.faltan, 40, 'de 60 a 100 faltan 40');
   esperarQue(n.pct > 0 && n.pct < 1);
 });
 
 test('en el ultimo nivel no falta nada', () => {
-  const n = nivelDe(9999);
+  const n = nivelDe(99999);
   esperar(n.faltan, 0);
   esperar(n.pct, 1);
+});
+
+test('un XP negativo o basura no rompe el nivel', () => {
+  esperar(nivelDe(-50).nivel, 0);
+  esperar(nivelDe(null).nivel, 0);
+  esperar(nivelDe('hola').nivel, 0);
 });
 
 /* ---- racha ---- */
