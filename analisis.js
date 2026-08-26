@@ -654,3 +654,93 @@ if (typeof window !== 'undefined') {
     kcalDeMacros, revisarDatos, arreglarDatos
   };
 }
+
+/* ---------------- ¿el sueño te cambia el día? ---------------- */
+
+/* Menos que esto de cada lado y no hay con qué comparar: dos días buenos
+   contra uno malo no dicen nada de nadie. */
+const MINIMO_POR_GRUPO = 4;
+
+/** Un día se considera de sueño corto por debajo de esto. */
+const SUENO_CORTO = 6.5;
+
+/**
+ * Compara los días que dormiste poco contra los que dormiste bien.
+ *
+ * Es la pregunta que más se hace la gente que registra: "¿cuando duermo mal
+ * como peor?". Los datos de cada uno pueden responderla, pero solo si hay
+ * suficientes de los dos lados — y la mayor parte de esta función es
+ * justamente negarse a responder cuando no los hay.
+ *
+ * Ojo con lo que NO dice: esto es una correlación sobre pocos días, no una
+ * relación causal. El texto lo refleja.
+ */
+function efectoDelSueno(dias, objetivo, hoy = hoyISO(), diasAtras = 60) {
+  const cortos = [];
+  const largos = [];
+
+  for (let i = 0; i < diasAtras; i++) {
+    const f = sumarDias(hoy, -i);
+    const d = dias?.[f];
+    if (!d?.sueno?.horas) continue;
+
+    const comidas = d.comidas || [];
+    if (!comidas.length) continue;
+
+    const kcal = comidas.reduce((a, c) => a + (Number(c.kcal) || 0), 0);
+    (Number(d.sueno.horas) < SUENO_CORTO ? cortos : largos).push(kcal);
+  }
+
+  if (cortos.length < MINIMO_POR_GRUPO || largos.length < MINIMO_POR_GRUPO) {
+    const faltan = Math.max(MINIMO_POR_GRUPO - cortos.length, MINIMO_POR_GRUPO - largos.length);
+    return {
+      hayDatos: false,
+      titulo: 'Todavía no se puede saber',
+      texto: `Hacen falta al menos ${MINIMO_POR_GRUPO} días de cada tipo —dormido poco y dormido bien— con la comida registrada. ` +
+        `Te faltan unos ${faltan}.`,
+      cortos: cortos.length,
+      largos: largos.length
+    };
+  }
+
+  const prom = (a) => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
+  const kcalCortos = prom(cortos);
+  const kcalLargos = prom(largos);
+  const dif = kcalCortos - kcalLargos;
+  const pct = Math.round((dif / kcalLargos) * 100);
+
+  const datos = { kcalCortos, kcalLargos, dif, pct, cortos: cortos.length, largos: largos.length };
+
+  // menos de un 8% de diferencia es ruido con estos tamaños de muestra
+  if (Math.abs(pct) < 8) {
+    return {
+      hayDatos: true,
+      estado: 'sin-efecto',
+      titulo: 'El sueño no te está cambiando lo que comés',
+      texto: `Los días que dormiste menos de ${fmtNum(SUENO_CORTO, 1)} h comiste ${fmtNum(kcalCortos)} kcal en promedio, ` +
+        `contra ${fmtNum(kcalLargos)} los otros. La diferencia es demasiado chica para significar algo.`,
+      datos
+    };
+  }
+
+  if (dif > 0) {
+    return {
+      hayDatos: true,
+      estado: 'come-mas',
+      titulo: `Dormir poco te suma ${fmtNum(dif)} kcal`,
+      texto: `Los días de menos de ${fmtNum(SUENO_CORTO, 1)} h comés ${pct}% más: ${fmtNum(kcalCortos)} contra ${fmtNum(kcalLargos)} kcal. ` +
+        'Es lo habitual —el sueño corto sube el hambre— pero acá está pasando con tus propios días. ' +
+        'Son ' + (cortos.length + largos.length) + ' días: tomalo como una pista, no como una ley.',
+      datos
+    };
+  }
+
+  return {
+    hayDatos: true,
+    estado: 'come-menos',
+    titulo: 'Los días de poco sueño comés menos',
+    texto: `${fmtNum(kcalCortos)} kcal contra ${fmtNum(kcalLargos)}. Va al revés de lo esperable, ` +
+      'así que puede ser casualidad de estos días o que durmiendo poco te saltees comidas.',
+    datos
+  };
+}

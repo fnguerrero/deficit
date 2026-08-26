@@ -980,3 +980,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .act-fila.fav .act-nombre { color: var(--acc); font-weight: 600; }
 .act-nombre small { display: block; font-size: 10.5px; color: var(--dim); font-weight: 400; }
 .act-min { width: 62px; text-align: center; }
+
+.fila-dormir { display: flex; align-items: center; gap: 9px; margin-top: 10px; font-size: 13px; }
+.fila-dormir span { flex: 1; }
+.fila-dormir input[type="time"] { width: auto; }

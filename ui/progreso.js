@@ -28,6 +28,24 @@ function renderProgreso() {
   pintarKcal(s, objetivo);
   pintarAdherencia(s);
   pintarDelModo(s);
+  pintarSueno(objetivo);
+}
+
+/**
+ * La pregunta que más se hace quien registra: "¿cuando duermo mal como peor?".
+ * Los datos de cada uno pueden contestarla, pero solo con suficientes días de
+ * los dos tipos — y decir que no alcanza es parte de contestarla bien.
+ */
+function pintarSueno(objetivo) {
+  const card = $('cardSueno');
+  if (!card) return;
+
+  const r = efectoDelSueno(state.dias, objetivo);
+
+  $('suenoTitulo').textContent = r.titulo;
+  $('suenoTexto').textContent = r.texto;
+  $('suenoPill').textContent = r.hayDatos ? `${r.datos.cortos} vs ${r.datos.largos} días` : 'sin datos';
+  card.className = 'card' + (r.estado === 'come-mas' ? ' lento' : '');
 }
 
 function pintarPeso(s, periodo) {

@@ -22,7 +22,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
       definición, calorías sueltas) · verif: tests con comidas límite en cada modo
 - [x] 7. Marca visible en la comida, con el motivo en una línea
       · verif: por DOM, una comida con 40 g de carbos en keto sale marcada y dice por qué
-- [ ] 8. Aviso antes de guardar si la comida rompe el modo, sin bloquear
+- [x] 8. Aviso antes de guardar si la comida rompe el modo, sin bloquear
       · verif: por DOM, aparece el aviso y se puede guardar igual
 
 ## Pantalla Hoy como tablero
@@ -44,9 +44,9 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
       · verif: test de que cada modo de análisis pide el modelo que corresponde
 - [x] 15. Escalar a Opus (la decision; falta ofrecerlo en pantalla) solo si la confianza vuelve baja, ofreciéndolo, no automático
       · verif: test con respuesta de confianza baja y con confianza alta
-- [ ] 16. Optimizaciones sin tocar el modelo: imagen más chica, prompt más corto, cache más
+- [x] 16. Optimizaciones sin tocar el modelo: imagen más chica, prompt más corto, cache más
       largo · verif: medir el tamaño del request antes y después
-- [ ] 17. Mostrar el ahorro real en Ajustes: gasto por análisis y del mes
+- [x] 17. Mostrar el ahorro real en Ajustes: gasto por análisis y del mes
       · verif: por DOM con historial simulado
 
 ## Ejercicio por actividad
@@ -103,7 +103,7 @@ Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` 
       curso se ve en el tablero y al cortarlo queda registrado
 - [x] 34. Sueño auto-reportado: al abrir la app a la mañana, horas y calidad en caritas
       · verif: por DOM, cargar el sueño marca el objetivo
-- [ ] 35. Recordatorio de hora de dormir, con los recordatorios que ya existen
+- [x] 35. Recordatorio de hora de dormir, con los recordatorios que ya existen
       · verif: se programa y aparece en la lista de recordatorios
-- [ ] 36. Cruzar sueño con adherencia: si dormís poco, ¿comés peor? · verif: test con
+- [x] 36. Cruzar sueño con adherencia: si dormís poco, ¿comés peor? · verif: test con
       series donde la relación existe y donde no existe, sin afirmar de más

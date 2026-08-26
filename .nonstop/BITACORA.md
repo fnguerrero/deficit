@@ -140,3 +140,15 @@ Nico sumo despues el veredicto honesto de si va bien.
 #20 — Editar actividades desde Ajustes: cambiar duracion, elegir cuales van en Hoy (tope de 3, que es lo que entra) y agregar propias con nombre e intensidad. El id sale del nombre sin acentos y sin pisar uno existente — verificado por DOM: cambiar running a 45' recalcula a 625 kcal, intercambiar favoritas anda, la cuarta se rechaza y "Escalada" queda con su id sin romper el catalogo
 
 #20b — ui/ajustes.js se paso del limite de 700 lineas al agregar esto. Salio ui/actividades.js. El control de tamanos existe justamente para que el corte se decida cuando corresponde y no cuando el archivo ya es inmanejable
+
+#36 — efectoDelSueno(): compara los dias que dormiste poco contra los que dormiste bien. La mayor parte de la funcion es negarse a responder: con menos de 4 dias de cada tipo dice cuantos faltan. Y cuando responde, aclara que son pocos dias y que es una pista, no una ley — verificado: 9 tests y por DOM los tres casos (come mas, sin efecto, sin datos)
+
+#35 — Aviso de hora de dormir, con su propia regla de "ya esta hecho": no mira si cargaste una comida sino si ya registraste el sueno — verificado: 5 tests de la ventana horaria y por DOM el guardado de la preferencia
+
+#8 — Al guardar a mano algo que rompe el modo, se avisa ANTES de cerrar. No bloquea: el segundo toque guarda igual. La app registra, no vigila — verificado por DOM con una pizza en keto
+
+#16-17 — Menos gasto sin tocar el modelo: la imagen baja de 1024 a 768 px (casi la mitad de tokens de entrada; un plato se estima por tamano relativo a los cubiertos, no por detalle fino) y el cache pasa de 30 a 90 dias y de 24 a 60 entradas, porque cada entrada es un analisis ya pagado
+
+#16b — Un test se puso en rojo con el cambio de cache: esperaba que expirara a los 31 dias. El cambio era deliberado, asi que se corrigio el test —ahora prueba 90 dias y que el plazo siga siendo configurable—, no el codigo
+
+#35b — ui/ajustes.js se volvio a pasar de tamano. Salio ui/recordatorios.js con los avisos, que son un tema propio y autocontenido
