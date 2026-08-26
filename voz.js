@@ -1,99 +1,101 @@
 /* ============================================================
-   voz.js — lo que dice Fito.
+   voz.js — lo que te dice la app.
 
-   Un personaje que dice siempre lo mismo deja de ser un personaje a los tres
-   días. Acá vive su repertorio, y la regla que lo ordena:
+   Ya no hay un personaje con nombre propio: el muñeco sos vos, y la app te
+   habla a vos. Cambió la persona gramatical, no el tono.
 
-   **Reclama, insiste y hace chistes; nunca humilla.** Puede ser dramático,
-   puede hacerse el ofendido, puede exagerar. Lo que no hace nunca es tratar
-   mal a Nico por su cuerpo ni por haber comido de más — esa es exactamente la
-   línea entre que dé gracia volver y que dé bronca abrir la app.
+   La regla que ordena todo el archivo:
+
+   **Reclama, insiste y hace chistes; nunca humilla.** Puede ser dramática,
+   puede hacerse la ofendida, puede exagerar. Lo que no hace nunca es tratarte
+   mal por tu cuerpo ni por haber comido de más — esa es exactamente la línea
+   entre que dé gracia volver y que dé bronca abrir la app.
 
    Ninguna frase se repite dos veces seguidas: eso solo requiere acordarse de
-   la anterior, y es la diferencia entre un personaje y un cartel.
+   la anterior, y es la diferencia entre una voz y un cartel.
    ============================================================ */
 
 const VOZ = {
   /* Al abrir, con el día en blanco. */
   vacio: [
-    'Ah, apareciste. Yo acá, esperando, como siempre.',
-    'Día en blanco. Impecable. Un lienzo. Una hoja. Una nada.',
-    'No tengo un solo dato tuyo hoy. Estoy trabajando a ciegas acá.',
-    'Empezamos de cero. Otra vez. Pero bueno, es lo que hay.',
-    'Cero comidas, cero agua, cero todo. Al menos sos consistente.'
+    'Día en blanco. Un lienzo. Una hoja. Una nada.',
+    'Cero comidas, cero agua, cero todo. Al menos sos consistente.',
+    'No hay un solo dato de hoy. Así no se puede trabajar.',
+    'Empezamos de cero otra vez. Bueno, es lo que hay.',
+    'Hoy todavía no pasó nada. Literalmente nada.'
   ],
 
   agua: [
-    'Tomá agua. Te lo pido por favor. Me estoy secando yo también.',
-    'El agua está ahí. Es gratis. Sale de la canilla. No entiendo el problema.',
-    '{n} de {meta} vasos. Ese número me duele físicamente.',
+    'Tomá agua. Es gratis, sale de la canilla, no se entiende el problema.',
+    'Vas {n} de {meta} vasos. Ese número duele.',
     'Un vaso de agua. Uno. Tardás menos que en leer esto.',
-    'Che, el agua. No me hagas insistir que sabés que insisto.'
+    'Falta el agua. Y sí, va a seguir apareciendo hasta que la tomes.',
+    'El agua sigue en {n} de {meta}. Sin comentarios.'
   ],
 
   comida: [
-    'No registraste nada todavía. ¿Comiste? ¿Estás bien? ¿Necesitás ayuda?',
-    'Una foto. Un plato. Algo. Dame algo con qué trabajar.',
-    'Sé que comiste. Siempre comés. Lo que no sé es qué.',
-    'Si no me contás lo que comés, esto es un diario vacío con dibujitos.',
-    'Registrá algo, dale. Después no me vengas con que los gráficos están vacíos.'
+    'No registraste nada todavía. ¿Comiste? ¿Estás bien?',
+    'Una foto. Un plato. Algo. Dale algo con qué trabajar.',
+    'Comiste, seguro. Lo que falta es que se sepa qué.',
+    'Sin comidas cargadas esto es un diario vacío con dibujitos.',
+    'Registrá algo. Después no te quejes de que los gráficos están vacíos.'
   ],
 
   entrenamiento: [
-    'Hoy no te moviste. Lo digo sin juzgar. Pero lo digo.',
-    'Veinte minutos de caminata también cuentan, por si estabas buscando excusa.',
-    'Tu racha de entrenamiento me está mirando con cara de "y?".',
-    'Movete un poco. Yo tampoco puedo, estoy hecho de SVG.',
-    'El ejercicio de hoy sigue en cero. Solo lo menciono. Al pasar.'
+    'Hoy no te moviste. Sin juzgar. Pero se dice.',
+    'Veinte minutos de caminata también cuentan, por si buscabas excusa.',
+    'Tu racha de entrenamiento te está mirando con cara de "y?".',
+    'El ejercicio de hoy sigue en cero. Solo se menciona. Al pasar.',
+    'Movete un poco. Que después se hace tarde y ahí sí no hay tiempo.'
   ],
 
   sueno: [
-    'Contame cuánto dormiste. Es el dato que más explica todo lo demás.',
-    'Falta el sueño de anoche. Sin eso no puedo explicarte por qué tenés hambre.',
-    'Dormiste algo, supongo. Anotalo y seguimos.',
-    'El sueño de anoche está sin cargar. Y sí, importa más de lo que parece.'
+    'Cargá cuánto dormiste. Es el dato que más explica todo lo demás.',
+    'Falta el sueño de anoche. Sin eso no se puede explicar el hambre de hoy.',
+    'Dormiste algo, se supone. Anotalo y seguimos.',
+    'El sueño de anoche está sin cargar. Y pesa más de lo que parece.'
   ],
 
   /* Todo cumplido. Poder festejar de verdad es lo que hace que reclamar sirva. */
   completo: [
-    'Día completo. Las cuatro. No tengo NADA para reprocharte y me incomoda.',
-    'Cumpliste todo. Estoy orgulloso y un poco sorprendido.',
-    'Las cuatro actividades. Sos otra persona hoy.',
+    'Día completo. Las cuatro. No queda nada para reprocharte.',
+    'Cumpliste todo. Es raro y está buenísimo.',
+    'Las cuatro actividades. Hoy fuiste otra persona.',
     'Impecable. Guardá este día que lo vamos a extrañar.',
-    'Todo hecho. Andá tranquilo, hoy no te jodo más.'
+    'Todo hecho. Andá tranquilo, hoy no se te jode más.'
   ],
 
   /* Falta poco: es el momento en que insistir sirve de verdad. */
   casi: [
     'Te falta una sola cosa para el día completo. UNA.',
-    'Estás a un paso. Un paso. No me hagas esto.',
-    'Falta una y cerramos el día perfecto. Dale que llegamos.',
-    'Una sola pendiente. Después me callo, prometido.'
+    'Estás a un paso. Un paso.',
+    'Falta una y cerrás el día perfecto. Dale que llegás.',
+    'Una sola pendiente y después silencio, prometido.'
   ],
 
   racha: [
     '{n} días seguidos. No te vas a cortar hoy, ¿no?',
     'Llevás {n} días de {que}. Eso ya es una costumbre.',
-    '{n} días. Empiezo a creer en vos.',
+    '{n} días. Empieza a dar para creerte.',
     'Racha de {n} en {que}. Cuidala.'
   ],
 
   rachaEnPeligro: [
-    'Tu racha de {que} muere hoy si no hacés algo. Sin drama, pero muere.',
+    'Tu racha de {que} muere hoy si no hacés algo.',
     '{n} días de {que} colgando de un hilo. El hilo sos vos.',
-    'Un día más y perdés {n} días de {que}. Vos verás.'
+    'Un día más así y perdés {n} días de {que}. Vos verás.'
   ],
 
   escudo: [
-    'Ayer no cumpliste {que}, pero te tapé el día con un escudo. De nada.',
-    'Gasté un escudo para salvarte la racha de {que}. Me debés una.',
-    'Se te iban {n} días de {que}. Usé un escudo. No lo hagas costumbre.'
+    'Ayer no cumpliste {que}, pero un escudo te tapó el día. De nada.',
+    'Se gastó un escudo para salvarte la racha de {que}.',
+    'Se te iban {n} días de {que}. Fue un escudo. No lo hagas costumbre.'
   ],
 
   logro: [
     '¡{logro}! Eso se gana una sola vez.',
-    'Desbloqueaste "{logro}". Ahora es tuyo para siempre.',
-    '{logro}. Guardado. Anotado. Celebrado.'
+    'Desbloqueaste "{logro}". Ya es tuyo para siempre.',
+    '{logro}. Guardado, anotado y celebrado.'
   ],
 
   nivel: [
@@ -102,12 +104,25 @@ const VOZ = {
     'Nivel {n} alcanzado. {nombre}, nada menos.'
   ],
 
+  /* Las fases: la escalera de días perfectos seguidos. */
+  fase: [
+    '¡{fase}! {n} días perfectos seguidos.',
+    'Pasaste a {fase}. Se te nota de lejos.',
+    '{n} días perfectos. Estás en {fase} y subiendo.'
+  ],
+
+  faseCaida: [
+    'Se cortó la racha perfecta y con ella la fase. Se recupera.',
+    'Adiós fase. Un día completo y volvés a arrancar la escalera.',
+    'La fase se apagó. La buena noticia es que se prende igual de rápido.'
+  ],
+
   /* Cuando algo sigue pendiente después de un rato con la app abierta. */
   insiste: [
-    'Sigo acá. Sigue pendiente. Sigo mirándote.',
-    'Ya pasó un rato y {que} sigue igual. Solo digo.',
-    'No me olvidé de {que}. Nunca me olvido.',
-    'Te dije lo de {que} hace un rato. Lo repito por las dudas.'
+    'Sigue pendiente. Solo se avisa.',
+    'Ya pasó un rato y {que} sigue igual.',
+    'Lo de {que} no se olvidó. Nunca se olvida.',
+    'Se dijo lo de {que} hace un rato. Se repite por las dudas.'
   ]
 };
 
@@ -144,7 +159,7 @@ const NOMBRE_ACTIVIDAD = {
 };
 
 /**
- * Qué tiene Fito para decir sobre el día.
+ * Qué hay para decir sobre el día.
  *
  * Antes del mediodía casi no reclama: reprochar a las 9 de la mañana un día que
  * no empezó es la forma más rápida de que la app se vuelva molesta de la manera

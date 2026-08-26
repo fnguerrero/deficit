@@ -12,7 +12,14 @@
    empuja a una relación peor con la comida, no mejor.
    ============================================================ */
 
-const MASCOTA_NOMBRE = 'Fito';
+/*
+ * El personaje no tiene nombre: es Nico.
+ *
+ * Con un nombre propio el muñeco era otro —alguien a quien le pasaban cosas— y
+ * los títulos quedaban en tercera persona sobre un cuerpo que igual era el de
+ * Nico. Sin nombre, la app le habla directamente a él y el dibujo es su avatar,
+ * que es lo que siempre fue.
+ */
 
 /* Cada dimensión del día se resuelve por separado y después se elige la que
    más pesa. Así el personaje siempre puede decir POR QUÉ está como está. */
@@ -99,7 +106,7 @@ function estadoMascota(d, { objetivo = null, objetivoVasos = 8, racha = 0, hora 
   if (!dims.length) {
     return {
       animo: 'neutral', dim: null, racha,
-      titulo: `${MASCOTA_NOMBRE} está esperando`,
+      titulo: 'El día está en blanco',
       texto: 'Cargá algo del día y te digo cómo venís.'
     };
   }
@@ -109,14 +116,14 @@ function estadoMascota(d, { objetivo = null, objetivoVasos = 8, racha = 0, hora 
     return {
       animo: ANIMO_POR_DIM[p.dim] || 'triste',
       dim: p.dim, racha,
-      titulo: TITULO_POR_DIM[p.dim] || `${MASCOTA_NOMBRE} no la está pasando bien`,
+      titulo: TITULO_POR_DIM[p.dim] || 'El día viene torcido',
       texto: p.texto
     };
   }
 
   if (flojas.length) {
     const p = flojas[0];
-    return { animo: 'flojo', dim: p.dim, racha, titulo: `${MASCOTA_NOMBRE} va tirando`, texto: p.texto };
+    return { animo: 'flojo', dim: p.dim, racha, titulo: 'Vas tirando', texto: p.texto };
   }
 
   // todo lo que se midió está bien: cuánto se completó define el brillo
@@ -124,7 +131,7 @@ function estadoMascota(d, { objetivo = null, objetivoVasos = 8, racha = 0, hora 
   return {
     animo: completo ? 'genial' : 'bien',
     dim: null, racha,
-    titulo: completo ? `${MASCOTA_NOMBRE} está a pleno` : `${MASCOTA_NOMBRE} está bien`,
+    titulo: completo ? 'Vas a pleno' : 'Vas bien',
     texto: bien.map(b => b.texto).join(' ')
   };
 }
@@ -137,10 +144,10 @@ const ANIMO_POR_DIM = {
 };
 
 const TITULO_POR_DIM = {
-  sueno: `${MASCOTA_NOMBRE} está cansado`,
-  agua: `${MASCOTA_NOMBRE} tiene sed`,
-  comida: `${MASCOTA_NOMBRE} está pesado`,
-  movimiento: `${MASCOTA_NOMBRE} está quieto`
+  sueno: 'Dormiste poco',
+  agua: 'Te falta agua',
+  comida: 'Te pasaste de comida',
+  movimiento: 'No te moviste'
 };
 
 /* ---------------- la racha de registro ---------------- */

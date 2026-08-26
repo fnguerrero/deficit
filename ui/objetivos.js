@@ -14,6 +14,15 @@ const CARITAS = [
   { id: 'genial', emoji: '💪', texto: 'Genial' }
 ];
 
+/*
+ * El ayuno NO está acá a propósito.
+ *
+ * Un objetivo es algo que la app te pide todos los días; el ayuno es algo que
+ * hacés cuando querés. Mientras estuvo en la grilla, cada día que no ayunabas
+ * te marcaba un casillero sin cumplir, que es reprocharte no hacer algo que
+ * nunca prometiste. Ahora vive en un chip arriba, al lado del modo.
+ */
+
 /** Qué objetivos del día hay y cuáles están cumplidos. */
 function objetivosDelDia() {
   const d = dia();
@@ -42,14 +51,6 @@ function objetivosDelDia() {
       valor: d.ejercicio ? fmtNum(d.ejercicio) + ' kcal' : ''
     },
     {
-      id: 'ayuno',
-      emoji: '⏱️',
-      nombre: 'Ayuno',
-      listo: !!(d.ayuno && d.ayuno.cumplido),
-      valor: enCursoAyuno() ? estadoAyuno(state.cfg.ayunoInicio, Date.now(), horasAyuno()).texto
-        : (d.ayuno ? d.ayuno.horas.toFixed(1) + ' h' : '')
-    },
-    {
       id: 'sueno',
       emoji: '😴',
       nombre: 'Sueño',
@@ -66,9 +67,63 @@ function objetivosDelDia() {
   ];
 }
 
+/*
+ * La fase, que sube con los días perfectos seguidos.
+ *
+ * Se muestra al lado del título porque es lo que más rápido cambia y lo que más
+ * ganas dan de mirar: el nivel sube en semanas, la fase en días.
+ */
+function pintarFase(fase, perfectos) {
+  const chip = $('mascotaFase');
+  if (!chip) return;
+
+  chip.hidden = !fase.n;
+  if (!fase.n) return;
+
+  chip.textContent = `${fase.nombre} · ${perfectos}`;
+  chip.style.color = fase.color;
+  chip.style.borderColor = fase.color;
+}
+
+/**
+ * Los chips de arriba: en qué modo estás y si hay un ayuno corriendo.
+ *
+ * El modo decidía el objetivo del día y las comidas aptas sin aparecer en
+ * ningún lado de Hoy: había que entrar a Perfil para saber en cuál estabas.
+ */
+function renderTiras() {
+  const cont = $('tirasHoy');
+  if (!cont) return;
+
+  const m = modoDe(state.perfil.modo);
+  const enCurso = enCursoAyuno();
+  const d = dia();
+
+  const ayunoTexto = enCurso
+    ? estadoAyuno(state.cfg.ayunoInicio, Date.now(), horasAyuno()).texto
+    : (d.ayuno ? d.ayuno.horas.toFixed(1) + ' h' : 'Ayuno');
+
+  cont.innerHTML = '';
+
+  const chipModo = document.createElement('button');
+  chipModo.className = 'tira activa';
+  chipModo.innerHTML = `<i>${m?.emoji || '🎯'}</i>${m?.nombre || 'Sin modo'}`;
+  chipModo.onclick = () => irTab('perfil');
+  cont.appendChild(chipModo);
+
+  const chipAyuno = document.createElement('button');
+  chipAyuno.className = 'tira' + (enCurso ? ' corriendo' : '');
+  chipAyuno.innerHTML = `<i>⏱️</i>${ayunoTexto}` +
+    (enCurso ? '' : '<small>' + (d.ayuno ? 'hecho' : 'tocá para arrancar') + '</small>');
+  chipAyuno.onclick = () => abrirObjetivo('ayuno');
+  cont.appendChild(chipAyuno);
+}
+
 function renderObjetivos() {
   const cont = $('objetivosDia');
   if (!cont) return;
+
+  renderTiras();
 
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {
@@ -272,16 +327,19 @@ function renderMascota() {
 
   /* El cuerpo sale de la balanza y de los entrenamientos; la cara, del dia de
      hoy. Son dos fuentes distintas a proposito: ver arriba de personaje.js. */
-  const cuerpo = cuerpoDe(state.perfil, state.dias);
+  const perfectos = diasPerfectos(state.dias, { vasos: vasosObjetivo(state.perfil.peso) });
+  const fase = faseDe(perfectos);
+  const cuerpo = cuerpoDe(state.perfil, state.dias, hoyISO(), { bonus: bonusDePerfectos(perfectos) });
 
-  cont.innerHTML = svgPersonaje(est.animo, 70, cuerpo);
+  cont.innerHTML = svgPersonaje(est.animo, 70, cuerpo, fase);
+  pintarFase(fase, perfectos);
   $('mascotaTitulo').textContent = est.titulo;
 
   /* Sin peso no se puede dibujar SU cuerpo: se dibuja uno medio y se pide el
      dato, en vez de disimular que el muneco es cualquiera. */
   $('mascotaDetalle').textContent = !cuerpo.hayDatos
-    ? 'Cargá tu peso y Fito va a tener tu cuerpo, no uno cualquiera.'
-    : (fraseDeFito(d) || est.texto);
+    ? 'Cargá tu peso y el muñeco va a tener tu cuerpo, no uno cualquiera.'
+    : (fraseDelDia(d) || est.texto);
 
   const lvl = nivelDe(state.juego?.xp || 0);
   $('mascotaBarra').style.width = Math.round(lvl.pct * 100) + '%';
@@ -294,7 +352,7 @@ function renderMascota() {
   $('mascotaCard').onclick = () => abrirObjetivo(est.dim === 'sueno' ? 'sueno' : (est.dim || 'animo'));
 }
 
-/* ---------------- lo que dice Fito ---------------- */
+/* ---------------- lo que dice la app ---------------- */
 
 /*
  * La frase se elige cuando CAMBIA la situación, no en cada render.
@@ -309,7 +367,7 @@ let vozActual = { situacion: null, texto: '', desde: 0, insistido: 0, falta: nul
    suficiente para que se note que insiste y poco para que canse. */
 const MS_INSISTENCIA = 12 * 60 * 1000;
 
-function fraseDeFito(d, ahora = Date.now()) {
+function fraseDelDia(d, ahora = Date.now()) {
   const r = reclamoDelDia(d, { vasos: vasosObjetivo(state.perfil.peso) });
 
   if (r.situacion !== vozActual.situacion) {
@@ -346,7 +404,28 @@ function actualizarJuego() {
   if (JSON.stringify(state.juego) !== antes) save();
   sonarObjetivosNuevos();
   anunciarNovedades(r, nivelPrevio);
+  anunciarFase();
   return r;
+}
+
+/* La fase anterior, para saber si subió o se cayó. Arranca en null y no en 0
+   para que abrir la app ya en fase 3 no festeje tres veces de golpe. */
+let fasePrevia = null;
+
+function anunciarFase() {
+  const n = diasPerfectos(state.dias, { vasos: vasosObjetivo(state.perfil.peso) });
+  const fase = faseDe(n);
+
+  if (fasePrevia === null) { fasePrevia = fase.n; return; }
+  if (fase.n === fasePrevia) return;
+
+  if (fase.n > fasePrevia) {
+    festejar({ icono: '⚡', titulo: fase.nombre, texto: decir('fase', { fase: fase.nombre, n }), sonido: 'nivel' });
+  } else {
+    toast(decir('faseCaida'));
+    sonidos.sonar('fallo');
+  }
+  fasePrevia = fase.n;
 }
 
 /* Qué actividades ya estaban cumplidas la última vez que se miró. Empieza en
@@ -365,8 +444,41 @@ function sonarObjetivosNuevos() {
   const nuevas = ahora.filter(id => !cumplidasPrevias.includes(id));
   cumplidasPrevias = ahora;
 
-  if (nuevas.length) sonidos.sonar(nuevas.length === RACHAS.length ? 'racha' : 'objetivo');
+  if (!nuevas.length) return;
+
+  sonidos.sonar(nuevas.length === RACHAS.length ? 'racha' : 'objetivo');
+  for (const id of nuevas) festejarObjetivo(OBJETIVO_DE_RACHA[id]);
 }
+
+/* Las rachas y los objetivos no se llaman igual: la racha de comidas se llama
+   "registro" y no tiene casillero propio en la grilla. */
+const OBJETIVO_DE_RACHA = { agua: 'agua', entrenamiento: 'ejercicio', sueno: 'sueno', registro: null };
+
+/**
+ * El casillero pega un salto y sube un +XP.
+ *
+ * Ponerse verde y nada más no se sentía como cumplir algo. Es medio segundo de
+ * animación y es la diferencia entre marcar una casilla y ganar algo.
+ */
+function festejarObjetivo(id) {
+  if (!id) return;
+
+  const botones = [...($('objetivosDia')?.children || [])];
+  const b = botones.find(x => (x.getAttribute('aria-label') || '').toLowerCase().startsWith(NOMBRE_OBJETIVO[id]));
+  if (!b) return;
+
+  b.classList.remove('festeja');
+  void b.offsetWidth;          // reinicia la animación si se repite
+  b.classList.add('festeja');
+
+  const burbuja = document.createElement('span');
+  burbuja.className = 'xp-flotante';
+  burbuja.textContent = '+' + XP.objetivo;
+  b.appendChild(burbuja);
+  setTimeout(() => burbuja.remove(), 1200);
+}
+
+const NOMBRE_OBJETIVO = { agua: 'agua', ejercicio: 'ejercicio', sueno: 'sueño', peso: 'peso', animo: 'ánimo' };
 
 /**
  * Las cuatro rachas, chiquitas.

@@ -420,10 +420,11 @@ function renderSonido() {
 
   $('sonidoNota').textContent = quieto
     ? 'Tu sistema está configurado para menos estímulos, así que la app no hace ruido. Eso manda sobre este interruptor.'
-    : 'Arrancan apagados. Al prenderlos vas a escuchar cómo suenan.';
+    : 'Vienen prendidos. Al tocarlos vas a escuchar cómo suenan.';
 
   chk.onchange = () => {
     state.cfg.sonido = chk.checked;
+    state.cfg.sonidoElegido = true;
     save();
     if (chk.checked) sonidos.probar();
     renderSonido();

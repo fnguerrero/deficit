@@ -343,3 +343,60 @@ function recalcularJuego(dias, juegoPrevio, { hoy = hoyISO(), vasos = 8 } = {}) 
 function logrosPorAnunciar(juego) {
   return (juego?.logros || []).filter(id => !(juego?.anunciados || []).includes(id));
 }
+
+/* ---------------- las fases ---------------- */
+
+/*
+ * La escalera de transformaciones, que sube con los días perfectos seguidos.
+ *
+ * Por qué la transformación va en el AURA y el PELO y no en el cuerpo: si un
+ * día bueno te dibujara flaco, la app estaría diciendo que cumpliste y ya
+ * adelgazaste, que es mentira y encima desinfla el día que la balanza no
+ * acompañe. El cuerpo sigue saliendo de lo que medís. Lo que se prende fuego
+ * es el personaje.
+ *
+ * Lo único que el día perfecto sí toca del cuerpo es un plus de musculatura,
+ * chico y temporal: se siente y se va si cortás la racha.
+ */
+const FASES = [
+  { n: 0, nombre: 'Normal', detalle: 'Cumplí un día entero y esto empieza' },
+  { n: 1, nombre: 'Encendido', color: '#ffd84d', pelo: 'punta' },
+  { n: 2, nombre: 'Con chispas', color: '#ffd84d', pelo: 'punta', rayos: true },
+  { n: 3, nombre: 'Melena', color: '#ffe27a', pelo: 'largo', rayos: true },
+  { n: 4, nombre: 'Bestia', color: '#ff8a3d', pelo: 'largo', rayos: true, pelaje: true },
+  { n: 5, nombre: 'Divino', color: '#ff5c8a', pelo: 'punta', rayos: true, divino: true },
+  { n: 6, nombre: 'Más allá', color: '#7ec8f0', pelo: 'largo', rayos: true, divino: true }
+];
+
+const FASE_MAX = FASES.length - 1;
+
+/** Cuánto suma al músculo cada día perfecto seguido, y hasta dónde. */
+const BONUS_POR_PERFECTO = 0.12;
+const BONUS_TOPE = 0.36;
+
+/**
+ * Días perfectos seguidos, contando hacia atrás.
+ *
+ * Igual que las rachas: el día de hoy incompleto no corta, porque todavía se
+ * puede completar. La diferencia es que acá no hay escudo que valga — la fase
+ * se gana y se pierde, y esa es toda la gracia.
+ */
+function diasPerfectos(dias, { hoy = hoyISO(), vasos = 8 } = {}) {
+  let n = 0;
+  for (let i = 0; i < 400; i++) {
+    const d = dias?.[sumarDias(hoy, -i)];
+    if (RACHAS.every(r => r.cumple(d, { vasos }))) { n++; continue; }
+    if (i === 0) continue;
+    break;
+  }
+  return n;
+}
+
+function faseDe(perfectos) {
+  return FASES[Math.min(FASE_MAX, Math.max(0, Number(perfectos) || 0))];
+}
+
+/** Lo que el día perfecto le presta al cuerpo. Chico y temporal a propósito. */
+function bonusDePerfectos(perfectos) {
+  return Math.min(BONUS_TOPE, (Number(perfectos) || 0) * BONUS_POR_PERFECTO);
+}

@@ -39,9 +39,9 @@ function programarRecordatorios() {
     if (faltan > 0) {
       timersRecordatorios.push(setTimeout(() => {
         if (dia(hoyISO()).sueno?.horas) return;   // ya lo cargó: no molesta
-        /* El aviso habla con la voz de Fito y no con un texto fijo: si el
-           personaje reclama adentro de la app y afuera manda un comunicado,
-           son dos cosas distintas y ninguna de las dos convence. */
+        /* El aviso usa el mismo repertorio que la app y no un texto fijo: si
+           adentro te reclama con voz propia y afuera manda un comunicado, son
+           dos cosas distintas y ninguna de las dos convence. */
         new Notification('Déficit', {
           body: decir('sueno') || 'Hora de ir cerrando el día.',
           icon: 'icons/icon-192.png',

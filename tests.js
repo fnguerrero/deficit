@@ -4931,7 +4931,7 @@ const OBJ_MASC = { kcal: 2000 };
 test('con el dia en blanco no opina', () => {
   const e = estadoMascota(diaMascota(), { objetivo: OBJ_MASC, hora: 10 });
   esperar(e.animo, 'neutral');
-  esperarQue(/esperando/.test(e.titulo), e.titulo);
+  esperarQue(/en blanco/.test(e.titulo), e.titulo);
 });
 
 test('dormir poco es lo que mas pesa', () => {
@@ -5046,7 +5046,9 @@ test('cada animo dibuja algo distinto', () => {
 });
 
 test('el dibujo lleva su descripcion accesible', () => {
-  esperarQue(/aria-label="Fito, cansado"/.test(svgMascota('cansado')));
+  /* El personaje se quedo sin nombre en el ciclo 6: el muneco es Nico, asi que
+     la etiqueta describe como viene el dia y no a un tercero. */
+  esperarQue(/aria-label="Cómo venís: cansado/.test(svgMascota('cansado')), svgMascota('cansado').slice(0, 200));
 });
 
 test('un animo desconocido no rompe el dibujo', () => {

@@ -28,6 +28,7 @@ const RITMO_MAXIMO = 1.0;
 const MODOS = {
   mantenimiento: {
     id: 'mantenimiento',
+    emoji: '⚖️',
     nombre: 'Mantenimiento',
     resumen: 'Sostener el peso actual',
     detalle: 'Comés lo que gastás. Sirve para estabilizar después de un déficit largo.',
@@ -38,6 +39,7 @@ const MODOS = {
 
   moderado: {
     id: 'moderado',
+    emoji: '📉',
     nombre: 'Déficit moderado',
     resumen: 'Bajar sin que se note tanto',
     detalle: 'Un 20% menos de lo que gastás: alrededor de medio kilo por semana. Es el que más gente sostiene en el tiempo.',
@@ -48,6 +50,7 @@ const MODOS = {
 
   agresivo: {
     id: 'agresivo',
+    emoji: '🔥',
     nombre: 'Déficit agresivo',
     resumen: 'Bajar rápido, por poco tiempo',
     detalle: 'Un 30% menos. Baja rápido pero cuesta sostenerlo y da más hambre. No conviene más de 8 a 12 semanas seguidas.',
@@ -59,6 +62,7 @@ const MODOS = {
 
   definicion: {
     id: 'definicion',
+    emoji: '💪',
     nombre: 'Definición',
     resumen: 'Bajar grasa cuidando el músculo',
     detalle: 'Déficit suave con mucha proteína, para que lo que baje sea grasa y no músculo. Va de la mano con entrenar fuerza.',
@@ -69,6 +73,7 @@ const MODOS = {
 
   keto: {
     id: 'keto',
+    emoji: '🥑',
     nombre: 'Keto',
     resumen: 'Muy pocos carbohidratos',
     detalle: 'Menos de 30 g de carbohidratos por día para entrar en cetosis. El resto se reparte entre grasas y proteína.',
@@ -85,6 +90,7 @@ const MODOS = {
 
   mediterranea: {
     id: 'mediterranea',
+    emoji: '🫒',
     nombre: 'Mediterránea',
     resumen: 'Pescado, verduras y aceite de oliva',
     detalle: 'La dieta con más respaldo para la salud cardiovascular: mucho vegetal, legumbres, pescado y aceite de oliva; poca carne roja y casi nada ultraprocesado.',
@@ -96,6 +102,7 @@ const MODOS = {
 
   lowcarb: {
     id: 'lowcarb',
+    emoji: '🥩',
     nombre: 'Low carb',
     resumen: 'Pocos carbohidratos, sin llegar a keto',
     detalle: 'Hasta unos 100 g de carbohidratos por día. Más llevadera que keto y con buena parte del beneficio.',
@@ -107,6 +114,7 @@ const MODOS = {
 
   altaproteina: {
     id: 'altaproteina',
+    emoji: '🍗',
     nombre: 'Alta proteína',
     resumen: 'Proteína en todas las comidas',
     detalle: 'Sacia más y cuida el músculo. Cada comida tiene que aportar su parte, no toda la proteína en la cena.',
@@ -118,6 +126,7 @@ const MODOS = {
 
   vegetariana: {
     id: 'vegetariana',
+    emoji: '🥗',
     nombre: 'Vegetariana',
     resumen: 'Sin carne, ave ni pescado',
     detalle: 'Cuidando la proteína, que es lo que más cuesta cubrir: legumbres, huevo, lácteos y frutos secos.',
@@ -129,6 +138,7 @@ const MODOS = {
 
   singluten: {
     id: 'singluten',
+    emoji: '🌾',
     nombre: 'Sin gluten',
     resumen: 'Sin trigo, avena, cebada ni centeno',
     detalle: 'Para celiaquía o sensibilidad. Ojo con el gluten escondido en salsas, embutidos y rebozados.',
@@ -140,6 +150,7 @@ const MODOS = {
 
   paleo: {
     id: 'paleo',
+    emoji: '🍖',
     nombre: 'Paleo',
     resumen: 'Nada de procesados ni cereales',
     detalle: 'Carne, pescado, huevo, verduras, frutas y frutos secos. Sin cereales, sin lácteos y sin nada de paquete.',
@@ -151,6 +162,7 @@ const MODOS = {
 
   dash: {
     id: 'dash',
+    emoji: '🧂',
     nombre: 'DASH',
     resumen: 'Pensada para la presión alta',
     detalle: 'Mucha verdura y fruta, granos integrales, poca sal y poca grasa saturada. Es la que suelen indicar para hipertensión.',
@@ -163,6 +175,7 @@ const MODOS = {
 
   flexi: {
     id: 'flexi',
+    emoji: '🌱',
     nombre: 'Flexitariana',
     resumen: 'Casi vegetariana, sin ser estricta',
     detalle: 'Base vegetal, con carne de vez en cuando. Más fácil de sostener que la vegetariana pura y con casi los mismos beneficios.',
@@ -174,6 +187,7 @@ const MODOS = {
 
   sinlactosa: {
     id: 'sinlactosa',
+    emoji: '🥛',
     nombre: 'Sin lactosa',
     resumen: 'Sin leche ni derivados',
     detalle: 'Para intolerancia. Ojo con la lactosa escondida en panificados, embutidos y salsas.',
@@ -185,6 +199,7 @@ const MODOS = {
 
   antiinflamatoria: {
     id: 'antiinflamatoria',
+    emoji: '🫐',
     nombre: 'Antiinflamatoria',
     resumen: 'Menos azúcar y ultraprocesados',
     detalle: 'Pescado, verduras de hoja, frutos secos y aceite de oliva; afuera el azúcar agregada, los fritos y lo ultraprocesado.',
@@ -196,6 +211,7 @@ const MODOS = {
 
   volumen: {
     id: 'volumen',
+    emoji: '📈',
     nombre: 'Volumen limpio',
     resumen: 'Ganar músculo sin engordar de más',
     detalle: 'Un 10% por encima de lo que gastás, con proteína alta. Solo tiene sentido si entrenás fuerza.',

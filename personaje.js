@@ -1,5 +1,5 @@
 /* ============================================================
-   personaje.js — Fito, dibujado.
+   personaje.js — el personaje, dibujado.
 
    Es un SVG paramétrico, no ocho dibujos: un puñado de números entra y sale la
    figura. Eso es lo que permite que el cuerpo sea CONTINUO —que un kilo se note
@@ -21,8 +21,8 @@ const PALETA = {
   pielSombra: '#c88e5f',
   pelo: '#3b2b22',
   peloBrillo: '#54402f',
-  /* La remera se queda con el verde del Fito original: es lo que hace que,
-     aunque cambie de especie, siga siendo el mismo personaje. */
+  /* El verde de siempre: es lo que mantiene al personaje reconocible aunque
+     haya cambiado de especie y se haya quedado sin nombre. */
   remera: '#5fbf6a',
   remeraOsc: '#49a355',
   short: '#3f4a5c',
@@ -37,7 +37,14 @@ const PALETA = {
   mejilla: '#e08a86'
 };
 
-/* Alturas de referencia del cuerpo, sobre un lienzo de 120 × 176.
+/* El lienzo.
+   Se estiró 26 px hacia ARRIBA en el ciclo 6: el pelo de las fases sube bastante
+   más que la cabeza y, con el lienzo justo, las puntas quedaban cortadas al ras
+   y volvían a leerse como una corona. El origen negativo mantiene intactas todas
+   las coordenadas del cuerpo. */
+const VB = { x: 0, y: -26, w: 120, h: 202 };
+
+/* Alturas de referencia del cuerpo, sobre el lienzo de arriba.
 
    Las proporciones son deliberadamente infantiles —la cabeza se lleva casi un
    tercio de la figura—, y no por estética: en la pantalla Hoy el personaje mide
@@ -61,14 +68,14 @@ function medidasDe(contextura, musculatura) {
 
   return {
     c, m,
-    hombro: 17 + c * 3.2 + m * 7,
-    pecho: 15.5 + c * 8.5 + m * 3,
-    cintura: 11.5 + c * 14.5 - m * 1.4,
-    cadera: 13.5 + c * 10.5,
-    brazo: 3.6 + c * 1.9 + m * 2.4,
-    pierna: 5.4 + c * 3.6 + m * 1.5,
-    cuello: 6 + c * 2 + m * 1.5,
-    caraRx: 21 + c * 4.5,
+    hombro: 17 + c * 4 + m * 8,
+    pecho: 15.5 + c * 12 + m * 4,
+    cintura: 11.5 + c * 22 - m * 2,
+    cadera: 13.5 + c * 16,
+    brazo: 3.6 + c * 2.6 + m * 2.8,
+    pierna: 5.4 + c * 5 + m * 1.8,
+    cuello: 6 + c * 3 + m * 1.6,
+    caraRx: 21 + c * 7,
     caraRy: 26.5
   };
 }
@@ -284,7 +291,7 @@ function boca(tipo, cy) {
   return `<path d="M53.5 ${cy + 1} h13" stroke="${PALETA.bocaOsc}" stroke-width="2.4" stroke-linecap="round"/>`;
 }
 
-function cabeza(med, cara, col) {
+function cabeza(med, cara, col, fase) {
   const cy = 40;
   const rx = med.caraRx;
   const ry = med.caraRy;
@@ -304,11 +311,7 @@ function cabeza(med, cara, col) {
     <path d="M${(60 + rx * 0.94).toFixed(1)} ${cy - 1} a4.4 4.4 0 0 1 0 9z" fill="${col.piel}"/>
     <ellipse cx="60" cy="${cy}" rx="${rx.toFixed(1)}" ry="${ry}" fill="${col.piel}"/>
     ${papada}
-    <path d="M${(60 - rx).toFixed(1)} ${cy - 3} a${rx.toFixed(1)} ${(ry * 0.95).toFixed(1)} 0 0 1 ${(rx * 2).toFixed(1)} 0
-             q-${(rx * 0.5).toFixed(1)} -5 -${rx.toFixed(1)} -4.5 q-${(rx * 0.55).toFixed(1)} -.5 -${rx.toFixed(1)} 4.5z"
-      fill="${PALETA.pelo}"/>
-    <path d="M${(60 - rx * 0.55).toFixed(1)} ${(cy - ry * 0.82).toFixed(1)} q${(rx * 0.5).toFixed(1)} -3 ${rx.toFixed(1)} -1.5"
-      stroke="${PALETA.peloBrillo}" stroke-width="1.6" fill="none" opacity=".8" stroke-linecap="round"/>
+    ${pelo(cy, rx, ry, fase)}
     ${ojo(60 - sep, ojoY, cara)}
     ${ojo(60 + sep, ojoY, cara)}
     <g stroke="${PALETA.ceja}" stroke-width="2.6" stroke-linecap="round" fill="none">
@@ -343,13 +346,13 @@ function adornos(cara) {
 /* ---------------- el personaje entero ---------------- */
 
 /**
- * Fito, listo para meter en el DOM.
+ * El personaje entero, listo para meter en el DOM.
  *
  * `cuerpo` es lo que devuelve `cuerpoDe()`. Si no viene —o viene sin peso—, se
  * dibuja una contextura media: mostrar un cuerpo inventado como si fuera el de
  * Nico sería peor que no mostrar ninguno.
  */
-function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null) {
+function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const cara = CARAS[animo] || CARAS.neutral;
   const pose = POSES[animo] || POSES.neutral;
   const med = medidasDe(cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null, cuerpo?.musculatura ?? 0);
@@ -364,11 +367,13 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null) {
   };
 
   const alto = Math.round(tam);
-  const ancho = Math.round(tam * 0.72);
+  const ancho = Math.round(tam * VB.w / VB.h);
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 176" width="${ancho}" height="${alto}"
-    class="mascota-svg" role="img" aria-label="${MASCOTA_NOMBRE}, ${animo}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB.x} ${VB.y} ${VB.w} ${VB.h}" width="${ancho}" height="${alto}"
+    class="mascota-svg${fase && fase.n ? ' fase-' + fase.n : ''}" role="img"
+    aria-label="Cómo venís: ${animo}${fase && fase.n ? ', en fase ' + fase.n : ''}">
 
+    ${aura(med, fase)}
     <ellipse cx="60" cy="${Y.pie + 3}" rx="${(med.cadera + 12).toFixed(1)}" ry="4" fill="${PALETA.pupila}" opacity=".13"/>
 
     ${piernas(med, col)}
@@ -377,16 +382,17 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null) {
       ${torso(med, col)}
       ${brazos(med, pose, col)}
       <g transform="translate(0 ${pose.cabeza}) rotate(${pose.inclina} 60 ${Y.hombro - 4})">
-        ${cabeza(med, cara, col)}
+        ${cabeza(med, cara, col, fase)}
       </g>
     </g>
 
     ${adornos(cara)}
+    ${rayos(med, fase)}
   </svg>`;
 }
 
-/* El nombre viejo sigue andando: lo usan la pantalla de objetivos y los tests
-   del ciclo anterior, y romperlos por un cambio de dibujo no aporta nada. */
-function svgMascota(animo = 'neutral', tam = 96, cuerpo = null) {
-  return svgPersonaje(animo, tam, cuerpo);
+/* El nombre viejo sigue andando: lo usan los tests del ciclo anterior, y
+   romperlos por un cambio de dibujo no aporta nada. */
+function svgMascota(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
+  return svgPersonaje(animo, tam, cuerpo, fase);
 }

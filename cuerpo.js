@@ -20,16 +20,23 @@ const BANDAS_IMC = [
   { hasta: Infinity, id: 'obesidad', nombre: 'Obesidad' }
 ];
 
-/* Los extremos del dibujo. Por debajo de 17 y por encima de 35 el cuerpo deja
-   de cambiar: son los bordes de lo que un muñeco de 96 px puede representar sin
-   volverse una caricatura, que es justamente lo que no queremos. */
+/* Los extremos del dibujo.
+
+   El tramo hasta 35 se lleva el 80% del recorrido y de 35 a 50 el 20% restante.
+   Es a propósito: entre 22 y 30 —donde de verdad se mueve la gente— cada punto
+   de IMC tiene que notarse, y arriba de 35 el dibujo sigue creciendo pero cada
+   vez menos, porque un muñeco de 120 px de alto no puede representar un IMC de
+   60 sin dejar de ser una persona. */
 const IMC_MIN = 17;
-const IMC_MAX = 35;
+const IMC_CODO = 35;
+const IMC_MAX = 50;
+const PESO_TRAMO_BAJO = 0.8;
 
 /* Con esta cantidad de días entrenados en las últimas dos semanas se considera
-   una rutina sostenida. No son 14 de 14: nadie entrena todos los días, y pedir
-   eso haría que el eje nunca llegue arriba. */
-const DIAS_RUTINA = 10;
+   una rutina sostenida. Bajó de 10 a 6 porque con 10 el eje casi nunca llegaba
+   arriba: quien entrena tres veces por semana ya está entrenando en serio, y el
+   personaje tiene que mostrarlo. */
+const DIAS_RUTINA = 6;
 
 function imcDe(pesoKg, alturaCm) {
   const p = Number(pesoKg);
@@ -43,10 +50,15 @@ function bandaIMC(imc) {
   return BANDAS_IMC.find(b => imc < b.hasta) || BANDAS_IMC.at(-1);
 }
 
-/** El IMC llevado a 0–1 para el dibujo, con los extremos clampeados. */
+/** El IMC llevado a 0–1 para el dibujo, en dos tramos. */
 function contexturaDe(imc) {
   if (imc == null) return null;
-  const t = (imc - IMC_MIN) / (IMC_MAX - IMC_MIN);
+  if (imc <= IMC_MIN) return 0;
+
+  const t = imc <= IMC_CODO
+    ? PESO_TRAMO_BAJO * (imc - IMC_MIN) / (IMC_CODO - IMC_MIN)
+    : PESO_TRAMO_BAJO + (1 - PESO_TRAMO_BAJO) * (imc - IMC_CODO) / (IMC_MAX - IMC_CODO);
+
   return +Math.min(1, Math.max(0, t)).toFixed(3);
 }
 
@@ -94,11 +106,14 @@ const DESCUENTO_MUSCULO = 0.18;
  * app pide el peso. Inventar una contextura sería mostrarle a Nico un cuerpo
  * que no es el suyo.
  */
-function cuerpoDe(perfil, dias, hasta = hoyISO()) {
+function cuerpoDe(perfil, dias, hasta = hoyISO(), { bonus = 0 } = {}) {
   const peso = ultimoPesoConocido(perfil, dias, hasta);
   const imc = imcDe(peso, perfil?.altura);
   const entrenados = diasEntrenados(dias, hasta);
-  const musculatura = musculaturaDe(entrenados);
+
+  /* El plus por días perfectos seguidos. Es chico y se va solo al cortar la
+     racha: motiva sin mentir que cumplir un día ya te puso en forma. */
+  const musculatura = +Math.min(1, musculaturaDe(entrenados) + (Number(bonus) || 0)).toFixed(3);
   const contextura = contexturaDe(imc);
 
   const efectiva = contextura == null

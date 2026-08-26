@@ -1,8 +1,8 @@
 <!doctype html>
-<!-- Página de taller: dibuja a Fito en todas sus combinaciones para poder mirarlo.
+<!-- Página de taller: dibuja al personaje en todas sus combinaciones para mirarlo.
      No entra en la app ni en el service worker; existe para verificar el SVG. -->
 <meta charset="utf-8">
-<title>Fito — taller</title>
+<title>El personaje — taller</title>
 <style>
   body { background: #fff; font: 11px system-ui; margin: 0; padding: 8px; }
   .fila { display: flex; gap: 2px; }
@@ -13,6 +13,8 @@
 <script src="core.js"></script>
 <script src="mascota.js"></script>
 <script src="cuerpo.js"></script>
+<script src="juego.js"></script>
+<script src="transformacion.js"></script>
 <script src="personaje.js"></script>
 <script>
   const params = new URLSearchParams(location.search);
@@ -39,6 +41,11 @@
   if (modo === 'cuerpo') {
     html = '<div class="fila">' +
       CUERPOS.map(([n, c]) => celda(n, svgPersonaje('neutral', alto, c))).join('') +
+      '</div>';
+  } else if (modo === 'fase') {
+    const cuerpo = { efectiva: .4, musculatura: .5 };
+    html = '<div class="fila">' +
+      FASES.map(f => celda(f.n + ' ' + f.nombre, svgPersonaje('genial', alto, cuerpo, f))).join('') +
       '</div>';
   } else {
     const cuerpo = { efectiva: .45, musculatura: .3 };
