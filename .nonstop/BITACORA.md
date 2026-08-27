@@ -280,3 +280,17 @@ Nico sumo despues el veredicto honesto de si va bien.
 #12 — La tarjeta del personaje se habia ido a 160 px al sumarle fase, XP y rachas, y con eso Hoy dejaba de entrar con UNA comida cargada. Bajo a 119 recortando el texto a dos lineas y el personaje a 76 px
 
 #13 — Cierre: 69 de 100, ninguna bloqueada. 761 tests en verde, consola limpia, guardas OK. Las 31 que faltan quedan anotadas con su verificacion para el ciclo 8
+
+## Ciclo 8 — el personaje contra la referencia
+
+#14 — Arranca el ciclo 8. Nico paso dos laminas de referencia (7 fases y 7 contexturas) y pidio que el muneco se parezca. Antes de este ciclo ya entraron los anteojos, los miembros como siluetas y la musculosa de una pieza. Las 31 pendientes del ciclo 7 se archivan en .nonstop/ciclo-7/
+
+#15 — Pectorales (un arco por lado desde el esternon), abdominales (linea media + dos pares de transversales) y trapecios sobre la musculosa. Los pectorales arrancan DEBAJO del escote: a la altura del pecho anatomico caian sobre el borde de la prenda y se leian como una arruga de la tela. Verif: render de torso, fibra y flaco ahora se distinguen de un vistazo
+#16 — Test que fija que con panza no hay abdominales: un abdominal marcado debajo de una panza es mentira y el dibujo no puede decir dos cosas del mismo cuerpo. Verif: 764 tests en verde
+#17 — La panza pasa a ser un punto propio del contorno (anchoEn), no una elipse pintada encima: con la silueta yendo derecho de la cintura a la cadera el panzon tenia perfil de barril y la barriga era una mancha sobre una prenda que no se enteraba. Verif: render entero, la panza sale por encima del short
+#18 — Short hasta media pierna con dobladillo (a Y.cadera+17 el muneco quedaba en calzoncillos) y papada desde contextura 0.6 con trazo mas grueso: a 0.72 y 1.5 px no se veia al tamano real. Verif: render entero de los 5 cuerpos
+#19 — El aura: lenguas con el borde en zigzag en vez de curvas suaves (eran petalos, no fuego), altas hasta el hombro (a la mitad el personaje parecia parado en un charco de llamas) y escombros flotando de fase 3 para arriba. Verif: render de las 7 fases
+#20 — Los 8 animos con la cabeza nueva: cejas, boca, nariz, oreja y anteojos quedaron en su lugar, no hizo falta reubicar nada. De paso el recorte de la vista cabeza del taller quedo mal al bajar caraRy y se corrigio
+#21 — transformacion.js se paso del limite al crecer el aura: sale aura.js con fuego, escombros, rayos, suelo y ki; en transformacion queda el pelo. Registrado en los cuatro HTML y en el shell offline. Verif: guardas 40 scripts OK, tamanos OK, 764 tests en verde
+#22 — Verificacion en la app real: tarjeta del personaje 119 px con el SVG en 76, no desborda, consola limpia y el muneco se dibuja con anteojos en fase 5. Verif: navegador
+#23 — Cierre del ciclo 8: 17 items, ninguno bloqueado, 9 iteraciones sobre 40. Los siete criterios de aceptacion pasan. 764 tests en verde, guardas y tamanos OK, consola limpia

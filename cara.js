@@ -108,9 +108,12 @@ function cabeza(med, cara, col, fase) {
     C${(60 + rx * 0.95).toFixed(1)} ${(cy - ry * 0.68).toFixed(1)} ${(60 + rx).toFixed(1)} ${(cy + ry * 0.42).toFixed(1)} 60 ${(cy + ry).toFixed(1)}
     C${(60 + rx * 0.3).toFixed(1)} ${(cy + ry * 0.5).toFixed(1)} ${(60 + rx * 0.36).toFixed(1)} ${(cy - ry * 0.4).toFixed(1)} ${(60 + rx * 0.24).toFixed(1)} ${(cy - ry * 0.92).toFixed(1)} Z`;
 
-  const papada = med.c > 0.72
-    ? `<path d="M${(60 - rx * 0.42).toFixed(1)} ${(cy + ry * 0.72).toFixed(1)} q${(rx * 0.42).toFixed(1)} ${((med.c - 0.5) * 8).toFixed(1)} ${(rx * 0.84).toFixed(1)} 0"
-        stroke="${PALETA.pielSombra}" stroke-width="1.5" fill="none" opacity=".7"/>`
+  /* La papada arranca antes y con mas cuerpo: a 0.72 y una linea de 1.5 no se
+     veia a 96 px, que es el tamano al que el muneco vive de verdad. */
+  const papada = med.c > 0.6
+    ? `<path d="M${(60 - rx * 0.5).toFixed(1)} ${(cy + ry * 0.66).toFixed(1)}
+          q${(rx * 0.5).toFixed(1)} ${((med.c - 0.42) * 13).toFixed(1)} ${(rx).toFixed(1)} 0"
+        stroke="${PALETA.pielSombra}" stroke-width="2.1" fill="none" opacity=".85" stroke-linecap="round"/>`
     : '';
 
   return `

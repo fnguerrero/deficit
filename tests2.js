@@ -1040,6 +1040,18 @@ test('la cara del personaje tiene ojos, cejas y boca', () => {
 });
 
 
+test('con panza no se dibujan abdominales', () => {
+  /* Un abdominal marcado debajo de una panza es mentira, y el dibujo no puede
+     decir dos cosas a la vez sobre el mismo cuerpo. El pecho si se mantiene:
+     ancho de pectoral hay igual, lo que no hay es definicion de abdomen. */
+  const fibra = svgPersonaje('neutral', 96, { efectiva: .25, musculatura: 1 }, null);
+  const panzon = svgPersonaje('neutral', 96, { efectiva: .95, musculatura: 1 }, null);
+
+  const trazos = (svg) => svg.split('stroke-linecap="round" opacity=".72"').length;
+  esperarQue(trazos(fibra) > trazos(panzon),
+    `fibra dibuja ${trazos(fibra)} trazos de musculo y el panzon ${trazos(panzon)}`);
+});
+
 test('el musculo del brazo abre arriba, no en la muneca', () => {
   /* El punto entero del relieve, del lado del brazo: entrenar tiene que dar
      hombro y biceps. Si los cuatro anchos crecieran parejo, el brazo del que

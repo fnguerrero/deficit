@@ -52,3 +52,36 @@ Sin cambios: HTML/CSS/JS vanilla, sin build ni dependencias.
 ## Presupuesto
 
 110 iteraciones.
+
+---
+
+## Ciclo 8 — el personaje contra la referencia (27/08/2026)
+
+**Objetivo.** Que el muñeco se parezca a la referencia visual que pasó Nico: dos láminas
+con las 7 fases y las 7 contexturas, estilo anime, anteojos redondos, musculosa verde,
+short azul y zapatillas blancas.
+
+**Supuestos** (decisiones tomadas solo, sin preguntar):
+
+- Las 31 mejoras que quedaron del ciclo 7 pasan a `.nonstop/ciclo-7/TODO.md` y esperan.
+  El pedido vigente es el personaje.
+- Las imágenes de referencia NO se usan como assets. El personaje se dibuja por código y
+  combina contextura × musculatura × ánimo × fase: son miles de combinaciones y catorce
+  dibujos fijos no las cubren. Se usan como referencia de estilo.
+- No se rediseña la cara de cero: los anteojos, las proporciones y la ropa alcanzan para
+  el parecido, y rediseñar la cara sin una referencia de la cara sería tirar lo que ya
+  está aprobado.
+- La verificación es visual, rasterizando con Edge headless y mirando el PNG. El panel del
+  navegador no saca screenshots en esta sesión.
+
+**Criterios de aceptación:**
+
+1. Los 763 tests propios en verde, `guardas.py` y `tamanos.py` OK.
+2. La consola del navegador limpia con la app real cargada.
+3. Con músculo se ven pectorales, abdomen y trapecios sobre la musculosa; sin músculo, no.
+4. Con panza, la musculosa se abomba y el ruedo sube al frente.
+5. El short llega a media pierna y tiene dobladillo.
+6. Las siete fases dibujan llamas con forma de fuego, y de la 3 en adelante hay escombros.
+7. El personaje entra en la tarjeta de Hoy sin desbordar.
+
+**Presupuesto:** 40 iteraciones.

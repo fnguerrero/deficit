@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Pagina de taller del ciclo 8: amplia una parte del personaje para poder mirar
+     los bugs de dibujo, que a 96 px no se ven. No entra en la app ni en el shell.
+     ?parte=torso|cabeza|pierna  ·  ?que=cuerpos|fases|animos -->
+<meta charset="utf-8">
+<body style="background:#fff;margin:0;padding:6px">
+<div id="app" style="display:flex;gap:8px"></div>
+<script src="core.js"></script>
+<script src="mascota.js"></script>
+<script src="habitos.js"></script>
+<script src="cuerpo.js"></script>
+<script src="juego.js"></script>
+<script src="transformacion.js"></script>
+<script src="aura.js"></script>
+<script src="cara.js"></script>
+<script src="personaje.js"></script>
+<script src="figura.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const parte = q.get('parte') || 'torso';
+  const que = q.get('que') || 'cuerpos';
+
+  /* Cada parte es un recorte: escala del SVG y desplazamiento del contenedor. */
+  const VISTAS = {
+    cabeza: { alto: 1100, left: -195, top: -250, w: 290, h: 290 },
+    torso: { alto: 1100, left: -160, top: -300, w: 400, h: 380 },
+    pierna: { alto: 1100, left: -150, top: -640, w: 400, h: 380 },
+    entero: { alto: 460, left: -60, top: -10, w: 300, h: 460 }
+  };
+
+  const CUERPOS = [
+    { efectiva: .2, musculatura: 0 },
+    { efectiva: .55, musculatura: 0 },
+    { efectiva: .95, musculatura: 0 },
+    { efectiva: .25, musculatura: 1 },
+    { efectiva: .6, musculatura: 1 }
+  ];
+
+  const v = VISTAS[parte] || VISTAS.torso;
+  let piezas = [];
+
+  if (que === 'fases') {
+    piezas = FASES.map(f => svgPersonaje('genial', v.alto, { efectiva: .4, musculatura: .5 }, f));
+  } else if (que === 'animos') {
+    piezas = ['neutral', 'bien', 'genial', 'flojo', 'cansado', 'seco', 'pesado', 'triste']
+      .map(a => svgPersonaje(a, v.alto, { efectiva: .4, musculatura: .4 }, null));
+  } else {
+    piezas = CUERPOS.map(c => svgPersonaje('neutral', v.alto, c, null));
+  }
+
+  app.innerHTML = piezas.map(svg =>
+    `<div style="width:${v.w}px;height:${v.h}px;overflow:hidden;position:relative;flex:none">
+      <div style="position:absolute;left:${v.left}px;top:${v.top}px">${svg}</div>
+    </div>`).join('');
+</script>

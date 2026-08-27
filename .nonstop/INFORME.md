@@ -1,146 +1,104 @@
-# Informe — ciclo 7: cien mejoras
+# Informe — ciclo 8: el personaje contra la referencia
 
-## 69 de 100. Frenado por presupuesto, no por bloqueo.
+27/08/2026 · 9 iteraciones (#14 a #22) sobre un presupuesto de 40 · 17 ítems, ninguno bloqueado.
 
-Ninguna quedó `[!]` bloqueada: las 31 que faltan simplemente no se alcanzaron.
-Están todas escritas en `TODO.md` con su forma de verificación, así que el ciclo
-que venga arranca sin volver a pensarlas.
+## Qué se construyó
 
-Aviso que ya di al empezar: cien mejoras sobre 18.500 líneas es mucho más de lo
-que entra cómodo en un turno.
+El muñeco pasó de ser un monigote de bloques a parecerse a la referencia que pasó Nico.
+Se mira con `_personaje.html?modo=cuerpo|fase|animo|peso` y con `_zoom.html?parte=...`,
+que amplía una parte para ver los bugs de dibujo que a 96 px no se ven.
 
-## Lo que se hizo
+**Identidad**
 
-### Corrección (9 de 10)
+- **Anteojos redondos**, con marco, puente, varillas y brillo. Es EL rasgo: el muñeco es
+  Nico, y sin ellos el parecido dependía de detalles invisibles a este tamaño.
 
-- **`sumarDias` devolvía `"NaN-aN-aN"`** sobre una fecha inválida, y eso después
-  se usaba como clave de `state.dias`: el estado se ensuciaba en silencio y ese
-  día fantasma contaba en las rachas y en los logros. Ahora hay `esFechaISO()`,
-  devuelve `null`, y `migrar()` descarta las claves que no son fechas.
-- **Los totales del día estaban escritos cuatro veces**, y en dos de ellas sin
-  el `|| 0`: una comida con `kcal` en `null` —pasa al editar a mano o al venir
-  de una versión vieja— convertía el total del día en `NaN`, y de ahí en más
-  todo lo que dependiera del día mostraba `NaN`. Salió a `totalesDe()`.
-- **El IMC dividía por cero** con la altura en 0, y aceptaba pesos negativos que
-  clampeaban a 0 y dibujaban un cuerpo flaco.
-- El agua dibujaba un vaso por cada vaso tomado: con el objetivo en 4 y doce
-  tomados salían doce y la fila se comía el modal.
-- `nivelDe(Infinity)` dejaba la barra de progreso con un ancho de `NaN%`.
+**El cuerpo**
 
-### Accesibilidad (10 de 10)
+- Brazos y piernas dejaron de ser trazos de ancho constante y pasaron a ser **siluetas**.
+  El brazo nace ancho en el deltoide, abulta en el bíceps, se estrangula en el codo y se
+  afina en la muñeca; la pierna abre en el muslo, afina en la rodilla, vuelve a abrir en
+  la pantorrilla. Un tubo no distingue entrenar de engordar: solo se hace más gordo.
+- **Proporciones**: cadera y cintura subieron, la rodilla bajó y la cabeza se achicó
+  (`caraRy` de 20.5 a 18.6). Con la cadera a 110 el muñeco era un bloque sobre dos patas.
+- **La panza es un punto propio del contorno** (`anchoEn`), no una elipse pintada encima.
+  Antes la silueta iba derecho de la cintura a la cadera: perfil de barril, y la barriga
+  era una mancha clara sobre una prenda que no se enteraba.
+- **Manos**: puños chicos al final del antebrazo. Con el radio del brazo entero parecían
+  guantes de box.
 
-- **`--dim` no llegaba a 4,5:1 en cinco de los ocho temas** (vino 3,99; papel
-  3,63). Corregidos los cinco: el peor ahora está en 5,57.
-- **Los modales se podían abrir dos veces.** El segundo `tomarFoco` pisaba
-  `focoPrevio` con un elemento del propio modal, y al cerrar el foco quedaba en
-  la nada. Ahora todos pasan por `abrirCapa()`.
-- **Cambiar de pestaña o abrir un modal era silencio total** para un lector de
-  pantalla. Se sumó una región de anuncios.
-- Los vasos decían "4 vasos" y nada más; ahora dicen si están llenos y cuál es
-  el objetivo. Los objetivos del día pasaron a ser `switch` con `aria-checked`.
-  El personaje se describe entero: ánimo, fase e IMC.
-- **Había seis bloques de `prefers-reduced-motion` desperdigados** y cada
-  animación nueva nacía sin apagar. Ahora hay una regla global.
+**La ropa**
 
-Tres —la trampa de foco, el Escape y el `role=status` del toast— **ya estaban
-bien** desde el ciclo 4. Se verificaron y se marcaron sin tocar nada.
+- La **musculosa es UNA pieza** con el escote y las sisas recortados en su propio contorno.
+  Antes era el torso pintado de verde con parches de piel encima; cada parche traía su
+  borde recto y todos juntos armaban una barra negra de hombro a hombro.
+- **Short hasta media pierna** con dobladillo. A `Y.cadera + 17` el muñeco quedaba en
+  calzoncillos.
+- **Zapatillas** con puntera, empeine y suela.
 
-### Rendimiento (6 de 8)
+**El relieve**
 
-- **`renderAll` armaba las cuatro pantallas** aunque tres estuvieran ocultas:
-  cada toque de un vaso reconstruía el historial y el perfil enteros. Ahora
-  dibuja la visible y marca las otras como vencidas.
-- **`save()` serializaba el estado entero** —cientos de kB con meses cargados—
-  una vez por toque. Se agrupa a 250 ms, con escritura inmediata al ocultar la
-  pestaña.
-- **Las rachas barrían 400 días hacia atrás siempre**, cuatro veces por render y
-  otra por cada récord: mil seiscientas vueltas para un historial de diez días.
-- `recalcularJuego` y el SVG del personaje ahora se saltean si su firma no
-  cambió. Verificado: **0 recálculos** con tres renders seguidos sin cambios.
+- **Pectorales** (un arco por lado desde el esternón), **abdominales** (línea media más dos
+  pares de transversales) y **trapecios** sobre la musculosa, solo con músculo.
+- Con panza **no hay abdominales**: un abdominal marcado debajo de una panza es mentira, y
+  el dibujo no puede decir dos cosas sobre el mismo cuerpo. Hay un test que lo fija.
+- **Papada** desde contextura 0.6 y con trazo más grueso: a 0.72 y 1.5 px no se veía.
 
-### Robustez (7 de 7)
+**Las fases**
 
-Estado corrupto, `localStorage` lleno, fechas del futuro, perfil sin altura,
-calorías absurdas, dos pestañas abiertas y —la más peligrosa— **importar un
-archivo cualquiera**: `migrar()` acepta cualquier cosa y devuelve un estado
-válido, así que un archivo equivocado reemplazaba meses de historial sin
-chistar. Ahora se valida antes y se confirma con números.
+- Las lenguas de fuego tienen el borde en **zigzag** en vez de curvas suaves. Eran pétalos,
+  no fuego.
+- Y son **altas**: llegan al hombro. A la mitad de esta altura el personaje parecía parado
+  en un charco de llamas en vez de envuelto.
+- **Escombros** flotando de fase 3 para arriba. Sin ellos el aura es algo que le pasa al
+  personaje; con ellos, algo que le pasa al lugar donde está parado.
 
-### Lo demás
+## Verificación
 
-Plurales de 1 (la app decía "1 días" en una docena de lugares), paginación del
-historial, el exceso de calorías visible en vez de un 0 en "restantes", el botón
-sugerido según la hora, el objetivo del modo en el chip, tamaño de vaso
-configurable, vaciar el caché a mano, proyección al peso objetivo, aviso de
-déficit peligroso, objetivo de fibra, agua ajustada por ejercicio, racha en
-peligro, el logro más cerca y el XP que falta para el próximo nivel.
-
-## Las dos guardas nuevas, y por qué importan
-
-`tools/guardas.py` chequea tres cosas que el navegador solo descubre corriendo:
-
-1. **Globales declaradas dos veces**, entre archivos y dentro del mismo archivo.
-2. **`$('idQueNoExiste')`**, que revienta recién cuando alguien entra a esa
-   pantalla.
-3. **Scripts fuera del shell del service worker**, que no fallan en el navegador
-   sino sin internet, semanas después.
-
-Encontró tres cosas de entrada: dos referencias muertas (`notaPill`,
-`ejercicioPill`) y `window.__core`, un bloque de export que **no usaba nadie** y
-que además rompía al cargar porque nombraba funciones que se habían mudado.
-
-Y se probó que dispara: renombrando un `id` a mano, falla.
-
-## Dos veces me dupliqué a mí mismo
-
-Vale la pena dejarlo escrito porque las dos fueron el mismo error.
-
-1. **Escribí `historialACSV()`** cuando `armarCSV()` ya existía y era más
-   completa. La borré y le escribí a la que estaba los tests que le faltaban.
-2. **Escribí `compararSemanas()` y `buscarEnHistorial()`** cuando las dos ya
-   existían — y las **pisé**, rompiendo nueve tests que pasaban. Los originales
-   comparan también el peso y buscan en las notas ignorando acentos.
-
-La segunda es la interesante: mi propia guarda no la agarró, porque solo miraba
-duplicados **entre** archivos y estas estaban dentro del mismo. La guarda ahora
-chequea las dos cosas.
-
-## Verificación final
-
-| Criterio | Resultado |
+| Qué | Resultado |
 |---|---|
-| 1. Las 100 implementadas | **69**. Ninguna bloqueada; 31 sin alcanzar |
-| 2. Suite en verde | **761 tests, 0 fallos** (eran 720 al empezar) |
-| 3. Sin errores de consola | 0, verificado en pestaña nueva |
-| 4. Hoy sin scroll en 375×812 | entra con el día liviano (ver desvío 2) |
-| 5. Límites de líneas | todos dentro |
-| 6. Arranca offline | `guardas.py` OK: 38 scripts, todos en el shell |
-| 7. Sin romper decisiones anteriores | ninguna rota |
+| Tests propios | **764 en verde** (dos nuevos: el músculo del brazo, y que la panza tape los abdominales) |
+| `tools/guardas.py` | OK — 40 scripts, 552 globales, 352 ids |
+| `tools/tamanos.py` | Todo dentro de límite |
+| Consola del navegador | Limpia con la app real cargada |
+| Tarjeta de Hoy | 119 px con el SVG en 76, no desborda |
+
+Los siete criterios de aceptación de la SPEC pasan.
+
+## Decisiones tomadas por criterio propio
+
+- **Las imágenes de referencia no se usan como assets.** El personaje combina contextura ×
+  musculatura × ánimo × fase: son miles de combinaciones y catorce dibujos fijos no las
+  cubren. Se usaron como referencia de estilo.
+- **No se rediseñó la cara.** Los anteojos, las proporciones y la ropa alcanzan para el
+  parecido; rediseñarla sin una referencia de la cara sería tirar lo que ya estaba aprobado.
+- **Se archivaron las 31 pendientes del ciclo 7** en `.nonstop/ciclo-7/`. El pedido vigente
+  era el personaje.
+- **Queda `_zoom.html`** en el repo. `_personaje.html` muestra el muñeco entero; este
+  amplía una parte, y sin él media docena de bugs de dibujo no se habrían visto nunca.
 
 ## Desvíos de la SPEC
 
-1. **No se llegó a 100.** Faltan 31, todas anotadas.
-2. **"Hoy sin scroll" tiene una excepción.** Con una comida cargada entra justo;
-   si además aparece la tarjeta de alerta de proteína (58 px), scrollea 66 px.
-   Es un estado excepcional y scrollear para ver una alerta me parece aceptable,
-   pero es un desvío del criterio como estaba escrito.
-3. **Se agregaron dos archivos no previstos**: `calibracion.js` (core.js se pasó
-   del límite) y `tools/guardas.py`.
-4. **El README no estaba en el alcance como tal** — era el ítem 100 y quedó más
-   largo de lo previsto, con la arquitectura y las decisiones que no se toman.
+- **El ítem 6 (“el ruedo de la musculosa sube al frente con panza”) se cumplió sin tocar
+  nada.** El ruedo ya subía con la contextura desde el ciclo anterior (`hemMusculosa`
+  lleva un `+ med.c * 10`). Se verificó y se marcó hecho.
+- **Apareció un ítem 17 que no estaba planeado**: `transformacion.js` se pasó de su límite
+  al crecer el aura y hubo que partirlo. Salió `aura.js` con fuego, escombros, rayos, suelo
+  y ki; en `transformacion.js` quedó el pelo.
+- Nada más se desvió: el resto de los ítems se hizo como estaba escrito.
 
-## Lo que queda para el ciclo 8
+## Trampas aprendidas, para no repetirlas
 
-Los 31 pendientes, por bloque: cargar comidas (10), historial y progreso (5),
-textos (4), pantalla Hoy (3), modos (3), juego (3), calidad interna (3).
+- **Nada de comentarios `<!-- -->` adentro del SVG.** El doble guion rompe el XML y hay un
+  test que lo agarra. Las explicaciones van como comentario de JS, afuera del template.
+- **Orden del contorno de una prenda**: sisa, tirante, escote. Con la sisa terminando más
+  abajo que el escote, el path se cruza a sí mismo y la prenda sale chorreada de un lado.
+- **Una sombra hecha aparte asoma por los recortes.** La de la musculosa sale del mismo
+  path que la musculosa (`siluetaRemera` con `mitad = true`).
+- **Al partir un archivo, revisar qué quedó en el medio.** Cortando entre `brazos` y
+  `torso` se fue `volumen()` de arriba, y la app quedó en blanco con un
+  `volumen is not defined`.
 
-Los tres que más rendirían: **reintentar el análisis sin volver a sacar la foto**
-(51), **duplicar una comida de otro día** (59) y **filtrar el historial por
-fechas** (61).
+## Bloqueados
 
-## Números
-
-- **69 mejoras** verificadas, 0 bloqueadas, 31 sin alcanzar.
-- **761 tests**, 0 fallos. Se sumaron 41 en el ciclo.
-- **2 duplicaciones propias** detectadas y revertidas.
-- **3 referencias muertas** y un bloque de export fantasma, borrados.
+Ninguno.
