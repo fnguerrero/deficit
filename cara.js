@@ -135,10 +135,38 @@ function cabeza(med, cara, col, fase) {
         transform="rotate(${-cara.ceja} ${(60 + sep).toFixed(1)} ${cy - 8}) translate(0 ${(cara.cejaY * 1.4).toFixed(1)})"/>
     </g>
 
+    ${anteojos(sep, ojoY, rx)}
+
     <path d="M58.4 ${cy + 8} l2.6 3.4 l-3.4 .6z" fill="${PALETA.pielSombra}"/>
     ${boca(cara.boca, cy + 13, rx)}
     ${cara.lagrima ? `<path d="M${(60 - sep + 4).toFixed(1)} ${ojoY + 7} q2 5 0 7 q-2 -2 0 -7z" fill="#7ec8f0"
       stroke="${PALETA.linea}" stroke-width="1.2"/>` : ''}`;
+}
+
+/*
+ * Los anteojos.
+ *
+ * No son un accesorio: son EL rasgo. El muneco es Nico, y sin ellos cualquier
+ * parecido depende de detalles que a este tamano no se ven. Van despues de los
+ * ojos para que el marco pase por encima, y el cristal lleva un blanco muy
+ * bajo —un relleno opaco taparia la mirada, que es de donde sale el animo.
+ */
+function anteojos(sep, ojoY, rx) {
+  const r = 6.4;
+  const marco = `stroke="${PALETA.linea}" stroke-width="1.7" fill="#ffffff" fill-opacity=".16"`;
+  const varilla = `stroke="${PALETA.linea}" stroke-width="1.5" fill="none" stroke-linecap="round"`;
+
+  return `
+    <circle cx="${(60 - sep).toFixed(1)}" cy="${ojoY}" r="${r}" ${marco}/>
+    <circle cx="${(60 + sep).toFixed(1)}" cy="${ojoY}" r="${r}" ${marco}/>
+    <path d="M${(60 - sep + r).toFixed(1)} ${(ojoY - 1).toFixed(1)}
+      q${sep.toFixed(1)} ${(-2.2).toFixed(1)} ${((sep - r) * 2).toFixed(1)} 0" ${varilla}/>
+    <path d="M${(60 - sep - r).toFixed(1)} ${(ojoY - 0.6).toFixed(1)} L${(60 - rx * 0.96).toFixed(1)} ${(ojoY - 2.4).toFixed(1)}" ${varilla}/>
+    <path d="M${(60 + sep + r).toFixed(1)} ${(ojoY - 0.6).toFixed(1)} L${(60 + rx * 0.96).toFixed(1)} ${(ojoY - 2.4).toFixed(1)}" ${varilla}/>
+    <path d="M${(60 - sep - r * 0.55).toFixed(1)} ${(ojoY - r * 0.55).toFixed(1)} l${(r * 0.7).toFixed(1)} ${(-r * 0.3).toFixed(1)}"
+      stroke="#ffffff" stroke-width="1.8" opacity=".5" stroke-linecap="round"/>
+    <path d="M${(60 + sep - r * 0.55).toFixed(1)} ${(ojoY - r * 0.55).toFixed(1)} l${(r * 0.7).toFixed(1)} ${(-r * 0.3).toFixed(1)}"
+      stroke="#ffffff" stroke-width="1.8" opacity=".5" stroke-linecap="round"/>`;
 }
 
 function adornos(cara) {
