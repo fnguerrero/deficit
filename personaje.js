@@ -284,10 +284,20 @@ function brazos(med, pose, col) {
            stroke="${PALETA.pielSombra}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`
       : '';
 
+    /* El brazo no es un tubo: el de arriba lleva el biceps y el de abajo se
+       afina hacia la muneca. Con un unico trazo de ancho constante daba lo
+       mismo entrenar que no —el brazo solo se hacia mas gordo, igual que con
+       grasa— y era la razon principal de que el muneco no se viera fuerte.
+       El antebrazo va primero para que el brazo de arriba le monte encima. */
+    const gordo = med.brazo * 1.85 * (1 + med.fuerza * 0.42);
+    const fino = med.brazo * 1.85 * (1 - med.fuerza * 0.16);
+
     return `
       <g transform="rotate(${(pose.brazos * s).toFixed(1)} ${hombroX.toFixed(1)} ${Y.hombro + 4})">
-        ${miembro(`M${hombroX.toFixed(1)} ${Y.hombro + 3} L${codo.toFixed(1)} ${codoY} L${mano.toFixed(1)} ${manoY}`,
-      med.brazo * 1.85, col.piel, col.pielSombra)}
+        ${miembro(`M${codo.toFixed(1)} ${codoY} L${mano.toFixed(1)} ${manoY}`,
+      fino, col.piel, col.pielSombra)}
+        ${miembro(`M${hombroX.toFixed(1)} ${Y.hombro + 3} L${codo.toFixed(1)} ${codoY}`,
+      gordo, col.piel, col.pielSombra)}
         <circle cx="${mano.toFixed(1)}" cy="${manoY + 2}" r="${(med.brazo * (pose.punos ? 1.15 : 0.9)).toFixed(1)}"
           fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}"/>
         ${pose.punos ? `<path d="M${(mano - med.brazo).toFixed(1)} ${manoY + 2} h${(med.brazo * 2).toFixed(1)}"
@@ -354,7 +364,7 @@ function volumen(med, col) {
     /* Las líneas de músculo van en el color del contorno y no en el de la ropa:
        con el tono de la remera se perdían contra la propia remera y el torso de
        alguien que entrena se veía igual de liso que el de alguien que no. */
-    const l = `stroke="${PALETA.linea}" fill="none" stroke-linecap="round" opacity=".55"`;
+    const l = `stroke="${PALETA.linea}" fill="none" stroke-linecap="round" opacity=".72"`;
 
     /* Pectorales: el surco del medio y la línea de abajo. */
     out += `<path d="M60 ${Y.pecho - 6} v${(10 + f * 6).toFixed(1)}" ${l} stroke-width="${(2.2 + f * 1.4).toFixed(1)}"/>
@@ -388,12 +398,34 @@ function hombros(med, col) {
   if (med.fuerza <= 0.4) return '';
   const f = (med.fuerza - 0.4) / 0.6;
 
+  /* Antes era una linea curva al 50% de opacidad sobre el brazo, y a este
+     tamano una linea no es un musculo: es una arruga. El deltoide tiene que
+     tener VOLUMEN propio —relleno, contorno y su sombra— porque es la pieza
+     que primero lee "entrena", incluso antes que el ancho del torso. */
+  /* No una elipse cerrada sobre el hombro —eso se lee como un huevo pegado—
+     sino una TAPA que arranca cerca del cuello, monta sobre el nacimiento del
+     brazo y se cierra por abajo. Va despues de los brazos justamente para poder
+     montarse encima; si fuera antes, el brazo la taparia.
+
+     Y no una linea: a este tamano una linea curva sobre el brazo no es un
+     musculo, es una arruga. El deltoide es lo que primero lee "entrena". */
   return [-1, 1].map(sg => {
-    const x = 60 + sg * (med.hombro - 1);
-    return `<path d="M${(x - sg * 2).toFixed(1)} ${Y.hombro - 4}
-        a${(6 + f * 4).toFixed(1)} ${(7 + f * 5).toFixed(1)} 0 0 ${sg > 0 ? 1 : 0} ${(sg * 2.5).toFixed(1)} ${(14 + f * 6).toFixed(1)}"
-      stroke="${PALETA.linea}" stroke-width="${(2 + f * 1.2).toFixed(1)}" fill="none"
-      stroke-linecap="round" opacity=".5"/>`;
+    const dentro = 60 + sg * med.hombro * 0.52;
+    const fuera = 60 + sg * (med.hombro + med.brazo * (0.5 + f * 0.3));
+    const medio = (dentro + fuera) / 2;
+    const arriba = Y.hombro - 3 - f * 1.5;
+    const abajo = Y.hombro + 11 + f * 4;
+
+    return `<path d="M${dentro.toFixed(1)} ${(arriba + 7).toFixed(1)}
+        Q${(dentro + sg * 1).toFixed(1)} ${arriba.toFixed(1)} ${medio.toFixed(1)} ${(arriba + 0.5).toFixed(1)}
+        Q${fuera.toFixed(1)} ${(arriba + 1.5).toFixed(1)} ${fuera.toFixed(1)} ${(abajo - 4).toFixed(1)}
+        Q${(medio + sg * 1).toFixed(1)} ${abajo.toFixed(1)} ${dentro.toFixed(1)} ${(arriba + 7).toFixed(1)} Z"
+      fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
+      <path d="M${medio.toFixed(1)} ${(arriba + 0.5).toFixed(1)}
+        Q${fuera.toFixed(1)} ${(arriba + 1.5).toFixed(1)} ${fuera.toFixed(1)} ${(abajo - 4).toFixed(1)}
+        Q${(medio + sg * 1).toFixed(1)} ${abajo.toFixed(1)} ${dentro.toFixed(1)} ${(arriba + 7).toFixed(1)}
+        Q${(medio + sg * 2.5).toFixed(1)} ${(abajo - 5).toFixed(1)} ${medio.toFixed(1)} ${(arriba + 0.5).toFixed(1)} z"
+      fill="${col.pielSombra}" opacity=".8"/>`;
   }).join('');
 }
 

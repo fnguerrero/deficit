@@ -1040,6 +1040,29 @@ test('la cara del personaje tiene ojos, cejas y boca', () => {
 });
 
 
+test('el hombro del que entrena es una pieza con relleno, no una raya', () => {
+  /* El deltoide era una linea curva al 50% sobre el brazo, y a este tamano una
+     linea no se lee como musculo sino como una arruga: el muneco no se veia
+     fuerte por mas musculatura que tuviera. Tiene que aportar area rellena. */
+  const flojo = svgPersonaje('neutral', 96, { efectiva: .4, musculatura: 0 }, null);
+  const fuerte = svgPersonaje('neutral', 96, { efectiva: .4, musculatura: 1 }, null);
+
+  const rellenoPiel = (svg) => svg.split(`fill="${PALETA.piel}"`).length;
+  esperarQue(rellenoPiel(fuerte) > rellenoPiel(flojo),
+    'el hombro musculoso no agrega ninguna pieza rellena');
+});
+
+test('el brazo del que entrena no es un tubo de ancho parejo', () => {
+  /* Con un solo trazo constante, entrenar y engordar hacian lo mismo con el
+     brazo: agrandarlo. El de arriba lleva el biceps y el de abajo se afina. */
+  const svg = svgPersonaje('neutral', 96, { efectiva: .3, musculatura: 1 }, null);
+  const anchos = [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map(m => Number(m[1]));
+  const gruesos = anchos.filter(a => a > 8);
+  esperarQue(new Set(gruesos.map(a => a.toFixed(1))).size > 1,
+    'todos los trazos gruesos miden lo mismo: el brazo sigue siendo un tubo');
+});
+
+
 /* ---- grasa y musculo no se dibujan igual ---- */
 
 test('el mismo ancho por grasa y por musculo da dibujos distintos', () => {
