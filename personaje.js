@@ -229,98 +229,14 @@ function posturaDePoder(base, fase) {
  * banda fina corrida hacia la derecha que hace de sombra dura. Es todo el cel
  * shading de brazos y piernas, sin una sola máscara.
  */
-function miembro(d, ancho, col, sombra) {
-  return `
-    <path d="${d}" stroke="${PALETA.linea}" stroke-width="${(ancho + LINEA).toFixed(1)}"
-      fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="${d}" stroke="${col}" stroke-width="${ancho.toFixed(1)}"
-      fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="${d}" stroke="${sombra}" stroke-width="${(ancho * 0.3).toFixed(1)}"
-      fill="none" stroke-linecap="butt" stroke-linejoin="round"
-      transform="translate(${(ancho * 0.3).toFixed(1)} 0)" opacity=".85"/>`;
-}
-
-function piernas(med, col, pose) {
-  const sep = med.cadera * 0.5 + 1 + (pose?.piernas || 0) * 10;
-  const g = med.pierna;
-  const iz = 60 - sep;
-  const de = 60 + sep;
-
-  /* La pierna entera en un solo trazo: dos trazos separados dejaban una costura
-     redonda en la rodilla y el conjunto parecia un muneco de salchichas. */
-  const pierna = (x, s2) => `M${x.toFixed(1)} ${Y.cadera - 4}
-      L${(x + s2 * 1).toFixed(1)} ${Y.rodilla} L${(x + s2 * 1.5).toFixed(1)} ${Y.pie - 5}`;
-
-  return `
-    ${miembro(pierna(iz, -1), g * 1.85, col.piel, col.pielSombra)}
-    ${miembro(pierna(de, 1), g * 1.85, col.piel, col.pielSombra)}
-
-    <g stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round">
-      <path d="M${(iz - 8.5).toFixed(1)} ${Y.pie - 2} h14.5 a3.4 3.4 0 0 0 0 -7 h-10 a4.4 4.4 0 0 0 -4.5 3.4z" fill="${PALETA.zapa}"/>
-      <path d="M${(de + 8.5).toFixed(1)} ${Y.pie - 2} h-14.5 a3.4 3.4 0 0 1 0 -7 h10 a4.4 4.4 0 0 1 4.5 3.4z" fill="${PALETA.zapa}"/>
-      <path d="M${(iz - 9).toFixed(1)} ${Y.pie - 2} h15.5 v3 h-15.5z" fill="${PALETA.zapaOsc}"/>
-      <path d="M${(de + 9).toFixed(1)} ${Y.pie - 2} h-15.5 v3 h15.5z" fill="${PALETA.zapaOsc}"/>
-    </g>`;
-}
-
-function brazos(med, pose, col) {
-  const hx = med.hombro - med.brazo * 0.3;
-  const codoY = Y.pecho + 12;
-  const manoY = Y.cadera + 4;
-  const codoX = Math.max(med.hombro, med.pecho) - med.brazo * 0.15;
-  const manoX = Math.max(med.cintura, med.cadera) + med.brazo * 0.35;
-
-  const uno = (s) => {
-    const hombroX = 60 + hx * s;
-    const codo = 60 + codoX * s;
-    const mano = 60 + manoX * s;
-
-    /* El bíceps: una curva sobre el brazo que solo aparece cuando hay músculo
-       de verdad. Es la línea que hace que un brazo grueso se lea entrenado en
-       vez de blando. */
-    const bicep = med.fuerza > 0.45
-      ? `<path d="M${(hombroX + 2.2 * s).toFixed(1)} ${Y.hombro + 9}
-           q${(4.5 * s).toFixed(1)} 5 ${(1 * s).toFixed(1)} 10"
-           stroke="${PALETA.pielSombra}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`
-      : '';
-
-    /* El brazo no es un tubo: el de arriba lleva el biceps y el de abajo se
-       afina hacia la muneca. Con un unico trazo de ancho constante daba lo
-       mismo entrenar que no —el brazo solo se hacia mas gordo, igual que con
-       grasa— y era la razon principal de que el muneco no se viera fuerte.
-       El antebrazo va primero para que el brazo de arriba le monte encima. */
-    const gordo = med.brazo * 1.85 * (1 + med.fuerza * 0.42);
-    const fino = med.brazo * 1.85 * (1 - med.fuerza * 0.16);
-
-    return `
-      <g transform="rotate(${(pose.brazos * s).toFixed(1)} ${hombroX.toFixed(1)} ${Y.hombro + 4})">
-        ${miembro(`M${codo.toFixed(1)} ${codoY} L${mano.toFixed(1)} ${manoY}`,
-      fino, col.piel, col.pielSombra)}
-        ${miembro(`M${hombroX.toFixed(1)} ${Y.hombro + 3} L${codo.toFixed(1)} ${codoY}`,
-      gordo, col.piel, col.pielSombra)}
-        <circle cx="${mano.toFixed(1)}" cy="${manoY + 2}" r="${(med.brazo * (pose.punos ? 1.15 : 0.9)).toFixed(1)}"
-          fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}"/>
-        ${pose.punos ? `<path d="M${(mano - med.brazo).toFixed(1)} ${manoY + 2} h${(med.brazo * 2).toFixed(1)}"
-          stroke="${PALETA.linea}" stroke-width="1.3" opacity=".7" stroke-linecap="round"/>` : ''}
-        ${bicep}
-      </g>`;
-  };
-
-  return uno(-1) + uno(1);
-}
-
 /*
- * El relieve del torso: lo que distingue ancho de MÚSCULO y ancho de GRASA.
- *
- * Sin esto los dos ejes hacían exactamente lo mismo —ensanchar la silueta— y el
- * personaje de alguien que entrena se veía igual de blando que el de alguien
- * que no. Es el mismo ancho contado de dos formas distintas, y el dibujo tiene
- * que poder decir cuál de las dos es.
+ * El relieve del torso.
  *
  * La grasa se dibuja como VOLUMEN que cuelga: una panza redonda por debajo de
- * la cintura, con su pliegue y sus rollos al costado. El músculo se dibuja como
- * SEPARACIÓN entre piezas: deltoides, trapecios, pectorales y la línea del
- * abdomen. Volumen abajo contra piezas arriba.
+ * la cintura, con su pliegue y sus rollos al costado. El musculo se dibuja como
+ * SEPARACION entre piezas: pectorales, trapecios y la linea del abdomen.
+ * Volumen abajo contra piezas arriba. Sin esa separacion los dos ejes hacen lo
+ * mismo —ensanchar— y el torso del que entrena se ve igual de blando.
  */
 function volumen(med, col) {
   let out = '';
@@ -386,47 +302,6 @@ function volumen(med, col) {
   }
 
   return out;
-}
-
-/*
- * Los deltoides: una tapa redonda sobre cada hombro.
- *
- * Va por fuera del torso y no adentro, porque el brazo se dibuja después y le
- * pasaría por encima. Se ve solo cuando hay músculo de verdad.
- */
-function hombros(med, col) {
-  if (med.fuerza <= 0.4) return '';
-  const f = (med.fuerza - 0.4) / 0.6;
-
-  /* Antes era una linea curva al 50% de opacidad sobre el brazo, y a este
-     tamano una linea no es un musculo: es una arruga. El deltoide tiene que
-     tener VOLUMEN propio —relleno, contorno y su sombra— porque es la pieza
-     que primero lee "entrena", incluso antes que el ancho del torso. */
-  /* No una elipse cerrada sobre el hombro —eso se lee como un huevo pegado—
-     sino una TAPA que arranca cerca del cuello, monta sobre el nacimiento del
-     brazo y se cierra por abajo. Va despues de los brazos justamente para poder
-     montarse encima; si fuera antes, el brazo la taparia.
-
-     Y no una linea: a este tamano una linea curva sobre el brazo no es un
-     musculo, es una arruga. El deltoide es lo que primero lee "entrena". */
-  return [-1, 1].map(sg => {
-    const dentro = 60 + sg * med.hombro * 0.52;
-    const fuera = 60 + sg * (med.hombro + med.brazo * (0.5 + f * 0.3));
-    const medio = (dentro + fuera) / 2;
-    const arriba = Y.hombro - 3 - f * 1.5;
-    const abajo = Y.hombro + 11 + f * 4;
-
-    return `<path d="M${dentro.toFixed(1)} ${(arriba + 7).toFixed(1)}
-        Q${(dentro + sg * 1).toFixed(1)} ${arriba.toFixed(1)} ${medio.toFixed(1)} ${(arriba + 0.5).toFixed(1)}
-        Q${fuera.toFixed(1)} ${(arriba + 1.5).toFixed(1)} ${fuera.toFixed(1)} ${(abajo - 4).toFixed(1)}
-        Q${(medio + sg * 1).toFixed(1)} ${abajo.toFixed(1)} ${dentro.toFixed(1)} ${(arriba + 7).toFixed(1)} Z"
-      fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
-      <path d="M${medio.toFixed(1)} ${(arriba + 0.5).toFixed(1)}
-        Q${fuera.toFixed(1)} ${(arriba + 1.5).toFixed(1)} ${fuera.toFixed(1)} ${(abajo - 4).toFixed(1)}
-        Q${(medio + sg * 1).toFixed(1)} ${abajo.toFixed(1)} ${dentro.toFixed(1)} ${(arriba + 7).toFixed(1)}
-        Q${(medio + sg * 2.5).toFixed(1)} ${(abajo - 5).toFixed(1)} ${medio.toFixed(1)} ${(arriba + 0.5).toFixed(1)} z"
-      fill="${col.pielSombra}" opacity=".8"/>`;
-  }).join('');
 }
 
 function torso(med, col) {

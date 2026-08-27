@@ -1040,26 +1040,24 @@ test('la cara del personaje tiene ojos, cejas y boca', () => {
 });
 
 
-test('el hombro del que entrena es una pieza con relleno, no una raya', () => {
-  /* El deltoide era una linea curva al 50% sobre el brazo, y a este tamano una
-     linea no se lee como musculo sino como una arruga: el muneco no se veia
-     fuerte por mas musculatura que tuviera. Tiene que aportar area rellena. */
-  const flojo = svgPersonaje('neutral', 96, { efectiva: .4, musculatura: 0 }, null);
-  const fuerte = svgPersonaje('neutral', 96, { efectiva: .4, musculatura: 1 }, null);
+test('el musculo del brazo abre arriba, no en la muneca', () => {
+  /* El punto entero del relieve, del lado del brazo: entrenar tiene que dar
+     hombro y biceps. Si los cuatro anchos crecieran parejo, el brazo del que
+     entrena seria el mismo del que engorda, solo que mas grande. */
+  const flojo = anchosBrazo(medidasDe(.4, 0, 0));
+  const fuerte = anchosBrazo(medidasDe(.4, 1, 0));
 
-  const rellenoPiel = (svg) => svg.split(`fill="${PALETA.piel}"`).length;
-  esperarQue(rellenoPiel(fuerte) > rellenoPiel(flojo),
-    'el hombro musculoso no agrega ninguna pieza rellena');
+  const creceHombro = fuerte.hombro / flojo.hombro;
+  const creceMuneca = fuerte.muneca / flojo.muneca;
+  esperarQue(creceHombro > creceMuneca * 1.15,
+    `el hombro crece ${creceHombro.toFixed(2)} y la muneca ${creceMuneca.toFixed(2)}`);
 });
 
-test('el brazo del que entrena no es un tubo de ancho parejo', () => {
-  /* Con un solo trazo constante, entrenar y engordar hacian lo mismo con el
-     brazo: agrandarlo. El de arriba lleva el biceps y el de abajo se afina. */
-  const svg = svgPersonaje('neutral', 96, { efectiva: .3, musculatura: 1 }, null);
-  const anchos = [...svg.matchAll(/stroke-width="([\d.]+)"/g)].map(m => Number(m[1]));
-  const gruesos = anchos.filter(a => a > 8);
-  esperarQue(new Set(gruesos.map(a => a.toFixed(1))).size > 1,
-    'todos los trazos gruesos miden lo mismo: el brazo sigue siendo un tubo');
+test('el brazo se afina del hombro a la muneca', () => {
+  const a = anchosBrazo(medidasDe(.4, 1, 0));
+  esperarQue(a.hombro > a.biceps, 'el hombro es lo mas ancho');
+  esperarQue(a.biceps > a.codo, 'el codo se estrangula');
+  esperarQue(a.codo > a.muneca, 'y la muneca es lo mas fino');
 });
 
 
