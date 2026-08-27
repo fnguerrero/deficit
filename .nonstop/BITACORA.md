@@ -244,3 +244,9 @@ Nico sumo despues el veredicto honesto de si va bien.
 #35 — El momento de transformarse: sacudon, destello, grito y un sonido propio (una onda de sierra que arranca en 110 Hz y revienta en 880). Durante esos 780 ms se le fuerza la cara de furia y la pose maxima aunque la fase recien ganada sea la 1: es el unico lugar donde el dibujo miente sobre el estado, y vale la pena porque un instante sin nada que lo marque no se registra como premio
 
 #36 — Tres tests en rojo, los tres fijando la curva vieja de dos tramos. Se actualizaron a la de tres y se le sumo el caso que faltaba: que 110, 150 y 200 kg den cuerpos distintos entre si
+
+#37 — El relieve del torso. Hasta aca los dos ejes hacian exactamente lo mismo —ensanchar la silueta— asi que el cuerpo de alguien que entrena se veia igual de blando que el de alguien que no. Ahora la grasa se dibuja como VOLUMEN que cuelga (panza en dos tonos, con su pliegue y sus rollos al costado) y el musculo como SEPARACION entre piezas (deltoides, trapecios, pectorales y linea del abdomen). Volumen abajo contra piezas arriba
+
+#37b — Dos detalles que solo aparecieron mirando el render: las lineas de musculo estaban en el color de la remera y se perdian contra la propia remera, asi que pasaron al color del contorno; y el ruedo de la musculosa era fijo, con lo cual la mitad de abajo de la panza quedaba afuera y el pliegue caia sobre el short, donde se leia como un cinturon. Ahora el ruedo baja con la contextura
+
+#37c — Un test que escribi mal: buscaba la panza por su coordenada y agarraba los ojos, que tambien son elipses. Se corrigio la prueba
