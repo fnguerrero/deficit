@@ -137,7 +137,7 @@ function cabeza(med, cara, col, fase) {
 
     ${anteojos(sep, ojoY, rx)}
 
-    <path d="M58.4 ${cy + 8} l2.6 3.4 l-3.4 .6z" fill="${PALETA.pielSombra}"/>
+    <path d="M${(60 - rx * 0.1).toFixed(1)} ${cy + 7} l2.2 3 l-3 .6z" fill="${PALETA.pielSombra}"/>
     ${boca(cara.boca, cy + 13, rx)}
     ${cara.lagrima ? `<path d="M${(60 - sep + 4).toFixed(1)} ${ojoY + 7} q2 5 0 7 q-2 -2 0 -7z" fill="#7ec8f0"
       stroke="${PALETA.linea}" stroke-width="1.2"/>` : ''}`;

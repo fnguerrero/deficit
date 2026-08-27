@@ -162,9 +162,12 @@ function brazos(med, pose, col) {
   const hx = med.hombro - med.brazo * 0.25;
   const codoX = Math.max(med.hombro, med.pecho) - med.brazo * 0.1;
   const munecaX = Math.max(med.cintura, med.cadera) + med.brazo * 0.3;
-  const manoY = Y.cadera + 4;
+  const manoY = Y.cadera + 2;
 
   const uno = (s) => {
+    /* La mano es un puno chico al final del antebrazo, no una pelota colgando:
+       con el radio del brazo entero se veia como un guante de box. */
+    const rMano = med.brazo * (pose.punos ? 0.82 : 0.66);
     const hombroX = 60 + hx * s;
     const mano = 60 + munecaX * s;
     const d = siluetaBrazo(hx, codoX, munecaX, s, med);
@@ -185,9 +188,10 @@ function brazos(med, pose, col) {
         <path d="${d}" fill="${col.piel}" stroke="${PALETA.linea}"
           stroke-width="${LINEA}" stroke-linejoin="round"/>
         <path d="${siluetaBrazo(hx, codoX, munecaX, s, med, 0.36)}" fill="${col.pielSombra}" opacity=".8"/>
-        <circle cx="${mano.toFixed(1)}" cy="${manoY + 2}" r="${(med.brazo * (pose.punos ? 1.15 : 0.92)).toFixed(1)}"
+        <ellipse cx="${mano.toFixed(1)}" cy="${(manoY + rMano * 0.5).toFixed(1)}"
+          rx="${(rMano * 0.94).toFixed(1)}" ry="${rMano.toFixed(1)}"
           fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}"/>
-        ${pose.punos ? `<path d="M${(mano - med.brazo).toFixed(1)} ${manoY + 2} h${(med.brazo * 2).toFixed(1)}"
+        ${pose.punos ? `<path d="M${(mano - rMano * 0.8).toFixed(1)} ${(manoY + rMano * 0.5).toFixed(1)} h${(rMano * 1.6).toFixed(1)}"
           stroke="${PALETA.linea}" stroke-width="1.3" opacity=".7" stroke-linecap="round"/>` : ''}
         ${relieve}
       </g>`;
