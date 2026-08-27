@@ -331,7 +331,9 @@ function renderMascota() {
   const fase = faseDe(perfectos);
   const cuerpo = cuerpoDe(state.perfil, state.dias, hoyISO(), { bonus: bonusDePerfectos(perfectos) });
 
-  cont.innerHTML = svgPersonaje(est.animo, 70, cuerpo, fase);
+  /* 86 y no 70: el lienzo crecio para que entren las puntas del pelo y el aura,
+     asi que a 70 la figura en si quedaba en 43 px de ancho. */
+  cont.innerHTML = svgPersonaje(est.animo, 86, cuerpo, fase);
   pintarFase(fase, perfectos);
   $('mascotaTitulo').textContent = est.titulo;
 

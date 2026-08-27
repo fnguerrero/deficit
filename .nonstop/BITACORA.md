@@ -210,3 +210,13 @@ Nico sumo despues el veredicto honesto de si va bien.
 #24 — Bug viejo que aparecio de paso: el chequeo de version nueva al volver a la app usaba `reg` fuera de su alcance y tiraba ReferenceError cada vez. O sea que no corria nunca, y quien deja la app abierta dias en el celular se quedaba en una version vieja sin enterarse
 
 #25 — version.py suma una segunda guardia: avisa si un tema define --txt pero no --txt2. Se probo que dispare
+
+#26 — Las fases no transmitian nada: cambiaban el color del pelo sobre el mismo muneco chibi parado de brazos caidos. Lo que las hace imponentes no es el color sino la SILUETA. Ahora la fase suma musculo, abre la postura, cierra los punos, separa las piernas y pone cara de furia de la 2 para arriba. El pelo pasa a puntas altas, filosas e inclinadas hacia atras (triangulos sueltos, no un zigzag), el aura son lenguas de fuego subiendo en vez de un halo redondo, y desde la fase 3 se resquebraja el suelo
+
+#26b — La cabeza baja de 26.5 a 23 de radio: una cabeza que se lleva un tercio de la figura se lee tierna siempre, por mucha ceja enojada que tenga
+
+#26c — Los brazos quedaban en cruz porque la pose de la fase se sumaba a la de 'genial', que ya los levanta 26 grados. Ahora el angulo lo fija la fase en absoluto
+
+#27 — Un test en rojo que marcaba algo real: el musculo de la fase angostaba la cintura, o sea que cumplir un dia te dibujaba mas flaco. Se separo en un tercer eje (`poder`) que entra en todo lo que ensancha y en nada de lo que afina. El test viejo pedia que la fase no tocara la silueta —regla que cambio a pedido de Nico— y se reemplazo por el que de verdad importa: puede ponerte mas grande, nunca mas flaco
+
+#27b — El otro rojo era el test que contaba los animos por Object.keys(CARAS): 'furioso' es la cara que impone la fase, no un animo. La lista va explicita

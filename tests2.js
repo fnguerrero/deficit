@@ -214,10 +214,21 @@ test('la comida del dia NO toca el cuerpo: solo la cara', () => {
   esperarQue(tranquilo !== culposo, 'pero algo tiene que cambiar: la cara');
 });
 
+/* Los animos del dia. CARAS tiene uno mas —'furioso'— que no es un animo sino
+   la cara que impone la fase, asi que la lista va explicita. */
+const ANIMOS = ['neutral', 'bien', 'genial', 'flojo', 'cansado', 'seco', 'pesado', 'triste'];
+
 test('los ocho animos siguen siendo ocho dibujos distintos', () => {
-  const vistos = new Set();
-  for (const a of Object.keys(CARAS)) vistos.add(svgPersonaje(a, 96, CUERPO_BLANDO));
+  const vistos = new Set(ANIMOS.map(a => svgPersonaje(a, 96, CUERPO_BLANDO)));
   esperar(vistos.size, 8);
+});
+
+test('cada animo tiene cara y pose, y la de furia no es un animo', () => {
+  for (const a of ANIMOS) {
+    esperarQue(!!CARAS[a], a + ' sin cara');
+    esperarQue(!!POSES[a], a + ' sin pose');
+  }
+  esperarQue(!!CARAS.furioso && !POSES.furioso, 'furioso es cara de fase, no animo');
 });
 
 test('cada animo tiene su pose', () => {
@@ -248,7 +259,7 @@ test('el dibujo se puede meter en el DOM y rasterizar', () => {
   const svg = svgPersonaje('bien', 74, CUERPO_BLANDO);
   esperarQue(svg.startsWith('<svg'), 'arranca en svg');
   esperarQue(/xmlns=/.test(svg), 'sin xmlns no se puede rasterizar');
-  esperarQue(/viewBox="0 -26 120 202"/.test(svg), 'el lienzo se estiro para arriba por el pelo de las fases');
+  esperarQue(/viewBox="-8 -46 136 222"/.test(svg), 'el lienzo se estiro para arriba por el pelo de las fases');
 });
 
 test('ninguna combinacion de cuerpo y animo genera NaN', () => {
@@ -276,7 +287,7 @@ test('ningun path sale con doble signo', () => {
 test('el tamano pedido manda, y la figura es mas alta que ancha', () => {
   const svg = svgPersonaje('neutral', 100, CUERPO_BLANDO);
   esperarQue(/height="100"/.test(svg));
-  esperarQue(/width="59"/.test(svg), 'una persona parada no es cuadrada');
+  esperarQue(/width="61"/.test(svg), 'una persona parada no es cuadrada');
 });
 
 
@@ -811,6 +822,34 @@ test('los rayos aparecen recien en la fase 2', () => {
   esperarQue(FASES[2].rayos && FASES[FASE_MAX].rayos, 'de la 2 para arriba si');
 });
 
+test('la fase abre la postura y suma musculo', () => {
+  /* Lo que hace que se lea imponente es la silueta, no el color: sin postura
+     abierta y hombros anchos, la transformacion era un cambio de peinado. */
+  for (let i = 1; i < FASES.length; i++) {
+    esperarQue(FASES[i].musculo > FASES[i - 1].musculo, 'fase ' + i + ': musculo');
+    esperarQue(FASES[i].pose >= FASES[i - 1].pose, 'fase ' + i + ': pose');
+  }
+  const base = POSES.neutral;
+  const poder = posturaDePoder(base, FASES[FASE_MAX]);
+  esperarQue(poder.brazos < base.brazos - 20, 'los brazos se separan del cuerpo');
+  esperarQue(poder.punos, 'y los punos se cierran');
+});
+
+test('la fase ensancha los hombros de verdad', () => {
+  const ancho = (f) => medidasDe(.4, .3, f.musculo).hombro;
+  esperarQue(ancho(FASES[FASE_MAX]) > ancho(FASES[0]) + 4, 'la fase maxima tiene que verse');
+});
+
+test('de la fase 2 para arriba la cara la manda la fase', () => {
+  /* Una sonrisa tierna encima de un aura de fuego se contradice sola, y gana la
+     sonrisa. */
+  const cu = { efectiva: .4, musculatura: .3 };
+  esperarQue(svgPersonaje('genial', 96, cu, faseDe(2)).includes('grito') === false, 'la boca sale como path');
+  const conFuria = svgPersonaje('genial', 96, cu, faseDe(3));
+  const sinFuria = svgPersonaje('genial', 96, cu, faseDe(1));
+  esperarQue(conFuria !== sinFuria, 'la fase 3 no puede tener la misma cara que la 1');
+});
+
 test('el bonus de musculo sube con los dias y tiene tope', () => {
   esperar(bonusDePerfectos(1), BONUS_POR_PERFECTO);
   esperarQue(bonusDePerfectos(2) > bonusDePerfectos(1));
@@ -842,15 +881,30 @@ test('el bonus no puede pasar el tope del eje', () => {
 
 /* ---- el dibujo de la fase ---- */
 
-test('la fase cambia el dibujo sin tocar el cuerpo', () => {
+test('la fase ensancha, pero NUNCA afina', () => {
+  /* La regla que reemplaza a la anterior. Antes el test pedia que la fase no
+     tocara la silueta; ahora si la toca, porque Nico pidio verse musculoso al
+     cumplir. Lo que no puede pasar —y es lo que de verdad importa— es que
+     cumplir un dia te dibuje mas flaco: eso seria decirte que ya bajaste de
+     peso sin que la balanza haya dicho nada. */
+  const flaca = medidasDe(.6, .3, 0);
+  const poderosa = medidasDe(.6, .3, FASES[FASE_MAX].musculo);
+
+  esperarQue(poderosa.hombro > flaca.hombro + 4, 'los hombros tienen que crecer');
+  esperarQue(poderosa.brazo > flaca.brazo, 'los brazos tambien');
+  esperar(poderosa.cintura, flaca.cintura, 'la cintura NO se puede achicar por una racha');
+  esperar(poderosa.cadera, flaca.cadera, 'la cadera tampoco');
+});
+
+test('el cuerpo medido no se entera de la fase', () => {
   const cu = { efectiva: .4, musculatura: .4 };
-  const torsoDe = (svg) => svg.split('<path d="M ')[1].split('"')[0];
-
   const normal = svgPersonaje('bien', 96, cu, faseDe(0));
-  const encendido = svgPersonaje('bien', 96, cu, faseDe(3));
+  const alta = svgPersonaje('bien', 96, cu, faseDe(3));
+  esperarQue(normal !== alta, 'algo tiene que verse');
 
-  esperar(torsoDe(normal), torsoDe(encendido), 'la fase no puede cambiar la silueta');
-  esperarQue(normal !== encendido, 'pero algo tiene que verse');
+  /* La contextura que entra al dibujo es la misma en las dos: la fase no la
+     toca ni de casualidad. */
+  esperar(medidasDe(cu.efectiva, cu.musculatura, 0).c, medidasDe(cu.efectiva, cu.musculatura, .7).c);
 });
 
 test('cada fase dibuja distinto de las demas', () => {
