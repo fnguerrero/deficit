@@ -40,6 +40,8 @@ const PALETA = {
   short: '#39445a',
   shortOsc: '#28303f',
 
+  /* Los pedazos de piso que levanta el aura de las fases altas. */
+  escombro: '#8a6a4e',
   zapa: '#e9edf4',
   zapaOsc: '#a9b3c2',
 
@@ -99,9 +101,14 @@ function medidasDe(contextura, musculatura, poder = 0) {
 
 /** El medio ancho del torso a una altura cualquiera, interpolando. */
 function anchoEn(y, med) {
+  /* La panza es un punto propio del contorno, no una elipse pintada encima.
+     Con la silueta interpolando derecho de la cintura a la cadera, el panzon
+     tenia el perfil de un barril recto y la barriga era una mancha clara
+     dibujada sobre una prenda que no se enteraba. */
+  const panza = med.cintura * (1 + Math.max(0, med.c - 0.45) * 0.4);
   const puntos = [
     [Y.hombro, med.hombro], [Y.pecho, med.pecho],
-    [Y.cintura, med.cintura], [Y.cadera, med.cadera]
+    [Y.cintura, med.cintura], [Y.cintura + 6, panza], [Y.cadera, med.cadera]
   ];
 
   if (y <= puntos[0][0]) return puntos[0][1];
@@ -285,11 +292,19 @@ function volumen(med, col) {
        alguien que entrena se veía igual de liso que el de alguien que no. */
     const l = `stroke="${PALETA.linea}" fill="none" stroke-linecap="round" opacity=".72"`;
 
-    /* Pectorales: el surco del medio y la línea de abajo. */
-    out += `<path d="M60 ${Y.pecho - 6} v${(10 + f * 6).toFixed(1)}" ${l} stroke-width="${(2.2 + f * 1.4).toFixed(1)}"/>
-      <path d="M${(60 - med.pecho * 0.74).toFixed(1)} ${Y.pecho - 6}
-        q${(med.pecho * 0.74).toFixed(1)} ${(8 + f * 5).toFixed(1)} ${(med.pecho * 1.48).toFixed(1)} 0"
-        ${l} stroke-width="${(2 + f * 1.2).toFixed(1)}"/>`;
+    /*
+     * Los pectorales: un arco por lado que sale del esternon y sube hacia la
+     * axila, mas el surco del medio. El arco tiene que empezar POR DEBAJO del
+     * escote (Y.hombro + 12): dibujado a la altura del pecho anatomico caia
+     * justo sobre el borde de la prenda y se leia como una arruga de la tela.
+     */
+    const yP = Y.pecho + 2;
+    out += [-1, 1].map(sg => `<path d="M60 ${(yP + 5).toFixed(1)}
+        Q${(60 + sg * med.pecho * 0.52).toFixed(1)} ${(yP + 8 + f * 3).toFixed(1)} ${(60 + sg * med.pecho * 0.88).toFixed(1)} ${(yP - 1).toFixed(1)}"
+      ${l} stroke-width="${(2.1 + f * 1.3).toFixed(1)}"/>`).join('');
+
+    out += `<path d="M60 ${(yP - 4).toFixed(1)} v${(9 + f * 4).toFixed(1)}"
+      ${l} stroke-width="${(2.2 + f * 1.4).toFixed(1)}"/>`;
 
     /* Trapecios: las dos diagonales del cuello al hombro. Es el detalle que más
        rápido lee como "entrena", incluso más que el ancho. */
@@ -297,10 +312,18 @@ function volumen(med, col) {
         L${(60 + sg * med.hombro * 0.82).toFixed(1)} ${(Y.hombro + 4 + f * 2).toFixed(1)}"
       ${l} stroke-width="${(2 + f * 1.2).toFixed(1)}"/>`).join('');
 
-    /* La línea del abdomen, solo si además no hay mucha panza tapándola. */
+    /*
+     * El abdomen: la linea media y dos pares de transversales. Solo sin panza
+     * encima, porque un abdominal marcado debajo de una panza es mentira.
+     */
     if (med.c < 0.6) {
-      out += `<path d="M60 ${(Y.pecho + 12).toFixed(1)} v${(12 + f * 6).toFixed(1)}"
+      const yA = yP + 12;
+      out += `<path d="M60 ${yA.toFixed(1)} v${(13 + f * 6).toFixed(1)}"
         ${l} stroke-width="${(1.8 + f).toFixed(1)}"/>`;
+
+      out += [0, 1].map(k => [-1, 1].map(sg => `<path d="M${(60 + sg * 1.5).toFixed(1)} ${(yA + 5 + k * 7).toFixed(1)}
+          l${(sg * med.cintura * (0.46 - k * 0.06)).toFixed(1)} ${(-1 - k).toFixed(1)}"
+        ${l} stroke-width="${(1.5 + f * 0.8).toFixed(1)}"/>`).join('')).join('');
     }
   }
 
@@ -378,7 +401,9 @@ function torso(med, col) {
      mitad de abajo de la panza quedaba afuera de la musculosa y el pliegue caía
      sobre el short, donde se leía como un cinturón. */
   const hemMusculosa = Y.cintura + 8 + med.c * 10;
-  const hemShort = Y.cadera + 17;
+  /* El short llega a media pierna, como en la referencia. A Y.cadera + 17
+     terminaba arriba del muslo y el muneco quedaba en calzoncillos. */
+  const hemShort = Y.cadera + 26;
   const cu = med.cuello;
 
 
@@ -392,6 +417,9 @@ function torso(med, col) {
     <path d="${mediaSilueta(med, Y.cadera - 6, hemShort)}" fill="${col.shortOsc}" opacity=".95"/>
     <path d="M60 ${Y.cadera + 4} v${(hemShort - Y.cadera - 4).toFixed(1)}"
       stroke="${PALETA.linea}" stroke-width="1.5" opacity=".55"/>
+    <path d="M${(60 - anchoEn(hemShort - 4, med) * 0.99).toFixed(1)} ${(hemShort - 4).toFixed(1)}
+        h${(anchoEn(hemShort - 4, med) * 1.98).toFixed(1)}"
+      stroke="${PALETA.linea}" stroke-width="1.5" opacity=".45"/>
 
     <path d="${siluetaRemera(med, hemTop, hemMusculosa)}" fill="${col.remera}"
       stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
