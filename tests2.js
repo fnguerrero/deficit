@@ -976,3 +976,41 @@ test('los 16 modos tienen emoji para el chip de Hoy', () => {
     esperarQue(!!m.emoji, m.id + ' sin emoji');
   }
 });
+
+/* ---- que el pelo no le tape los ojos ---- */
+
+test('la linea del pelo queda por encima de las cejas', () => {
+  /* Paso dos veces. Los ojos se dibujan DESPUES del pelo, asi que nunca quedan
+     tapados del todo: lo que pasaba es que la frente entera era del color del
+     pelo y los ojos flotaban sobre una vincha. Las cejas viven en cy - 8 y el
+     pelo tiene que terminar mas arriba que eso. */
+  const cy = 34;
+  const ry = medidasDe(.4, .2, 0).caraRy;
+  const { sien, pico, patilla } = lineaDelPelo(cy, ry);
+
+  esperarQue(pico < cy - 8, 'el pico del pelo pisa las cejas: ' + pico.toFixed(1));
+  esperarQue(sien < pico, 'a los costados tiene que subir, no bajar');
+  esperarQue(patilla > pico, 'las patillas si bajan, que para eso son patillas');
+  esperarQue(patilla < cy + ry * 0.3, 'pero no hasta la mandibula');
+});
+
+test('el ojo entra entero debajo de la linea del pelo', () => {
+  const cy = 34;
+  const med = medidasDe(.4, .2, 0);
+  const { pico } = lineaDelPelo(cy, med.caraRy);
+  const ojoY = cy + 2;
+
+  /* El alto del ojo sale de la misma cuenta que usa ojo(): r por 1.6 hacia
+     arriba desde su linea media. */
+  const topeOjo = ojoY - 5.4 * 1.6;
+  esperarQue(topeOjo > pico, `el pelo (${pico.toFixed(1)}) tapa el ojo (${topeOjo.toFixed(1)})`);
+});
+
+test('la cara del personaje tiene ojos, cejas y boca', () => {
+  /* Un conteo grueso, pero agarra el caso en que una parte desaparece entera. */
+  const svg = svgPersonaje('neutral', 96, { efectiva: .4, musculatura: .2 }, null);
+  esperarQue(svg.includes(PALETA.ojo), 'sin blanco de ojo no hay ojos');
+  esperarQue(svg.includes(PALETA.iris), 'ni iris');
+  esperarQue(svg.split(PALETA.ceja).length > 2, 'las dos cejas');
+  esperarQue(svg.includes(PALETA.bocaOsc) || svg.includes(PALETA.linea), 'y la boca');
+});
