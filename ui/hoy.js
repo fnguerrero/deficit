@@ -458,12 +458,19 @@ function renderEjercicio() {
     : 'Lo que quemes se suma al objetivo del día.';
 }
 
+/*
+ * Guardar cierra el modal. El boton es el final del tramite: quien lo toca ya
+ * dijo todo lo que tenia que decir, y quedarse mirando la misma ventana con el
+ * dato adentro obliga a un segundo toque en la X para volver a ver el dia.
+ * El toast queda igual, asi que la confirmacion no se pierde al cerrar.
+ */
 $('btnEjercicio').onclick = () => {
   const v = parseInt($('ejercicioHoy').value, 10);
   if (isNaN(v) || v < 0 || v > 5000) { toast('Valor inválido'); return; }
   dia().ejercicio = v;
   save(); renderHoy();
   toast('Ejercicio guardado');
+  cerrarObjetivo();
 };
 
 function editarComida(id) {
@@ -524,4 +531,5 @@ $('btnPeso').onclick = () => {
   if (fecha === hoyISO()) state.perfil.peso = v;
   save(); renderHoy(); renderPerfil(); renderHistorial();
   toast('Peso guardado');
+  cerrarObjetivo();
 };
