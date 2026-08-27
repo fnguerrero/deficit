@@ -21,7 +21,9 @@ LIMITES = [
     ('habitos.js', 300),
     ('mascota.js', 400),
     ('cuerpo.js', 250),
-    ('personaje.js', 500),
+    # el cuerpo entero: la cara y la transformacion ya salieron a sus propios
+    # archivos, y partirlo mas dispersaria el dibujo en tres lugares
+    ('personaje.js', 580),
     ('cara.js', 300),
     ('transformacion.js', 350),
     ('juego.js', 500),

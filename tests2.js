@@ -1035,3 +1035,54 @@ test('la cara del personaje tiene ojos, cejas y boca', () => {
   esperarQue(svg.split(PALETA.ceja).length > 2, 'las dos cejas');
   esperarQue(svg.includes(PALETA.bocaOsc) || svg.includes(PALETA.linea), 'y la boca');
 });
+
+
+/* ---- grasa y musculo no se dibujan igual ---- */
+
+test('el mismo ancho por grasa y por musculo da dibujos distintos', () => {
+  /* Es el punto entero del relieve. Antes los dos ejes hacian exactamente lo
+     mismo —ensanchar la silueta— y el torso de alguien que entrena se veia
+     igual de liso que el de alguien que no. */
+  const gordo = svgPersonaje('neutral', 96, { efectiva: .85, musculatura: 0 }, null);
+  const fuerte = svgPersonaje('neutral', 96, { efectiva: .2, musculatura: 1 }, null);
+  esperarQue(gordo !== fuerte);
+});
+
+test('la grasa dibuja volumen que cuelga', () => {
+  const chato = svgPersonaje('neutral', 96, { efectiva: .2, musculatura: 0 }, null);
+  const panzon = svgPersonaje('neutral', 96, { efectiva: .95, musculatura: 0 }, null);
+
+  /* Contar elipses y nada mas: buscar una coordenada concreta agarraba los
+     ojos, que tambien son elipses. */
+  const elipses = (svg) => svg.split('<ellipse').length;
+  esperarQue(elipses(panzon) > elipses(chato),
+    'con contextura alta tiene que aparecer el volumen de la panza');
+  esperarQue(panzon.includes('stroke-width="1.7"'), 'y su pliegue');
+});
+
+test('el musculo dibuja separacion entre piezas', () => {
+  const blando = { efectiva: .3, musculatura: 0 };
+  const marcado = { efectiva: .3, musculatura: 1 };
+
+  const lineas = (cu) => svgPersonaje('neutral', 96, cu, null)
+    .split(`stroke="${PALETA.linea}"`).length;
+
+  esperarQue(lineas(marcado) > lineas(blando) + 3,
+    'pectorales, trapecios, abdomen y deltoides tienen que sumar trazos');
+});
+
+test('con panza grande no se dibuja la linea del abdomen', () => {
+  /* Un abdomen marcado debajo de una panza es una contradiccion: si hay panza,
+     no se ve. */
+  const cu = { efectiva: .9, musculatura: 1 };
+  const med = medidasDe(cu.efectiva, cu.musculatura, 0);
+  esperarQue(med.c >= 0.6, 'este caso tiene que caer del lado de la panza');
+});
+
+test('el ruedo de la musculosa baja con la contextura', () => {
+  /* Con el ruedo fijo, la mitad de abajo de la panza quedaba afuera de la
+     remera y el pliegue caia sobre el short, donde parecia un cinturon. */
+  const alto = svgPersonaje('neutral', 96, { efectiva: .95, musculatura: 0 }, null);
+  const bajo = svgPersonaje('neutral', 96, { efectiva: .1, musculatura: 0 }, null);
+  esperarQue(alto.length > bajo.length, 'el dibujo con panza tiene mas partes');
+});

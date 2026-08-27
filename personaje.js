@@ -299,22 +299,113 @@ function brazos(med, pose, col) {
   return uno(-1) + uno(1);
 }
 
+/*
+ * El relieve del torso: lo que distingue ancho de MÚSCULO y ancho de GRASA.
+ *
+ * Sin esto los dos ejes hacían exactamente lo mismo —ensanchar la silueta— y el
+ * personaje de alguien que entrena se veía igual de blando que el de alguien
+ * que no. Es el mismo ancho contado de dos formas distintas, y el dibujo tiene
+ * que poder decir cuál de las dos es.
+ *
+ * La grasa se dibuja como VOLUMEN que cuelga: una panza redonda por debajo de
+ * la cintura, con su pliegue y sus rollos al costado. El músculo se dibuja como
+ * SEPARACIÓN entre piezas: deltoides, trapecios, pectorales y la línea del
+ * abdomen. Volumen abajo contra piezas arriba.
+ */
+function volumen(med, col) {
+  let out = '';
+
+  /* ---- grasa ---- */
+  if (med.c > 0.42) {
+    const g = (med.c - 0.42) / 0.58;
+    const cy = Y.cintura + 1;
+    const rx = med.cintura * (0.68 + g * 0.16);
+    const ry = Math.min(Y.cintura + 8 - Y.pecho, 9 + g * 11);
+
+    /* Dos tonos, como el resto: la panza recibe luz arriba a la izquierda y
+       sombra abajo a la derecha. Con un solo tono era una mancha plana que se
+       leía como un cinturón, no como volumen. */
+    out += `<ellipse cx="${(60 - rx * 0.12).toFixed(1)}" cy="${(cy - 1).toFixed(1)}"
+        rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"
+        fill="${mezclar(col.remera, '#ffffff', 0.18)}" opacity="${(0.55 + g * 0.3).toFixed(2)}"/>
+      <path d="M${(60 - rx * 0.1).toFixed(1)} ${(cy + ry * 0.92).toFixed(1)}
+        a${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(rx * 0.98).toFixed(1)} ${(-ry * 1.5).toFixed(1)}
+        a${(rx * 0.75).toFixed(1)} ${(ry * 0.9).toFixed(1)} 0 0 1 ${(-rx * 0.98).toFixed(1)} ${(ry * 1.5).toFixed(1)} z"
+        fill="${col.remeraOsc}" opacity="${(0.5 + g * 0.3).toFixed(2)}"/>`;
+
+    /* El pliegue de abajo: es lo que hace que la panza cuelgue en vez de ser
+       una pelota pintada sobre la remera. */
+    out += `<path d="M${(60 - rx * 0.82).toFixed(1)} ${(cy + ry * 0.5).toFixed(1)}
+        q${(rx * 0.82).toFixed(1)} ${(5 + g * 6).toFixed(1)} ${(rx * 1.64).toFixed(1)} 0"
+      stroke="${PALETA.linea}" stroke-width="1.7" fill="none" opacity="${(0.35 + g * 0.35).toFixed(2)}"
+      stroke-linecap="round"/>`;
+
+    /* Los rollos del costado, a partir de bastante grande. */
+    if (g > 0.45) {
+      out += [-1, 1].map(sg => `<path d="M${(60 + sg * med.cintura * 0.96).toFixed(1)} ${(Y.cintura - 8).toFixed(1)}
+          q${(sg * -3.5).toFixed(1)} 5 0 10"
+        stroke="${PALETA.linea}" stroke-width="1.5" fill="none" opacity=".4" stroke-linecap="round"/>`).join('');
+    }
+  }
+
+  /* ---- músculo ---- */
+  if (med.fuerza > 0.35) {
+    const f = (med.fuerza - 0.35) / 0.65;
+    /* Las líneas de músculo van en el color del contorno y no en el de la ropa:
+       con el tono de la remera se perdían contra la propia remera y el torso de
+       alguien que entrena se veía igual de liso que el de alguien que no. */
+    const l = `stroke="${PALETA.linea}" fill="none" stroke-linecap="round" opacity=".55"`;
+
+    /* Pectorales: el surco del medio y la línea de abajo. */
+    out += `<path d="M60 ${Y.pecho - 6} v${(10 + f * 6).toFixed(1)}" ${l} stroke-width="${(2.2 + f * 1.4).toFixed(1)}"/>
+      <path d="M${(60 - med.pecho * 0.74).toFixed(1)} ${Y.pecho - 6}
+        q${(med.pecho * 0.74).toFixed(1)} ${(8 + f * 5).toFixed(1)} ${(med.pecho * 1.48).toFixed(1)} 0"
+        ${l} stroke-width="${(2 + f * 1.2).toFixed(1)}"/>`;
+
+    /* Trapecios: las dos diagonales del cuello al hombro. Es el detalle que más
+       rápido lee como "entrena", incluso más que el ancho. */
+    out += [-1, 1].map(sg => `<path d="M${(60 + sg * med.cuello * 0.9).toFixed(1)} ${Y.hombro - 4}
+        L${(60 + sg * med.hombro * 0.82).toFixed(1)} ${(Y.hombro + 4 + f * 2).toFixed(1)}"
+      ${l} stroke-width="${(2 + f * 1.2).toFixed(1)}"/>`).join('');
+
+    /* La línea del abdomen, solo si además no hay mucha panza tapándola. */
+    if (med.c < 0.6) {
+      out += `<path d="M60 ${(Y.pecho + 12).toFixed(1)} v${(12 + f * 6).toFixed(1)}"
+        ${l} stroke-width="${(1.8 + f).toFixed(1)}"/>`;
+    }
+  }
+
+  return out;
+}
+
+/*
+ * Los deltoides: una tapa redonda sobre cada hombro.
+ *
+ * Va por fuera del torso y no adentro, porque el brazo se dibuja después y le
+ * pasaría por encima. Se ve solo cuando hay músculo de verdad.
+ */
+function hombros(med, col) {
+  if (med.fuerza <= 0.4) return '';
+  const f = (med.fuerza - 0.4) / 0.6;
+
+  return [-1, 1].map(sg => {
+    const x = 60 + sg * (med.hombro - 1);
+    return `<path d="M${(x - sg * 2).toFixed(1)} ${Y.hombro - 4}
+        a${(6 + f * 4).toFixed(1)} ${(7 + f * 5).toFixed(1)} 0 0 ${sg > 0 ? 1 : 0} ${(sg * 2.5).toFixed(1)} ${(14 + f * 6).toFixed(1)}"
+      stroke="${PALETA.linea}" stroke-width="${(2 + f * 1.2).toFixed(1)}" fill="none"
+      stroke-linecap="round" opacity=".5"/>`;
+  }).join('');
+}
+
 function torso(med, col) {
   const hemTop = Y.hombro - 5;
-  const hemMusculosa = Y.cintura + 8;
+  /* El ruedo baja con la contextura: con la panza grande y el ruedo fijo, la
+     mitad de abajo de la panza quedaba afuera de la musculosa y el pliegue caía
+     sobre el short, donde se leía como un cinturón. */
+  const hemMusculosa = Y.cintura + 8 + med.c * 10;
   const hemShort = Y.cadera + 17;
   const cu = med.cuello;
 
-  /* Los pectorales se dibujan sobre la musculosa, no sobre la piel: es lo que
-     hace que la ropa se vea apoyada en un cuerpo y no pintada encima de una
-     silueta. */
-  const pecho = med.fuerza > 0.4
-    ? `<path d="M60 ${Y.pecho - 4} v${(9 + med.fuerza * 4).toFixed(1)}"
-         stroke="${col.remeraOsc}" stroke-width="1.8" stroke-linecap="round" opacity=".9"/>
-       <path d="M${(60 - med.pecho * 0.72).toFixed(1)} ${Y.pecho - 5}
-         q${(med.pecho * 0.72).toFixed(1)} ${(6 + med.fuerza * 3).toFixed(1)} ${(med.pecho * 1.44).toFixed(1)} 0"
-         stroke="${col.remeraOsc}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>`
-    : '';
 
   return `
     <path d="${silueta(med, hemTop, Y.cadera + 4)}" fill="${col.piel}"
@@ -330,7 +421,7 @@ function torso(med, col) {
     <path d="${silueta(med, hemTop, hemMusculosa)}" fill="${col.remera}"
       stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
     <path d="${mediaSilueta(med, hemTop, hemMusculosa, 0.32)}" fill="${col.remeraOsc}" opacity=".95"/>
-    ${pecho}
+    ${volumen(med, col)}
 
     <path d="M${(60 - med.hombro).toFixed(1)} ${hemTop} h${(med.hombro * 0.3).toFixed(1)}
              q${(med.hombro * -0.06).toFixed(1)} 11 ${(med.hombro * 0.02).toFixed(1)} 19
@@ -400,6 +491,7 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
     <g transform="translate(0 ${pose.hombros})">
       ${torso(med, col)}
       ${brazos(med, pose, col)}
+      ${hombros(med, col)}
       <g transform="translate(0 ${pose.cabeza}) rotate(${pose.inclina} 60 ${Y.hombro - 4})">
         ${cabeza(med, cara, col, fase)}
       </g>
