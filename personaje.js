@@ -38,11 +38,12 @@ const PALETA = {
 };
 
 /* El lienzo.
-   Se estiró 26 px hacia ARRIBA en el ciclo 6: el pelo de las fases sube bastante
-   más que la cabeza y, con el lienzo justo, las puntas quedaban cortadas al ras
-   y volvían a leerse como una corona. El origen negativo mantiene intactas todas
-   las coordenadas del cuerpo. */
-const VB = { x: 0, y: -26, w: 120, h: 202 };
+   Crece hacia arriba y a los costados: el pelo de las fases sube bastante más
+   que la cabeza y la postura de poder abre los brazos fuera del ancho del
+   cuerpo. Con el lienzo justo, las puntas quedaban cortadas al ras y volvían a
+   leerse como una corona. El origen negativo mantiene intactas todas las
+   coordenadas del cuerpo. */
+const VB = { x: -8, y: -46, w: 136, h: 222 };
 
 /* Alturas de referencia del cuerpo, sobre el lienzo de arriba.
 
@@ -62,21 +63,26 @@ const Y = { hombro: 70, pecho: 82, cintura: 98, cadera: 110, rodilla: 134, pie: 
  * caricaturas: con contextura 1 la cintura pasa a los hombros (que es lo que
  * pasa de verdad), y con musculatura 1 los hombros ganan y la cintura afina.
  */
-function medidasDe(contextura, musculatura) {
+function medidasDe(contextura, musculatura, poder = 0) {
   const c = contextura == null ? 0.42 : Math.min(1, Math.max(0, contextura));
   const m = Math.min(1, Math.max(0, musculatura || 0));
+  /* `poder` es el músculo que presta la fase. Entra en TODO lo que ensancha y
+     en nada de lo que afina: una racha de días perfectos puede ponerte más
+     grande, nunca más flaco. Afinar la cintura por cumplir sería decirte que ya
+     bajaste de peso sin que la balanza haya dicho nada. */
+  const p = Math.min(1, Math.max(0, poder || 0));
 
   return {
-    c, m,
-    hombro: 17 + c * 4 + m * 8,
-    pecho: 15.5 + c * 12 + m * 4,
+    c, m, p,
+    hombro: 17 + c * 4 + m * 8 + p * 8,
+    pecho: 15.5 + c * 12 + m * 4 + p * 4,
     cintura: 11.5 + c * 22 - m * 2,
     cadera: 13.5 + c * 16,
-    brazo: 3.6 + c * 2.6 + m * 2.8,
-    pierna: 5.4 + c * 5 + m * 1.8,
-    cuello: 6 + c * 3 + m * 1.6,
-    caraRx: 21 + c * 7,
-    caraRy: 26.5
+    brazo: 3.6 + c * 2.6 + (m + p) * 3.6,
+    pierna: 5.4 + c * 5 + (m + p) * 1.8,
+    cuello: 6 + c * 3 + (m + p) * 1.6,
+    caraRx: 18.5 + c * 6.5,
+    caraRy: 23
   };
 }
 
@@ -153,7 +159,12 @@ const CARAS = {
   cansado: { ceja: 12, cejaY: 1, parpado: .72, boca: 'chica', mirada: [0, 1.4], ojeras: true, zzz: true },
   seco: { ceja: 14, cejaY: 1, parpado: .15, boca: 'seca', mirada: [1, 0], gota: true },
   pesado: { ceja: 17, cejaY: 1.6, parpado: .3, boca: 'triste', mirada: [0, 1.8], ojeras: true },
-  triste: { ceja: -20, cejaY: -.5, parpado: .15, boca: 'triste', mirada: [0, .5], lagrima: true }
+  triste: { ceja: -20, cejaY: -.5, parpado: .15, boca: 'triste', mirada: [0, .5], lagrima: true },
+
+  /* De la fase 2 para arriba la cara deja de ser una carita contenta: cejas
+     hacia adentro, ojos apretados y la boca gritando. Una sonrisa tierna
+     encima de un aura de fuego se contradice sola y gana la sonrisa. */
+  furioso: { ceja: 24, cejaY: -1, parpado: .12, boca: 'grito', mirada: [0, -.4], intenso: true }
 };
 
 /* Un color mezclado con otro. Se usa para apagar la remera cuando el día viene
@@ -173,8 +184,8 @@ const APAGADOS = { flojo: .2, cansado: .42, seco: .3, pesado: .38, triste: .45 }
 
 /* ---------------- las partes ---------------- */
 
-function piernas(med, col) {
-  const sep = med.cadera * 0.5 + 1;
+function piernas(med, col, pose) {
+  const sep = med.cadera * 0.5 + 1 + (pose?.piernas || 0) * 10;
   const g = med.pierna;
   const iz = 60 - sep;
   const de = 60 + sep;
@@ -203,7 +214,7 @@ function brazos(med, pose, col) {
   /* El brazo nace apenas adentro del hombro y cae por FUERA del cuerpo. Con el
      codo hacia adentro quedaba escondido detras del torso y la figura parecia
      manca — que es exactamente lo que pasaba en la primera version. */
-  const hx = med.hombro - med.brazo * 0.55;
+  const hx = med.hombro - med.brazo * 0.3;
   const codoY = Y.pecho + 12;
   const manoY = Y.cadera + 4;
   const codoX = Math.max(med.hombro, med.pecho) - med.brazo * 0.15;
@@ -215,12 +226,14 @@ function brazos(med, pose, col) {
         stroke="${col.piel}" stroke-width="${anchoSup.toFixed(1)}" stroke-linecap="round" fill="none"/>
       <path d="M${60 + codoX * s} ${codoY} L${60 + manoX * s} ${manoY}"
         stroke="${col.piel}" stroke-width="${anchoInf.toFixed(1)}" stroke-linecap="round" fill="none"/>
-      <circle cx="${60 + manoX * s}" cy="${manoY + 2}" r="${(med.brazo * 0.95).toFixed(1)}" fill="${col.piel}"/>
+      <circle cx="${60 + manoX * s}" cy="${manoY + 2}" r="${(med.brazo * (pose.punos ? 1.25 : 0.95)).toFixed(1)}" fill="${col.piel}"/>
+      ${pose.punos ? `<path d="M${(60 + manoX * s - med.brazo).toFixed(1)} ${manoY + 2} h${(med.brazo * 2).toFixed(1)}"
+        stroke="${PALETA.pielSombra}" stroke-width="1.2" opacity=".6" stroke-linecap="round"/>` : ''}
       <path d="M${60 + (hx - med.brazo * 1.15) * s} ${Y.hombro - 2}
                L${60 + (hx + med.brazo * 1.15) * s} ${Y.hombro - 2}
                L${60 + (hx + med.brazo * 1.25) * s} ${Y.hombro + 11}
                q${(-med.brazo * 1.25 * s).toFixed(1)} 3 ${(-med.brazo * 2.5 * s).toFixed(1)} 0z" fill="${col.remera}"/>
-      ${med.m > 0.55 ? `<path d="M${60 + (hx + 1.5) * s} ${Y.hombro + 9} q${2.5 * s} 4 ${-0.5 * s} 7"
+      ${med.m + med.p > 0.55 ? `<path d="M${60 + (hx + 1.5) * s} ${Y.hombro + 9} q${2.5 * s} 4 ${-0.5 * s} 7"
         stroke="${PALETA.pielSombra}" stroke-width="1.1" fill="none" opacity=".5"/>` : ''}
     </g>`;
 
@@ -228,7 +241,7 @@ function brazos(med, pose, col) {
 }
 
 function torso(med, col) {
-  const hemRemera = Y.cintura + 9;
+  const hemRemera = Y.cadera + 3;
   const hemShort = Y.cadera + 17;
 
   /* La remera es la misma silueta del cuerpo cortada a la altura del ruedo: por
@@ -240,18 +253,26 @@ function torso(med, col) {
     <path d="${silueta(med, Y.hombro - 5, hemRemera)}" fill="${col.remera}"/>
     <path d="M60 ${Y.hombro - 2} q${(med.hombro * 0.6).toFixed(1)} 1 ${(med.hombro * 0.95).toFixed(1)} 4"
       stroke="${col.remeraOsc}" stroke-width="1" fill="none" opacity=".4"/>
-    ${med.m > 0.5 ? `<path d="M60 ${Y.pecho - 2} v9" stroke="${col.remeraOsc}" stroke-width="1.2" opacity=".7"/>` : ''}
+    ${med.m + med.p > 0.5 ? `<path d="M60 ${Y.pecho - 2} v9" stroke="${col.remeraOsc}" stroke-width="1.2" opacity=".7"/>` : ''}
     <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 9} h${(med.cuello * 2).toFixed(1)} v7 h-${(med.cuello * 2).toFixed(1)}z" fill="${col.piel}"/>
     <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 4} q${med.cuello.toFixed(1)} 4 ${(med.cuello * 2).toFixed(1)} 0"
       stroke="${PALETA.pielSombra}" stroke-width="1.2" fill="none" opacity=".45"/>`;
 }
 
-function ojo(cx, cy, cara, r = 5.8) {
+function ojo(cx, cy, cara, r = 5.2) {
   const [mx, my] = cara.mirada;
 
   if (cara.ojosFelices) {
     return `<path d="M${cx - r} ${cy + 1} q${r} -${r * 1.4} ${r * 2} 0"
       stroke="${PALETA.pupila}" stroke-width="1.9" fill="none" stroke-linecap="round"/>`;
+  }
+
+  /* Ojo apretado: media elipse en vez del ojo redondo. Un ojo grande y redondo
+     se lee tierno siempre, por más ceja enojada que tenga arriba. */
+  if (cara.intenso) {
+    return `<path d="M${(cx - r).toFixed(1)} ${(cy - 1).toFixed(1)} a${r} ${(r * 0.75).toFixed(1)} 0 0 1 ${(r * 2).toFixed(1)} 0
+        a${r} ${(r * 0.35).toFixed(1)} 0 0 1 ${(r * -2).toFixed(1)} 0z" fill="${PALETA.ojo}"/>
+      <circle cx="${cx}" cy="${(cy - 1.4).toFixed(1)}" r="${(r * 0.45).toFixed(1)}" fill="${PALETA.pupila}"/>`;
   }
 
   const px = cx + mx * 1.2;
@@ -287,6 +308,10 @@ function boca(tipo, cy) {
   }
   if (tipo === 'chica') {
     return `<ellipse cx="60" cy="${cy + 2}" rx="3.4" ry="2.8" fill="${PALETA.bocaOsc}"/>`;
+  }
+  if (tipo === 'grito') {
+    return `<path d="M53 ${cy - 2} q7 -3 14 0 q-1 12 -7 12 q-6 0 -7 -12z" fill="${PALETA.bocaOsc}"/>
+            <path d="M54.5 ${cy - 1} q5.5 -2 11 0 l-1 2.6 q-4.5 -1.6 -9 0z" fill="#ffffff"/>`;
   }
   return `<path d="M53.5 ${cy + 1} h13" stroke="${PALETA.bocaOsc}" stroke-width="2.4" stroke-linecap="round"/>`;
 }
@@ -345,6 +370,29 @@ function adornos(cara) {
 
 /* ---------------- el personaje entero ---------------- */
 
+/*
+ * La postura de poder.
+ *
+ * Brazos separados del cuerpo, hombros arriba y piernas abiertas. Es lo que
+ * separa "un tipo parado" de "un tipo cargando energía", y no depende del
+ * dibujo sino de tres números.
+ */
+function posturaDePoder(base, fase) {
+  const t = fase.pose || 0;
+  return {
+    ...base,
+    hombros: base.hombros - 2 * t,
+    cabeza: base.cabeza - 1 * t,
+    inclina: base.inclina * (1 - t * 0.7),
+    /* Absoluto, no relativo al ánimo: 'genial' ya levanta los brazos 26 grados
+       y sumarle la fase los terminaba de poner en cruz, que se lee como
+       rendición y no como fuerza. Acá manda la fase y punto. */
+    brazos: -10 - 12 * t,
+    piernas: t,
+    punos: t > 0.3
+  };
+}
+
 /**
  * El personaje entero, listo para meter en el DOM.
  *
@@ -353,9 +401,24 @@ function adornos(cara) {
  * Nico sería peor que no mostrar ninguno.
  */
 function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
-  const cara = CARAS[animo] || CARAS.neutral;
-  const pose = POSES[animo] || POSES.neutral;
-  const med = medidasDe(cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null, cuerpo?.musculatura ?? 0);
+  const base = POSES[animo] || POSES.neutral;
+  const f = fase && fase.n ? fase : null;
+
+  /* De la fase 2 para arriba la cara la manda la fase, no el ánimo. Es el único
+     lugar donde la fase pisa al día: un día que llegó a fase 2 ya cumplió todo
+     dos veces seguidas, así que el ánimo iba a ser bueno igual. */
+  const cara = (f && f.n >= 2) ? CARAS.furioso : (CARAS[animo] || CARAS.neutral);
+
+  /* La fase suma músculo y abre la postura SOLO en el dibujo. Sin esto la
+     transformación era un cambio de color de pelo sobre el mismo muñeco
+     parado de brazos caídos, que no transmite absolutamente nada. */
+  const med = medidasDe(
+    cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
+    cuerpo?.musculatura ?? 0,
+    f ? f.musculo : 0
+  );
+
+  const pose = f ? posturaDePoder(base, f) : base;
 
   const apagado = APAGADOS[animo] || 0;
   const col = {
@@ -375,8 +438,9 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
 
     ${aura(med, fase)}
     <ellipse cx="60" cy="${Y.pie + 3}" rx="${(med.cadera + 12).toFixed(1)}" ry="4" fill="${PALETA.pupila}" opacity=".13"/>
+    ${suelo(med, fase)}
 
-    ${piernas(med, col)}
+    ${piernas(med, col, pose)}
 
     <g transform="translate(0 ${pose.hombros})">
       ${torso(med, col)}

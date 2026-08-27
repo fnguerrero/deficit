@@ -358,21 +358,27 @@ function logrosPorAnunciar(juego) {
  * Lo único que el día perfecto sí toca del cuerpo es un plus de musculatura,
  * chico y temporal: se siente y se va si cortás la racha.
  */
+/*
+ * `musculo` es lo que la fase le suma al eje del cuerpo SOLO para el dibujo, y
+ * `pose` cuánto se abre la postura. Los colores van de dorado a rojo a blanco:
+ * saturados y calientes, no pasteles — un aura pastel se lee tierna, que es
+ * exactamente lo contrario de lo que esto tiene que transmitir.
+ */
 const FASES = [
-  { n: 0, nombre: 'Normal', detalle: 'Cumplí un día entero y esto empieza' },
-  { n: 1, nombre: 'Encendido', color: '#ffd84d', pelo: 'punta' },
-  { n: 2, nombre: 'Con chispas', color: '#ffd84d', pelo: 'punta', rayos: true },
-  { n: 3, nombre: 'Melena', color: '#ffe27a', pelo: 'largo', rayos: true },
-  { n: 4, nombre: 'Bestia', color: '#ff8a3d', pelo: 'largo', rayos: true, pelaje: true },
-  { n: 5, nombre: 'Divino', color: '#ff5c8a', pelo: 'punta', rayos: true, divino: true },
-  { n: 6, nombre: 'Más allá', color: '#7ec8f0', pelo: 'largo', rayos: true, divino: true }
+  { n: 0, nombre: 'Normal', detalle: 'Cumplí un día entero y esto empieza', musculo: 0, pose: 0 },
+  { n: 1, nombre: 'Encendido', color: '#ffc107', pelo: 'punta', musculo: .14, pose: .35 },
+  { n: 2, nombre: 'Furia', color: '#ffab00', pelo: 'punta', rayos: true, musculo: .24, pose: .55 },
+  { n: 3, nombre: 'Bestia', color: '#ff6d00', pelo: 'punta', rayos: true, musculo: .34, pose: .75, suelo: true },
+  { n: 4, nombre: 'Titán', color: '#f4511e', pelo: 'largo', rayos: true, musculo: .44, pose: .9, suelo: true },
+  { n: 5, nombre: 'Leyenda', color: '#d50000', pelo: 'largo', rayos: true, musculo: .55, pose: 1, suelo: true, divino: true },
+  { n: 6, nombre: 'Fuera de escala', color: '#00b0ff', pelo: 'largo', rayos: true, musculo: .68, pose: 1, suelo: true, divino: true }
 ];
 
 const FASE_MAX = FASES.length - 1;
 
 /** Cuánto suma al músculo cada día perfecto seguido, y hasta dónde. */
-const BONUS_POR_PERFECTO = 0.12;
-const BONUS_TOPE = 0.36;
+const BONUS_POR_PERFECTO = 0.15;
+const BONUS_TOPE = 0.45;
 
 /**
  * Días perfectos seguidos, contando hacia atrás.
