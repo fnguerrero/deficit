@@ -150,10 +150,5 @@ function adornos(cara) {
   if (cara.gota) {
     out += `<path d="M88 30 q4.5 8 0 11.5 q-4.5 -3.5 0 -11.5z" fill="#7ec8f0" stroke="${PALETA.linea}" stroke-width="1.2"/>`;
   }
-  if (cara.brillos) {
-    out += `<g fill="#ffd84d" stroke="${PALETA.linea}" stroke-width="1.2" stroke-linejoin="round">
-      <path d="M17 30 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6z"/>
-      <path d="M102 54 l1.9 4.4 4.4 1.9 -4.4 1.9 -1.9 4.4 -1.9 -4.4 -4.4 -1.9 4.4 -1.9z"/></g>`;
-  }
   return out;
 }

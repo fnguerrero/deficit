@@ -53,19 +53,34 @@ test('la contextura es continua: un kilo la mueve', () => {
 test('la contextura clampea en los extremos', () => {
   esperar(contexturaDe(10), 0);
   esperar(contexturaDe(17), 0);
-  esperar(contexturaDe(50), 1);
-  esperar(contexturaDe(80), 1);
+  esperar(contexturaDe(IMC_MAX), 1);
+  esperar(contexturaDe(200), 1);
 });
 
-test('la contextura sube en dos tramos: rapido hasta 35, lento hasta 50', () => {
-  /* El tramo donde de verdad se mueve la gente tiene que notarse; arriba de 35
-     el dibujo sigue creciendo pero cada vez menos, porque un muneco de 120 px
-     no puede representar un IMC de 60 y seguir siendo una persona. */
-  esperar(contexturaDe(35), PESO_TRAMO_BAJO);
-  esperarQue(contexturaDe(26) > 0.35 && contexturaDe(26) < 0.45, 'IMC 26: ' + contexturaDe(26));
+test('la contextura sube en tres tramos, cada vez mas lento', () => {
+  /* El tramo donde de verdad se mueve la gente se lleva la mitad del recorrido;
+     arriba de eso el dibujo sigue creciendo pero cada vez menos. */
+  esperar(contexturaDe(IMC_CODO), TRAMO_1);
+  esperar(contexturaDe(IMC_CODO2), +(TRAMO_1 + TRAMO_2).toFixed(3));
 
   const porPunto = (a, b) => (contexturaDe(b) - contexturaDe(a)) / (b - a);
-  esperarQue(porPunto(20, 30) > porPunto(38, 48), 'el tramo de abajo tiene que subir mas rapido');
+  esperarQue(porPunto(20, 28) > porPunto(32, 42), 'el primer tramo sube mas rapido que el segundo');
+  esperarQue(porPunto(32, 42) > porPunto(50, 80), 'y el segundo mas que el tercero');
+});
+
+test('el techo llega hasta un IMC que 400 kg todavia pasa, y se avisa', () => {
+  /* Antes el techo estaba en 50 y 200, 300 y 400 kg dibujaban exactamente el
+     mismo cuerpo: el muneco se quedaba quieto por mas que el numero subiera, y
+     parecia que la app habia ignorado el dato. */
+  const de = (kg) => cuerpoDe({ altura: 180, peso: kg }, {}, HOY_CUERPO);
+
+  esperarQue(de(200).efectiva > de(150).efectiva, '200 kg tiene que verse mas que 150');
+  esperarQue(de(150).efectiva > de(110).efectiva, 'y 150 mas que 110');
+
+  esperarQue(!fueraDeEscala(de(150).imc), '150 kg entra en la escala');
+  esperarQue(fueraDeEscala(de(400).imc), '400 kg no, y hay que decirlo');
+  esperarQue(/dibujo llega hasta/.test(de(400).aviso), de(400).aviso);
+  esperar(de(110).aviso, '', 'con un IMC dibujable no se avisa nada');
 });
 
 test('no hay salto brusco al cruzar una banda', () => {
@@ -107,7 +122,13 @@ test('sin peso en ningun lado no se inventa un cuerpo', () => {
 test('dos pesos muy distintos dan cuerpos distintos', () => {
   const flaco = cuerpoDe({ altura: 178, peso: 62 }, diasCuerpo(), HOY_CUERPO);
   const grande = cuerpoDe({ altura: 178, peso: 105 }, diasCuerpo(), HOY_CUERPO);
-  esperarQue(grande.efectiva - flaco.efectiva > 0.5, 'tienen que separarse mucho');
+  esperarQue(grande.efectiva - flaco.efectiva > 0.4, 'tienen que separarse: ' +
+    (grande.efectiva - flaco.efectiva).toFixed(2));
+
+  /* Lo que de verdad importa es que se vea, y eso se mide en la cintura del
+     dibujo, no en el numero intermedio. */
+  const cintura = (c) => medidasDe(c.efectiva, 0, 0).cintura;
+  esperarQue(cintura(grande) > cintura(flaco) * 1.6, 'la cintura tiene que crecer de verdad');
 });
 
 test('entrenar corrige la contextura hacia abajo', () => {

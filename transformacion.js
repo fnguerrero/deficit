@@ -61,20 +61,37 @@ function pelo(cy, rx, ry, fase) {
       Q${(60 - rx * 0.3).toFixed(1)} ${(sien + 2).toFixed(1)} ${(izq + rx * 0.26).toFixed(1)} ${sien.toFixed(1)}
       L${(izq + rx * 0.06).toFixed(1)} ${patilla.toFixed(1)} Z" fill="${color}" ${linea}/>`;
 
-  /* Mechones: [posición sobre el ancho, alto, desplazamiento de la punta]. */
+  /* Mechones: [posición, alto, desvío de la punta, ancho de la base].
+     Pocos y grandes, no muchos y finitos: el pelo del referente son seis o siete
+     mechones gordos que salen en abanico hacia arriba y atrás, no un peine. */
   const conFase = !!(fase && fase.pelo);
   const mechones = conFase
-    ? [[-0.95, 30, -12], [-0.72, 44, -15], [-0.46, 34, -9], [-0.16, 52, -5],
-    [0.16, 40, 6], [0.46, 47, 11], [0.74, 32, 13], [0.96, 24, 14]]
-    : [[-0.78, 8, -5], [-0.42, 13, -3], [-0.05, 10, 3], [0.35, 14, 5], [0.7, 9, 7]];
+    ? [[-0.92, 42, -20, 0.44], [-0.55, 60, -18, 0.46], [-0.14, 68, -8, 0.42],
+    [0.28, 62, 12, 0.44], [0.68, 48, 20, 0.42], [0.98, 32, 22, 0.34]]
+    : [[-0.82, 12, -8, 0.4], [-0.42, 19, -5, 0.42], [0, 16, 4, 0.4],
+    [0.44, 20, 8, 0.42], [0.84, 13, 10, 0.36]];
 
-  const puntas = mechones.map(([fx, alto, desvio]) => {
+  const puntas = mechones.map(([fx, alto, desvio, w]) => {
     const x = 60 + rx * fx;
-    const ancho = rx * (conFase ? 0.3 : 0.34);
-    const baseY = conFase ? arriba + 6 : arriba + 11;
+    const ancho = rx * w;
+    const baseY = conFase ? arriba + 8 : arriba + 12;
+    /* La punta se afina en dos tramos en vez de ser un triángulo recto: eso es
+       lo que le da la curva de mechón y no de estaca. */
     return `<path d="M${(x - ancho).toFixed(1)} ${baseY.toFixed(1)}
-        L${(x + desvio).toFixed(1)} ${(arriba - alto).toFixed(1)}
-        L${(x + ancho).toFixed(1)} ${baseY.toFixed(1)} Z" fill="${color}" ${linea}/>`;
+        Q${(x - ancho * 0.2 + desvio * 0.4).toFixed(1)} ${(arriba - alto * 0.55).toFixed(1)}
+         ${(x + desvio).toFixed(1)} ${(arriba - alto).toFixed(1)}
+        Q${(x + ancho * 0.55 + desvio * 0.3).toFixed(1)} ${(arriba - alto * 0.4).toFixed(1)}
+         ${(x + ancho).toFixed(1)} ${baseY.toFixed(1)} Z" fill="${color}" ${linea}/>`;
+  }).join('');
+
+  /* Los flequillos: dos mechones que caen sobre la frente. Sin ellos la línea
+     del pelo es un arco liso y el peinado se lee como un casco. */
+  const flecos = [[-0.5, 1], [0.16, -1]].map(([fx, sg]) => {
+    const x = 60 + rx * fx;
+    return `<path d="M${(x - rx * 0.2).toFixed(1)} ${(sien - 1).toFixed(1)}
+        Q${(x + sg * rx * 0.1).toFixed(1)} ${(pico + 5).toFixed(1)} ${(x + sg * rx * 0.26).toFixed(1)} ${(pico + 9).toFixed(1)}
+        Q${(x + rx * 0.14).toFixed(1)} ${(pico + 2).toFixed(1)} ${(x + rx * 0.24).toFixed(1)} ${(sien - 1).toFixed(1)} Z"
+        fill="${color}" ${linea}/>`;
   }).join('');
 
   /* La melena de las fases altas: cae por detrás de los hombros. */
@@ -100,7 +117,7 @@ function pelo(cy, rx, ry, fase) {
       q${(-rx * 0.5).toFixed(1)} ${(ry * 0.2).toFixed(1)} ${(-rx * 0.95).toFixed(1)} ${(ry * 0.34).toFixed(1)} z"
       fill="${brillo}" opacity=".9"/>`;
 
-  return melena + base + puntas + sombreado;
+  return melena + base + puntas + sombreado + flecos;
 }
 
 /*
@@ -177,4 +194,65 @@ function suelo(med, fase) {
   ).join('');
 
   return grietas + piedras;
+}
+
+
+/*
+ * Las partículas de ki que suben.
+ *
+ * Es lo que convierte un aura quieta en energía saliendo del cuerpo. Cada una
+ * arranca en un punto distinto y con su propio retraso: si salieran todas
+ * juntas se leería como una sola cosa parpadeando.
+ */
+function ki(med, fase) {
+  if (!fase || !fase.n) return '';
+
+  const ancho = med.cadera + 16;
+  const cuantas = 4 + fase.n * 2;
+
+  let out = '';
+  for (let i = 0; i < cuantas; i++) {
+    /* Sin Math.random: la posición sale del índice, así el dibujo es el mismo
+       en cada render y no salta con cada actualización de pantalla. */
+    const fx = ((i * 37) % 100) / 50 - 1;
+    const x = 60 + ancho * fx * 0.95;
+    const y = Y.pie - ((i * 53) % 60);
+    const r = 1.4 + (i % 3) * 0.7;
+    const demora = ((i * 29) % 140) / 100;
+
+    out += `<circle class="ki" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}"
+      fill="${fase.color}" style="animation-delay:${demora.toFixed(2)}s"/>`;
+  }
+  return `<g class="ki-grupo">${out}</g>`;
+}
+
+/*
+ * La electricidad, desde la fase 2.
+ *
+ * Arcos quebrados pegados al cuerpo, que parpadean alternados. La clave es que
+ * NO sean simétricos ni parejos: un rayo prolijo no se lee como electricidad.
+ */
+function electricidad(med, fase) {
+  if (!fase || fase.n < 2) return '';
+
+  const arcos = [
+    [-1, 46, 22], [1, 62, 26], [-1, 88, 20], [1, 100, 24], [-1, 118, 18], [1, 34, 16]
+  ].slice(0, Math.min(6, fase.n + 1));
+
+  return arcos.map(([sg, y, largo], i) => {
+    const x0 = 60 + sg * (anchoEn(y, med) + 4);
+    const paso = largo / 4;
+    const d = `M${x0.toFixed(1)} ${y}
+      l${(sg * 6).toFixed(1)} ${paso.toFixed(1)}
+      l${(sg * -4).toFixed(1)} ${paso.toFixed(1)}
+      l${(sg * 7).toFixed(1)} ${paso.toFixed(1)}
+      l${(sg * -5).toFixed(1)} ${paso.toFixed(1)}`;
+
+    return `<path class="chispa" d="${d}" stroke="${fase.color}" stroke-width="2"
+      fill="none" stroke-linecap="round" stroke-linejoin="round"
+      style="animation-delay:${(i * 0.13).toFixed(2)}s"/>
+      <path class="chispa" d="${d}" stroke="#ffffff" stroke-width="0.9"
+      fill="none" stroke-linecap="round" stroke-linejoin="round"
+      style="animation-delay:${(i * 0.13).toFixed(2)}s"/>`;
+  }).join('');
 }

@@ -1032,6 +1032,62 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    esto dice qué te falta ahora. */
 .racha.hoy { background: color-mix(in srgb, var(--ok) 22%, transparent); }
 
+/* ---------------- el personaje en movimiento ----------------
+
+   Todo con CSS y clases dentro del SVG. Se re-genera en cada render, así que
+   las animaciones reinician solas y no hace falta guardar ningún estado.
+   `prefers-reduced-motion` apaga todo al final del bloque, de una. */
+
+/* El aura respira y se estira hacia arriba. */
+.mascota-svg .aura { transform-origin: 60px 168px; animation: auraLate 1.15s ease-in-out infinite alternate; }
+@keyframes auraLate {
+  from { transform: scaleY(.94) scaleX(1.02); opacity: .8; }
+  to { transform: scaleY(1.08) scaleX(.98); opacity: 1; }
+}
+
+/* Las partículas de ki suben y se apagan. */
+.mascota-svg .ki { animation: kiSube 1.5s linear infinite; opacity: 0; }
+@keyframes kiSube {
+  0% { transform: translateY(6px); opacity: 0; }
+  15% { opacity: .95; }
+  100% { transform: translateY(-74px); opacity: 0; }
+}
+
+/* La electricidad parpadea con pasos, no con degradé: un rayo que se desvanece
+   suave no se lee como un rayo. */
+.mascota-svg .chispa { animation: chispea .5s steps(1, end) infinite; }
+@keyframes chispea { 0%, 22% { opacity: 1; } 23%, 100% { opacity: 0; } }
+
+/* El pelo de las fases se mece. */
+.mascota-svg.fase-1 > g, .mascota-svg.fase-2 > g, .mascota-svg.fase-3 > g,
+.mascota-svg.fase-4 > g, .mascota-svg.fase-5 > g, .mascota-svg.fase-6 > g {
+  transform-origin: 60px 110px;
+  animation: tension 2.4s ease-in-out infinite alternate;
+}
+@keyframes tension { from { transform: translateY(0); } to { transform: translateY(-1.6px); } }
+
+/* El momento de transformarse: la pantalla tiembla y el personaje destella. */
+.mascota-dibujo.transformando { animation: sacudon .75s cubic-bezier(.36, .07, .19, .97); }
+@keyframes sacudon {
+  10%, 30%, 50%, 70% { transform: translate(-3px, 1px); }
+  20%, 40%, 60%, 80% { transform: translate(3px, -1px); }
+  90% { transform: translate(-1px, 0); }
+}
+.mascota-dibujo.transformando .mascota-svg { animation: destello .75s ease-out; }
+@keyframes destello {
+  0% { filter: brightness(3.2) saturate(0); }
+  35% { filter: brightness(1.7) saturate(1.4); }
+  100% { filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascota-svg .aura, .mascota-svg .ki, .mascota-svg .chispa,
+  .mascota-svg.fase-1 > g, .mascota-svg.fase-2 > g, .mascota-svg.fase-3 > g,
+  .mascota-svg.fase-4 > g, .mascota-svg.fase-5 > g, .mascota-svg.fase-6 > g,
+  .mascota-dibujo.transformando, .mascota-dibujo.transformando .mascota-svg { animation: none; }
+  .mascota-svg .ki { opacity: .8; }
+}
+
 /* El personaje respira: quieto del todo parece un ícono, no un bicho. */
 @keyframes respirar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
 .mascota-svg { animation: respirar 3.5s ease-in-out infinite; }

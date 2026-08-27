@@ -341,7 +341,7 @@ function renderMascota() {
      dato, en vez de disimular que el muneco es cualquiera. */
   $('mascotaDetalle').textContent = !cuerpo.hayDatos
     ? 'Cargá tu peso y el muñeco va a tener tu cuerpo, no uno cualquiera.'
-    : (fraseDelDia(d) || est.texto);
+    : (cuerpo.aviso || fraseDelDia(d) || est.texto);
 
   const lvl = nivelDe(state.juego?.xp || 0);
   $('mascotaBarra').style.width = Math.round(lvl.pct * 100) + '%';
@@ -422,7 +422,8 @@ function anunciarFase() {
   if (fase.n === fasePrevia) return;
 
   if (fase.n > fasePrevia) {
-    festejar({ icono: '⚡', titulo: fase.nombre, texto: decir('fase', { fase: fase.nombre, n }), sonido: 'nivel' });
+    transformarse(fase);
+    festejar({ icono: '⚡', titulo: fase.nombre, texto: decir('fase', { fase: fase.nombre, n }), sonido: 'transformacion' });
   } else {
     toast(decir('faseCaida'));
     sonidos.sonar('fallo');
@@ -481,6 +482,35 @@ function festejarObjetivo(id) {
 }
 
 const NOMBRE_OBJETIVO = { agua: 'agua', ejercicio: 'ejercicio', sueno: 'sueño', peso: 'peso', animo: 'ánimo' };
+
+/**
+ * El momento de subir de fase: el personaje grita y suelta el ki.
+ *
+ * Se le fuerza la cara de furia y la pose de la fase máxima por tres cuartos de
+ * segundo, aunque la fase recién ganada sea la 1. Es el único lugar donde el
+ * dibujo miente sobre el estado, y vale la pena: la transformación es un
+ * instante, y un instante sin nada que lo marque no se registra como un premio.
+ */
+function transformarse(fase) {
+  const cont = $('mascotaDibujo');
+  if (!cont) return;
+
+  const cuerpo = cuerpoDe(state.perfil, state.dias, hoyISO(), {
+    bonus: bonusDePerfectos(diasPerfectos(state.dias, { vasos: metaVasos() }))
+  });
+
+  const pico = { ...fase, pose: 1, musculo: Math.max(fase.musculo, 0.5), rayos: true, n: Math.max(fase.n, 2) };
+  cont.innerHTML = svgPersonaje('genial', 86, cuerpo, pico);
+
+  cont.classList.remove('transformando');
+  void cont.offsetWidth;
+  cont.classList.add('transformando');
+
+  setTimeout(() => {
+    cont.classList.remove('transformando');
+    renderMascota();
+  }, 780);
+}
 
 /**
  * Las cuatro rachas, chiquitas.

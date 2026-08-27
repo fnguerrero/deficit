@@ -83,13 +83,13 @@ function medidasDe(contextura, musculatura, poder = 0) {
     c, m, p,
     fuerza: Math.min(1, m + p),
     hombro: 17 + c * 4 + m * 8 + p * 8,
-    pecho: 15.5 + c * 12 + m * 4 + p * 4,
-    cintura: 11.5 + c * 22 - m * 2,
-    cadera: 13.5 + c * 16,
-    brazo: 3.6 + c * 2.6 + (m + p) * 3.6,
-    pierna: 5.4 + c * 5 + (m + p) * 1.8,
+    pecho: 15.5 + c * 16 + m * 4 + p * 4,
+    cintura: 11.5 + c * 30 - m * 2,
+    cadera: 13.5 + c * 21,
+    brazo: 3.6 + c * 3.6 + (m + p) * 3.6,
+    pierna: 5.4 + c * 7 + (m + p) * 1.8,
     cuello: 6 + c * 3 + (m + p) * 2.4,
-    caraRx: 16.5 + c * 6,
+    caraRx: 16.5 + c * 8,
     caraRy: 20.5
   };
 }
@@ -175,7 +175,7 @@ const POSES = {
 const CARAS = {
   neutral: { ceja: 0, cejaY: 0, parpado: 0, boca: 'recta', mirada: [0, 0] },
   bien: { ceja: -5, cejaY: -1.5, parpado: 0, boca: 'sonrisa', mirada: [0, 0] },
-  genial: { ceja: -9, cejaY: -2.5, parpado: 0, boca: 'risa', mirada: [0, -.5], ojosFelices: true, brillos: true },
+  genial: { ceja: -9, cejaY: -2.5, parpado: 0, boca: 'risa', mirada: [0, -.5], ojosFelices: true },
   flojo: { ceja: 8, cejaY: .5, parpado: .3, boca: 'recta', mirada: [0, .8] },
   cansado: { ceja: 12, cejaY: 1, parpado: .72, boca: 'chica', mirada: [0, 1.4], ojeras: true, zzz: true },
   seco: { ceja: 14, cejaY: 1, parpado: .15, boca: 'seca', mirada: [1, 0], gota: true },
@@ -391,6 +391,7 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
     aria-label="Cómo venís: ${animo}${f ? ', en fase ' + f.n : ''}">
 
     ${aura(med, fase)}
+    ${ki(med, fase)}
     <ellipse cx="60" cy="${Y.pie + 3}" rx="${(med.cadera + 12).toFixed(1)}" ry="4" fill="${PALETA.linea}" opacity=".16"/>
     ${suelo(med, fase)}
 
@@ -405,6 +406,7 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
     </g>
 
     ${adornos(cara)}
+    ${electricidad(med, fase)}
     ${rayos(med, fase)}
   </svg>`;
 }

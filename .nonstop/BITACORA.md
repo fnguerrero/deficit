@@ -234,3 +234,13 @@ Nico sumo despues el veredicto honesto de si va bien.
 #31c — Tres bugs de dibujo que solo se ven rasterizando: la boca estaba en coordenadas fijas y al achicarse la cabeza un grito ocupaba media cara; el iris llenaba casi todo el blanco del ojo y a tamano chico se fundia con la ceja en una sola mancha; y los miembros se dibujaban en dos trazos con punta redonda, o sea un muneco de salchichas articulado
 
 #31d — La linea del pelo bajo demasiado DOS veces seguidas y en las dos la frente entera quedaba del color del pelo, con los ojos flotando sobre una vincha. Se extrajo `lineaDelPelo()` a su propia funcion para poder probarla, y el test nuevo cazo el tercer intento fallado antes de que lo viera yo
+
+#32 — El bug del peso, medido: 85 kg daba un torso de 63 de ancho, 150 daba 67, y 200, 300 y 400 daban 67 los tres. La curva del IMC cortaba en 50 y con 1,80 m 200 kg ya son IMC 62. Ahora la curva va en TRES tramos hasta IMC 90, el cuerpo ensancha mucho mas en el extremo (la cintura va de 13 a 41 contra 13 a 33 de antes) y cuando el IMC se pasa del techo la app lo DICE, en vez de dejar el muneco quieto como si hubiera ignorado el dato
+
+#33 — Pelo estilo Goku: seis mechones gordos en abanico con la punta afinada en dos tramos, mas dos flequillos sobre la frente. Antes eran ocho triangulos rectos y finitos, o sea un peine
+
+#34 — Fuera las estrellitas. Entran las particulas de ki que suben, la electricidad que parpadea desde la fase 2 (con pasos, no degradé: un rayo que se desvanece suave no se lee como un rayo) y el aura que respira
+
+#35 — El momento de transformarse: sacudon, destello, grito y un sonido propio (una onda de sierra que arranca en 110 Hz y revienta en 880). Durante esos 780 ms se le fuerza la cara de furia y la pose maxima aunque la fase recien ganada sea la 1: es el unico lugar donde el dibujo miente sobre el estado, y vale la pena porque un instante sin nada que lo marque no se registra como premio
+
+#36 — Tres tests en rojo, los tres fijando la curva vieja de dos tramos. Se actualizaron a la de tres y se le sumo el caso que faltaba: que 110, 150 y 200 kg den cuerpos distintos entre si
