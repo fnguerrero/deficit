@@ -59,25 +59,23 @@ function pelo(cy, rx, ry, fase) {
   /*
    * La frente se corta en TRES PUNTAS, y son parte del contorno de la calota.
    *
-   * Dos intentos que no funcionan a este tamano, para no repetirlos: seis
-   * puntas chicas dejan un borde mordido (miden cinco pixeles y el contorno de
-   * 2.4 se las come), y dibujar los mechones como piezas sueltas superpuestas
-   * acumula contornos hasta que la frente es una hilera de dientes negros.
-   * Pocas puntas, profundas, y un solo contorno por fuera.
+   * UNA sola punta, ancha. Tres intentos que no funcionan a este tamano, para
+   * no repetirlos: seis puntas chicas dejan un borde mordido; los mechones como
+   * piezas sueltas superpuestas acumulan contornos hasta que la frente es una
+   * hilera de dientes negros; y tres puntas seguidas quedan a seis pixeles una
+   * de otra, con lo que el contorno las pinta enteras de negro. El ancho minimo
+   * de un diente es el doble del contorno, y aca el contorno mide 2.4.
    *
    * Con el borde en arco liso —como estaba— el pelo terminaba en una raya casi
    * horizontal cruzando la cara: un casquete apoyado, un peluquin.
    */
-  const base = `<path d="M${izq.toFixed(1)} ${sien.toFixed(1)}
+  const formaCalota = `M${izq.toFixed(1)} ${sien.toFixed(1)}
       C${izq.toFixed(1)} ${(cy - ry * 1.32).toFixed(1)} ${der.toFixed(1)} ${(cy - ry * 1.32).toFixed(1)} ${der.toFixed(1)} ${sien.toFixed(1)}
       L${(der - rx * 0.06).toFixed(1)} ${patilla.toFixed(1)}
-      L${(der - rx * 0.28).toFixed(1)} ${(sien + 1).toFixed(1)}
-      L${(60 + rx * 0.42).toFixed(1)} ${pico.toFixed(1)}
-      L${(60 + rx * 0.16).toFixed(1)} ${(sien - 1).toFixed(1)}
-      L${(60 - rx * 0.14).toFixed(1)} ${(pico + 2).toFixed(1)}
-      L${(60 - rx * 0.44).toFixed(1)} ${(sien - 1).toFixed(1)}
-      L${(izq + rx * 0.26).toFixed(1)} ${(pico - 1).toFixed(1)}
-      L${(izq + rx * 0.06).toFixed(1)} ${patilla.toFixed(1)} Z" fill="${color}" ${linea}/>`;
+      L${(der - rx * 0.2).toFixed(1)} ${(sien + 1).toFixed(1)}
+      L${(60 + rx * 0.08).toFixed(1)} ${pico.toFixed(1)}
+      L${(izq + rx * 0.26).toFixed(1)} ${(sien + 1).toFixed(1)}
+      L${(izq + rx * 0.06).toFixed(1)} ${patilla.toFixed(1)} Z`;
 
   /* Mechones: [posición, alto, desvío de la punta, ancho de la base].
      Pocos y grandes, no muchos y finitos: el pelo del referente son seis o siete
@@ -103,20 +101,23 @@ function pelo(cy, rx, ry, fase) {
     return topeCalota + (sien - topeCalota) * t * t;
   };
 
-  const puntas = mechones.map(([fx, alto, desvio, w]) => {
+  const formaMechon = mechones.map(([fx, alto, desvio, w]) => {
     const x = 60 + rx * fx;
     const ancho = rx * w;
-    /* Metido hacia adentro de la calota para que la base no se vea nunca. */
-    const baseY = nacimiento(fx) + (conFase ? 9 : 7);
+    /* Metido hacia adentro de la calota para que la base no se vea nunca, pero
+       nunca por debajo de la linea del pelo: los mechones de los extremos nacen
+       a la altura de la sien, y nueve pixeles mas abajo les dejaba la base
+       colgando sobre la frente como un bloque cuadrado. */
+    const baseY = Math.min(nacimiento(fx) + (conFase ? 9 : 7), sien - 4);
     /* La punta se afina en dos tramos en vez de ser un triángulo recto: eso es
        lo que le da la curva de mechón y no de estaca. */
     const desde = nacimiento(fx);
-    return `<path d="M${(x - ancho).toFixed(1)} ${baseY.toFixed(1)}
+    return `M${(x - ancho).toFixed(1)} ${baseY.toFixed(1)}
         Q${(x - ancho * 0.2 + desvio * 0.4).toFixed(1)} ${(desde - alto * 0.55).toFixed(1)}
          ${(x + desvio).toFixed(1)} ${(desde - alto).toFixed(1)}
         Q${(x + ancho * 0.55 + desvio * 0.3).toFixed(1)} ${(desde - alto * 0.4).toFixed(1)}
-         ${(x + ancho).toFixed(1)} ${baseY.toFixed(1)} Z" fill="${color}" ${linea}/>`;
-  }).join('');
+         ${(x + ancho).toFixed(1)} ${baseY.toFixed(1)} Z`;
+  });
 
   /*
    * Los mechones de la frente: triangulos que APUNTAN HACIA ABAJO, con la base
@@ -161,7 +162,48 @@ function pelo(cy, rx, ry, fase) {
       q${(-rx * 0.48).toFixed(1)} ${(ry * 0.18).toFixed(1)} ${(-rx * 0.92).toFixed(1)} ${(ry * 0.26).toFixed(1)} z"
       fill="${brillo}" opacity=".9"/>`;
 
-  return melena + base + puntas + sombreado;
+  /*
+   * DOS PASADAS, y es lo que separa una cabellera de una jaula.
+   *
+   * Cada mechon se superpone con el de al lado. Pintando cada uno con su propio
+   * contorno, esas lineas quedan cruzando el interior de la masa de pelo: el
+   * resultado es amarillo rayado de negro, no pelo. Primero van todas las
+   * formas con el contorno (al doble de grosor, porque el relleno de la pasada
+   * siguiente se come la mitad de adentro), y encima las mismas formas
+   * rellenas y sin contorno. Sobrevive solo el borde de afuera.
+   */
+  const formas = [formaCalota, ...formaMechon];
+  const contorno = formas.map(d => `<path d="${d}" fill="${color}"
+      stroke="${PALETA.linea}" stroke-width="${LINEA * 2}" stroke-linejoin="round"/>`).join('');
+  const relleno = formas.map(d => `<path d="${d}" fill="${color}"/>`).join('');
+
+  /* Sin ninguna linea adentro el pelo es una mancha de un solo color. La
+     separacion entre mechones se sugiere con trazos FINOS en el tono de sombra
+     —no con el contorno de cada pieza, que es justamente lo que lo convertia en
+     una jaula— y solo en los tres del medio. */
+  /* Los mechones del flequillo, dibujados con sombra sobre la calota. Recortar
+     mas dientes en el borde no se puede —los pinta el contorno—, pero la sombra
+     no tiene ese problema y hace el mismo trabajo: que la frente no termine en
+     una masa lisa. */
+  const flequillo = [-0.5, -0.18, 0.3].map((fx, i) => {
+    const x = 60 + rx * fx;
+    return `<path d="M${x.toFixed(1)} ${(sien - ry * 0.34).toFixed(1)}
+        L${(x + rx * 0.1).toFixed(1)} ${(sien + ry * (i === 1 ? 0.2 : 0.08)).toFixed(1)}"
+      stroke="${sombra}" stroke-width="${conFase ? 2.2 : 1.6}" fill="none"
+      stroke-linecap="round" opacity=".7"/>`;
+  }).join('');
+
+  const nervios = mechones.slice(1, -1).map(([fx, alto, desvio]) => {
+    const x = 60 + rx * fx;
+    const desde = nacimiento(fx);
+    return `<path d="M${(x - rx * 0.06).toFixed(1)} ${(desde + (conFase ? 6 : 4)).toFixed(1)}
+        Q${(x + desvio * 0.4).toFixed(1)} ${(desde - alto * 0.5).toFixed(1)}
+         ${(x + desvio * 0.85).toFixed(1)} ${(desde - alto * 0.88).toFixed(1)}"
+      stroke="${sombra}" stroke-width="${conFase ? 2 : 1.4}" fill="none"
+      stroke-linecap="round" opacity=".75"/>`;
+  }).join('');
+
+  return melena + contorno + relleno + nervios + flequillo + sombreado;
 }
 
 /*
