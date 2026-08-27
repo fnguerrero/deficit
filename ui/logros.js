@@ -37,7 +37,7 @@ function pintarRachasGrandes() {
   if (!cont) return;
 
   const rachas = todasLasRachas(state.dias, {
-    vasos: vasosObjetivo(state.perfil.peso),
+    vasos: metaVasos(),
     juego: state.juego
   });
 

@@ -4398,10 +4398,36 @@ test('las favoritas por defecto son tres', () => {
 
 /* ---- agua ---- */
 
-test('el objetivo de vasos sale del peso', () => {
-  esperar(vasosObjetivo(85), Math.round((85 * 35) / 250));
-  esperarQue(vasosObjetivo(50) >= 6, 'con un piso razonable');
-  esperarQue(vasosObjetivo(140) <= 12, 'y un techo, o serian 20 vasos');
+/* El objetivo de agua dejo de salir del peso.
+   Para 86 kg la referencia da 12 vasos, y nadie que hoy toma dos pasa a doce:
+   el casillero quedaba sin marcar todos los dias y terminaba ignorado. Un
+   objetivo que se ignora no mueve nada, asi que ahora arranca bajo y se sube a
+   mano cuando ya se cumple sin esfuerzo. */
+
+test('el objetivo de vasos arranca bajo y no depende del peso', () => {
+  esperar(vasosObjetivo(85), VASOS_DEFECTO);
+  esperar(vasosObjetivo(50), VASOS_DEFECTO);
+  esperar(vasosObjetivo(140), VASOS_DEFECTO);
+  esperarQue(VASOS_DEFECTO <= 5, 'tiene que ser cumplible desde el primer dia');
+});
+
+test('el objetivo elegido a mano manda', () => {
+  esperar(vasosObjetivo(85, 6), 6);
+  esperar(vasosObjetivo(85, 1), 1);
+});
+
+test('el objetivo elegido se mantiene entre limites', () => {
+  esperar(vasosObjetivo(85, 0), VASOS_DEFECTO, 'cero no es un objetivo');
+  esperar(vasosObjetivo(85, -3), VASOS_DEFECTO);
+  esperar(vasosObjetivo(85, 99), VASOS_MAX);
+  esperar(vasosObjetivo(85, 'hola'), VASOS_DEFECTO);
+});
+
+test('la referencia por peso sigue existiendo, como dato al costado', () => {
+  esperar(vasosRecomendados(85), Math.round((85 * 35) / 250));
+  esperarQue(vasosRecomendados(50) >= 6, 'con un piso razonable');
+  esperarQue(vasosRecomendados(200) <= 14, 'y un techo');
+  esperarQue(vasosRecomendados(85) > vasosObjetivo(85), 'la referencia es mas alta que el objetivo inicial');
 });
 
 

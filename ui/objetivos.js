@@ -40,8 +40,8 @@ function objetivosDelDia() {
       id: 'agua',
       emoji: '💧',
       nombre: 'Agua',
-      listo: (d.agua || 0) >= vasosObjetivo(peso),
-      valor: `${d.agua || 0}/${vasosObjetivo(peso)}`
+      listo: (d.agua || 0) >= metaVasos(),
+      valor: `${d.agua || 0}/${metaVasos()}`
     },
     {
       id: 'ejercicio',
@@ -321,13 +321,13 @@ function renderMascota() {
   const racha = rachaActual(state.dias);
   const est = estadoMascota(d, {
     objetivo: calcular(),
-    objetivoVasos: vasosObjetivo(state.perfil.peso),
+    objetivoVasos: metaVasos(),
     racha
   });
 
   /* El cuerpo sale de la balanza y de los entrenamientos; la cara, del dia de
      hoy. Son dos fuentes distintas a proposito: ver arriba de personaje.js. */
-  const perfectos = diasPerfectos(state.dias, { vasos: vasosObjetivo(state.perfil.peso) });
+  const perfectos = diasPerfectos(state.dias, { vasos: metaVasos() });
   const fase = faseDe(perfectos);
   const cuerpo = cuerpoDe(state.perfil, state.dias, hoyISO(), { bonus: bonusDePerfectos(perfectos) });
 
@@ -370,7 +370,7 @@ let vozActual = { situacion: null, texto: '', desde: 0, insistido: 0, falta: nul
 const MS_INSISTENCIA = 12 * 60 * 1000;
 
 function fraseDelDia(d, ahora = Date.now()) {
-  const r = reclamoDelDia(d, { vasos: vasosObjetivo(state.perfil.peso) });
+  const r = reclamoDelDia(d, { vasos: metaVasos() });
 
   if (r.situacion !== vozActual.situacion) {
     vozActual = { situacion: r.situacion, texto: r.texto, desde: ahora, insistido: 0, falta: r.falta || null };
@@ -398,7 +398,7 @@ function actualizarJuego() {
   const nivelPrevio = nivelDe(state.juego?.xp || 0).nivel;
 
   const r = recalcularJuego(state.dias, state.juego, {
-    vasos: vasosObjetivo(state.perfil.peso)
+    vasos: metaVasos()
   });
 
   state.juego = { ...r.juego, anunciados: (state.juego?.anunciados || []).slice() };
@@ -415,7 +415,7 @@ function actualizarJuego() {
 let fasePrevia = null;
 
 function anunciarFase() {
-  const n = diasPerfectos(state.dias, { vasos: vasosObjetivo(state.perfil.peso) });
+  const n = diasPerfectos(state.dias, { vasos: metaVasos() });
   const fase = faseDe(n);
 
   if (fasePrevia === null) { fasePrevia = fase.n; return; }
@@ -437,7 +437,7 @@ let cumplidasPrevias = null;
 
 function sonarObjetivosNuevos() {
   const ahora = todasLasRachas(state.dias, {
-    vasos: vasosObjetivo(state.perfil.peso),
+    vasos: metaVasos(),
     juego: state.juego
   }).filter(r => r.hoyCumplido).map(r => r.id);
 
@@ -493,7 +493,7 @@ function pintarRachas() {
   if (!cont) return;
 
   const rachas = todasLasRachas(state.dias, {
-    vasos: vasosObjetivo(state.perfil.peso),
+    vasos: metaVasos(),
     juego: state.juego
   });
 
