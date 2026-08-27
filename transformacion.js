@@ -31,7 +31,10 @@
 function lineaDelPelo(cy, ry) {
   return {
     sien: cy - ry * 0.8,       // a los costados
-    pico: cy - ry * 0.62,      // el pico del medio, lo más bajo que llega
+    /* 0.62 dejaba puntas de tres pixeles: a ese tamano no se leen como puntas
+       de pelo sino como muescas en un borde recto. Los ojos estan bastante mas
+       abajo, asi que hay lugar para que bajen de verdad. */
+    pico: cy - ry * 0.46,      // el pico del medio, lo mas bajo que llega
     patilla: cy - ry * 0.22    // las patillas, por delante de la oreja
   };
 }
@@ -53,46 +56,82 @@ function pelo(cy, rx, ry, fase) {
      por arriba de las cejas, con un pico al centro y patillas a los costados. */
   const { sien, pico, patilla } = lineaDelPelo(cy, ry);
 
+  /*
+   * La frente se corta en TRES PUNTAS, y son parte del contorno de la calota.
+   *
+   * Dos intentos que no funcionan a este tamano, para no repetirlos: seis
+   * puntas chicas dejan un borde mordido (miden cinco pixeles y el contorno de
+   * 2.4 se las come), y dibujar los mechones como piezas sueltas superpuestas
+   * acumula contornos hasta que la frente es una hilera de dientes negros.
+   * Pocas puntas, profundas, y un solo contorno por fuera.
+   *
+   * Con el borde en arco liso —como estaba— el pelo terminaba en una raya casi
+   * horizontal cruzando la cara: un casquete apoyado, un peluquin.
+   */
   const base = `<path d="M${izq.toFixed(1)} ${sien.toFixed(1)}
       C${izq.toFixed(1)} ${(cy - ry * 1.32).toFixed(1)} ${der.toFixed(1)} ${(cy - ry * 1.32).toFixed(1)} ${der.toFixed(1)} ${sien.toFixed(1)}
       L${(der - rx * 0.06).toFixed(1)} ${patilla.toFixed(1)}
-      L${(der - rx * 0.26).toFixed(1)} ${sien.toFixed(1)}
-      Q${(60 + rx * 0.3).toFixed(1)} ${(sien + 2).toFixed(1)} 60 ${pico.toFixed(1)}
-      Q${(60 - rx * 0.3).toFixed(1)} ${(sien + 2).toFixed(1)} ${(izq + rx * 0.26).toFixed(1)} ${sien.toFixed(1)}
+      L${(der - rx * 0.28).toFixed(1)} ${(sien + 1).toFixed(1)}
+      L${(60 + rx * 0.42).toFixed(1)} ${pico.toFixed(1)}
+      L${(60 + rx * 0.16).toFixed(1)} ${(sien - 1).toFixed(1)}
+      L${(60 - rx * 0.14).toFixed(1)} ${(pico + 2).toFixed(1)}
+      L${(60 - rx * 0.44).toFixed(1)} ${(sien - 1).toFixed(1)}
+      L${(izq + rx * 0.26).toFixed(1)} ${(pico - 1).toFixed(1)}
       L${(izq + rx * 0.06).toFixed(1)} ${patilla.toFixed(1)} Z" fill="${color}" ${linea}/>`;
 
   /* Mechones: [posición, alto, desvío de la punta, ancho de la base].
      Pocos y grandes, no muchos y finitos: el pelo del referente son seis o siete
      mechones gordos que salen en abanico hacia arriba y atrás, no un peine. */
   const conFase = !!(fase && fase.pelo);
+  /* Las bases se SOLAPAN a proposito: mechones angostos dejaban huecos de
+     fondo entre punta y punta y el pelo se veia como una hilera de estacas
+     clavadas en el craneo en vez de una masa con puntas. */
   const mechones = conFase
-    ? [[-0.92, 42, -20, 0.44], [-0.55, 60, -18, 0.46], [-0.14, 68, -8, 0.42],
-    [0.28, 62, 12, 0.44], [0.68, 48, 20, 0.42], [0.98, 32, 22, 0.34]]
-    : [[-0.82, 12, -8, 0.4], [-0.42, 19, -5, 0.42], [0, 16, 4, 0.4],
-    [0.44, 20, 8, 0.42], [0.84, 13, 10, 0.36]];
+    ? [[-0.95, 34, -18, 0.62], [-0.62, 50, -15, 0.6], [-0.28, 60, -6, 0.58],
+    [0.06, 58, 8, 0.58], [0.42, 48, 16, 0.6], [0.78, 36, 19, 0.56], [1.02, 24, 20, 0.44]]
+    : [[-0.86, 11, -7, 0.56], [-0.48, 17, -5, 0.56], [-0.08, 19, 3, 0.54],
+    [0.34, 18, 7, 0.56], [0.74, 13, 9, 0.52], [1, 9, 10, 0.4]];
+
+  /* El nacimiento de cada mechon SIGUE LA CURVA DEL CRANEO.
+     Antes todos arrancaban a la misma altura, asi que los de los costados
+     nacian de la nada por encima de la cabeza y el conjunto se leia como una
+     corona de puas apoyada. El tope real de la calota esta en cy - 1.19*ry
+     (el punto medio de la cubica), y a los costados baja hasta la sien. */
+  const topeCalota = cy - ry * 1.19;
+  const nacimiento = (fx) => {
+    const t = Math.min(1, Math.abs(fx));
+    return topeCalota + (sien - topeCalota) * t * t;
+  };
 
   const puntas = mechones.map(([fx, alto, desvio, w]) => {
     const x = 60 + rx * fx;
     const ancho = rx * w;
-    const baseY = conFase ? arriba + 8 : arriba + 12;
+    /* Metido hacia adentro de la calota para que la base no se vea nunca. */
+    const baseY = nacimiento(fx) + (conFase ? 9 : 7);
     /* La punta se afina en dos tramos en vez de ser un triángulo recto: eso es
        lo que le da la curva de mechón y no de estaca. */
+    const desde = nacimiento(fx);
     return `<path d="M${(x - ancho).toFixed(1)} ${baseY.toFixed(1)}
-        Q${(x - ancho * 0.2 + desvio * 0.4).toFixed(1)} ${(arriba - alto * 0.55).toFixed(1)}
-         ${(x + desvio).toFixed(1)} ${(arriba - alto).toFixed(1)}
-        Q${(x + ancho * 0.55 + desvio * 0.3).toFixed(1)} ${(arriba - alto * 0.4).toFixed(1)}
+        Q${(x - ancho * 0.2 + desvio * 0.4).toFixed(1)} ${(desde - alto * 0.55).toFixed(1)}
+         ${(x + desvio).toFixed(1)} ${(desde - alto).toFixed(1)}
+        Q${(x + ancho * 0.55 + desvio * 0.3).toFixed(1)} ${(desde - alto * 0.4).toFixed(1)}
          ${(x + ancho).toFixed(1)} ${baseY.toFixed(1)} Z" fill="${color}" ${linea}/>`;
   }).join('');
 
-  /* Los flequillos: dos mechones que caen sobre la frente. Sin ellos la línea
-     del pelo es un arco liso y el peinado se lee como un casco. */
-  const flecos = [[-0.5, 1], [0.16, -1]].map(([fx, sg]) => {
-    const x = 60 + rx * fx;
-    return `<path d="M${(x - rx * 0.2).toFixed(1)} ${(sien - 1).toFixed(1)}
-        Q${(x + sg * rx * 0.1).toFixed(1)} ${(pico + 5).toFixed(1)} ${(x + sg * rx * 0.26).toFixed(1)} ${(pico + 9).toFixed(1)}
-        Q${(x + rx * 0.14).toFixed(1)} ${(pico + 2).toFixed(1)} ${(x + rx * 0.24).toFixed(1)} ${(sien - 1).toFixed(1)} Z"
-        fill="${color}" ${linea}/>`;
-  }).join('');
+  /*
+   * Los mechones de la frente: triangulos que APUNTAN HACIA ABAJO, con la base
+   * metida dentro de la calota y su propio contorno.
+   *
+   * Son los que sacan el efecto peluquin. Sin ellos el pelo termina en un arco
+   * casi horizontal cruzando la frente de lado a lado, y eso no es una cabeza
+   * con pelo: es un casquete apoyado encima. Las patillas de los extremos hacen
+   * lo mismo a los costados, donde antes el pelo se cortaba en seco arriba de
+   * la oreja.
+   */
+  /* Aca vivian dos flequillos sueltos sobre la frente. Existian para romper el
+     arco liso de la linea del pelo; ahora esa linea son dientes, y los
+     flequillos quedaban encima como dos manchas oscuras con contorno propio en
+     el medio de la cara. Se fueron: el problema que resolvian ya no existe. */
 
   /* La melena de las fases altas: cae por detrás de los hombros. */
   const melena = conFase && fase.pelo === 'largo'
@@ -105,19 +144,24 @@ function pelo(cy, rx, ry, fase) {
     }).join('')
     : '';
 
-  /* La sombra de la calota y el brillo: los dos tonos del cel shading. */
+  /* La sombra de la calota y el brillo: los dos tonos del cel shading.
+     La sombra NO llega hasta la linea del pelo. Es un path suelto, sin recorte
+     contra la silueta, asi que cualquier tramo que pase por debajo del borde se
+     pinta sobre la frente: con los dientes nuevos eso dejaba una banda oscura
+     cruzando la cara, justo lo que hacia que el pelo pareciera postizo. */
+  const pisoSombra = cy - ry * 0.97;
   const sombreado = `
     <path d="M${(60 + rx * 0.26).toFixed(1)} ${(cy - ry * 1.18).toFixed(1)}
-      C${(60 + rx * 0.95).toFixed(1)} ${(cy - ry * 0.95).toFixed(1)} ${der.toFixed(1)} ${(cy - ry * 0.7).toFixed(1)} ${der.toFixed(1)} ${sien.toFixed(1)}
+      C${(60 + rx * 0.95).toFixed(1)} ${(cy - ry * 1.05).toFixed(1)} ${der.toFixed(1)} ${(cy - ry * 0.98).toFixed(1)} ${(der - rx * 0.04).toFixed(1)} ${pisoSombra.toFixed(1)}
       l${(-rx * 0.26).toFixed(1)} 0
-      C${(60 + rx * 0.55).toFixed(1)} ${(cy - ry * 0.62).toFixed(1)} ${(60 + rx * 0.42).toFixed(1)} ${(cy - ry).toFixed(1)} ${(60 + rx * 0.26).toFixed(1)} ${(cy - ry * 1.18).toFixed(1)} Z"
+      C${(60 + rx * 0.55).toFixed(1)} ${pisoSombra.toFixed(1)} ${(60 + rx * 0.42).toFixed(1)} ${(cy - ry).toFixed(1)} ${(60 + rx * 0.26).toFixed(1)} ${(cy - ry * 1.18).toFixed(1)} Z"
       fill="${sombra}" opacity=".85"/>
-    <path d="M${(60 - rx * 0.62).toFixed(1)} ${(cy - ry * 0.92).toFixed(1)}
-      q${(rx * 0.45).toFixed(1)} ${(-ry * 0.28).toFixed(1)} ${(rx * 0.95).toFixed(1)} ${(-ry * 0.12).toFixed(1)}
-      q${(-rx * 0.5).toFixed(1)} ${(ry * 0.2).toFixed(1)} ${(-rx * 0.95).toFixed(1)} ${(ry * 0.34).toFixed(1)} z"
+    <path d="M${(60 - rx * 0.6).toFixed(1)} ${(cy - ry * 1.06).toFixed(1)}
+      q${(rx * 0.45).toFixed(1)} ${(-ry * 0.24).toFixed(1)} ${(rx * 0.92).toFixed(1)} ${(-ry * 0.1).toFixed(1)}
+      q${(-rx * 0.48).toFixed(1)} ${(ry * 0.18).toFixed(1)} ${(-rx * 0.92).toFixed(1)} ${(ry * 0.26).toFixed(1)} z"
       fill="${brillo}" opacity=".9"/>`;
 
-  return melena + base + puntas + sombreado + flecos;
+  return melena + base + puntas + sombreado;
 }
 
 /*
