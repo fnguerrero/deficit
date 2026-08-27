@@ -36,7 +36,15 @@ const SONIDOS = {
   logro: { onda: 'triangle', vol: 0.22, notas: [[659, 0, 0.1], [659, 0.1, 0.08], [784, 0.19, 0.1], [1047, 0.3, 0.28]] },
 
   // fallar suena grave y cae: es el único que baja
-  fallo: { onda: 'sine', vol: 0.14, notas: [[330, 0, 0.12], [247, 0.11, 0.22]] }
+  fallo: { onda: 'sine', vol: 0.14, notas: [[330, 0, 0.12], [247, 0.11, 0.22]] },
+
+  /* La transformación: un rugido que arranca abajo, sube y revienta arriba. Es
+     el sonido más largo de todos y pasa una vez por día como mucho. */
+  transformacion: {
+    onda: 'sawtooth', vol: 0.16,
+    notas: [[110, 0, 0.5], [147, 0.12, 0.45], [220, 0.26, 0.4],
+    [330, 0.4, 0.35], [440, 0.5, 0.3], [880, 0.6, 0.5]]
+  }
 };
 
 /**

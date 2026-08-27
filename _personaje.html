@@ -12,6 +12,7 @@
 
 <script src="core.js"></script>
 <script src="mascota.js"></script>
+<script src="habitos.js"></script>
 <script src="cuerpo.js"></script>
 <script src="juego.js"></script>
 <script src="transformacion.js"></script>
@@ -42,6 +43,14 @@
   if (modo === 'cuerpo') {
     html = '<div class="fila">' +
       CUERPOS.map(([n, c]) => celda(n, svgPersonaje('neutral', alto, c))).join('') +
+      '</div>';
+  } else if (modo === 'peso') {
+    const alturaCm = 180;
+    html = '<div class="fila">' +
+      [60, 85, 110, 150, 200, 300, 400].map(kg => {
+        const c = cuerpoDe({ altura: alturaCm, peso: kg }, {}, '2026-09-01');
+        return celda(kg + ' kg · IMC ' + c.imc, svgPersonaje('neutral', alto, c));
+      }).join('') +
       '</div>';
   } else if (modo === 'fase') {
     const cuerpo = { efectiva: .4, musculatura: .5 };

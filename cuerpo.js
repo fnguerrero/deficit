@@ -20,17 +20,25 @@ const BANDAS_IMC = [
   { hasta: Infinity, id: 'obesidad', nombre: 'Obesidad' }
 ];
 
-/* Los extremos del dibujo.
+/* Los extremos del dibujo, en TRES tramos.
 
-   El tramo hasta 35 se lleva el 80% del recorrido y de 35 a 50 el 20% restante.
-   Es a propósito: entre 22 y 30 —donde de verdad se mueve la gente— cada punto
-   de IMC tiene que notarse, y arriba de 35 el dibujo sigue creciendo pero cada
-   vez menos, porque un muñeco de 120 px de alto no puede representar un IMC de
-   60 sin dejar de ser una persona. */
+   Antes eran dos y cortaba en 50, y eso hacía que 200, 300 y 400 kg dibujaran
+   exactamente el mismo cuerpo: con 1,80 m, 200 kg ya son IMC 62. El muñeco se
+   quedaba quieto por más que el número subiera, que es lo peor que puede pasar
+   — parece que la app ignoró el dato.
+
+   Ahora el recorrido llega hasta IMC 90. Sigue habiendo un techo, porque no
+   existe dibujo de una persona con IMC 120, pero al menos 150, 200 y 300 se
+   distinguen entre sí. */
 const IMC_MIN = 17;
-const IMC_CODO = 35;
-const IMC_MAX = 50;
-const PESO_TRAMO_BAJO = 0.8;
+const IMC_CODO = 30;
+const IMC_CODO2 = 45;
+const IMC_MAX = 90;
+
+/* Cuánto del recorrido se lleva cada tramo. El primero es el ancho donde de
+   verdad se mueve la gente, así que se lleva la mitad él solo. */
+const TRAMO_1 = 0.5;
+const TRAMO_2 = 0.28;
 
 /* Con esta cantidad de días entrenados en las últimas dos semanas se considera
    una rutina sostenida. Bajó de 10 a 6 porque con 10 el eje casi nunca llegaba
@@ -50,16 +58,26 @@ function bandaIMC(imc) {
   return BANDAS_IMC.find(b => imc < b.hasta) || BANDAS_IMC.at(-1);
 }
 
-/** El IMC llevado a 0–1 para el dibujo, en dos tramos. */
+/** El IMC llevado a 0–1 para el dibujo, en tres tramos. */
 function contexturaDe(imc) {
   if (imc == null) return null;
   if (imc <= IMC_MIN) return 0;
 
-  const t = imc <= IMC_CODO
-    ? PESO_TRAMO_BAJO * (imc - IMC_MIN) / (IMC_CODO - IMC_MIN)
-    : PESO_TRAMO_BAJO + (1 - PESO_TRAMO_BAJO) * (imc - IMC_CODO) / (IMC_MAX - IMC_CODO);
+  let t;
+  if (imc <= IMC_CODO) {
+    t = TRAMO_1 * (imc - IMC_MIN) / (IMC_CODO - IMC_MIN);
+  } else if (imc <= IMC_CODO2) {
+    t = TRAMO_1 + TRAMO_2 * (imc - IMC_CODO) / (IMC_CODO2 - IMC_CODO);
+  } else {
+    t = TRAMO_1 + TRAMO_2 + (1 - TRAMO_1 - TRAMO_2) * (imc - IMC_CODO2) / (IMC_MAX - IMC_CODO2);
+  }
 
   return +Math.min(1, Math.max(0, t)).toFixed(3);
+}
+
+/** Si el IMC se pasó de lo que el dibujo puede representar. */
+function fueraDeEscala(imc) {
+  return imc != null && imc > IMC_MAX;
 }
 
 /**
@@ -136,6 +154,14 @@ function cuerpoDe(perfil, dias, hasta = hoyISO(), { bonus = 0 } = {}) {
  * es la diferencia entre una medida y un diagnóstico.
  */
 function avisoDeIMC(imc, musculatura, entrenados) {
+  /* Cuando el número se pasa del techo del dibujo hay que decirlo. Si no, subir
+     de 200 a 400 kg no cambia nada en pantalla y parece que la app ignoró el
+     dato — que es exactamente lo que se sintió cuando el techo estaba en 50. */
+  if (fueraDeEscala(imc)) {
+    return `IMC ${fmtNum(imc, 1)}. El dibujo llega hasta ${IMC_MAX}: de ahí para arriba el ` +
+      'muñeco ya no cambia, aunque el número sí.';
+  }
+
   if (imc == null || musculatura < 0.5) return '';
   const b = bandaIMC(imc);
   if (b.id !== 'sobrepeso' && b.id !== 'obesidad') return '';

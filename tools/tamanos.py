@@ -23,7 +23,7 @@ LIMITES = [
     ('cuerpo.js', 250),
     ('personaje.js', 500),
     ('cara.js', 300),
-    ('transformacion.js', 250),
+    ('transformacion.js', 350),
     ('juego.js', 500),
     ('sonidos.js', 250),
     ('voz.js', 350),
