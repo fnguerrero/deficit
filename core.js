@@ -43,6 +43,8 @@ const DEFAULT_STATE = {
        el valor por defecto no llegaría nunca a quien ya tiene estado guardado,
        y con eso puesto un cambio futuro tampoco pisa una decisión tomada. */
     sonido: true, sonidoElegido: false,
+    /* No todo el mundo toma en vasos de 250: el que usa botella contaba mal. */
+    mlPorVaso: null,
     /* Vasos de agua por día. Empieza bajo a propósito: ver vasosObjetivo(). */
     vasosMeta: null,
     topeGasto: TOPE_DEFECTO,
@@ -1315,4 +1317,25 @@ function sumarComidas(comidas) {
     carb: Math.round(t.carb), gras: Math.round(t.gras),
     fibra: Math.round(t.fibra), azucar: Math.round(t.azucar), sodio: Math.round(t.sodio)
   };
+}
+
+/* ---------------- borrar un día ---------------- */
+
+/**
+ * Saca un día entero del estado.
+ *
+ * Devuelve lo que borró para poder ofrecer deshacer: borrar un día de comidas
+ * sin vuelta atrás es la clase de acción que hace desconfiar de una app.
+ */
+function borrarDia(estado, fecha) {
+  if (!esFechaISO(fecha) || !estado?.dias?.[fecha]) return null;
+  const copia = clonar(estado.dias[fecha]);
+  delete estado.dias[fecha];
+  return copia;
+}
+
+function restaurarDia(estado, fecha, copia) {
+  if (!esFechaISO(fecha) || !copia) return false;
+  estado.dias[fecha] = copia;
+  return true;
 }

@@ -268,3 +268,15 @@ Nico sumo despues el veredicto honesto de si va bien.
 #6 — Rendimiento: `renderAll` armaba las cuatro pantallas de una aunque tres estuvieran ocultas, asi que cada toque de un vaso reconstruia el historial entero. Ahora dibuja la visible y marca las demas como vencidas. Y `save()` se agrupa a 250 ms, con escritura inmediata al ocultar la pestana: serializaba el estado ENTERO —cientos de kB con meses de historial— una vez por toque
 
 #7 — core.js se paso del limite: salio calibracion.js. En el camino aparecio `window.__core`, un bloque de export que no usaba NADIE y que ademas rompia al cargar porque nombraba funciones que se habian mudado. Borrado entero. Verif: 727 en verde, consola limpia en pestana nueva
+
+#8 — Memorizacion por firma: `recalcularJuego` recorria el historial entero en CADA render de Hoy y el SVG del personaje se re-generaba aunque nada hubiera cambiado. Verif: 0 recalculos con tres renders seguidos sin cambios
+
+#9 — Escribi `historialACSV()` y despues descubri que `armarCSV()` ya existia y era mas completa. Borre la mia y le escribi a la que estaba los tests que le faltaban, incluido el del escapado
+
+#10 — Volvi a duplicarme, y peor: escribi `compararSemanas` y `buscarEnHistorial` que YA EXISTIAN, las pise, y rompi nueve tests que pasaban. Los originales comparan tambien el peso y buscan en las notas ignorando acentos. Borre las mias. La guarda no lo agarro porque solo miraba duplicados ENTRE archivos: ahora mira tambien dentro de uno, y se probo que dispara
+
+#11 — tools/guardas.py: globales duplicadas, ids que el JS busca y el HTML no tiene, y scripts fuera del shell offline. De entrada encontro dos referencias muertas (notaPill, ejercicioPill) y confirmo que window.__core no lo usaba nadie
+
+#12 — La tarjeta del personaje se habia ido a 160 px al sumarle fase, XP y rachas, y con eso Hoy dejaba de entrar con UNA comida cargada. Bajo a 119 recortando el texto a dos lineas y el personaje a 76 px
+
+#13 — Cierre: 69 de 100, ninguna bloqueada. 761 tests en verde, consola limpia, guardas OK. Las 31 que faltan quedan anotadas con su verificacion para el ciclo 8

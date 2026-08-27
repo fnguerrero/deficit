@@ -1250,3 +1250,226 @@ test('el peso del estado cuenta dias y comidas de verdad', () => {
   esperar(p.dias, 1, 'el dia sin comidas y la clave basura no cuentan');
   esperar(p.comidas, 2);
 });
+
+/* ---- ciclo 7: proyeccion, deficit, fibra, CSV y borrar un dia ---- */
+
+const HOY_P = '2026-09-01';
+
+function diasPeso(pesos) {
+  const dias = {};
+  for (const [atras, p] of Object.entries(pesos)) {
+    dias[sumarDias(HOY_P, -Number(atras))] = { peso: p, comidas: [], agua: 0, ejercicio: 0 };
+  }
+  return dias;
+}
+
+test('sin peso objetivo no se proyecta nada', () => {
+  const r = proyeccionPeso(diasPeso({ 0: 80 }), null, HOY_P);
+  esperarQue(!r.hay);
+  esperarQue(/objetivo/.test(r.motivo), r.motivo);
+});
+
+test('con dos pesadas tampoco: eso no es una tendencia', () => {
+  const r = proyeccionPeso(diasPeso({ 0: 80, 7: 81 }), 75, HOY_P);
+  esperarQue(!r.hay);
+  esperarQue(/pesada|semanas/.test(r.motivo), r.motivo);
+});
+
+test('con suficientes semanas proyecta una fecha', () => {
+  /* Baja medio kilo por semana durante seis semanas, y faltan 3 kg. */
+  const pesos = {};
+  for (let s = 0; s <= 6; s++) pesos[s * 7] = 80 + s * 0.5;
+  const r = proyeccionPeso(diasPeso(pesos), 74, HOY_P);
+
+  esperarQue(r.hay, r.motivo);
+  cerca(r.porSemana, -0.5, 0.1);
+  esperarQue(r.dias > 0);
+  esperarQue(esFechaISO(r.fecha), r.fecha);
+  esperarQue(r.optimista < r.fecha && r.fecha < r.pesimista, 'el rango tiene que rodear a la fecha');
+});
+
+test('si vas para el otro lado lo dice, no proyecta una fecha imposible', () => {
+  const pesos = {};
+  for (let s = 0; s <= 6; s++) pesos[s * 7] = 80 - s * 0.5;   // subiendo hacia hoy
+  const r = proyeccionPeso(diasPeso(pesos), 74, HOY_P);
+  esperarQue(!r.hay);
+  esperarQue(/otro lado/.test(r.motivo), r.motivo);
+});
+
+test('con el peso estable no promete una fecha', () => {
+  const pesos = {};
+  for (let s = 0; s <= 6; s++) pesos[s * 7] = 80;
+  const r = proyeccionPeso(diasPeso(pesos), 74, HOY_P);
+  esperarQue(!r.hay);
+  esperarQue(/estable/.test(r.motivo), r.motivo);
+});
+
+test('el deficit peligroso se detecta solo con datos suficientes', () => {
+  const armar = (kcal) => {
+    const dias = {};
+    for (let i = 0; i < 10; i++) {
+      dias[sumarDias(HOY_P, -i)] = { comidas: [{ id: 'x' + i, kcal }], agua: 0, ejercicio: 0, peso: null };
+    }
+    return dias;
+  };
+
+  esperarQue(deficitPeligroso(armar(1000), {}, { tmb: 1800 }, HOY_P).alerta, 'mil kcal con TMB 1800');
+  esperarQue(!deficitPeligroso(armar(2200), {}, { tmb: 1800 }, HOY_P).alerta, 'comiendo bien no');
+  esperarQue(!deficitPeligroso({}, {}, { tmb: 1800 }, HOY_P).alerta, 'sin datos no se opina');
+  esperarQue(!deficitPeligroso(armar(1000), {}, {}, HOY_P).alerta, 'sin TMB tampoco');
+});
+
+test('el objetivo de fibra sale de las calorias', () => {
+  esperar(objetivoFibra(2000), 28);
+  esperar(objetivoFibra(1500), 21);
+  esperar(objetivoFibra(0), 25, 'sin objetivo, la referencia general');
+  esperar(objetivoFibra(null), 25);
+});
+
+/* El export a CSV ya existia y estaba completo —una fila por alimento, con
+   peso, agua y ejercicio del dia, y con celdaCSV escapando— asi que lo que hice
+   fue escribirle los tests que le faltaban. La version propia que habia
+   empezado era duplicacion pura y se borro. */
+
+test('el CSV sale con encabezado y punto y coma', () => {
+  const csv = armarCSV({
+    '2026-08-27': { comidas: [{ ts: 0, momento: 'almuerzo', titulo: 'Milanesa', kcal: 700, prot: 40, carb: 50, gras: 30 }], peso: 80, agua: 4, ejercicio: 200 }
+  });
+  esperarQue(csv.includes('fecha;hora;momento'), 'encabezado');
+  esperarQue(csv.includes('Milanesa'), csv.slice(0, 260));
+});
+
+test('el CSV escapa lo que puede romper una columna', () => {
+  const raro = 'Pan; queso ' + String.fromCharCode(34) + 'del bueno' + String.fromCharCode(34);
+  const csv = armarCSV({ '2026-08-27': { comidas: [{ ts: 0, titulo: raro, kcal: 300, items: [] }] } });
+  const comilla = String.fromCharCode(34);
+  esperarQue(csv.includes(comilla + 'Pan; queso '), 'la celda tiene que ir entre comillas: ' + csv.slice(0, 200));
+  esperarQue(csv.includes(comilla + comilla + 'del bueno'), 'y las comillas de adentro, duplicadas');
+});
+
+test('el CSV de un historial vacio trae solo el encabezado', () => {
+  esperar(armarCSV({}).split(String.fromCharCode(13, 10)).filter(Boolean).length, 1);
+  esperar(armarCSV(null).split(String.fromCharCode(13, 10)).filter(Boolean).length, 1);
+});
+
+test('borrar un dia devuelve lo borrado para poder deshacer', () => {
+  const estado = { dias: { '2026-08-27': { comidas: [{ kcal: 500 }] } } };
+  const copia = borrarDia(estado, '2026-08-27');
+
+  esperarQue(!estado.dias['2026-08-27'], 'se fue');
+  esperar(copia.comidas.length, 1, 'pero volvio en la mano');
+
+  restaurarDia(estado, '2026-08-27', copia);
+  esperar(estado.dias['2026-08-27'].comidas.length, 1, 'y se puede reponer');
+});
+
+test('borrar un dia que no existe no rompe nada', () => {
+  const estado = { dias: {} };
+  esperar(borrarDia(estado, '2026-08-27'), null);
+  esperar(borrarDia(estado, 'basura'), null);
+  esperar(restaurarDia(estado, 'basura', {}), false);
+});
+
+/* ---- ciclo 7: avisos del juego y agua por ejercicio ---- */
+
+test('la racha en peligro no avisa a la manana', () => {
+  /* A las 10 todavia queda todo el dia: avisar ahi es ruido. */
+  const dias = diasJ({ 1: 'comida', 2: 'comida', 3: 'comida', 4: 'comida' });
+  esperar(rachasEnPeligro(dias, { ...OPTS_J, hora: 10 }).length, 0);
+});
+
+test('a la noche avisa, y solo de las rachas que duelen', () => {
+  const dias = diasJ({ 1: 'comida', 2: 'comida', 3: 'comida', 4: 'comida' });
+  const r = rachasEnPeligro(dias, { ...OPTS_J, hora: 21 });
+  esperar(r.length, 1);
+  esperar(r[0].id, 'registro');
+  esperarQue(r[0].actual >= 3);
+});
+
+test('una racha de dos dias no es noticia', () => {
+  const dias = diasJ({ 1: 'comida', 2: 'comida' });
+  esperar(rachasEnPeligro(dias, { ...OPTS_J, hora: 21 }).length, 0);
+});
+
+test('lo ya cumplido hoy no esta en peligro', () => {
+  const dias = diasJ({ 0: 'comida', 1: 'comida', 2: 'comida', 3: 'comida' });
+  esperarQue(!rachasEnPeligro(dias, { ...OPTS_J, hora: 21 }).some(r => r.id === 'registro'));
+});
+
+test('el logro mas cerca dice cuanto falta', () => {
+  const mapa = {};
+  for (let i = 0; i < 5; i++) mapa[i] = 'comida';
+  const c = logroMasCerca(diasJ(mapa), JUEGO_VACIO, OPTS_J);
+
+  esperarQue(!!c, 'con cinco dias tiene que haber alguno cerca');
+  esperarQue(c.falta > 0, 'si falta 0 ya esta ganado');
+  esperarQue(c.pct > 0 && c.pct < 1);
+  esperarQue(!!c.logro.nombre);
+});
+
+test('sin nada cargado el logro mas cerca sigue existiendo', () => {
+  const c = logroMasCerca({}, JUEGO_VACIO, OPTS_J);
+  esperarQue(c === null || c.falta > 0, 'o no hay ninguno, o falta algo');
+});
+
+test('el agua sube con el ejercicio del dia', () => {
+  esperar(vasosPorEjercicio(0), 0);
+  esperar(vasosPorEjercicio(null), 0);
+  esperarQue(vasosPorEjercicio(400) >= 2, 'cuatrocientas kcal piden al menos dos vasos');
+  esperarQue(vasosPorEjercicio(800) > vasosPorEjercicio(400), 'y el doble pide mas');
+});
+
+test('el vaso mas grande pide menos vasos por lo mismo', () => {
+  esperarQue(vasosPorEjercicio(600, 500) < vasosPorEjercicio(600, 250));
+});
+
+/* ---- ciclo 7: resumen de periodo, comparar semanas y buscar ---- */
+
+const HOY_R = '2026-09-01';
+
+function diasKcal(lista) {
+  const dias = {};
+  lista.forEach((kcal, i) => {
+    if (kcal == null) return;
+    dias[sumarDias(HOY_R, -i)] = {
+      comidas: [{ id: 'c' + i, ts: 1, titulo: 'plato ' + i, kcal, prot: 40, carb: 50, gras: 20, items: [] }],
+      agua: 0, ejercicio: 0, peso: null
+    };
+  });
+  return dias;
+}
+
+test('sin dias registrados el resumen no inventa nada', () => {
+  const r = resumenPeriodo({}, { hasta: HOY_R });
+  esperarQue(!r.hay);
+  esperar(r.dias, 0);
+});
+
+test('el resumen promedia solo los dias registrados', () => {
+  /* Tres dias de 2000 y cuatro sin registrar: el promedio son 2000, no 857.
+     Dividir por los dias del calendario seria castigar por no haber anotado. */
+  const r = resumenPeriodo(diasKcal([2000, null, 2000, null, 2000, null, null]), { hasta: HOY_R });
+  esperar(r.dias, 3);
+  esperar(r.promedio, 2000);
+});
+
+test('el resumen encuentra el dia mas alto y el mas bajo', () => {
+  const r = resumenPeriodo(diasKcal([1500, 3000, 2000]), { hasta: HOY_R });
+  esperar(r.maximo.kcal, 3000);
+  esperar(r.minimo.kcal, 1500);
+});
+
+test('el porcentaje de cumplimiento sale sobre lo registrado', () => {
+  const r = resumenPeriodo(diasKcal([1800, 1900, 3000, 1700]), { hasta: HOY_R, objetivo: 2000 });
+  esperar(r.cumplidos, 3);
+  esperar(r.pctCumplidos, 75);
+});
+
+test('sin objetivo no se inventa un porcentaje', () => {
+  esperar(resumenPeriodo(diasKcal([1800, 1900]), { hasta: HOY_R }).pctCumplidos, null);
+});
+
+/* compararSemanas y buscarEnHistorial YA EXISTIAN y son mas completas que las
+   que habia empezado a escribir: la primera compara tambien el peso, la segunda
+   busca en las notas del dia e ignora acentos. Los duplicados se borraron. */
+

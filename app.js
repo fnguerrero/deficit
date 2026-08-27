@@ -98,7 +98,7 @@ function guardarYa() {
       // si sigue sin entrar, la copia de respaldo es lo primero que se sacrifica
       localStorage.removeItem(KEY_BACKUP);
       try { localStorage.setItem(KEY, JSON.stringify(state)); }
-      catch { toast('No se pudo guardar: almacenamiento lleno'); }
+      catch { toast('No entra más: probá borrar las fotos viejas desde Ajustes → Datos'); }
     }
   }
 

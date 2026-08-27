@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=255">
+<link rel="stylesheet" href="styles.css?v=271">
 </head>
 <body>
 
@@ -372,6 +372,15 @@
             <button id="aguaMas" aria-label="Subir el objetivo">+</button>
           </div>
           <p id="aguaReco" class="hint"></p>
+          <label class="fila-vaso">
+            <span>Tamaño del vaso</span>
+            <select id="aguaTamano">
+              <option value="200">200 ml</option>
+              <option value="250">250 ml</option>
+              <option value="330">330 ml</option>
+              <option value="500">500 ml (botella)</option>
+            </select>
+          </label>
         </section>
 
         <section data-obj="ejercicio" hidden>
@@ -508,7 +517,7 @@
       <details class="detalle-analisis">
         <summary>Ver el detalle de cada análisis</summary>
         <ul id="listaAnalisis" class="lista analisis"></ul>
-        <p id="analisisVacio" class="vacio">Todavía no hay análisis registrados.</p>
+        <p id="analisisVacio" class="vacio">Todavía no analizaste ninguna foto. Cuando lo hagas, acá vas a ver cuánto salió cada una y cuánto ahorró el caché.</p>
       </details>
     </div>
 
@@ -670,7 +679,7 @@
       </div>
 
       <ul id="listaReferencias" class="lista"></ul>
-      <p id="referenciasVacio" class="vacio">Todavía no cargaste ninguna referencia.</p>
+      <p id="referenciasVacio" class="vacio">Una referencia es una comida cuyas calorías reales conocés —una etiqueta, algo pesado en balanza—. Con unas pocas, la app aprende a corregir su propia estimación.</p>
 
       <div class="actions-row" style="margin-top:12px">
         <button id="btnAgregarRef" class="ghost small">+ Agregar una foto</button>
@@ -703,6 +712,9 @@
       <div class="cuota">
         <div class="bar"><i id="barraCuota"></i></div>
         <p class="hint" id="statsInfo"></p>
+        <div class="acciones-datos">
+          <button id="btnLimpiarCache" class="ghost small">Vaciar el caché de análisis</button>
+        </div>
       </div>
       <p class="hint aviso-cuota" id="avisoCuota" hidden></p>
       <button id="btnLiberar" class="ghost small" hidden>Borrar las fotos viejas</button>
@@ -764,7 +776,7 @@
         </div>
         <h3 class="sub">Comidas recientes</h3>
         <ul id="listaRepetir" class="lista"></ul>
-        <p id="repetirVacio" class="vacio">Todavía no tenés comidas guardadas.</p>
+        <p id="repetirVacio" class="vacio">Acá van a aparecer las comidas que más repetís, para cargarlas de un toque. Se llena solo a medida que registrás.</p>
       </div>
       <div id="analisisSugerencias" hidden>
         <p class="hint" id="sugerenciasMargen"></p>
@@ -891,43 +903,43 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=255"></script>
-<script src="core.js?v=255"></script>
-<script src="calibracion.js?v=255"></script>
-<script src="modos.js?v=255"></script>
-<script src="habitos.js?v=255"></script>
-<script src="mascota.js?v=255"></script>
-<script src="cuerpo.js?v=255"></script>
-<script src="personaje.js?v=255"></script>
-<script src="transformacion.js?v=255"></script>
-<script src="cara.js?v=255"></script>
-<script src="juego.js?v=255"></script>
-<script src="sonidos.js?v=255"></script>
-<script src="voz.js?v=255"></script>
-<script src="graficos.js?v=255"></script>
-<script src="analisis.js?v=255"></script>
-<script src="claude.js?v=255"></script>
-<script src="productos.js?v=255"></script>
-<script src="sync.js?v=255"></script>
-<script src="auth.js?v=255"></script>
-<script src="app.js?v=255"></script>
-<script src="ui/general.js?v=255"></script>
-<script src="ui/hoy.js?v=255"></script>
-<script src="ui/objetivos.js?v=255"></script>
-<script src="ui/logros.js?v=255"></script>
-<script src="ui/comidas.js?v=255"></script>
-<script src="ui/edicion.js?v=255"></script>
-<script src="ui/escaner.js?v=255"></script>
-<script src="ui/asistente.js?v=255"></script>
-<script src="ui/historial.js?v=255"></script>
-<script src="ui/progreso.js?v=255"></script>
-<script src="ui/perfil.js?v=255"></script>
-<script src="ui/sincronizacion.js?v=255"></script>
-<script src="ui/cuenta.js?v=255"></script>
-<script src="ui/calibracion.js?v=255"></script>
-<script src="ui/actividades.js?v=255"></script>
-<script src="ui/recordatorios.js?v=255"></script>
-<script src="ui/ajustes.js?v=255"></script>
-<script src="arranque.js?v=255"></script>
+<script src="config.js?v=271"></script>
+<script src="core.js?v=271"></script>
+<script src="calibracion.js?v=271"></script>
+<script src="modos.js?v=271"></script>
+<script src="habitos.js?v=271"></script>
+<script src="mascota.js?v=271"></script>
+<script src="cuerpo.js?v=271"></script>
+<script src="personaje.js?v=271"></script>
+<script src="transformacion.js?v=271"></script>
+<script src="cara.js?v=271"></script>
+<script src="juego.js?v=271"></script>
+<script src="sonidos.js?v=271"></script>
+<script src="voz.js?v=271"></script>
+<script src="graficos.js?v=271"></script>
+<script src="analisis.js?v=271"></script>
+<script src="claude.js?v=271"></script>
+<script src="productos.js?v=271"></script>
+<script src="sync.js?v=271"></script>
+<script src="auth.js?v=271"></script>
+<script src="app.js?v=271"></script>
+<script src="ui/general.js?v=271"></script>
+<script src="ui/hoy.js?v=271"></script>
+<script src="ui/objetivos.js?v=271"></script>
+<script src="ui/logros.js?v=271"></script>
+<script src="ui/comidas.js?v=271"></script>
+<script src="ui/edicion.js?v=271"></script>
+<script src="ui/escaner.js?v=271"></script>
+<script src="ui/asistente.js?v=271"></script>
+<script src="ui/historial.js?v=271"></script>
+<script src="ui/progreso.js?v=271"></script>
+<script src="ui/perfil.js?v=271"></script>
+<script src="ui/sincronizacion.js?v=271"></script>
+<script src="ui/cuenta.js?v=271"></script>
+<script src="ui/calibracion.js?v=271"></script>
+<script src="ui/actividades.js?v=271"></script>
+<script src="ui/recordatorios.js?v=271"></script>
+<script src="ui/ajustes.js?v=271"></script>
+<script src="arranque.js?v=271"></script>
 </body>
 </html>
