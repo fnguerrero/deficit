@@ -250,3 +250,5 @@ Nico sumo despues el veredicto honesto de si va bien.
 #37b — Dos detalles que solo aparecieron mirando el render: las lineas de musculo estaban en el color de la remera y se perdian contra la propia remera, asi que pasaron al color del contorno; y el ruedo de la musculosa era fijo, con lo cual la mitad de abajo de la panza quedaba afuera y el pliegue caia sobre el short, donde se leia como un cinturon. Ahora el ruedo baja con la contextura
 
 #37c — Un test que escribi mal: buscaba la panza por su coordenada y agarraba los ojos, que tambien son elipses. Se corrigio la prueba
+
+#38 — El selector de modos no tenia UNA SOLA linea de CSS: el <small> es inline, asi que el nombre y el resumen salian pegados ("MantenimientoSostener el peso actual") y los 16 botones se apilaban como texto corrido. Ahora es una grilla de tarjetas con emoji, nombre en negrita y resumen debajo; en el celular pasa a una columna
