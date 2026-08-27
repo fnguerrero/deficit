@@ -1257,3 +1257,40 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 @media (prefers-reduced-motion: reduce) {
   .festejo, .festejo-caja { animation: none; }
 }
+
+/* El selector del tamaño del vaso y la fila de acciones de datos. */
+.fila-vaso { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 12.5px; color: var(--dim); }
+.fila-vaso span { margin-right: auto; }
+.fila-vaso select {
+  background: var(--card2); border: 1px solid var(--line); color: var(--txt);
+  border-radius: 9px; padding: 6px 9px; font-size: 12.5px;
+}
+.acciones-datos { margin-top: 8px; }
+
+/* El boton sugerido segun la hora, y el "de mas" cuando te pasaste. */
+.acciones-fila .sugerido { border-color: var(--acc); box-shadow: 0 0 0 1px var(--acc) inset; }
+.ring-stats .pasado, #statRestante.pasado { color: var(--bad); }
+
+/* El logro mas cerca: lo unico accionable de la pantalla de logros. */
+.proximo-logro {
+  background: var(--card2); border-radius: 10px; padding: 9px 11px; margin: 0 0 10px;
+  border-left: 3px solid var(--acc);
+}
+.proximo-logro b { color: var(--txt); }
+.proximo-logro i { font-style: normal; opacity: .8; }
+
+/* La tarjeta del personaje se fue a 160 px al sumarle la fase, el XP y las
+   rachas, y con eso Hoy dejaba de entrar con una sola comida cargada. El texto
+   se corta en dos lineas: el detalle completo esta en el aria-label y en el
+   title, asi que no se pierde nada. */
+.mascota-texto small {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+@media (max-width: 480px) {
+  .mascota { padding: 9px 12px; margin-bottom: 6px; }
+  .mascota-texto b { font-size: 13px; }
+  .mascota-texto small { font-size: 11px; }
+  .mascota-nivel { margin-top: 4px; }
+  .mascota-barra { margin-top: 4px; }
+}

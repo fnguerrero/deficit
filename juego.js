@@ -417,3 +417,62 @@ function faseDe(perfectos) {
 function bonusDePerfectos(perfectos) {
   return Math.min(BONUS_TOPE, (Number(perfectos) || 0) * BONUS_POR_PERFECTO);
 }
+
+/* ---------------- avisos del juego ---------------- */
+
+/*
+ * Qué rachas se van a cortar hoy si no se hace nada.
+ *
+ * Solo sirve avisar cuando todavía se puede hacer algo: a las 23:50 el aviso es
+ * un reproche, no una ayuda. Y solo de las rachas que duelen — cortar una de
+ * dos días no es noticia.
+ */
+const RACHA_QUE_DUELE = 3;
+const HORA_AVISO_RACHA = 18;
+
+function rachasEnPeligro(dias, { hoy = hoyISO(), vasos = 8, juego = null, hora = new Date().getHours() } = {}) {
+  if (hora < HORA_AVISO_RACHA) return [];
+
+  return todasLasRachas(dias, { hoy, vasos, juego })
+    .filter(r => !r.hoyCumplido && r.actual >= RACHA_QUE_DUELE)
+    .sort((a, b) => b.actual - a.actual);
+}
+
+/**
+ * El logro más cerca de ganarse.
+ *
+ * Un tablero con dieciséis medallas grises no dice por dónde seguir. Uno solo,
+ * con cuánto falta, sí.
+ */
+function logroMasCerca(dias, juego, { hoy = hoyISO(), vasos = 8 } = {}) {
+  const ctx = contextoLogros(dias, juego, { hoy, vasos });
+  const ganados = new Set(logrosGanados(ctx));
+
+  /* Cuánto falta se mide por familia, porque cada logro cuenta otra cosa. */
+  const progreso = (l) => {
+    const m = /(\d+)/.exec(l.detalle);
+    if (!m) return null;
+    const meta = Number(m[1]);
+
+    const tengo =
+      /registrad/.test(l.detalle) ? ctx.registrados :
+        /entrenamiento/.test(l.detalle) ? ctx.entrenamientos :
+          /Pesaste/.test(l.detalle) ? ctx.pesadas :
+            /cuatro|completas/.test(l.detalle) ? ctx.perfectos :
+              /seguidos.*registro|registro/.test(l.detalle) ? ctx.mejores.registro :
+                /agua/.test(l.detalle) ? ctx.mejores.agua :
+                  /entrenando/.test(l.detalle) ? ctx.mejores.entrenamiento :
+                    /durmiendo/.test(l.detalle) ? ctx.mejores.sueno : null;
+
+    if (tengo == null || meta <= 0) return null;
+    return { meta, tengo, falta: Math.max(0, meta - tengo), pct: Math.min(1, tengo / meta) };
+  };
+
+  const candidatos = LOGROS
+    .filter(l => !ganados.has(l.id))
+    .map(l => ({ logro: l, ...(progreso(l) || {}) }))
+    .filter(c => c.pct != null && c.falta > 0)
+    .sort((a, b) => b.pct - a.pct);
+
+  return candidatos[0] || null;
+}

@@ -744,3 +744,50 @@ function efectoDelSueno(dias, objetivo, hoy = hoyISO(), diasAtras = 60) {
     datos
   };
 }
+
+/* ---------------- resumen de un período ---------------- */
+
+/*
+ * Los números que resumen un tramo de historial.
+ *
+ * Todo junto en una función porque son la misma pasada sobre los mismos días:
+ * calcularlos por separado sería recorrer el historial cinco veces para
+ * mostrarlos en la misma pantalla.
+ */
+function resumenPeriodo(dias, { hasta = hoyISO(), largo = 7, objetivo = null } = {}) {
+  const puntos = [];
+
+  for (let i = largo - 1; i >= 0; i--) {
+    const f = sumarDias(hasta, -i);
+    if (!f) continue;
+    const comidas = dias?.[f]?.comidas || [];
+    if (!comidas.length) continue;
+    puntos.push({ fecha: f, kcal: kcalDe(comidas), ...totalesDe(comidas) });
+  }
+
+  if (!puntos.length) {
+    return { hay: false, dias: 0, largo, texto: 'Todavía no hay días registrados en este período.' };
+  }
+
+  const suma = puntos.reduce((a, p) => a + p.kcal, 0);
+  const promedio = Math.round(suma / puntos.length);
+
+  const orden = [...puntos].sort((a, b) => a.kcal - b.kcal);
+  const dentro = objetivo ? puntos.filter(p => p.kcal <= objetivo * 1.05).length : 0;
+
+  return {
+    hay: true,
+    dias: puntos.length,
+    largo,
+    promedio,
+    total: Math.round(suma),
+    minimo: orden[0],
+    maximo: orden[orden.length - 1],
+    /* Sobre los días REGISTRADOS, no sobre los del calendario: decir que
+       cumpliste el 30% cuando solo anotaste tres días de treinta sería
+       castigarte por no haber registrado, que es otra cosa. */
+    cumplidos: dentro,
+    pctCumplidos: objetivo ? Math.round((dentro / puntos.length) * 100) : null,
+    proteina: Math.round(puntos.reduce((a, p) => a + p.prot, 0) / puntos.length)
+  };
+}

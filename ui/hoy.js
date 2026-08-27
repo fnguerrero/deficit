@@ -5,6 +5,26 @@
 
 /* ---------------- render: HOY ---------------- */
 
+/*
+ * Que boton conviene ahora.
+ *
+ * Los tres botones de carga pesan lo mismo visualmente, y no lo son: a la hora
+ * de comer se saca una foto, en el super se escanea un codigo. Marcar el
+ * probable ahorra un toque y, sobre todo, una decision.
+ */
+function marcarAccionSugerida() {
+  const fila = document.querySelector('.acciones-fila');
+  if (!fila) return;
+
+  const hora = new Date().getHours();
+  /* En las franjas de comida, la foto. Fuera de ellas no se sugiere nada:
+     sugerir siempre algo es lo mismo que no sugerir nada. */
+  const enComida = (hora >= 7 && hora <= 10) || (hora >= 12 && hora <= 15) || (hora >= 19 && hora <= 22);
+
+  for (const b of fila.querySelectorAll('button')) b.classList.remove('sugerido');
+  if (enComida) $('btnFoto')?.classList.add('sugerido');
+}
+
 function renderHoy() {
   if (typeof renderObjetivos === 'function') renderObjetivos();
   if (typeof renderMascota === 'function') renderMascota();
@@ -17,6 +37,8 @@ function renderHoy() {
   if (esOtroDia) $('avisoDiaTxt').textContent = `Estás editando ${etiquetaFecha(fecha)}. Lo que cargues se guarda en ese día.`;
 
   const calc = calcular();
+  marcarAccionSugerida();
+
   const t = totalesDia();
   const d = dia();
   // lo quemado con ejercicio amplía el margen del día
@@ -33,7 +55,16 @@ function renderHoy() {
   ring.classList.toggle('over', objetivo > 0 && t.kcal > objetivo);
   ring.classList.toggle('near', objetivo > 0 && t.kcal <= objetivo && t.kcal > objetivo * 0.85);
 
-  $('statRestante').textContent = objetivo ? fmtNum(Math.max(objetivo - t.kcal, 0)) : '—';
+  /* Pasarse quedaba escondido: el anillo se llenaba y "restantes" mostraba 0,
+     igual que si hubieras cerrado justo. Ahora el numero se pone en negativo y
+     dice cuanto te pasaste, que es el dato que sirve. */
+  const sobra = objetivo ? objetivo - t.kcal : 0;
+  const stRest = $('statRestante');
+  stRest.textContent = objetivo ? (sobra >= 0 ? fmtNum(sobra) : '+' + fmtNum(-sobra)) : '—';
+  stRest.classList.toggle('pasado', objetivo > 0 && sobra < 0);
+  stRest.parentElement?.querySelector('small')?.replaceChildren(
+    document.createTextNode(objetivo && sobra < 0 ? 'de más' : 'restantes')
+  );
   $('statObjetivo').textContent = objetivo ? fmtNum(objetivo) : '—';
   $('statTdee').textContent = calc ? fmtNum(calc.tdee) : '—';
 
@@ -181,7 +212,6 @@ $('visorFoto').onclick = (e) => { if (e.target.id !== 'visorImg') cerrarVisor();
 function renderNota() {
   const nota = dia().nota || '';
   $('notaDia').value = nota;
-  if ($('notaPill')) $('notaPill').hidden = !nota.trim();
 }
 
 let guardarNotaT;
@@ -191,7 +221,6 @@ $('notaDia').oninput = () => {
   guardarNotaT = setTimeout(() => {
     dia().nota = $('notaDia').value;
     save();
-    if ($('notaPill')) $('notaPill').hidden = !$('notaDia').value.trim();
   }, 500);
 };
 
@@ -199,7 +228,6 @@ $('notaDia').onblur = () => {
   clearTimeout(guardarNotaT);
   dia().nota = $('notaDia').value;
   save();
-  if ($('notaPill')) $('notaPill').hidden = !$('notaDia').value.trim();
 };
 
 /* ---------------- suma rápida ---------------- */
@@ -372,10 +400,11 @@ function renderAgua() {
     cont.appendChild(b);
   }
 
-  const litros = (vasos * ML_POR_VASO) / 1000;
+  const ml = mlPorVaso();
+  const litros = (vasos * ml) / 1000;
   $('aguaInfo').textContent = vasos >= meta
     ? fmtNum(litros, 2) + ' L — objetivo cumplido'
-    : fmtNum(litros, 2) + ' L de ' + fmtNum((meta * ML_POR_VASO) / 1000, 2) + ' L. Tocá hasta dónde llegaste.';
+    : fmtNum(litros, 2) + ' L de ' + fmtNum((meta * ml) / 1000, 2) + ' L. Tocá hasta dónde llegaste.';
 
   pintarMetaAgua(meta);
 }
@@ -388,8 +417,24 @@ function renderAgua() {
  * objetivo que se ignora no mueve nada. Cuatro se cumple, y cuando se cumple
  * sin esfuerzo se sube de a uno.
  */
+/** Los mililitros de un vaso: el elegido, o los 250 de siempre. */
+function mlPorVaso() {
+  const n = Number(state.cfg.mlPorVaso);
+  return n > 0 ? n : ML_POR_VASO;
+}
+
 function pintarMetaAgua(meta) {
   if (!$('aguaMeta')) return;
+
+  const sel = $('aguaTamano');
+  if (sel) {
+    sel.value = String(mlPorVaso());
+    sel.onchange = () => {
+      state.cfg.mlPorVaso = Number(sel.value) || ML_POR_VASO;
+      save();
+      renderAgua();
+    };
+  }
 
   $('aguaMeta').textContent = meta + (meta === 1 ? ' vaso' : ' vasos');
   $('aguaMenos').disabled = meta <= VASOS_MIN;
@@ -422,7 +467,6 @@ function ponerAgua(cantidad) {
 
 function renderEjercicio() {
   const kcal = dia().ejercicio || 0;
-  if ($('ejercicioPill')) $('ejercicioPill').textContent = fmtKcal(kcal);
   $('ejercicioHoy').value = kcal || '';
   $('ejercicioInfo').textContent = kcal
     ? `Tu objetivo de hoy sube a ${fmtKcal(objetivoEfectivo(calcular()?.objetivo || 0, kcal))}.`

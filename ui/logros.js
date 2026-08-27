@@ -20,6 +20,30 @@ function renderLogros() {
     </div>`).join('');
 
   $('logrosPill').textContent = `${ganados.size} de ${LOGROS.length}`;
+  pintarProximoLogro();
+}
+
+/*
+ * El logro más cerca de ganarse.
+ *
+ * Dieciséis medallas grises no dicen por dónde seguir. Una sola, con cuánto
+ * falta, sí — y es lo único de esta pantalla que se puede accionar hoy.
+ */
+function pintarProximoLogro() {
+  let caja = $('proximoLogro');
+  if (!caja) {
+    caja = document.createElement('p');
+    caja.id = 'proximoLogro';
+    caja.className = 'hint proximo-logro';
+    $('logrosGrilla').parentElement.insertBefore(caja, $('logrosGrilla'));
+  }
+
+  const c = logroMasCerca(state.dias, state.juego, { vasos: metaVasos() });
+  caja.hidden = !c;
+  if (!c) return;
+
+  caja.innerHTML = `<b>${c.logro.icono} ${c.logro.nombre}</b> — te falta ` +
+    `${fmtNum(c.falta)} de ${fmtNum(c.meta)}. <i>${c.logro.detalle}.</i>`;
 }
 
 function pintarNivel() {

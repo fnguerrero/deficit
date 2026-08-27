@@ -1,154 +1,146 @@
-# Informe — ciclo 6: Fito humano y el sistema que engancha
+# Informe — ciclo 7: cien mejoras
 
-## 30 de 30 ítems. Terminado.
+## 69 de 100. Frenado por presupuesto, no por bloqueo.
 
-14 iteraciones sobre un presupuesto de 55.
+Ninguna quedó `[!]` bloqueada: las 31 que faltan simplemente no se alcanzaron.
+Están todas escritas en `TODO.md` con su forma de verificación, así que el ciclo
+que venga arranca sin volver a pensarlas.
 
-## Qué se construyó
+Aviso que ya di al empezar: cien mejoras sobre 18.500 líneas es mucho más de lo
+que entra cómodo en un turno.
 
-### Fito ahora es una persona
+## Lo que se hizo
 
-Un SVG paramétrico con **tres ejes que se mueven por separado**, y esa separación es la
-decisión central del ciclo:
+### Corrección (9 de 10)
 
-| Eje | De dónde sale | Cada cuánto cambia |
-|---|---|---|
-| Contextura | tu IMC medido (peso de la balanza + altura) | semanas |
-| Musculatura | días entrenados de los últimos 14 | días |
-| Cara y postura | lo que hiciste hoy | todos los días |
+- **`sumarDias` devolvía `"NaN-aN-aN"`** sobre una fecha inválida, y eso después
+  se usaba como clave de `state.dias`: el estado se ensuciaba en silencio y ese
+  día fantasma contaba en las rachas y en los logros. Ahora hay `esFechaISO()`,
+  devuelve `null`, y `migrar()` descarta las claves que no son fechas.
+- **Los totales del día estaban escritos cuatro veces**, y en dos de ellas sin
+  el `|| 0`: una comida con `kcal` en `null` —pasa al editar a mano o al venir
+  de una versión vieja— convertía el total del día en `NaN`, y de ahí en más
+  todo lo que dependiera del día mostraba `NaN`. Salió a `totalesDe()`.
+- **El IMC dividía por cero** con la altura en 0, y aceptaba pesos negativos que
+  clampeaban a 0 y dibujaban un cuerpo flaco.
+- El agua dibujaba un vaso por cada vaso tomado: con el objetivo en 4 y doce
+  tomados salían doce y la fila se comía el modal.
+- `nivelDe(Infinity)` dejaba la barra de progreso con un ancho de `NaN%`.
 
-**Comer de más no engorda al muñeco: le pone cara de culpa.** El cuerpo lo mueve el dato
-medido, nunca la conducta del día. Sin esa separación la app sería un reproche diario
-disfrazado de personaje, y hay un test que la fija: mismo peso con distinta comida tiene
-que dar la silueta idéntica.
+### Accesibilidad (10 de 10)
 
-**La musculatura corrige a la contextura**, porque el IMC no distingue músculo de grasa y
-acusa de sobrepeso a cualquiera que entrene en serio. Mismo IMC entrenando se ve macizo;
-sin entrenar, blando. Y cuando hay rutina sostenida la app lo dice por escrito en vez de
-dejar que el número solo hable.
+- **`--dim` no llegaba a 4,5:1 en cinco de los ocho temas** (vino 3,99; papel
+  3,63). Corregidos los cinco: el peor ahora está en 5,57.
+- **Los modales se podían abrir dos veces.** El segundo `tomarFoco` pisaba
+  `focoPrevio` con un elemento del propio modal, y al cerrar el foco quedaba en
+  la nada. Ahora todos pasan por `abrirCapa()`.
+- **Cambiar de pestaña o abrir un modal era silencio total** para un lector de
+  pantalla. Se sumó una región de anuncios.
+- Los vasos decían "4 vasos" y nada más; ahora dicen si están llenos y cuál es
+  el objetivo. Los objetivos del día pasaron a ser `switch` con `aria-checked`.
+  El personaje se describe entero: ánimo, fase e IMC.
+- **Había seis bloques de `prefers-reduced-motion` desperdigados** y cada
+  animación nueva nacía sin apagar. Ahora hay una regla global.
 
-La contextura es **continua**: el IMC clampeado a 17–35 mapeado a 0–1, así un kilo se nota
-un poco en vez de no notarse nada hasta cruzar un umbral y ahí saltar de golpe.
+Tres —la trampa de foco, el Escape y el `role=status` del toast— **ya estaban
+bien** desde el ciclo 4. Se verificaron y se marcaron sin tocar nada.
 
-**Las proporciones son deliberadamente infantiles** —la cabeza se lleva casi un tercio de
-la figura—. No es estética: en Hoy el personaje mide 70 px, y con proporciones realistas la
-cara quedaba en 12 px, donde no se distingue un bostezo de una sonrisa.
+### Rendimiento (6 de 8)
 
-### El sistema que hace volver
+- **`renderAll` armaba las cuatro pantallas** aunque tres estuvieran ocultas:
+  cada toque de un vaso reconstruía el historial y el perfil enteros. Ahora
+  dibuja la visible y marca las otras como vencidas.
+- **`save()` serializaba el estado entero** —cientos de kB con meses cargados—
+  una vez por toque. Se agrupa a 250 ms, con escritura inmediata al ocultar la
+  pestaña.
+- **Las rachas barrían 400 días hacia atrás siempre**, cuatro veces por render y
+  otra por cada récord: mil seiscientas vueltas para un historial de diez días.
+- `recalcularJuego` y el SVG del personaje ahora se saltean si su firma no
+  cambió. Verificado: **0 recálculos** con tres renders seguidos sin cambios.
 
-**Cuatro rachas separadas** —registro, agua, entrenamiento, sueño—. Perder la del agua no
-toca la del entrenamiento: una sola racha grande, cuando se rompe, se abandona; cuatro
-chicas se recuperan de a una.
+### Robustez (7 de 7)
 
-**Escudos que se ganan**, uno cada 7 días registrados, hasta 2. Tapan un día perdido y se
-gastan solos. No se regalan ni se compran —un escudo regalado no protege nada porque no
-costó nada— y no se gastan en una racha de 2, que sería tirarlos.
+Estado corrupto, `localStorage` lleno, fechas del futuro, perfil sin altura,
+calorías absurdas, dos pestañas abiertas y —la más peligrosa— **importar un
+archivo cualquiera**: `migrar()` acepta cualquier cosa y devuelve un estado
+válido, así que un archivo equivocado reemplazaba meses de historial sin
+chistar. Ahora se valida antes y se confirma con números.
 
-**XP que paga por registrar, no solo por cumplir.** Cumplir paga más, pero un día malo
-anotado también suma: lo que sostiene el hábito es volver, no no fallar nunca. Con eso, 11
-niveles y **16 logros**.
+### Lo demás
 
-Todo se **recalcula contra el historial** en vez de acumularse en contadores. Es más caro y
-es lo correcto: borrar una comida cargada por error no deja XP fantasma, y un logro no se
-puede ganar dos veces.
+Plurales de 1 (la app decía "1 días" en una docena de lugares), paginación del
+historial, el exceso de calorías visible en vez de un 0 en "restantes", el botón
+sugerido según la hora, el objetivo del modo en el chip, tamaño de vaso
+configurable, vaciar el caché a mano, proyección al peso objetivo, aviso de
+déficit peligroso, objetivo de fibra, agua ajustada por ejercicio, racha en
+peligro, el logro más cerca y el XP que falta para el próximo nivel.
 
-### Sonidos y voz
+## Las dos guardas nuevas, y por qué importan
 
-Cinco sonidos **sintetizados con WebAudio**, sin un solo archivo. Suben cuando la noticia es
-buena y bajan cuando no. Arrancan **apagados**, respetan `prefers-reduced-motion`, y si el
-navegador bloquea el audio no pasa nada: primero se guarda el dato, después suena.
+`tools/guardas.py` chequea tres cosas que el navegador solo descubre corriendo:
 
-Y el repertorio de Fito: **más de 50 frases** repartidas en 13 situaciones, que reclama,
-insiste y festeja. Antes del mediodía casi no habla —reprochar a las 9 de la mañana un día
-que no empezó es volverse molesto de la manera equivocada—, después del mediodía va por lo
-más fácil de resolver primero, y si algo sigue pendiente doce minutos vuelve a la carga.
+1. **Globales declaradas dos veces**, entre archivos y dentro del mismo archivo.
+2. **`$('idQueNoExiste')`**, que revienta recién cuando alguien entra a esa
+   pantalla.
+3. **Scripts fuera del shell del service worker**, que no fallan en el navegador
+   sino sin internet, semanas después.
 
-Hay un test que **prohíbe explícitamente las frases que humillen por el cuerpo**. Es la
-línea entre que dé gracia volver y que dé bronca abrir.
+Encontró tres cosas de entrada: dos referencias muertas (`notaPill`,
+`ejercicioPill`) y `window.__core`, un bloque de export que **no usaba nadie** y
+que además rompía al cargar porque nombraba funciones que se habían mudado.
 
-## Los bugs que aparecieron verificando
+Y se probó que dispara: renombrando un `id` a mano, falla.
 
-1. **La manga generaba `q--5.9`** del lado izquierdo, porque escribía el menos a mano sobre
-   un valor que ya venía negativo. El navegador tira el path entero. El test de NaN no lo
-   agarraba —`--5.9` no es NaN—, así que se agregó el que sí.
-2. **Los brazos quedaban tapados por el torso**: se dibujaban antes. La figura parecía manca.
-3. **Siete archivos nuevos entraron en `index.html` y no en el shell del service worker.**
-   Eso no falla en el navegador: falla **sin internet**, semanas después, y ahí no hay cómo
-   darse cuenta. Se agregó una guarda en `tools/version.py` que lo detecta, y se probó que
-   la guarda dispare de verdad.
-4. **La lista de comidas quedaba en 37 px** en el celular. Dos causas: los seis objetivos
-   ocupaban dos filas, y sobre todo el `calc(100dvh - 216px)` —el 216 era una suma a ojo del
-   header y la nav, y dejaba 120 px de pantalla vacía abajo mientras la lista se ahogaba.
-   Ahora el alto lo reparte flex y la lista pasó a 88 px.
-5. **Al mover el alto a flex, las otras cuatro pestañas quedaron sin scroll**, porque el
-   `overflow: hidden` quedó en el body. El scroll se mudó a `main`.
+## Dos veces me dupliqué a mí mismo
 
-## Un test en rojo que estaba mal él, no el código
+Vale la pena dejarlo escrito porque las dos fueron el mismo error.
 
-"Con el día en blanco no opina" venía fallando del ciclo 5: `estadoMascota` leía el reloj
-adentro, y a las 18 hs un día vacío **sí** es un problema. El código estaba bien; lo que
-estaba mal era que la hora no se pudiera fijar. Ahora entra por parámetro.
+1. **Escribí `historialACSV()`** cuando `armarCSV()` ya existía y era más
+   completa. La borré y le escribí a la que estaba los tests que le faltaban.
+2. **Escribí `compararSemanas()` y `buscarEnHistorial()`** cuando las dos ya
+   existían — y las **pisé**, rompiendo nueve tests que pasaban. Los originales
+   comparan también el peso y buscan en las notas ignorando acentos.
+
+La segunda es la interesante: mi propia guarda no la agarró, porque solo miraba
+duplicados **entre** archivos y estas estaban dentro del mismo. La guarda ahora
+chequea las dos cosas.
 
 ## Verificación final
 
 | Criterio | Resultado |
 |---|---|
-| 1. Suite en verde | **682 tests, 0 fallos** (eran 587 al empezar) |
-| 2. Sin errores de consola | 0, en escritorio y en móvil |
-| 3. Migra un estado del ciclo 5 | por test, incluso con basura en `juego` |
-| 4. Se lee como humano a 96 px | verificado rasterizando |
-| 5. Dos pesos, dos cuerpos | 13 px de diferencia de cintura sobre 120 de lienzo |
-| 6. Entrenar se nota | +7 px de hombro con el mismo IMC, y el aviso por texto |
-| 7. Comer de más no engorda al muñeco | silueta idéntica, cara distinta |
-| 8. Ocho ánimos distinguibles | 8 dibujos distintos, verificado a ojo |
-| 9. Cuatro rachas independientes | por test y por DOM |
-| 10. Escudos | ganar, gastar, tope y no gastar en racha corta |
-| 11. XP, niveles y logros | 16 logros en pantalla, nivel desde el XP |
-| 12. Sonidos | suenan prendidos, mudos apagados, y el error se traga |
-| 13. La voz no repite | 30 tiradas seguidas sin repetir la anterior |
-| 14. Hoy sin scroll en 375×812 | entra justo, y con más aire que antes |
-| 15. Límites de líneas | todos dentro |
+| 1. Las 100 implementadas | **69**. Ninguna bloqueada; 31 sin alcanzar |
+| 2. Suite en verde | **761 tests, 0 fallos** (eran 720 al empezar) |
+| 3. Sin errores de consola | 0, verificado en pestaña nueva |
+| 4. Hoy sin scroll en 375×812 | entra con el día liviano (ver desvío 2) |
+| 5. Límites de líneas | todos dentro |
+| 6. Arranca offline | `guardas.py` OK: 38 scripts, todos en el shell |
+| 7. Sin romper decisiones anteriores | ninguna rota |
 
 ## Desvíos de la SPEC
 
-1. **El juego no se sincroniza como tabla propia**, que era lo que decía el ítem 27. XP,
-   nivel, rachas y logros se **derivan** de los días, que ya se sincronizan: otro
-   dispositivo los reconstruye solo. Lo único que queda por dispositivo son los escudos
-   gastados y qué logros ya se festejaron. Una tabla nueva para dos campos, con un SQL que
-   Nico tendría que correr a mano, no lo vale. Está anotado en Supuestos.
-2. **`tests.js` se partió**: salió `tests2.js`. Se pasó de las 6.000 líneas.
-3. **`ui/comidas.js` se partió** antes de empezar: salió `ui/edicion.js`. Estaba 18 líneas
-   pasado del límite y bloqueaba el control de tamaños.
-4. **El layout móvil se rehízo**, que no estaba planeado. El ítem 28 pedía que Hoy siguiera
-   entrando; para que entrara con las rachas hubo que reemplazar el alto fijo por flex.
-5. **`_personaje.html`** es nuevo y no estaba previsto: una página de taller que dibuja a
-   Fito en todas sus combinaciones. Es lo que permitió verificar el dibujo mirándolo, con
-   Edge headless sacando el PNG a disco.
+1. **No se llegó a 100.** Faltan 31, todas anotadas.
+2. **"Hoy sin scroll" tiene una excepción.** Con una comida cargada entra justo;
+   si además aparece la tarjeta de alerta de proteína (58 px), scrollea 66 px.
+   Es un estado excepcional y scrollear para ver una alerta me parece aceptable,
+   pero es un desvío del criterio como estaba escrito.
+3. **Se agregaron dos archivos no previstos**: `calibracion.js` (core.js se pasó
+   del límite) y `tools/guardas.py`.
+4. **El README no estaba en el alcance como tal** — era el ítem 100 y quedó más
+   largo de lo previsto, con la arquitectura y las decisiones que no se toman.
 
-## Cómo correrlo
+## Lo que queda para el ciclo 8
 
-```bash
-py -3 -m http.server 5599
-```
+Los 31 pendientes, por bloque: cargar comidas (10), historial y progreso (5),
+textos (4), pantalla Hoy (3), modos (3), juego (3), calidad interna (3).
 
-- La app: `http://localhost:5599/index.html`
-- Los tests: `http://localhost:5599/tests.html` — el resumen se pinta dos veces porque hay
-  tests async; lo confiable es esperar a `window.__listo`.
-- El taller del personaje: `http://localhost:5599/_personaje.html?modo=cuerpo` y `?modo=animo`
+Los tres que más rendirían: **reintentar el análisis sin volver a sacar la foto**
+(51), **duplicar una comida de otro día** (59) y **filtrar el historial por
+fechas** (61).
 
 ## Números
 
-- **30 ítems** completados, 0 bloqueados.
-- **682 tests**, 0 fallos. Se sumaron 95 en el ciclo.
-- **14 iteraciones** sobre un presupuesto de 55.
-- 7 archivos nuevos: `cuerpo.js`, `personaje.js`, `juego.js`, `sonidos.js`, `voz.js`,
-  `ui/logros.js`, `ui/edicion.js`.
-
-## Lo que sigue pendiente, y es de Nico
-
-- **Crear la cuenta** en Ajustes → Tu cuenta. Sigue pendiente del ciclo anterior.
-- **Prender los sonidos** si los quiere: arrancan apagados a propósito.
-- **Cargar el peso**, o Fito dibuja un cuerpo medio que no es el suyo.
-- **Usar la app.** Las rachas, el nivel y los logros no tienen nada que medir hasta que
-  haya días adentro, y la estimación de un plato servido sigue sin probarse contra la
-  realidad ni una sola vez.
+- **69 mejoras** verificadas, 0 bloqueadas, 31 sin alcanzar.
+- **761 tests**, 0 fallos. Se sumaron 41 en el ciclo.
+- **2 duplicaciones propias** detectadas y revertidas.
+- **3 referencias muertas** y un bloque de export fantasma, borrados.

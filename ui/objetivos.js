@@ -107,7 +107,11 @@ function renderTiras() {
 
   const chipModo = document.createElement('button');
   chipModo.className = 'tira activa';
-  chipModo.innerHTML = `<i>${m?.emoji || '🎯'}</i>${m?.nombre || 'Sin modo'}`;
+  /* El nombre del modo solo no dice nada operativo. El numero que importa es
+     cuantas calorias te deja hoy, y estaba tres pantallas mas adentro. */
+  const obj = calcular();
+  chipModo.innerHTML = `<i>${m?.emoji || '🎯'}</i>${m?.nombre || 'Sin modo'}` +
+    (obj ? `<small>${fmtNum(obj.objetivo)} kcal</small>` : '');
   chipModo.onclick = () => irTab('perfil');
   cont.appendChild(chipModo);
 
@@ -340,7 +344,14 @@ function renderMascota() {
 
   /* 86 y no 70: el lienzo crecio para que entren las puntas del pelo y el aura,
      asi que a 70 la figura en si quedaba en 43 px de ancho. */
-  cont.innerHTML = svgPersonaje(est.animo, 86, cuerpo, fase);
+  /* El SVG son unos 8 kB de string armado a mano. Re-generarlo y volver a
+     parsearlo cuando nada cambio es trabajo puro al pedo, y en el celular se
+     nota al tocar un vaso. */
+  const firmaSvg = [est.animo, fase.n, cuerpo.efectiva, cuerpo.musculatura].join('|');
+  if (cont.dataset.firma !== firmaSvg) {
+    cont.innerHTML = svgPersonaje(est.animo, 76, cuerpo, fase);
+    cont.dataset.firma = firmaSvg;
+  }
   /* El SVG solo dice el animo. Quien no ve el dibujo necesita lo mismo que el
      dibujo cuenta: como venis, en que fase estas y de que esta hecho el cuerpo. */
   cont.setAttribute('role', 'img');
@@ -355,6 +366,9 @@ function renderMascota() {
 
   /* Sin peso no se puede dibujar SU cuerpo: se dibuja uno medio y se pide el
      dato, en vez de disimular que el muneco es cualquiera. */
+  /* El texto se corta en dos lineas por CSS; el completo queda en el title para
+     el que quiera leerlo entero. */
+  $('mascotaDetalle').title = est.texto || '';
   $('mascotaDetalle').textContent = !cuerpo.hayDatos
     ? 'Cargá tu peso y el muñeco va a tener tu cuerpo, no uno cualquiera.'
     : (cuerpo.aviso || fraseDelDia(d) || est.texto);
@@ -363,7 +377,14 @@ function renderMascota() {
   $('mascotaBarra').style.width = Math.round(lvl.pct * 100) + '%';
   /* En Hoy va solo el número: el nombre del nivel no entra al lado de las
      cuatro rachas, y está entero en Progreso. */
-  $('mascotaLvl').textContent = `Nv ${lvl.nivel}`;
+  /* "Nv 3" sin contexto es un numero suelto. Lo que empuja es saber que faltan
+     40 XP, que es media tarde de cumplir. */
+  $('mascotaLvl').textContent = lvl.siguiente == null
+    ? `Nv ${lvl.nivel}`
+    : `Nv ${lvl.nivel} · ${fmtNum(lvl.faltan)} XP`;
+  $('mascotaLvl').title = lvl.siguiente == null
+    ? `${lvl.nombre}. Es el último nivel.`
+    : `${lvl.nombre}. Faltan ${fmtNum(lvl.faltan)} XP para el nivel ${lvl.nivel + 1}.`;
 
   pintarRachas();
 
@@ -402,6 +423,26 @@ function fraseDelDia(d, ahora = Date.now()) {
   return vozActual.texto;
 }
 
+/* De qué rachas ya se avisó hoy. Sin esto el aviso salta en cada render y a los
+   tres toques deja de leerse. */
+let avisadasHoy = null;
+
+function avisarRachasEnPeligro() {
+  if (avisadasHoy?.fecha !== hoyISO()) avisadasHoy = { fecha: hoyISO(), ids: new Set() };
+
+  const enPeligro = rachasEnPeligro(state.dias, {
+    vasos: metaVasos(),
+    juego: state.juego
+  });
+
+  for (const r of enPeligro) {
+    if (avisadasHoy.ids.has(r.id)) continue;
+    avisadasHoy.ids.add(r.id);
+    toast(decir('rachaEnPeligro', { que: NOMBRE_ACTIVIDAD[r.id] || r.nombre.toLowerCase(), n: r.actual }));
+    break;   // de a uno: dos avisos juntos se pisan
+  }
+}
+
 /**
  * Recalcula rachas, XP y logros contra el historial y guarda si algo cambió.
  *
@@ -409,7 +450,34 @@ function fraseDelDia(d, ahora = Date.now()) {
  * error no deja XP fantasma, y un logro no se puede ganar dos veces. Solo se
  * guarda cuando hay diferencia, o cada render dispararía una escritura.
  */
+/*
+ * Una firma barata del estado que le importa al juego.
+ *
+ * `recalcularJuego` recorre el historial entero —rachas, records, logros— y se
+ * llamaba en CADA render de Hoy, aunque no hubiera cambiado nada. La firma
+ * junta lo unico que puede alterar el resultado, y si no se movió, el recálculo
+ * se saltea entero.
+ */
+function firmaDelJuego() {
+  const d = dia();
+  return [
+    hoyISO(),
+    Object.keys(state.dias).length,
+    (d.comidas || []).length,
+    d.agua || 0,
+    d.ejercicio || 0,
+    d.sueno?.horas || 0,
+    metaVasos()
+  ].join('|');
+}
+
+let ultimaFirmaJuego = null;
+let ultimoResultadoJuego = null;
+
 function actualizarJuego() {
+  const firma = firmaDelJuego();
+  if (firma === ultimaFirmaJuego && ultimoResultadoJuego) return ultimoResultadoJuego;
+
   const antes = JSON.stringify(state.juego || {});
   const nivelPrevio = nivelDe(state.juego?.xp || 0).nivel;
 
@@ -423,6 +491,9 @@ function actualizarJuego() {
   sonarObjetivosNuevos();
   anunciarNovedades(r, nivelPrevio);
   anunciarFase();
+
+  ultimaFirmaJuego = firma;
+  ultimoResultadoJuego = r;
   return r;
 }
 
@@ -537,6 +608,8 @@ function transformarse(fase) {
 function pintarRachas() {
   const cont = $('rachasFila');
   if (!cont) return;
+
+  avisarRachasEnPeligro();
 
   const rachas = todasLasRachas(state.dias, {
     vasos: metaVasos(),

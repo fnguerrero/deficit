@@ -347,3 +347,29 @@ $('horaDormir').onchange = (e) => {
   save();
   programarRecordatorios();
 };
+
+
+/*
+ * Vaciar el caché de análisis a mano.
+ *
+ * El caché guarda cada foto ya analizada para no volver a pagarla, y son la
+ * parte más pesada del estado. Se limpia solo cuando el almacenamiento se
+ * llena, pero hasta ahora no había forma de hacerlo a propósito — y a veces se
+ * quiere, por ejemplo después de recalibrar la estimación.
+ */
+if ($('btnLimpiarCache')) {
+  $('btnLimpiarCache').onclick = () => {
+    const cuantos = Object.keys(state.cacheAnalisis || {}).length;
+    if (!cuantos) { toast('El caché ya está vacío'); return; }
+
+    if (!confirm(`Vas a borrar ${plural(cuantos, 'análisis guardado', 'análisis guardados')}.
+
+` +
+      'No perdés ninguna comida: solo se vuelve a pagar el análisis si sacás la misma foto otra vez.')) return;
+
+    state.cacheAnalisis = {};
+    guardarYa();
+    renderAjustes();
+    toast(`Caché vacío: ${plural(cuantos, 'análisis borrado', 'análisis borrados')}`);
+  };
+}
