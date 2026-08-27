@@ -124,7 +124,8 @@ function renderModos() {
   for (const m of listaModos()) {
     const b = document.createElement('button');
     b.className = 'modo-btn' + (m.id === actual ? ' activo' : '');
-    b.innerHTML = `${m.nombre}<small>${m.resumen}</small>`;
+    b.innerHTML = `<i aria-hidden="true">${m.emoji || '🎯'}</i>` +
+      `<span><b>${m.nombre}</b><small>${m.resumen}</small></span>`;
     b.setAttribute('aria-pressed', String(m.id === actual));
     b.onclick = () => {
       state.perfil.modo = m.id;
