@@ -38,6 +38,12 @@ function escribiendo() {
 
 function hayModalAbierto() {
   return $('modal').classList.contains('open') ||
+    /* El de objetivos faltaba, y era el que mas se usa: cargar el peso, tocar
+       un vaso, marcar el sueno. Sin el, la app se consideraba ociosa con el
+       modal en pantalla y aplicaba la actualizacion pendiente; la recarga
+       cerraba el modal justo despues de guardar y parecia que el boton
+       "Guardar" era el que cerraba la ventana. */
+    $('modalObjetivo').classList.contains('open') ||
     $('modalOrigenFoto').classList.contains('open') ||
     $('modalResumen').classList.contains('open') ||
     !$('visorFoto').hidden ||
