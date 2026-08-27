@@ -58,7 +58,10 @@ const PALETA = {
 const VB = { x: -8, y: -46, w: 136, h: 222 };
 
 /* Alturas de referencia del cuerpo. */
-const Y = { hombro: 62, pecho: 76, cintura: 96, cadera: 110, rodilla: 138, pie: 168 };
+/* La cadera y la cintura subieron, y la rodilla bajo: la referencia tiene
+   piernas largas y torso corto, y con la cadera a 110 el muneco era un bloque
+   sobre dos patas. El pie no se mueve, que es lo que fija el piso del dibujo. */
+const Y = { hombro: 62, pecho: 76, cintura: 92, cadera: 105, rodilla: 141, pie: 168 };
 
 /* El grosor del contorno. Un solo número: si cada parte tuviera el suyo, el
    dibujo se desarma en pedazos que no parecen del mismo personaje. */
@@ -89,8 +92,8 @@ function medidasDe(contextura, musculatura, poder = 0) {
     brazo: 3.6 + c * 3.6 + (m + p) * 3.6,
     pierna: 5.4 + c * 7 + (m + p) * 1.8,
     cuello: 6 + c * 3 + (m + p) * 2.4,
-    caraRx: 16.5 + c * 8,
-    caraRy: 20.5
+    caraRx: 15 + c * 7,
+    caraRy: 18.6
   };
 }
 
@@ -304,6 +307,71 @@ function volumen(med, col) {
   return out;
 }
 
+
+/*
+ * La musculosa, en UNA sola pieza.
+ *
+ * Antes era el torso entero de verde y encima parches de piel para simular el
+ * escote y las sisas. Cada parche traia su propio contorno recto, y todos esos
+ * bordes juntos formaban una barra negra cruzando de hombro a hombro: la prenda
+ * se leia como una tabla apoyada sobre el pecho. Recortando el cuello y las
+ * sisas dentro del mismo path hay un solo contorno, que es como se dibuja una
+ * prenda.
+ */
+function siluetaRemera(med, desdeY, hastaY, paso = 2, mitad = false) {
+  const der = [];
+  const izq = [];
+
+  for (let y = desdeY; y <= hastaY; y += paso) {
+    const a = anchoEn(y, med);
+    izq.push((60 - a).toFixed(1) + ' ' + y.toFixed(1));
+    der.unshift((60 + a).toFixed(1) + ' ' + y.toFixed(1));
+  }
+  const aFin = anchoEn(hastaY, med);
+  izq.push((60 - aFin).toFixed(1) + ' ' + hastaY.toFixed(1));
+  der.unshift((60 + aFin).toFixed(1) + ' ' + hastaY.toFixed(1));
+
+  /*
+   * El borde de arriba, de derecha a izquierda: sisa que baja a la axila,
+   * tirante que sube al hombro, escote que baja al centro, y lo mismo espejado.
+   * El orden importa: con la sisa terminando mas abajo que el escote, el
+   * contorno se cruza a si mismo y la prenda sale chorreada de un lado.
+   */
+  const sx = med.hombro * 0.78;
+  const sy = Y.hombro + 15;
+  const ti = Math.max(med.hombro * 0.5, med.hombro - 5.5);
+  const ex = med.hombro * 0.42;
+  const ey = Y.hombro + 12;
+  const n = (v) => v.toFixed(1);
+
+  const tapa = `C${n(60 + med.hombro * 0.99)} ${n(desdeY + 9)} ${n(60 + sx + 1.5)} ${n(sy - 9)} ${n(60 + sx)} ${n(sy)}
+    C${n(60 + sx - 1)} ${n(sy - 10)} ${n(60 + ti + 1)} ${n(desdeY + 10)} ${n(60 + ti)} ${n(desdeY)}
+    C${n(60 + ti - 0.5)} ${n(desdeY + 7)} ${n(60 + ex)} ${n(ey - 1)} 60 ${n(ey)}
+    C${n(60 - ex)} ${n(ey - 1)} ${n(60 - ti + 0.5)} ${n(desdeY + 7)} ${n(60 - ti)} ${n(desdeY)}
+    C${n(60 - ti - 1)} ${n(desdeY + 10)} ${n(60 - sx + 1)} ${n(sy - 10)} ${n(60 - sx)} ${n(sy)}
+    C${n(60 - sx - 1.5)} ${n(sy - 9)} ${n(60 - med.hombro * 0.99)} ${n(desdeY + 9)} ${izq[0]}`;
+
+  const tapaDerecha = `C${n(60 + med.hombro * 0.99)} ${n(desdeY + 9)} ${n(60 + sx + 1.5)} ${n(sy - 9)} ${n(60 + sx)} ${n(sy)}
+    C${n(60 + sx - 1)} ${n(sy - 10)} ${n(60 + ti + 1)} ${n(desdeY + 10)} ${n(60 + ti)} ${n(desdeY)}
+    C${n(60 + ti - 0.5)} ${n(desdeY + 7)} ${n(60 + ex)} ${n(ey - 1)} 60 ${n(ey)}`;
+
+  /* La media prenda para la sombra sale del MISMO recorte: hecha aparte, con
+     un rectangulo o con la silueta del torso, asomaba por el escote y por la
+     sisa como un chorreado colgando del pecho. */
+  if (mitad) {
+    return `M60 ${n(hastaY)} L ${der.join(' L ')} ${tapaDerecha} L60 ${n(hastaY)} Z`;
+  }
+
+  return 'M ' + izq.join(' L ') + ' L ' + der.join(' L ') + ' ' + tapa + ' Z';
+}
+
+/*
+ * El torso, la ropa encima y el relieve.
+ *
+ * La sombra de la prenda sale del MISMO recorte que la prenda (siluetaRemera
+ * con mitad = true). Hecha aparte, con la silueta del torso, asomaba por el
+ * escote y por la sisa como un chorreado oscuro colgando del pecho.
+ */
 function torso(med, col) {
   const hemTop = Y.hombro - 5;
   /* El ruedo baja con la contextura: con la panza grande y el ruedo fijo, la
@@ -325,21 +393,15 @@ function torso(med, col) {
     <path d="M60 ${Y.cadera + 4} v${(hemShort - Y.cadera - 4).toFixed(1)}"
       stroke="${PALETA.linea}" stroke-width="1.5" opacity=".55"/>
 
-    <path d="${silueta(med, hemTop, hemMusculosa)}" fill="${col.remera}"
+    <path d="${siluetaRemera(med, hemTop, hemMusculosa)}" fill="${col.remera}"
       stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
-    <path d="${mediaSilueta(med, hemTop, hemMusculosa, 0.32)}" fill="${col.remeraOsc}" opacity=".95"/>
+    <path d="${siluetaRemera(med, hemTop, hemMusculosa, 2, true)}" fill="${col.remeraOsc}" opacity=".95"/>
     ${volumen(med, col)}
 
-    <path d="M${(60 - med.hombro).toFixed(1)} ${hemTop} h${(med.hombro * 0.3).toFixed(1)}
-             q${(med.hombro * -0.06).toFixed(1)} 11 ${(med.hombro * 0.02).toFixed(1)} 19
-             q${(med.hombro * -0.16).toFixed(1)} 2 ${(med.hombro * -0.26).toFixed(1)} -2z"
-      fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="1.7" stroke-linejoin="round"/>
-    <path d="M${(60 + med.hombro).toFixed(1)} ${hemTop} h${(med.hombro * -0.3).toFixed(1)}
-             q${(med.hombro * 0.06).toFixed(1)} 11 ${(med.hombro * -0.02).toFixed(1)} 19
-             q${(med.hombro * 0.16).toFixed(1)} 2 ${(med.hombro * 0.26).toFixed(1)} -2z"
-      fill="${col.pielSombra}" stroke="${PALETA.linea}" stroke-width="1.7" stroke-linejoin="round"/>
-
-    <path d="M${(60 - cu).toFixed(1)} ${Y.hombro - 12} h${(cu * 2).toFixed(1)} v10 h${(cu * -2).toFixed(1)}z"
+    <path d="M${(60 - cu * 0.82).toFixed(1)} ${Y.hombro - 13}
+        q${(-cu * 0.16).toFixed(1)} 7 ${(-cu * 0.5).toFixed(1)} 11
+        h${(cu * 2.64).toFixed(1)}
+        q${(-cu * 0.34).toFixed(1)} -4 ${(-cu * 0.5).toFixed(1)} -11z"
       fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
     <path d="M${(60 - cu * 1.45).toFixed(1)} ${hemTop}
              a${(cu * 1.45).toFixed(1)} ${(cu * 1.05).toFixed(1)} 0 0 0 ${(cu * 2.9).toFixed(1)} 0z"
