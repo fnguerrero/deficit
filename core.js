@@ -43,10 +43,17 @@ const DEFAULT_STATE = {
        el valor por defecto no llegaría nunca a quien ya tiene estado guardado,
        y con eso puesto un cambio futuro tampoco pisa una decisión tomada. */
     sonido: true, sonidoElegido: false,
+    /* Vasos de agua por día. Empieza bajo a propósito: ver vasosObjetivo(). */
+    vasosMeta: null,
     topeGasto: TOPE_DEFECTO,
     avisoKeyOculto: false, onboardingHecho: false
   }
 };
+
+/** El objetivo de vasos de hoy: el que eligió Nico, o el default bajo. */
+function metaVasos() {
+  return vasosObjetivo(state.perfil.peso, state.cfg.vasosMeta);
+}
 
 const MAX_FRECUENTES = 200;
 

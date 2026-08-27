@@ -829,9 +829,14 @@ test('la fase abre la postura y suma musculo', () => {
     esperarQue(FASES[i].musculo > FASES[i - 1].musculo, 'fase ' + i + ': musculo');
     esperarQue(FASES[i].pose >= FASES[i - 1].pose, 'fase ' + i + ': pose');
   }
-  const base = POSES.neutral;
-  const poder = posturaDePoder(base, FASES[FASE_MAX]);
-  esperarQue(poder.brazos < base.brazos - 20, 'los brazos se separan del cuerpo');
+  /* El angulo del brazo lo fija la fase en ABSOLUTO y no sumando sobre el
+     animo: 'genial' ya los levanta 26 grados y sumarle la fase los terminaba de
+     poner en cruz, que se lee como rendicion y no como fuerza. */
+  const poder = posturaDePoder(POSES.neutral, FASES[FASE_MAX]);
+  const flojito = posturaDePoder(POSES.neutral, FASES[1]);
+  esperarQue(poder.brazos <= -20, 'los brazos se separan del cuerpo: ' + poder.brazos);
+  esperarQue(poder.brazos < flojito.brazos, 'y mas cuanto mas alta la fase');
+  esperar(posturaDePoder(POSES.genial, FASES[FASE_MAX]).brazos, poder.brazos, 'el animo no puede sumar al angulo');
   esperarQue(poder.punos, 'y los punos se cierran');
 });
 

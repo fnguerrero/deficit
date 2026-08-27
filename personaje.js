@@ -52,7 +52,7 @@ const VB = { x: -8, y: -46, w: 136, h: 222 };
    74 px de alto. Con proporciones realistas la cara quedaba en 12 px y no se
    distinguía un bostezo de una sonrisa, que es justamente lo único que hay que
    poder leer de un vistazo. */
-const Y = { hombro: 70, pecho: 82, cintura: 98, cadera: 110, rodilla: 134, pie: 162 };
+const Y = { hombro: 62, pecho: 76, cintura: 96, cadera: 110, rodilla: 138, pie: 168 };
 
 /* ---------------- las medidas ---------------- */
 
@@ -81,8 +81,8 @@ function medidasDe(contextura, musculatura, poder = 0) {
     brazo: 3.6 + c * 2.6 + (m + p) * 3.6,
     pierna: 5.4 + c * 5 + (m + p) * 1.8,
     cuello: 6 + c * 3 + (m + p) * 1.6,
-    caraRx: 18.5 + c * 6.5,
-    caraRy: 23
+    caraRx: 16.5 + c * 6,
+    caraRy: 20.5
   };
 }
 
@@ -136,8 +136,8 @@ function silueta(med, desdeY, hastaY, paso = 2) {
  * cabeza: cuánto cae la cabeza · inclina: grados de ladeo
  */
 const POSES = {
-  neutral: { hombros: 0, cabeza: 0, inclina: 0, brazos: 0 },
-  bien: { hombros: -1, cabeza: -1, inclina: 0, brazos: -3 },
+  neutral: { hombros: 0, cabeza: 0, inclina: 0, brazos: -6, piernas: .25 },
+  bien: { hombros: -1, cabeza: -1, inclina: 0, brazos: -8, piernas: .3 },
   genial: { hombros: -2, cabeza: -2, inclina: 0, brazos: -26, festeja: true },
   flojo: { hombros: 2, cabeza: 1.5, inclina: 3, brazos: 2 },
   cansado: { hombros: 4, cabeza: 4, inclina: 8, brazos: 5 },
@@ -229,10 +229,7 @@ function brazos(med, pose, col) {
       <circle cx="${60 + manoX * s}" cy="${manoY + 2}" r="${(med.brazo * (pose.punos ? 1.25 : 0.95)).toFixed(1)}" fill="${col.piel}"/>
       ${pose.punos ? `<path d="M${(60 + manoX * s - med.brazo).toFixed(1)} ${manoY + 2} h${(med.brazo * 2).toFixed(1)}"
         stroke="${PALETA.pielSombra}" stroke-width="1.2" opacity=".6" stroke-linecap="round"/>` : ''}
-      <path d="M${60 + (hx - med.brazo * 1.15) * s} ${Y.hombro - 2}
-               L${60 + (hx + med.brazo * 1.15) * s} ${Y.hombro - 2}
-               L${60 + (hx + med.brazo * 1.25) * s} ${Y.hombro + 11}
-               q${(-med.brazo * 1.25 * s).toFixed(1)} 3 ${(-med.brazo * 2.5 * s).toFixed(1)} 0z" fill="${col.remera}"/>
+
       ${med.m + med.p > 0.55 ? `<path d="M${60 + (hx + 1.5) * s} ${Y.hombro + 9} q${2.5 * s} 4 ${-0.5 * s} 7"
         stroke="${PALETA.pielSombra}" stroke-width="1.1" fill="none" opacity=".5"/>` : ''}
     </g>`;
@@ -241,7 +238,7 @@ function brazos(med, pose, col) {
 }
 
 function torso(med, col) {
-  const hemRemera = Y.cadera + 3;
+  const hemRemera = Y.cintura + 8;
   const hemShort = Y.cadera + 17;
 
   /* La remera es la misma silueta del cuerpo cortada a la altura del ruedo: por
@@ -251,15 +248,22 @@ function torso(med, col) {
     <path d="${silueta(med, Y.cadera - 6, hemShort)}" fill="${col.short}"/>
     <path d="M60 ${Y.cadera + 4} v${hemShort - Y.cadera - 4}" stroke="${col.shortOsc}" stroke-width="1.4"/>
     <path d="${silueta(med, Y.hombro - 5, hemRemera)}" fill="${col.remera}"/>
-    <path d="M60 ${Y.hombro - 2} q${(med.hombro * 0.6).toFixed(1)} 1 ${(med.hombro * 0.95).toFixed(1)} 4"
-      stroke="${col.remeraOsc}" stroke-width="1" fill="none" opacity=".4"/>
+    <path d="M${(60 - med.hombro).toFixed(1)} ${Y.hombro - 5} h${(med.hombro * 0.3).toFixed(1)}
+             q${(med.hombro * -0.06).toFixed(1)} 11 ${(med.hombro * 0.02).toFixed(1)} 19
+             q${(med.hombro * -0.16).toFixed(1)} 2 ${(med.hombro * -0.26).toFixed(1)} -2z" fill="${col.piel}"/>
+    <path d="M${(60 + med.hombro).toFixed(1)} ${Y.hombro - 5} h${(med.hombro * -0.3).toFixed(1)}
+             q${(med.hombro * 0.06).toFixed(1)} 11 ${(med.hombro * -0.02).toFixed(1)} 19
+             q${(med.hombro * 0.16).toFixed(1)} 2 ${(med.hombro * 0.26).toFixed(1)} -2z" fill="${col.piel}"/>
+    <path d="M${(60 - med.cuello * 1.5).toFixed(1)} ${Y.hombro - 5}
+             a${(med.cuello * 1.5).toFixed(1)} ${(med.cuello * 1.1).toFixed(1)} 0 0 0 ${(med.cuello * 3).toFixed(1)} 0z"
+      fill="${col.piel}"/>
     ${med.m + med.p > 0.5 ? `<path d="M60 ${Y.pecho - 2} v9" stroke="${col.remeraOsc}" stroke-width="1.2" opacity=".7"/>` : ''}
-    <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 9} h${(med.cuello * 2).toFixed(1)} v7 h-${(med.cuello * 2).toFixed(1)}z" fill="${col.piel}"/>
-    <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 4} q${med.cuello.toFixed(1)} 4 ${(med.cuello * 2).toFixed(1)} 0"
+    <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 10} h${(med.cuello * 2).toFixed(1)} v8 h-${(med.cuello * 2).toFixed(1)}z" fill="${col.piel}"/>
+    <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 3} q${med.cuello.toFixed(1)} 4 ${(med.cuello * 2).toFixed(1)} 0"
       stroke="${PALETA.pielSombra}" stroke-width="1.2" fill="none" opacity=".45"/>`;
 }
 
-function ojo(cx, cy, cara, r = 5.2) {
+function ojo(cx, cy, cara, r = 4.6) {
   const [mx, my] = cara.mirada;
 
   if (cara.ojosFelices) {
@@ -317,7 +321,7 @@ function boca(tipo, cy) {
 }
 
 function cabeza(med, cara, col, fase) {
-  const cy = 40;
+  const cy = 34;
   const rx = med.caraRx;
   const ry = med.caraRy;
   const ojoY = cy + 2;

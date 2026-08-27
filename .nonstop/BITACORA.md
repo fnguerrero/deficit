@@ -220,3 +220,9 @@ Nico sumo despues el veredicto honesto de si va bien.
 #27 — Un test en rojo que marcaba algo real: el musculo de la fase angostaba la cintura, o sea que cumplir un dia te dibujaba mas flaco. Se separo en un tercer eje (`poder`) que entra en todo lo que ensancha y en nada de lo que afina. El test viejo pedia que la fase no tocara la silueta —regla que cambio a pedido de Nico— y se reemplazo por el que de verdad importa: puede ponerte mas grande, nunca mas flaco
 
 #27b — El otro rojo era el test que contaba los animos por Object.keys(CARAS): 'furioso' es la cara que impone la fase, no un animo. La lista va explicita
+
+#28 — "Parezco Carlitos". Y era exacto: cabeza redonda enorme, sin cuello, piernas cortas y corte de tacho. Proporciones de adulto (tronco y piernas mas largos, cabeza de 26.5 a 20.5 de radio, cuello a la vista) y musculosa de gimnasio en vez de remera, que es lo que hace que los brazos se vean y que el musculo se lea
+
+#29 — El objetivo de agua salia del peso: 12 vasos para 86 kg. Nadie que hoy toma dos pasa a doce, asi que el casillero quedaba sin marcar todos los dias y terminaba ignorado. Arranca en 4 y se sube a mano de a uno; la referencia por peso sigue estando, como dato al costado y no como meta
+
+#30 — En pantallas anchas el modal se centra. Pegado al borde de abajo se leia como cortado, que fue justo lo que reporto Nico

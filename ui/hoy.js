@@ -348,7 +348,7 @@ $('btnOcultarKey').onclick = () => {
  * corregirse sin agregar un boton de menos.
  */
 function renderAgua() {
-  const meta = vasosObjetivo(state.perfil.peso);
+  const meta = metaVasos();
   const vasos = dia().agua || 0;
   const total = Math.max(meta, vasos);
 
@@ -369,6 +369,39 @@ function renderAgua() {
   $('aguaInfo').textContent = vasos >= meta
     ? fmtNum(litros, 2) + ' L — objetivo cumplido'
     : fmtNum(litros, 2) + ' L de ' + fmtNum((meta * ML_POR_VASO) / 1000, 2) + ' L. Tocá hasta dónde llegaste.';
+
+  pintarMetaAgua(meta);
+}
+
+/*
+ * El objetivo se cambia acá y arranca bajo.
+ *
+ * La referencia médica para 86 kg son 12 vasos, y nadie que hoy toma dos pasa a
+ * doce: el casillero quedaba sin marcar todos los días y terminaba ignorado. Un
+ * objetivo que se ignora no mueve nada. Cuatro se cumple, y cuando se cumple
+ * sin esfuerzo se sube de a uno.
+ */
+function pintarMetaAgua(meta) {
+  if (!$('aguaMeta')) return;
+
+  $('aguaMeta').textContent = meta + (meta === 1 ? ' vaso' : ' vasos');
+  $('aguaMenos').disabled = meta <= VASOS_MIN;
+  $('aguaMas').disabled = meta >= VASOS_MAX;
+
+  const reco = vasosRecomendados(state.perfil.peso);
+  $('aguaReco').textContent = meta >= reco
+    ? `Ya estás en la referencia para tu peso (${reco} vasos).`
+    : `La referencia para tu peso son ${reco} vasos. Esto es el próximo paso, no la meta final.`;
+
+  const mover = (delta) => {
+    state.cfg.vasosMeta = Math.min(VASOS_MAX, Math.max(VASOS_MIN, meta + delta));
+    save();
+    renderAgua();
+    if (typeof renderObjetivos === 'function') renderObjetivos();
+  };
+
+  $('aguaMenos').onclick = () => mover(-1);
+  $('aguaMas').onclick = () => mover(1);
 }
 
 function ponerAgua(cantidad) {

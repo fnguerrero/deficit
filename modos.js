@@ -607,11 +607,33 @@ function caloriasActividad(actividad, pesoKg, minutos = null) {
 
 /* ---------------- agua ---------------- */
 
-/* 35 ml por kilo es la referencia habitual para un adulto sano; un vaso son
-   250 ml. Redondeado a un rango razonable para que no dé 14 vasos. */
-function vasosObjetivo(pesoKg) {
+/*
+ * El objetivo de agua NO es la recomendación médica: es lo próximo que podés
+ * cumplir.
+ *
+ * Antes devolvía 35 ml por kilo, que para 86 kg son 12 vasos. Nadie que hoy
+ * toma dos pasa a doce, así que el casillero quedaba sin marcar todos los días
+ * y terminaba ignorado — y un objetivo que se ignora no mueve nada. Ahora
+ * arranca en 4, que es una mejora real sobre lo que toma la mayoría, y sube a
+ * mano cuando ya se cumple sin esfuerzo.
+ *
+ * `vasosRecomendados()` sigue calculando el número de la referencia, pero como
+ * dato al costado y no como meta.
+ */
+const VASOS_DEFECTO = 4;
+const VASOS_MIN = 1;
+const VASOS_MAX = 16;
+
+function vasosObjetivo(pesoKg, elegido = null) {
+  const n = Number(elegido);
+  if (n > 0) return Math.min(VASOS_MAX, Math.max(VASOS_MIN, Math.round(n)));
+  return VASOS_DEFECTO;
+}
+
+/** Lo que dice la referencia habitual: 35 ml por kilo, en vasos de 250 ml. */
+function vasosRecomendados(pesoKg) {
   if (!pesoKg) return 8;
-  return Math.min(12, Math.max(6, Math.round((pesoKg * 35) / 250)));
+  return Math.min(14, Math.max(6, Math.round((pesoKg * 35) / 250)));
 }
 
 /* ---------------- ayuno intermitente ---------------- */
