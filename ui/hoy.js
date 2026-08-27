@@ -400,11 +400,12 @@ function renderAgua() {
     cont.appendChild(b);
   }
 
-  const ml = mlPorVaso();
-  const litros = (vasos * ml) / 1000;
+  /* Sin litros ni mililitros: un vaso es un vaso. Nadie mide lo que toma, y
+     pedirle una medida al que solo quiere marcar que tomó agua es la clase de
+     friccion que hace que el objetivo se abandone. */
   $('aguaInfo').textContent = vasos >= meta
-    ? fmtNum(litros, 2) + ' L — objetivo cumplido'
-    : fmtNum(litros, 2) + ' L de ' + fmtNum((meta * ml) / 1000, 2) + ' L. Tocá hasta dónde llegaste.';
+    ? `${vasos} de ${meta} vasos — objetivo cumplido`
+    : `${vasos} de ${meta} vasos. Tocá hasta dónde llegaste.`;
 
   pintarMetaAgua(meta);
 }
@@ -417,24 +418,8 @@ function renderAgua() {
  * objetivo que se ignora no mueve nada. Cuatro se cumple, y cuando se cumple
  * sin esfuerzo se sube de a uno.
  */
-/** Los mililitros de un vaso: el elegido, o los 250 de siempre. */
-function mlPorVaso() {
-  const n = Number(state.cfg.mlPorVaso);
-  return n > 0 ? n : ML_POR_VASO;
-}
-
 function pintarMetaAgua(meta) {
   if (!$('aguaMeta')) return;
-
-  const sel = $('aguaTamano');
-  if (sel) {
-    sel.value = String(mlPorVaso());
-    sel.onchange = () => {
-      state.cfg.mlPorVaso = Number(sel.value) || ML_POR_VASO;
-      save();
-      renderAgua();
-    };
-  }
 
   $('aguaMeta').textContent = meta + (meta === 1 ? ' vaso' : ' vasos');
   $('aguaMenos').disabled = meta <= VASOS_MIN;
