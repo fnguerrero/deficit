@@ -388,7 +388,7 @@ function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
     if (id) editarComida(id);
   };
 
-  $('modalResumen').classList.add('open');
+  abrirCapa('modalResumen');
   tomarFoco($('modalResumen'));
 }
 

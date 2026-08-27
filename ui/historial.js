@@ -170,7 +170,7 @@ function renderProyeccion() {
 
   if (sentido === 'estable') {
     caja.innerHTML = '';
-    caja.append(`Tu peso está estable según los últimos ${fmtNum(p.diasDeDatos)} días.`);
+    caja.append(`Tu peso está estable según los últimos ${plural(p.diasDeDatos, 'día')}.`);
     return;
   }
 
@@ -272,7 +272,7 @@ function renderAvisoProteina() {
   $('avisoProteina').hidden = !alerta;
   if (alerta) {
     $('avisoProteinaTxt').textContent =
-      `Venís ${fmtNum(alerta.dias)} días con poca proteína: ${fmtNum(alerta.promedio)} g de ${fmtNum(alerta.objetivo)} g. ` +
+      `Venís ${plural(alerta.dias, 'día')} con poca proteína: ${fmtNum(alerta.promedio)} g de ${fmtNum(alerta.objetivo)} g. ` +
       `Sumá ${fmtNum(alerta.falta)} g por día para no perder músculo mientras bajás.`;
   }
 }
@@ -350,13 +350,36 @@ $('btnLimpiarBusqueda').onclick = () => {
 
 /* --- lista de días --- */
 
+/* Cuantos dias se arman de una. Antes se cortaba en 30 sin decirlo: con seis
+   meses cargados el resto simplemente no existia y no habia forma de llegar. */
+const DIAS_POR_PAGINA = 15;
+let diasVisibles = DIAS_POR_PAGINA;
+
+/* El boton de ver mas. Se crea una sola vez y se esconde cuando ya no queda
+   nada por mostrar. */
+function pintarVerMas(total) {
+  let btn = $('verMasDias');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'verMasDias';
+    btn.className = 'secundario ancho';
+    btn.onclick = () => { diasVisibles += DIAS_POR_PAGINA; renderListaDias(); };
+    $('listaDias').parentElement.appendChild(btn);
+  }
+  const faltan = Math.max(0, total - diasVisibles);
+  btn.hidden = faltan <= 0;
+  btn.textContent = `Ver ${plural(Math.min(faltan, DIAS_POR_PAGINA), 'día más', 'días más')}`;
+}
+
 function renderListaDias() {
   const calc = calcular();
   const objetivo = calc ? calc.objetivo : 0;
-  const fechas = Object.keys(state.dias).filter(f => (state.dias[f].comidas || []).length).sort().reverse().slice(0, 30);
+  const todas = Object.keys(state.dias).filter(f => (state.dias[f].comidas || []).length).sort().reverse();
+  const fechas = todas.slice(0, diasVisibles);
   const ul = $('listaDias');
   ul.innerHTML = '';
   $('diasVacio').hidden = fechas.length > 0;
+  pintarVerMas(todas.length);
 
   for (const f of fechas) {
     const t = totalesDia(f);
@@ -370,7 +393,7 @@ function renderListaDias() {
     info.className = 'info';
     const b = document.createElement('b'); b.textContent = etiquetaFecha(f);
     const sm = document.createElement('small');
-    sm.textContent = `${state.dias[f].comidas.length} comidas` +
+    sm.textContent = plural(state.dias[f].comidas.length, 'comida') +
       (objetivo ? ` · ${fmtDelta(t.kcal - objetivo)} vs objetivo` : '') +
       (state.dias[f].peso ? ` · ${fmtPeso(state.dias[f].peso)}` : '');
 

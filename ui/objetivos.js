@@ -125,11 +125,18 @@ function renderObjetivos() {
 
   renderTiras();
 
+  cont.setAttribute('role', 'group');
+  cont.setAttribute('aria-label', 'Objetivos del día');
+
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {
     const b = document.createElement('button');
     b.className = 'objetivo' + (o.listo ? ' listo' : '');
     b.setAttribute('aria-label', `${o.nombre}${o.valor ? ': ' + o.valor : ', sin cargar'}`);
+    /* El casillero es un interruptor con estado, no un boton suelto: sin esto un
+       lector de pantalla no distingue el cumplido del pendiente. */
+    b.setAttribute('role', 'switch');
+    b.setAttribute('aria-checked', String(!!o.listo));
     b.innerHTML = `<span aria-hidden="true">${o.listo ? '✓' : o.emoji}</span>` +
       `<b>${o.nombre}</b><small>${o.valor || '—'}</small>`;
     b.onclick = () => abrirObjetivo(o.id);
@@ -162,7 +169,7 @@ function abrirObjetivo(id) {
   if (id === 'sueno') renderSueno();
   if (id === 'animo') renderCaritas();
 
-  $('modalObjetivo').classList.add('open');
+  abrirCapa('modalObjetivo');
   tomarFoco($('modalObjetivo'));
 }
 
@@ -238,7 +245,7 @@ function renderActividades() {
 
 function cerrarMas() { $('modalMas').classList.remove('open'); devolverFoco(); }
 
-$('btnMas').onclick = () => { $('modalMas').classList.add('open'); tomarFoco($('modalMas')); };
+$('btnMas').onclick = () => abrirCapa('modalMas');
 $('btnCerrarMas').onclick = cerrarMas;
 $('modalMas').onclick = (e) => { if (e.target.id === 'modalMas') cerrarMas(); };
 
@@ -334,6 +341,15 @@ function renderMascota() {
   /* 86 y no 70: el lienzo crecio para que entren las puntas del pelo y el aura,
      asi que a 70 la figura en si quedaba en 43 px de ancho. */
   cont.innerHTML = svgPersonaje(est.animo, 86, cuerpo, fase);
+  /* El SVG solo dice el animo. Quien no ve el dibujo necesita lo mismo que el
+     dibujo cuenta: como venis, en que fase estas y de que esta hecho el cuerpo. */
+  cont.setAttribute('role', 'img');
+  cont.setAttribute('aria-label', [
+    est.titulo,
+    est.texto,
+    fase.n ? `Fase ${fase.n}: ${fase.nombre}, por ${perfectos} días perfectos seguidos.` : '',
+    cuerpo.hayDatos ? `Cuerpo dibujado con tu IMC de ${fmtNum(cuerpo.imc, 1)}.` : 'Sin peso cargado.'
+  ].filter(Boolean).join(' '));
   pintarFase(fase, perfectos);
   $('mascotaTitulo').textContent = est.titulo;
 

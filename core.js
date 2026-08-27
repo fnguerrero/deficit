@@ -59,6 +59,42 @@ const MAX_FRECUENTES = 200;
 
 /* ---------------- estado ---------------- */
 
+/**
+ * El dia mas viejo que hay registrado.
+ *
+ * Las rachas barrian 400 dias hacia atras SIEMPRE, cuatro veces por render y
+ * otra vez por cada record: mil seiscientas vueltas para un historial de diez
+ * dias. Con esto el barrido se corta donde de verdad empiezan los datos.
+ */
+/** Los dias que ya pasaron. Los del futuro no cuentan para nada calculado. */
+function diasPasados(dias, hoy = hoyISO()) {
+  const salida = {};
+  for (const [f, d] of Object.entries(dias || {})) {
+    if (esFechaISO(f) && f <= hoy) salida[f] = d;
+  }
+  return salida;
+}
+
+function primerDia(dias) {
+  let min = null;
+  for (const f of Object.keys(dias || {})) {
+    if (!esFechaISO(f)) continue;
+    /* Un dia del futuro entra cuando alguien tiene mal la fecha del telefono o
+       cuando sincroniza desde otro huso. Se guarda igual —el dato es del
+       usuario— pero no puede contar como registrado ni cortar una racha. */
+    if (min === null || f < min) min = f;
+  }
+  return min;
+}
+
+/** Cuantos dias hay que mirar hacia atras desde `hoy` para cubrir el historial. */
+function ventanaHistorial(dias, hoy = hoyISO(), tope = 400) {
+  const primero = primerDia(dias);
+  if (!primero) return 1;
+  const n = diasEntre(primero, hoy) + 1;
+  return Math.max(1, Math.min(tope, n));
+}
+
 function clonar(o) {
   return JSON.parse(JSON.stringify(o));
 }
@@ -79,6 +115,13 @@ function migrar(guardado) {
 
   for (const [f, d] of Object.entries(guardado.dias || {})) {
     if (!d || typeof d !== 'object') continue;
+    /* Una clave que no es una fecha no puede entrar: aparecia cuando `sumarDias`
+       devolvia "NaN-aN-aN", y desde ahi contaba como un dia registrado en las
+       rachas y en los logros sin serlo. */
+    if (!esFechaISO(f)) continue;
+    /* Un dia del futuro entra cuando alguien tiene mal la fecha del telefono o
+       cuando sincroniza desde otro huso. Se guarda igual —el dato es del
+       usuario— pero no puede contar como registrado ni cortar una racha. */
     s.dias[f] = {
       peso: typeof d.peso === 'number' ? d.peso : null,
       agua: Number(d.agua) || 0,
@@ -274,134 +317,6 @@ function fusionarEstados(actual, importado) {
   return { estado: salida, resumen };
 }
 
-/* ---------------- calibración de la estimación ---------------- */
-
-/**
- * Una referencia es una foto de la que SÍ se conocen las calorías reales
- * (una etiqueta, algo pesado en balanza, una receta calculada). Sin eso no
- * hay forma de saber si el modelo estima bien o inventa.
- */
-function agregarReferencia(referencias, entrada, ts = Date.now()) {
-  const nombre = String(entrada.nombre || '').trim();
-  const kcalReal = Number(entrada.kcalReal) || 0;
-
-  if (!nombre) throw new Error('La referencia necesita un nombre.');
-  if (kcalReal <= 0) throw new Error('Poné las calorías reales, que son con las que se compara.');
-  if (!entrada.foto) throw new Error('Falta la foto.');
-
-  const ref = {
-    id: 'ref' + ts.toString(36) + Math.random().toString(36).slice(2, 6),
-    nombre,
-    kcalReal: Math.round(kcalReal),
-    protReal: Number(entrada.protReal) || null,
-    foto: entrada.foto,
-    fotoGrande: entrada.fotoGrande || null,
-    creada: ts,
-    ultima: null
-  };
-
-  return [ref, ...(referencias || [])].slice(0, MAX_REFERENCIAS);
-}
-
-function borrarReferencia(referencias, id) {
-  return (referencias || []).filter(r => r.id !== id);
-}
-
-/** Guarda lo que estimó el modelo para una referencia. */
-function anotarEstimacion(referencias, id, { kcal, prot = null, modelo = '', precision = '', costo = 0 }, ts = Date.now()) {
-  return (referencias || []).map(r => r.id !== id ? r : {
-    ...r,
-    ultima: {
-      ts,
-      kcal: Math.round(Number(kcal) || 0),
-      prot: prot == null ? null : Math.round(Number(prot)),
-      modelo, precision,
-      costo: Number(costo) || 0
-    }
-  });
-}
-
-/**
- * Compara lo estimado contra lo real.
- * - error: cuánto se equivoca en promedio, sin importar para qué lado
- * - sesgo: para qué lado se equivoca (negativo = subestima)
- * Los dos importan: un modelo que se pasa 20% en una y se queda 20% en otra
- * tiene sesgo 0 pero es igual de inútil.
- */
-function medirCalibracion(referencias) {
-  const conDatos = (referencias || []).filter(r => r.ultima && r.ultima.kcal > 0 && r.kcalReal > 0);
-  if (!conDatos.length) return null;
-
-  const filas = conDatos.map(r => {
-    const diferencia = r.ultima.kcal - r.kcalReal;
-    return {
-      id: r.id,
-      nombre: r.nombre,
-      real: r.kcalReal,
-      estimado: r.ultima.kcal,
-      diferencia,
-      pct: +((diferencia / r.kcalReal) * 100).toFixed(1)
-    };
-  });
-
-  const errorPromedio = +(filas.reduce((a, f) => a + Math.abs(f.pct), 0) / filas.length).toFixed(1);
-  const sesgo = +(filas.reduce((a, f) => a + f.pct, 0) / filas.length).toFixed(1);
-
-  const ordenadas = [...filas].sort((a, b) => Math.abs(b.pct) - Math.abs(a.pct));
-
-  return {
-    n: filas.length,
-    filas,
-    errorPromedio,
-    sesgo,
-    peor: ordenadas[0],
-    mejor: ordenadas.at(-1),
-    veredicto: veredictoCalibracion(errorPromedio)
-  };
-}
-
-/**
- * Qué tan confiable es el número que muestra la app.
- * Los umbrales salen de para qué se usa: con 500 kcal de objetivo de déficit,
- * un error del 20% sobre 2.000 kcal se come el déficit entero.
- */
-function veredictoCalibracion(errorPromedio) {
-  if (errorPromedio <= 10) return { nivel: 'bueno', texto: 'La estimación es confiable para seguir un déficit.' };
-  if (errorPromedio <= 20) return { nivel: 'aceptable', texto: 'Sirve como referencia, pero conviene corregir a mano las comidas importantes.' };
-  return { nivel: 'flojo', texto: 'El error es demasiado grande para confiar en el número: probá el modo Preciso o cargá a mano lo que más comés.' };
-}
-
-/** Texto del sesgo, que es lo accionable: si siempre se queda corto, se sabe. */
-function textoSesgo(sesgo) {
-  if (Math.abs(sesgo) < 5) return 'No se inclina para ningún lado.';
-  const lado = sesgo < 0 ? 'por debajo' : 'por encima';
-  return `Estima ${Math.abs(sesgo)}% ${lado} de lo real, de forma pareja.`;
-}
-
-/* ---------------- errores ---------------- */
-
-/**
- * Guarda los últimos errores para poder mirarlos después.
- * Sin esto, un error en el celular no deja rastro y no hay forma de saber qué pasó.
- */
-function registrarError(errores, entrada, max = MAX_ERRORES) {
-  const fila = {
-    ts: Number(entrada.ts) || Date.now(),
-    mensaje: String(entrada.mensaje || 'Error sin mensaje').slice(0, 300),
-    origen: String(entrada.origen || '').slice(0, 120),
-    linea: Number(entrada.linea) || 0
-  };
-
-  const lista = errores || [];
-
-  // el mismo error repitiéndose no tiene que tapar a los demás
-  const ultimo = lista[0];
-  if (ultimo && ultimo.mensaje === fila.mensaje && fila.ts - ultimo.ts < 5000) return lista;
-
-  return [fila, ...lista].slice(0, max);
-}
-
-/** Resumen del estado de la app, para mirar o para copiar y pegar. */
 /* ---------------- actualización de la app ---------------- */
 
 /**
@@ -633,7 +548,7 @@ function estadoRespaldo({ ultimoRespaldo, dias, ahora = Date.now(), persistente 
     return {
       avisar: cantidadDias >= 3,
       dias: null,
-      texto: `Tenés ${cantidadDias} días cargados y todavía no exportaste nunca. ` +
+      texto: `Tenés ${plural(cantidadDias, 'día')} cargados y todavía no exportaste nunca. ` +
         (persistente
           ? 'El navegador se comprometió a no borrarlos, pero un archivo aparte no está de más.'
           : 'Si el navegador limpia el sitio, se pierden.')
@@ -644,7 +559,7 @@ function estadoRespaldo({ ultimoRespaldo, dias, ahora = Date.now(), persistente 
     avisar: pasados >= DIAS_SIN_RESPALDO_AVISO,
     dias: pasados,
     texto: pasados >= DIAS_SIN_RESPALDO_AVISO
-      ? `Hace ${pasados} días que no exportás. Bajá una copia por las dudas.`
+      ? `Hace ${plural(pasados, 'día')} que no exportás. Bajá una copia por las dudas.`
       : `Último respaldo hace ${pasados} ${pasados === 1 ? 'día' : 'días'}.`
   };
 }
@@ -1185,9 +1100,92 @@ function hoyISO(d = new Date()) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
-function sumarDias(iso, n) {
+/* Un ISO valido son exactamente 10 caracteres con dos guiones. Sin este chequeo
+   una fecha rota devolvia "NaN-aN-aN", que despues se usaba como clave de `dias`
+   y ensuciaba el estado en silencio. */
+function esFechaISO(iso) {
+  if (typeof iso !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
   const [y, m, d] = iso.split('-').map(Number);
-  return hoyISO(new Date(y, m - 1, d + n));
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  const f = new Date(y, m - 1, d);
+  return f.getFullYear() === y && f.getMonth() === m - 1 && f.getDate() === d;
+}
+
+/**
+ * Los totales de una lista de comidas.
+ *
+ * Estaba escrito con el mismo `reduce` en cuatro archivos, y en dos de ellos sin
+ * el `|| 0`: una comida con kcal en null o en texto —pasa cuando se edita a mano
+ * o cuando llega de una version vieja— convertia el total del dia en NaN, y de
+ * ahi en mas todo lo que dependia del dia mostraba NaN.
+ */
+/**
+ * Plural en español, con el singular incluido.
+ *
+ * La app decía "1 días", "1 comidas" y "1 vasos" en una docena de lugares. Es
+ * el tipo de detalle que nadie reporta como error y que hace que todo se lea
+ * como generado por una máquina.
+ */
+/**
+ * Si un objeto parece un estado de la app.
+ *
+ * `migrar()` acepta cualquier cosa y devuelve un estado válido, lo cual está
+ * bien para arrancar pero es un desastre para importar: un archivo equivocado
+ * pasaba sin chistar y reemplazaba meses de historial por un estado vacío.
+ */
+function pareceEstado(o) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
+  if (!o.dias || typeof o.dias !== 'object' || Array.isArray(o.dias)) return false;
+  if (!o.perfil || typeof o.perfil !== 'object') return false;
+
+  const fechas = Object.keys(o.dias);
+  if (fechas.length && !fechas.some(esFechaISO)) return false;
+  return true;
+}
+
+/** Cuántos días con comidas trae, para poder avisar qué se está por pisar. */
+function pesoDelEstado(o) {
+  const dias = Object.entries(o?.dias || {}).filter(([f, d]) => esFechaISO(f) && (d?.comidas || []).length);
+  return {
+    dias: dias.length,
+    comidas: dias.reduce((a, [, d]) => a + d.comidas.length, 0)
+  };
+}
+
+function plural(n, singular, plural) {
+  const x = Number(n) || 0;
+  return `${fmtNum(x)} ${Math.abs(x) === 1 ? singular : (plural || singular + 's')}`;
+}
+
+function totalesDe(comidas) {
+  const n = (v) => { const x = Number(v); return isFinite(x) ? x : 0; };
+  return (comidas || []).reduce((a, c) => ({
+    kcal: a.kcal + n(c?.kcal),
+    prot: a.prot + n(c?.prot),
+    carb: a.carb + n(c?.carb),
+    gras: a.gras + n(c?.gras),
+    fibra: a.fibra + n(c?.fibra)
+  }), { kcal: 0, prot: 0, carb: 0, gras: 0, fibra: 0 });
+}
+
+/* Por encima de esto no es una comida: es un error de tipeo o una estimación
+   que se fue al carajo. No se bloquea —a veces un asado familiar es real— pero
+   se marca, porque una comida de 40.000 kcal arruina el promedio del mes. */
+const KCAL_SOSPECHOSA = 6000;
+
+function esSospechosa(comida) {
+  const k = Number(comida?.kcal);
+  return isFinite(k) && k > KCAL_SOSPECHOSA;
+}
+
+function kcalDe(comidas) {
+  return totalesDe(comidas).kcal;
+}
+
+function sumarDias(iso, n) {
+  if (!esFechaISO(iso)) return null;
+  const [y, m, d] = iso.split('-').map(Number);
+  return hoyISO(new Date(y, m - 1, d + (Number(n) || 0)));
 }
 
 function diasEntre(isoA, isoB) {
@@ -1316,40 +1314,5 @@ function sumarComidas(comidas) {
     kcal: Math.round(t.kcal), prot: Math.round(t.prot),
     carb: Math.round(t.carb), gras: Math.round(t.gras),
     fibra: Math.round(t.fibra), azucar: Math.round(t.azucar), sodio: Math.round(t.sodio)
-  };
-}
-
-/* Export para los tests (en el navegador todo esto ya es global). */
-if (typeof window !== 'undefined') {
-  window.__core = {
-    ESQUEMA, DEFAULT_STATE, MAX_FRECUENTES, clonar, migrar, normalizar,
-    mismaComida, fusionarEstados,
-    registrarFrecuentes, buscarFrecuentes, alternarFavorito, esFavorito, favoritos,
-    MAX_CACHE, huellaImagen, guardarEnCache, leerDeCache,
-    MAX_HISTORIAL_ANALISIS, registrarAnalisis, resumenAnalisis,
-    MAX_REFERENCIAS, agregarReferencia, borrarReferencia, anotarEstimacion,
-    medirCalibracion, veredictoCalibracion, textoSesgo,
-    MAX_CORRECCIONES, registrarCorreccion, sesgoAprendido,
-    MAX_ERRORES, registrarError, armarDiagnostico, diagnosticoATexto,
-    RECORDATORIO_DORMIR, tocaDormir,
-    sePuedeActualizarSolo,
-
-    comidasCopiadas, diasConComidas,
-    MAX_RECETAS, guardarReceta, borrarReceta, aplicarReceta, recetasOrdenadas,
-    msHastaMedianoche,
-    RECORDATORIOS_DEFAULT, minutosDeHora, proximosRecordatorios, textoRecordatorio,
-    MOMENTOS, momentoPorHora, momentoDe, nombreMomento, conArticulo, agruparPorMomento,
-    horaDeMomento, tsParaFecha, tsEnMomento,
-    ML_POR_VASO, objetivoAgua, objetivoEfectivo,
-    FACTORES, escalarItem, escalarPorcion,
-
-    NUTRIENTES, nutrientesConDatos, objetivosNutrientes,
-    LIMITES, validarPerfil, fmtNum, fmtKcal, fmtDelta, fmtPeso,
-    CUOTA_BYTES, usoAlmacenamiento, pesoDeThumbs,
-    DIAS_SIN_RESPALDO_AVISO, diasSinRespaldo, estadoRespaldo,
-    TOPE_DEFECTO, gastoDelMes, estadoGasto, textoTope, armarCSV, celdaCSV,
-
-    hoyISO, sumarDias, diasEntre, etiquetaFecha,
-    calcularPlan, sumarComidas, sumarItems
   };
 }

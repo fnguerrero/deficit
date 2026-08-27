@@ -99,6 +99,28 @@ function cruzarMedianoche() {
   programarRecordatorios();
 }
 
+/*
+ * Dos pestañas abiertas sobre el mismo `localStorage` se pisaban: la que
+ * guardaba último ganaba, y la otra seguía mostrando —y guardando— un estado
+ * viejo. Cargar una comida en el celular y otra en la compu perdía una de las
+ * dos sin avisar.
+ *
+ * `storage` solo dispara en las OTRAS pestañas, nunca en la que escribió, así
+ * que no hay riesgo de bucle.
+ */
+addEventListener('storage', (e) => {
+  if (e.key !== KEY || !e.newValue) return;
+
+  try {
+    const otro = migrar(JSON.parse(e.newValue));
+    Object.assign(state, otro);
+    renderAll();
+    toast('Se actualizó con lo que cargaste en otra pestaña');
+  } catch {
+    /* Un JSON roto en la otra pestaña no puede tirar abajo esta. */
+  }
+});
+
 /* la pestaña dormida no ejecuta timers: al volver se revisa la fecha */
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;
@@ -108,6 +130,11 @@ document.addEventListener('visibilitychange', () => {
 
 /* ---------------- navegación ---------------- */
 
+const NOMBRE_TAB = {
+  hoy: 'Hoy', historial: 'Historial', progreso: 'Progreso',
+  perfil: 'Perfil', ajustes: 'Ajustes'
+};
+
 function irTab(name) {
   document.querySelectorAll('.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
   document.querySelectorAll('.tab-btn').forEach(b => {
@@ -115,9 +142,16 @@ function irTab(name) {
     b.classList.toggle('active', activo);
     b.setAttribute('aria-selected', String(activo));
   });
-  if (name === 'historial') renderHistorial();
-  if (name === 'hoy') renderHoy();
-  if (name === 'progreso') { renderProgreso(); renderLogros(); }
+  anunciar(NOMBRE_TAB[name] || name);
+
+  /* Progreso siempre se recalcula: sus graficos dependen del periodo elegido y
+     de todo el historial, asi que no hay nada barato que cachear. El resto solo
+     si quedo vencido desde la ultima vez. */
+  if (name === 'progreso') { renderProgreso(); renderLogros(); vencidas.delete('progreso'); }
+  else if (!refrescarSiHaceFalta(name)) {
+    if (name === 'historial') renderHistorial();
+    if (name === 'hoy') renderHoy();
+  }
   if (name === 'ajustes') renderAjustes();
   window.scrollTo(0, 0);
 }
@@ -389,6 +423,40 @@ document.addEventListener('keydown', (e) => {
   if (!e.shiftKey && document.activeElement === ultimo) { primero.focus(); e.preventDefault(); }
   else if (e.shiftKey && document.activeElement === primero) { ultimo.focus(); e.preventDefault(); }
 }, true);
+
+/**
+ * Abrir una capa modal.
+ *
+ * Un solo lugar en vez de `classList.add('open')` desperdigado: eso permitia
+ * abrir la misma capa dos veces —el segundo `tomarFoco` pisaba `focoPrevio` con
+ * un elemento del propio modal, y al cerrar el foco se quedaba en la nada— y
+ * dejaba capas encimadas cuando dos flujos abrian a la vez.
+ */
+function abrirCapa(id) {
+  const capa = $(id);
+  if (!capa || capa.classList.contains('open')) return false;
+
+  /* Cerrar cualquier otra capa abierta: dos modales encimados no se leen y el
+     Escape solo cierra uno. */
+  document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
+
+  capa.classList.add('open');
+  tomarFoco(capa);
+  anunciar(capa.querySelector('h2')?.textContent || '');
+  return true;
+}
+
+/**
+ * Lo que se le dice a un lector de pantalla cuando algo cambia sin que se mueva
+ * el foco. Sin esto, cambiar de pestaña o abrir un modal es silencio total.
+ */
+function anunciar(texto) {
+  const el = $('anuncios');
+  if (!el || !texto) return;
+  /* Se limpia primero: repetir el mismo texto no dispara el aria-live. */
+  el.textContent = '';
+  setTimeout(() => { el.textContent = texto; }, 30);
+}
 
 /** Al abrir un modal: recordar de dónde venía el foco y llevarlo adentro. */
 function tomarFoco(cont) {

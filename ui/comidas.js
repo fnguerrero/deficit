@@ -115,7 +115,7 @@ function cancelarAnalisis() {
 
 function abrirModal() {
   if ($('avisoModo')) $('avisoModo').hidden = true;
-  $('modal').classList.add('open');
+  abrirCapa('modal');
 }
 
 /** Hay algo cargado que se perdería al cerrar sin guardar. */
@@ -203,7 +203,7 @@ function elegirOrigenFoto(modo = 'plato') {
 
   modoAnalisis = modo;
   $('tituloOrigenFoto').textContent = modo === 'etiqueta' ? 'Leer etiqueta' : 'Analizar foto';
-  $('modalOrigenFoto').classList.add('open');
+  abrirCapa('modalOrigenFoto');
   tomarFoco($('modalOrigenFoto'));
 }
 
