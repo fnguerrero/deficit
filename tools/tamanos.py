@@ -18,6 +18,7 @@ LIMITES = [
     ('claude.js', 900),
     ('analisis.js', 900),
     ('modos.js', 800),
+    ('habitos.js', 300),
     ('mascota.js', 400),
     ('cuerpo.js', 250),
     ('personaje.js', 500),
