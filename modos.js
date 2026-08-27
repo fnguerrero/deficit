@@ -484,7 +484,7 @@ function veredictoProgreso(dias, objetivo, hoy = hoyISO()) {
 
   // 3) qué tan seguido se cumplió el objetivo de calorías
   const dentro = registrados.filter(f => {
-    const total = (dias[f].comidas || []).reduce((a, c) => a + (Number(c.kcal) || 0), 0);
+    const total = kcalDe(dias[f].comidas);
     return total <= objetivo.kcal * 1.05;
   }).length;
   const adherencia = Math.round((dentro / registrados.length) * 100);
@@ -499,7 +499,7 @@ function veredictoProgreso(dias, objetivo, hoy = hoyISO()) {
     return {
       estado: 'mal',
       titulo: 'No estás bajando',
-      detalle: `En ${pesos.length} días el peso no se movió${baja < -0.05 ? ' o subió' : ''}. ` +
+      detalle: `En ${plural(pesos.length, 'día')} el peso no se movió${baja < -0.05 ? ' o subió' : ''}. ` +
         `Con ${adherencia}% de días dentro del objetivo, lo más probable es que estés comiendo más de lo que registrás: ` +
         'las porciones a ojo se subestiman siempre para el mismo lado.',
       datos

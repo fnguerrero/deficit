@@ -350,7 +350,10 @@ $('btnOcultarKey').onclick = () => {
 function renderAgua() {
   const meta = metaVasos();
   const vasos = dia().agua || 0;
-  const total = Math.max(meta, vasos);
+  /* Se dibujan los vasos del objetivo mas un poco de margen para poder pasarse,
+     pero no uno por cada vaso tomado: con el objetivo en 4 y doce tomados salian
+     doce vasos y la fila se comia el modal. */
+  const total = Math.min(VASOS_MAX, Math.max(meta, Math.min(vasos, meta + 4)));
 
   const cont = $('aguaVasos');
   cont.innerHTML = '';
@@ -359,7 +362,11 @@ function renderAgua() {
     const b = document.createElement('button');
     b.className = 'vaso' + (i <= vasos ? ' lleno' : '');
     b.textContent = i;
-    b.setAttribute('aria-label', i + ' vasos');
+    /* "4 vasos" no dice nada: hace falta saber si ese vaso esta lleno y cual es
+       el objetivo, que es lo unico que el dibujo comunica de un vistazo. */
+    b.setAttribute('aria-label', i <= vasos
+      ? `Vaso ${i} de ${meta}, tomado. Tocar para bajar a ${i - 1}.`
+      : `Vaso ${i} de ${meta}, sin tomar. Tocar para marcar ${i}.`);
     b.setAttribute('aria-pressed', String(i <= vasos));
     b.onclick = () => ponerAgua(i === vasos ? i - 1 : i);
     cont.appendChild(b);

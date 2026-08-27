@@ -838,7 +838,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   --line: #262626;
   --txt: #f2f2f2;
   --txt2: #b8b8b8;
-  --dim: #7a7a7a;
+  --dim: #949494;   /* 17: no llegaba a 4.5:1 sobre el negro OLED */
   --acc: #4ade80;
   --sobre-acc: #04150a;
 }
@@ -852,7 +852,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   --line: #40342a;
   --txt: #f5ece2;
   --txt2: #c8b7a6;
-  --dim: #96897a;
+  --dim: #a89a89;
   --acc: #e8a33d;
   --sobre-acc: #241705;
   --warn: #f0c674;
@@ -954,6 +954,37 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .mascota-nivel #mascotaLvl { margin-left: auto; white-space: nowrap; }
 .mascota-barra { display: block; height: 4px; border-radius: 3px; background: var(--card2); overflow: hidden; margin-top: 5px; }
 .mascota-barra i { display: block; height: 100%; background: var(--acc); border-radius: 3px; transition: width .4s ease; }
+
+/* ---- 20. Menos movimiento, de una sola vez ----
+
+   Habia SEIS bloques de `prefers-reduced-motion` desperdigados, cada uno
+   apagando lo suyo, y cada animacion nueva del ciclo siguiente nacia sin
+   apagar. Esta regla los cubre a todos y a los que vengan: lo que se agregue
+   despues queda contemplado sin acordarse. Los bloques puntuales quedan igual
+   —no molestan— pero ya no son la unica defensa. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible solo para lectores de pantalla. No se usa `display:none` ni
+   `visibility:hidden` porque los dos lo sacan tambien del lector. */
+.solo-lectores {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+/* 19. Foco visible en todo. El navegador lo pone solo, pero varios controles
+   propios le pisaban el outline con `outline:none` heredado del reset. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
 
 /* ---------------- el selector de modos ----------------
 
@@ -1125,28 +1156,28 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* Azules profundos con acento turquesa. */
 :root[data-tema="oceano"] {
   --bg: #0a1622; --bg2: #0f1e2e; --card: #14283c; --card2: #1c3450;
-  --line: #21405c; --txt: #e6f0f8; --txt2: #a8c0d4; --dim: #6f8ba3;
+  --line: #21405c; --txt: #e6f0f8; --txt2: #a8c0d4; --dim: #8fa9c0;
   --acc: #2dd4bf; --sobre-acc: #04201c; --warn: #fbbf24; --err: #f87171;
 }
 
 /* Verdes apagados: el que menos cansa de los oscuros. */
 :root[data-tema="bosque"] {
   --bg: #101a14; --bg2: #16221a; --card: #1c2c22; --card2: #24382c;
-  --line: #2c4436; --txt: #e8f2ea; --txt2: #b0c8b8; --dim: #7a9484;
+  --line: #2c4436; --txt: #e8f2ea; --txt2: #b0c8b8; --dim: #97b0a1;
   --acc: #7cc47f; --sobre-acc: #08200c; --warn: #d9b166; --err: #e88a8a;
 }
 
 /* Oscuro con acento bordo, para el que quiere algo que no sea verde. */
 :root[data-tema="vino"] {
   --bg: #171014; --bg2: #1e1418; --card: #281a20; --card2: #33222a;
-  --line: #402a34; --txt: #f4e8ec; --txt2: #cbb0ba; --dim: #94737f;
+  --line: #402a34; --txt: #f4e8ec; --txt2: #cbb0ba; --dim: #b6929e;
   --acc: #e0607f; --sobre-acc: #24060e; --warn: #e8b06a; --err: #ff8a8a;
 }
 
 /* Claro y calido, como una libreta de papel. */
 :root[data-tema="papel"] {
   --bg: #f7f3ea; --bg2: #fffdf7; --card: #fffdf7; --card2: #f0e9db;
-  --line: #e0d7c4; --txt: #2c2620; --txt2: #5f564a; --dim: #8d8474;
+  --line: #e0d7c4; --txt: #2c2620; --txt2: #5f564a; --dim: #6e6658;
   --acc: #2f7d4f; --sobre-acc: #ffffff; --warn: #a06a1a; --err: #b3382f;
 }
 

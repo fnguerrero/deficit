@@ -77,8 +77,9 @@ function rachaDe(dias, id, { hoy = hoyISO(), vasos = 8, juego = null } = {}) {
 
   let actual = 0;
   let escudado = false;
+  const ventana = ventanaHistorial(dias, hoy);
 
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < ventana; i++) {
     const f = sumarDias(hoy, -i);
     if (r.cumple(dias?.[f], ctx)) { actual++; continue; }
     if (tapados.has(f)) { actual++; escudado = true; continue; }
@@ -103,7 +104,7 @@ function mejorRacha(dias, id, { hoy = hoyISO(), vasos = 8, juego = null } = {}) 
   let mejor = 0;
   let corriendo = 0;
 
-  for (let i = 400; i >= 0; i--) {
+  for (let i = ventanaHistorial(dias, hoy) - 1; i >= 0; i--) {
     const f = sumarDias(hoy, -i);
     if (r.cumple(dias?.[f], ctx) || tapados.has(f)) {
       corriendo++;
@@ -132,14 +133,20 @@ function todasLasRachas(dias, opts = {}) {
 const DIAS_POR_ESCUDO = 7;
 const MAX_ESCUDOS = 2;
 
-function diasRegistrados(dias) {
-  return Object.values(dias || {}).filter(
+/*
+ * Solo los dias que ya pasaron: uno del futuro sumaba a la cuenta y regalaba
+ * escudos y logros que no se ganaron. `hoy` entra por parametro y no se lee
+ * adentro porque toda la familia de funciones del juego ya lo recibe — leerlo
+ * acá rompia cualquier calculo hecho sobre una fecha que no fuera la de verdad.
+ */
+function diasRegistrados(dias, hoy = hoyISO()) {
+  return Object.values(diasPasados(dias, hoy)).filter(
     d => (d?.comidas || []).length || d?.peso || d?.agua || d?.ejercicio || d?.animo || d?.sueno
   ).length;
 }
 
-function escudosDisponibles(dias, juego) {
-  const ganados = Math.floor(diasRegistrados(dias) / DIAS_POR_ESCUDO);
+function escudosDisponibles(dias, juego, hoy = hoyISO()) {
+  const ganados = Math.floor(diasRegistrados(dias, hoy) / DIAS_POR_ESCUDO);
   const gastados = juego?.escudosGastados || 0;
   return Math.max(0, Math.min(MAX_ESCUDOS, ganados - gastados));
 }
@@ -159,7 +166,7 @@ function aplicarEscudos(dias, juego, { hoy = hoyISO(), vasos = 8 } = {}) {
   const salvadas = [];
 
   for (const r of RACHAS) {
-    if (escudosDisponibles(dias, juego) <= 0) break;
+    if (escudosDisponibles(dias, juego, hoy) <= 0) break;
     if (r.cumple(dias?.[ayer], { vasos })) continue;
 
     const usados = juego.escudosUsados[r.id] || [];
@@ -199,7 +206,10 @@ const NOMBRES_NIVEL = [
 ];
 
 function nivelDe(xp) {
-  const x = Math.max(0, Number(xp) || 0);
+  /* `Number(xp) || 0` sola deja pasar Infinity, que despues rompe la barra de
+     progreso con un ancho de NaN%. */
+  const bruto = Number(xp);
+  const x = isFinite(bruto) ? Math.max(0, bruto) : 0;
   let nivel = 0;
   for (let i = 0; i < XP_POR_NIVEL.length; i++) {
     if (x >= XP_POR_NIVEL[i]) nivel = i;
@@ -291,12 +301,12 @@ const LOGROS = [
 
 /** Todo lo que las condiciones necesitan saber, calculado una sola vez. */
 function contextoLogros(dias, juego, { hoy = hoyISO(), vasos = 8 } = {}) {
-  const valores = Object.values(dias || {});
+  const valores = Object.values(diasPasados(dias, hoy));
   const mejores = {};
   for (const r of RACHAS) mejores[r.id] = mejorRacha(dias, r.id, { hoy, vasos, juego });
 
   return {
-    registrados: diasRegistrados(dias),
+    registrados: diasRegistrados(dias, hoy),
     entrenamientos: valores.filter(d => (d?.ejercicio || 0) > 0).length,
     pesadas: valores.filter(d => Number(d?.peso) > 0).length,
     perfectos: valores.filter(d => RACHAS.every(r => r.cumple(d, { vasos }))).length,
@@ -336,7 +346,7 @@ function recalcularJuego(dias, juegoPrevio, { hoy = hoyISO(), vasos = 8 } = {}) 
   juego.logros = ganados;
   juego.xp = xpTotal(dias, { vasos, logros: ganados });
 
-  return { juego, nuevos, salvadas, escudos: escudosDisponibles(dias, juego) };
+  return { juego, nuevos, salvadas, escudos: escudosDisponibles(dias, juego, hoy) };
 }
 
 /** Los que todavía no aparecieron en pantalla, para poder festejarlos una vez. */
@@ -389,7 +399,8 @@ const BONUS_TOPE = 0.45;
  */
 function diasPerfectos(dias, { hoy = hoyISO(), vasos = 8 } = {}) {
   let n = 0;
-  for (let i = 0; i < 400; i++) {
+  const ventana = ventanaHistorial(dias, hoy);
+  for (let i = 0; i < ventana; i++) {
     const d = dias?.[sumarDias(hoy, -i)];
     if (RACHAS.every(r => r.cumple(d, { vasos }))) { n++; continue; }
     if (i === 0) continue;

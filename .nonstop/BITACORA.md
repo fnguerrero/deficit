@@ -252,3 +252,19 @@ Nico sumo despues el veredicto honesto de si va bien.
 #37c — Un test que escribi mal: buscaba la panza por su coordenada y agarraba los ojos, que tambien son elipses. Se corrigio la prueba
 
 #38 — El selector de modos no tenia UNA SOLA linea de CSS: el <small> es inline, asi que el nombre y el resumen salian pegados ("MantenimientoSostener el peso actual") y los 16 botones se apilaban como texto corrido. Ahora es una grilla de tarjetas con emoji, nombre en negrita y resumen debajo; en el celular pasa a una columna
+
+## Ciclo 7 — cien mejoras
+
+#1 — Bloque A. `sumarDias` sobre basura devolvia "NaN-aN-aN", que despues se usaba como clave de `dias` y ensuciaba el estado en silencio: ahora hay `esFechaISO()` y devuelve null. El IMC ignora pesos y alturas imposibles en vez de dividir por cero. Los totales del dia salieron a `totalesDe()`, que estaba escrito con el mismo reduce en cuatro archivos y en dos sin el `|| 0`, asi que una kcal en null volvia NaN el dia entero. Verif: 727 en verde
+
+#2 — Rendimiento de las rachas: barrian 400 dias hacia atras SIEMPRE, cuatro veces por render y otra por cada record — mil seiscientas vueltas para un historial de diez dias. `ventanaHistorial()` corta el barrido donde empiezan los datos
+
+#3 — Accesibilidad. Los modales pasan por `abrirCapa()`: abrir dos veces pisaba `focoPrevio` con un elemento del propio modal y al cerrar el foco se quedaba en la nada. Se sumo una region de anuncios para lectores de pantalla (cambio de pestana y apertura de modal eran silencio total), los vasos dicen su estado y no solo su numero, los objetivos son switches con aria-checked, y el personaje se describe entero: animo, fase e IMC. Verif: por DOM
+
+#4 — 11, 12 y 14 ya estaban bien: la trampa de foco, el Escape y el role=status del toast existian del ciclo 4. Se verificaron por DOM y se marcaron, sin tocar nada
+
+#5 — Contraste: `--dim` no llegaba a 4.5:1 en cinco de los ocho temas (vino 3.99, papel 3.63). Corregidos los cinco; ahora el peor esta en 5.57. Y las seis reglas de `prefers-reduced-motion` desperdigadas se reemplazaron por una global, para que la animacion del ciclo que viene nazca contemplada
+
+#6 — Rendimiento: `renderAll` armaba las cuatro pantallas de una aunque tres estuvieran ocultas, asi que cada toque de un vaso reconstruia el historial entero. Ahora dibuja la visible y marca las demas como vencidas. Y `save()` se agrupa a 250 ms, con escritura inmediata al ocultar la pestana: serializaba el estado ENTERO —cientos de kB con meses de historial— una vez por toque
+
+#7 — core.js se paso del limite: salio calibracion.js. En el camino aparecio `window.__core`, un bloque de export que no usaba NADIE y que ademas rompia al cargar porque nombraba funciones que se habian mudado. Borrado entero. Verif: 727 en verde, consola limpia en pestana nueva

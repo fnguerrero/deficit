@@ -687,7 +687,7 @@ function efectoDelSueno(dias, objetivo, hoy = hoyISO(), diasAtras = 60) {
     const comidas = d.comidas || [];
     if (!comidas.length) continue;
 
-    const kcal = comidas.reduce((a, c) => a + (Number(c.kcal) || 0), 0);
+    const kcal = kcalDe(comidas);
     (Number(d.sueno.horas) < SUENO_CORTO ? cortos : largos).push(kcal);
   }
 

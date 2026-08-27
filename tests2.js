@@ -400,18 +400,21 @@ test('las cuatro se pueden pedir de un saque', () => {
 /* ---- los escudos ---- */
 
 test('se gana un escudo cada 7 dias registrados', () => {
+  /* Va con la fecha del fixture: desde que los dias del futuro no cuentan,
+     `escudosDisponibles` necesita saber cual es "hoy" — si no, con un fixture
+     fechado adelante se descarta el historial entero. */
   const seis = {};
   for (let i = 0; i < 6; i++) seis[i] = 'comida';
-  esperar(escudosDisponibles(diasJ(seis), JUEGO_VACIO), 0);
+  esperar(escudosDisponibles(diasJ(seis), JUEGO_VACIO, HOY_JUEGO), 0);
 
   const siete = { ...seis, 6: 'comida' };
-  esperar(escudosDisponibles(diasJ(siete), JUEGO_VACIO), 1);
+  esperar(escudosDisponibles(diasJ(siete), JUEGO_VACIO, HOY_JUEGO), 1);
 });
 
 test('no se pueden juntar mas de dos', () => {
   const muchos = {};
   for (let i = 0; i < 60; i++) muchos[i] = 'comida';
-  esperar(escudosDisponibles(diasJ(muchos), JUEGO_VACIO), MAX_ESCUDOS);
+  esperar(escudosDisponibles(diasJ(muchos), JUEGO_VACIO, HOY_JUEGO), MAX_ESCUDOS);
 });
 
 test('el escudo tapa el dia perdido y la racha sigue', () => {
@@ -1085,4 +1088,165 @@ test('el ruedo de la musculosa baja con la contextura', () => {
   const alto = svgPersonaje('neutral', 96, { efectiva: .95, musculatura: 0 }, null);
   const bajo = svgPersonaje('neutral', 96, { efectiva: .1, musculatura: 0 }, null);
   esperarQue(alto.length > bajo.length, 'el dibujo con panza tiene mas partes');
+});
+
+
+/* ============================================================
+   Ciclo 7 — las cien mejoras
+   ============================================================ */
+
+/* ---- A. correccion ---- */
+
+test('una fecha ISO invalida se reconoce como invalida', () => {
+  esperarQue(esFechaISO('2026-08-27'));
+  esperarQue(!esFechaISO('2026-13-01'), 'mes 13');
+  esperarQue(!esFechaISO('2026-02-30'), 'febrero 30');
+  esperarQue(!esFechaISO('27/08/2026'), 'otro formato');
+  esperarQue(!esFechaISO(''), 'vacio');
+  esperarQue(!esFechaISO(null), 'null');
+  esperarQue(!esFechaISO(20260827), 'numero');
+});
+
+test('sumarDias sobre basura devuelve null, no "NaN-aN-aN"', () => {
+  /* Antes devolvia un string invalido que despues se usaba como clave de `dias`
+     y ensuciaba el estado guardado en silencio. */
+  esperar(sumarDias('no-es-fecha', 1), null);
+  esperar(sumarDias(null, 1), null);
+  esperar(sumarDias('2026-08-27', 'hola'), '2026-08-27', 'un n invalido vale 0');
+  esperar(sumarDias('2026-08-27', 1), '2026-08-28');
+});
+
+test('el IMC ignora pesos y alturas imposibles', () => {
+  esperar(imcDe(0, 180), null);
+  esperar(imcDe(-5, 180), null);
+  esperar(imcDe('mucho', 180), null);
+  esperar(imcDe(80, 0), null, 'sin altura no se divide por cero');
+  esperar(imcDe(80, 5), null, 'cinco centimetros no es una altura');
+  esperar(imcDe(900, 180), null, 'novecientos kilos tampoco');
+  esperarQue(imcDe(80, 180) > 0, 'lo razonable si');
+});
+
+test('los totales de un dia aguantan comidas rotas', () => {
+  /* Pasa de verdad: una comida editada a mano o venida de una version vieja
+     puede traer kcal en null o en texto, y el total del dia se volvia NaN. */
+  const t = totalesDe([
+    { kcal: 500, prot: 10 },
+    { kcal: null },
+    { kcal: 'trescientas' },
+    { kcal: undefined, prot: 5 },
+    null,
+    { kcal: 300, prot: 20 }
+  ]);
+  esperar(t.kcal, 800);
+  esperar(t.prot, 35);
+  esperarQue(isFinite(t.carb) && isFinite(t.gras));
+});
+
+test('kcalDe con una lista vacia o nula da cero', () => {
+  esperar(kcalDe([]), 0);
+  esperar(kcalDe(null), 0);
+  esperar(kcalDe(undefined), 0);
+});
+
+test('un ejercicio de cero kcal no cuenta como entrenamiento', () => {
+  const dias = {};
+  for (let i = 0; i < 5; i++) dias[sumarDias(HOY_CUERPO, -i)] = { ejercicio: 0, comidas: [] };
+  esperar(diasEntrenados(dias, HOY_CUERPO), 0);
+});
+
+test('el nivel aguanta un XP infinito o NaN', () => {
+  esperar(nivelDe(Infinity).nivel, 0);
+  esperar(nivelDe(NaN).nivel, 0);
+  esperar(nivelDe(-Infinity).nivel, 0);
+  for (const x of [Infinity, NaN, -Infinity, 'hola']) {
+    esperarQue(isFinite(nivelDe(x).pct), 'el pct no puede salir NaN con ' + x);
+  }
+});
+
+/* ---- ciclo 7: textos, robustez y rendimiento ---- */
+
+test('el plural de 1 esta bien', () => {
+  esperar(plural(1, 'día'), '1 día');
+  esperar(plural(0, 'día'), '0 días');
+  esperar(plural(2, 'día'), '2 días');
+  esperar(plural(1, 'vez', 'veces'), '1 vez');
+  esperar(plural(3, 'vez', 'veces'), '3 veces');
+  esperar(plural(1000, 'comida'), '1.000 comidas', 'y sigue usando el separador de miles');
+});
+
+test('una comida absurda se marca como sospechosa', () => {
+  esperarQue(esSospechosa({ kcal: 40000 }));
+  esperarQue(!esSospechosa({ kcal: 1200 }));
+  esperarQue(!esSospechosa({ kcal: null }));
+  esperarQue(!esSospechosa(null));
+});
+
+test('los dias del futuro no cuentan como registrados', () => {
+  /* Entran cuando el telefono tiene mal la fecha o al sincronizar desde otro
+     huso. El dato se guarda, pero no puede regalar escudos ni logros. */
+  const hoy = '2026-09-01';
+  const dias = {
+    '2026-08-31': { comidas: [{ kcal: 500 }] },
+    '2026-09-01': { comidas: [{ kcal: 500 }] },
+    '2026-12-25': { comidas: [{ kcal: 500 }] }
+  };
+  esperar(Object.keys(diasPasados(dias, hoy)).length, 2);
+  esperarQue(!diasPasados(dias, hoy)['2026-12-25']);
+});
+
+test('una clave que no es fecha no entra al estado', () => {
+  const s = migrar({ dias: {
+    '2026-08-27': { comidas: [] },
+    'NaN-aN-aN': { comidas: [{ kcal: 500 }] },
+    'hola': { comidas: [] }
+  } });
+  esperar(Object.keys(s.dias).join(), '2026-08-27');
+});
+
+test('un estado corrupto no deja la app en blanco', () => {
+  /* migrar() es la unica puerta de entrada: si aguanta cualquier basura, no hay
+     forma de que un localStorage roto deje la pantalla vacia. */
+  for (const basura of [null, undefined, 'texto', 42, [], { dias: 'no-es-objeto' }, { perfil: null }]) {
+    const s = migrar(basura);
+    esperarQue(s && typeof s === 'object', 'con ' + JSON.stringify(basura));
+    esperarQue(s.perfil && s.cfg && s.dias, 'tiene que traer el esqueleto entero');
+  }
+});
+
+test('la ventana del historial se ajusta a los datos', () => {
+  /* Las rachas barrian 400 dias SIEMPRE. Con diez dias cargados eso son 390
+     vueltas al pedo, cuatro veces por render. */
+  const hoy = '2026-09-01';
+  esperar(ventanaHistorial({}, hoy), 1, 'sin datos, un dia');
+  esperar(ventanaHistorial({ '2026-08-28': {} }, hoy), 5);
+  esperarQue(ventanaHistorial({ '2020-01-01': {} }, hoy) <= 400, 'y nunca mas del tope');
+});
+
+/* ---- ciclo 7: importar sin romper nada ---- */
+
+test('un archivo que no es un respaldo se rechaza', () => {
+  /* migrar() acepta cualquier cosa y devuelve un estado valido, que esta bien
+     para arrancar y es un desastre para importar: un archivo equivocado
+     reemplazaba meses de historial por un estado vacio. */
+  esperarQue(!pareceEstado(null));
+  esperarQue(!pareceEstado('texto'));
+  esperarQue(!pareceEstado([]));
+  esperarQue(!pareceEstado({ hola: 1 }));
+  esperarQue(!pareceEstado({ dias: [], perfil: {} }), 'dias tiene que ser objeto');
+  esperarQue(!pareceEstado({ dias: { hola: {} }, perfil: {} }), 'con claves que no son fechas');
+});
+
+test('un respaldo de verdad se acepta', () => {
+  esperarQue(pareceEstado({ dias: {}, perfil: {}, cfg: {} }), 'vacio pero con forma');
+  esperarQue(pareceEstado({ dias: { '2026-08-27': { comidas: [] } }, perfil: { peso: 80 } }));
+});
+
+test('el peso del estado cuenta dias y comidas de verdad', () => {
+  const p = pesoDelEstado({ dias: {
+    '2026-08-27': { comidas: [{ kcal: 1 }, { kcal: 2 }] },
+    '2026-08-26': { comidas: [] },
+    'basura': { comidas: [{ kcal: 9 }] }
+  } });
+  esperar(p.dias, 1, 'el dia sin comidas y la clave basura no cuentan');
+  esperar(p.comidas, 2);
 });

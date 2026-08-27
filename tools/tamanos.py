@@ -14,6 +14,7 @@ LIMITES = [
     ('app.js', 400),
     ('arranque.js', 100),
     ('core.js', 1400),
+    ('calibracion.js', 250),
     ('config.js', 40),
     ('claude.js', 900),
     ('analisis.js', 900),

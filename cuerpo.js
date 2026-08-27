@@ -46,10 +46,20 @@ const TRAMO_2 = 0.28;
    personaje tiene que mostrarlo. */
 const DIAS_RUTINA = 6;
 
+/* Los limites no son decorativos: sin ellos un 0 en altura divide por cero y un
+   peso negativo cargado de apuro devuelve un IMC negativo que despues clampea a
+   0 y dibuja un cuerpo flaco, que es peor que no dibujar nada. */
+const PESO_MIN = 20;
+const PESO_MAX = 500;
+const ALTURA_MIN = 80;
+const ALTURA_MAX = 260;
+
 function imcDe(pesoKg, alturaCm) {
   const p = Number(pesoKg);
   const a = Number(alturaCm);
-  if (!(p > 0) || !(a > 0)) return null;
+  if (!isFinite(p) || !isFinite(a)) return null;
+  if (p < PESO_MIN || p > PESO_MAX) return null;
+  if (a < ALTURA_MIN || a > ALTURA_MAX) return null;
   return +(p / Math.pow(a / 100, 2)).toFixed(1);
 }
 
@@ -88,17 +98,21 @@ function fueraDeEscala(imc) {
  */
 function ultimoPesoConocido(perfil, dias, hasta = hoyISO()) {
   for (let i = 0; i < 90; i++) {
-    const p = dias?.[sumarDias(hasta, -i)]?.peso;
-    if (Number(p) > 0) return Number(p);
+    const f = sumarDias(hasta, -i);
+    if (!f) break;
+    const p = dias?.[f]?.peso;
+    if (Number(p) >= PESO_MIN && Number(p) <= PESO_MAX) return Number(p);
   }
-  return Number(perfil?.peso) > 0 ? Number(perfil.peso) : null;
+  const pp = Number(perfil?.peso);
+  return pp >= PESO_MIN && pp <= PESO_MAX ? pp : null;
 }
 
 /** Cuántos días de las últimas dos semanas tuvieron ejercicio cargado. */
 function diasEntrenados(dias, hasta = hoyISO(), ventana = 14) {
   let n = 0;
   for (let i = 0; i < ventana; i++) {
-    if (Number(dias?.[sumarDias(hasta, -i)]?.ejercicio) > 0) n++;
+    const f = sumarDias(hasta, -i);
+    if (f && Number(dias?.[f]?.ejercicio) > 0) n++;
   }
   return n;
 }

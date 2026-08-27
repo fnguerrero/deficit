@@ -225,6 +225,16 @@ $('importInput').onchange = async (e) => {
 
     const tieneDatos = Object.keys(state.dias).length > 0;
 
+    /* Antes de tocar nada: que el archivo SEA un estado de la app.
+       `migrar()` acepta cualquier cosa y devuelve un estado válido, así que un
+       archivo equivocado entraba sin chistar y reemplazaba meses de historial
+       por un estado vacío. */
+    if (!pareceEstado(s)) {
+      toast('Ese archivo no es un respaldo de Déficit');
+      e.target.value = '';
+      return;
+    }
+
     // con datos propios, reemplazar sin avisar sería borrar el historial
     if (tieneDatos) {
       const fusionar = confirm(
@@ -246,9 +256,20 @@ $('importInput').onchange = async (e) => {
       }
     }
 
+    /* Reemplazar es destructivo: hay que decir exactamente qué entra y qué se
+       va, con números, antes de hacerlo. */
+    const entra = pesoDelEstado(s);
+    const sale = pesoDelEstado(state);
+    if (tieneDatos && !confirm(
+      `Vas a reemplazar ${plural(sale.dias, 'día')} con ${plural(sale.comidas, 'comida')} ` +
+      `por ${plural(entra.dias, 'día')} con ${plural(entra.comidas, 'comida')}.
+
+¿Seguro?`
+    )) { e.target.value = ''; return; }
+
     state = migrar(s);
     save(); renderAll();
-    toast('Datos importados');
+    toast(`Importado: ${plural(entra.dias, 'día')}`);
   } catch {
     toast('Archivo inválido');
   }

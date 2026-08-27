@@ -48,14 +48,14 @@ function estadoAgua(d, objetivoVasos, hora) {
 
   if (pct < 0.35) return { dim: 'agua', nivel: 'mal', peso: 2, texto: `${vasos} de ${meta} vasos. Está seco.` };
   if (pct < 0.7) return { dim: 'agua', nivel: 'flojo', peso: 1, texto: `${vasos} de ${meta} vasos.` };
-  return { dim: 'agua', nivel: 'bien', peso: 1, texto: `${vasos} de ${meta} vasos.` };
+  return { dim: 'agua', nivel: 'bien', peso: 1, texto: `${vasos} de ${plural(meta, 'vaso')}.` };
 }
 
 /** ¿Comió lo que tenía que comer? Mira el total y también la hora. */
 function estadoComida(d, objetivo, hora) {
   if (!objetivo?.kcal) return null;
 
-  const kcal = (d?.comidas || []).reduce((a, c) => a + (Number(c.kcal) || 0), 0);
+  const kcal = kcalDe(d?.comidas);
   const pct = kcal / objetivo.kcal;
 
   if (pct > 1.25) return { dim: 'comida', nivel: 'mal', peso: 3, texto: `${fmtNum(Math.round(kcal))} kcal: te pasaste bastante del objetivo.` };
@@ -159,7 +159,8 @@ const TITULO_POR_DIM = {
 /** Días seguidos con algo cargado, contando hacia atrás desde hoy. */
 function rachaActual(dias, hoy = hoyISO()) {
   let n = 0;
-  for (let i = 0; i < 400; i++) {
+  const ventana = ventanaHistorial(dias, hoy);
+  for (let i = 0; i < ventana; i++) {
     const f = sumarDias(hoy, -i);
     const d = dias?.[f];
     const hayAlgo = d && ((d.comidas || []).length || d.peso || d.agua || d.ejercicio || d.animo || d.sueno);

@@ -319,7 +319,7 @@ function renderAjustes() {
   const nDias = Object.keys(state.dias).length;
   const nCom = Object.values(state.dias).reduce((a, d) => a + (d.comidas?.length || 0), 0);
   const kb = Math.round((localStorage.getItem(KEY) || '').length / 1024);
-  $('statsInfo').textContent = `${fmtNum(nDias)} días · ${fmtNum(nCom)} comidas · ${fmtNum(kb)} KB usados`;
+  $('statsInfo').textContent = `${plural(nDias, 'día')} · ${plural(nCom, 'comida')} · ${fmtNum(kb)} KB usados`;
 
   // aviso de cuota antes de que un guardado falle
   const uso = usoAlmacenamiento(localStorage.getItem(KEY) || '');
@@ -339,7 +339,7 @@ function renderAjustes() {
   const backup = hayBackup();
   $('btnRestaurar').hidden = !backup;
   $('backupInfo').textContent = backup
-    ? `Copia de respaldo: ${fmtNum(backup.dias)} días, ${fmtNum(backup.kb)} KB.`
+    ? `Copia de respaldo: ${plural(backup.dias, 'día')}, ${fmtNum(backup.kb)} KB.`
     : 'Todavía no hay copia de respaldo.';
 
   const u = state.uso;
@@ -348,8 +348,39 @@ function renderAjustes() {
     : 'Todavía no analizaste ninguna foto.';
 }
 
+/*
+ * Re-dibujar todo.
+ *
+ * Antes armaba las cuatro pantallas de una, aunque tres estuvieran ocultas: cada
+ * toque de un vaso reconstruia el historial entero y el perfil entero para nada.
+ * Ahora se dibuja la que se ve y las demas quedan marcadas como vencidas; al
+ * entrar en ellas se dibujan con datos frescos.
+ */
+const PINTORES = {
+  hoy: () => renderHoy(),
+  historial: () => renderHistorial(),
+  progreso: () => { renderProgreso(); renderLogros(); },
+  perfil: () => renderPerfil(),
+  ajustes: () => renderAjustes()
+};
+
+const vencidas = new Set();
+
 function renderAll() {
-  renderHoy(); renderHistorial(); renderPerfil(); renderAjustes();
+  const activa = document.querySelector('.tab.active')?.id?.replace('tab-', '') || 'hoy';
+
+  for (const nombre of Object.keys(PINTORES)) {
+    if (nombre === activa) PINTORES[nombre]();
+    else vencidas.add(nombre);
+  }
+}
+
+/** La dibuja si quedo vencida. La llama `irTab` al entrar. */
+function refrescarSiHaceFalta(nombre) {
+  if (!vencidas.has(nombre)) return false;
+  vencidas.delete(nombre);
+  PINTORES[nombre]?.();
+  return true;
 }
 
 /* ---------------- tema ---------------- */

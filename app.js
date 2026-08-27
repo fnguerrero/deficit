@@ -50,7 +50,36 @@ function load() {
 
 const KEY_BACKUP = 'deficit.backup';
 
+/*
+ * Guardar, agrupado.
+ *
+ * `save()` serializa el estado ENTERO —dias, comidas, cache de analisis— y eso
+ * en un historial de meses son cientos de kilobytes. Tocar cinco vasos de agua
+ * seguidos hacia cinco serializaciones completas y cinco escrituras a disco.
+ * Ahora se junta todo lo que pase en el mismo cuarto de segundo.
+ *
+ * `guardarYa()` existe para los momentos en que no se puede esperar: cerrar la
+ * pestana, cambiar de dia, sincronizar.
+ */
+const MS_AGRUPAR_GUARDADO = 250;
+let relojGuardado = null;
+
 function save() {
+  clearTimeout(relojGuardado);
+  relojGuardado = setTimeout(guardarYa, MS_AGRUPAR_GUARDADO);
+}
+
+/* Antes de que se cierre la pestana no hay proxima vuelta: se escribe ya. */
+if (typeof addEventListener === 'function') {
+  addEventListener('pagehide', () => { if (relojGuardado) guardarYa(); });
+  addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && relojGuardado) guardarYa();
+  });
+}
+
+function guardarYa() {
+  clearTimeout(relojGuardado);
+  relojGuardado = null;
   const texto = JSON.stringify(state);
 
   try {
