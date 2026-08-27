@@ -1,86 +1,94 @@
 /* ============================================================
-   personaje.js — el personaje, dibujado.
+   personaje.js — el personaje, dibujado en estilo anime.
 
-   Es un SVG paramétrico, no ocho dibujos: un puñado de números entra y sale la
-   figura. Eso es lo que permite que el cuerpo sea CONTINUO —que un kilo se note
-   un poquito— en vez de tener cuatro muñecos y saltar entre ellos.
+   Reescrito entero. La versión anterior era vector plano tipo emoji: formas
+   redondeadas, un solo tono por parte y sin contorno. Por más músculo y aura
+   que se le pusiera encima, ese estilo se lee tierno — y era exactamente lo que
+   no servía.
 
-   Tres ejes, y son independientes a propósito:
+   Tres cosas hacen el estilo nuevo, y son las tres del referente:
 
-     · el CUERPO sale de cuerpo.js: tu IMC medido y tus entrenamientos;
-     · la CARA sale de mascota.js: cómo viene el día de hoy;
-     · la POSTURA acompaña a la cara, no al cuerpo.
+   1. **Contorno oscuro** en cada parte. Es lo que separa un dibujo de una
+      silueta de color.
+   2. **Cel shading**: dos tonos por parte con el corte DURO, no un degradé. La
+      luz viene de arriba a la izquierda y la sombra cae siempre del mismo lado.
+   3. **Ángulos en vez de círculos**: mandíbula marcada, ojos afilados, cejas en
+      cuña, pelo en mechones puntiagudos.
 
-   Por qué importa la separación: si comer de más engordara al muñeco, la app
-   sería un reproche diario disfrazado de personaje. Comer de más pone cara de
-   culpa. El cuerpo lo mueve la balanza.
+   Lo que NO cambió: los tres ejes. El cuerpo sigue saliendo del IMC medido y de
+   los entrenamientos, la cara del día de hoy, y la fase de los días perfectos
+   seguidos. El estilo es cómo se dibuja; los datos son qué se dibuja.
    ============================================================ */
 
 const PALETA = {
-  piel: '#e3ac7d',
-  pielSombra: '#c88e5f',
-  pelo: '#3b2b22',
-  peloBrillo: '#54402f',
-  /* El verde de siempre: es lo que mantiene al personaje reconocible aunque
-     haya cambiado de especie y se haya quedado sin nombre. */
-  remera: '#5fbf6a',
-  remeraOsc: '#49a355',
-  short: '#3f4a5c',
-  shortOsc: '#333c4b',
-  zapa: '#2f3a4a',
-  zapaOsc: '#e9edf2',
+  /* El contorno no es negro puro: un marrón muy oscuro se integra con la piel
+     y el pelo en vez de recortarlos como un sticker. */
+  linea: '#241812',
+
+  piel: '#f2c391',
+  pielSombra: '#cf9a63',
+
+  pelo: '#2a1d15',
+  peloSombra: '#150e0a',
+  peloBrillo: '#4a3427',
+
+  /* La musculosa se queda con el verde de siempre: es lo último que sobrevive
+     de la primera versión y lo que mantiene al personaje reconocible. */
+  remera: '#41ad5b',
+  remeraOsc: '#2d7d40',
+
+  short: '#39445a',
+  shortOsc: '#28303f',
+
+  zapa: '#e9edf4',
+  zapaOsc: '#a9b3c2',
+
   ojo: '#ffffff',
-  pupila: '#2b2620',
-  boca: '#a8524a',
-  bocaOsc: '#8c3f38',
-  ceja: '#33251d',
-  mejilla: '#e08a86'
+  iris: '#5b3a22',
+  pupila: '#1a1208',
+  boca: '#8f3b32',
+  bocaOsc: '#5e211c',
+  ceja: '#241812',
+  mejilla: '#e0736a'
 };
 
-/* El lienzo.
-   Crece hacia arriba y a los costados: el pelo de las fases sube bastante más
-   que la cabeza y la postura de poder abre los brazos fuera del ancho del
-   cuerpo. Con el lienzo justo, las puntas quedaban cortadas al ras y volvían a
-   leerse como una corona. El origen negativo mantiene intactas todas las
-   coordenadas del cuerpo. */
+/* El lienzo. Crece hacia arriba y a los costados: el pelo de las fases sube
+   bastante más que la cabeza y la postura de poder abre los brazos fuera del
+   ancho del cuerpo. El origen negativo deja intactas las coordenadas del cuerpo. */
 const VB = { x: -8, y: -46, w: 136, h: 222 };
 
-/* Alturas de referencia del cuerpo, sobre el lienzo de arriba.
-
-   Las proporciones son deliberadamente infantiles —la cabeza se lleva casi un
-   tercio de la figura—, y no por estética: en la pantalla Hoy el personaje mide
-   74 px de alto. Con proporciones realistas la cara quedaba en 12 px y no se
-   distinguía un bostezo de una sonrisa, que es justamente lo único que hay que
-   poder leer de un vistazo. */
+/* Alturas de referencia del cuerpo. */
 const Y = { hombro: 62, pecho: 76, cintura: 96, cadera: 110, rodilla: 138, pie: 168 };
+
+/* El grosor del contorno. Un solo número: si cada parte tuviera el suyo, el
+   dibujo se desarma en pedazos que no parecen del mismo personaje. */
+const LINEA = 2.4;
 
 /* ---------------- las medidas ---------------- */
 
 /**
- * De los dos ejes del cuerpo salen todos los anchos.
+ * De los ejes del cuerpo salen todos los anchos.
  *
- * Los coeficientes están elegidos para que los extremos sean personas y no
- * caricaturas: con contextura 1 la cintura pasa a los hombros (que es lo que
- * pasa de verdad), y con musculatura 1 los hombros ganan y la cintura afina.
+ * `poder` es el músculo que presta la fase. Entra en TODO lo que ensancha y en
+ * nada de lo que afina: una racha de días perfectos puede ponerte más grande,
+ * nunca más flaco. Afinar la cintura por cumplir sería decirte que ya bajaste
+ * de peso sin que la balanza haya dicho nada.
  */
 function medidasDe(contextura, musculatura, poder = 0) {
   const c = contextura == null ? 0.42 : Math.min(1, Math.max(0, contextura));
   const m = Math.min(1, Math.max(0, musculatura || 0));
-  /* `poder` es el músculo que presta la fase. Entra en TODO lo que ensancha y
-     en nada de lo que afina: una racha de días perfectos puede ponerte más
-     grande, nunca más flaco. Afinar la cintura por cumplir sería decirte que ya
-     bajaste de peso sin que la balanza haya dicho nada. */
   const p = Math.min(1, Math.max(0, poder || 0));
 
   return {
     c, m, p,
+    fuerza: Math.min(1, m + p),
     hombro: 17 + c * 4 + m * 8 + p * 8,
     pecho: 15.5 + c * 12 + m * 4 + p * 4,
     cintura: 11.5 + c * 22 - m * 2,
     cadera: 13.5 + c * 16,
     brazo: 3.6 + c * 2.6 + (m + p) * 3.6,
     pierna: 5.4 + c * 5 + (m + p) * 1.8,
-    cuello: 6 + c * 3 + (m + p) * 1.6,
+    cuello: 6 + c * 3 + (m + p) * 2.4,
     caraRx: 16.5 + c * 6,
     caraRy: 20.5
   };
@@ -105,9 +113,9 @@ function anchoEn(y, med) {
 /**
  * La silueta del torso entre dos alturas, muestreada.
  *
- * Muestrear en vez de escribir curvas a mano es lo que deja cortar el contorno
- * a cualquier altura — que es exactamente lo que hace falta para que la remera
- * y el short sigan el cuerpo en vez de ser dos rectángulos pegados encima.
+ * Muestrear en vez de escribir curvas a mano deja cortar el contorno a
+ * cualquier altura, que es lo que hace falta para que la ropa siga al cuerpo en
+ * vez de ser un rectángulo pegado encima.
  */
 function silueta(med, desdeY, hastaY, paso = 2) {
   const izq = [];
@@ -126,49 +134,60 @@ function silueta(med, desdeY, hastaY, paso = 2) {
   return 'M ' + izq.join(' L ') + ' L ' + der.join(' L ') + ' Z';
 }
 
+/**
+ * La mitad derecha de la silueta, cerrada por una vertical.
+ *
+ * Es el truco que resuelve todo el cel shading del torso sin `clipPath`: la
+ * sombra es la misma silueta partida al medio, así que nunca se sale del
+ * cuerpo. Con clipPath habría que generar ids únicos, y en la página de taller
+ * hay siete personajes a la vez.
+ */
+function mediaSilueta(med, desdeY, hastaY, corte = 0.3, paso = 2) {
+  const borde = [];
+  const eje = [];
+
+  for (let y = desdeY; y <= hastaY; y += paso) {
+    const a = anchoEn(y, med);
+    borde.push((60 + a).toFixed(1) + ' ' + y.toFixed(1));
+    eje.unshift((60 + a * corte).toFixed(1) + ' ' + y.toFixed(1));
+  }
+
+  return 'M' + borde.join(' L ') + ' L ' + eje.join(' L ') + ' Z';
+}
+
 /* ---------------- las poses ---------------- */
 
-/*
- * La postura acompaña a la cara. Un cuerpo hundido con cara feliz no se lee, y
- * al revés tampoco: es el conjunto lo que dice el estado.
- *
- * hombros: cuánto se hunde el tronco (las piernas quedan plantadas)
- * cabeza: cuánto cae la cabeza · inclina: grados de ladeo
- */
 const POSES = {
   neutral: { hombros: 0, cabeza: 0, inclina: 0, brazos: -6, piernas: .25 },
   bien: { hombros: -1, cabeza: -1, inclina: 0, brazos: -8, piernas: .3 },
-  genial: { hombros: -2, cabeza: -2, inclina: 0, brazos: -26, festeja: true },
-  flojo: { hombros: 2, cabeza: 1.5, inclina: 3, brazos: 2 },
-  cansado: { hombros: 4, cabeza: 4, inclina: 8, brazos: 5 },
-  seco: { hombros: 2, cabeza: 2, inclina: 4, brazos: 3 },
-  pesado: { hombros: 4, cabeza: 3, inclina: 5, brazos: 6 },
-  triste: { hombros: 5, cabeza: 4, inclina: -4, brazos: 6 }
+  genial: { hombros: -2, cabeza: -2, inclina: 0, brazos: -26, piernas: .35, festeja: true },
+  flojo: { hombros: 2, cabeza: 1.5, inclina: 3, brazos: 2, piernas: .1 },
+  cansado: { hombros: 4, cabeza: 4, inclina: 8, brazos: 5, piernas: 0 },
+  seco: { hombros: 2, cabeza: 2, inclina: 4, brazos: 3, piernas: .1 },
+  pesado: { hombros: 4, cabeza: 3, inclina: 5, brazos: 6, piernas: 0 },
+  triste: { hombros: 5, cabeza: 4, inclina: -4, brazos: 6, piernas: 0 }
 };
 
 /*
- * La cara, en parámetros. Mismo criterio que en la versión anterior: las cejas
- * son donde vive casi toda la expresión, y por eso tienen tres controles
- * propios mientras que la boca tiene uno solo.
+ * La cara, en parámetros. Las cejas son donde vive casi toda la expresión y por
+ * eso tienen tres controles propios; la boca tiene uno solo.
  */
 const CARAS = {
   neutral: { ceja: 0, cejaY: 0, parpado: 0, boca: 'recta', mirada: [0, 0] },
-  bien: { ceja: -5, cejaY: -1.5, parpado: 0, boca: 'sonrisa', mirada: [0, 0], mejillas: true },
-  genial: { ceja: -9, cejaY: -2.5, parpado: 0, boca: 'risa', mirada: [0, -.5], mejillas: true, ojosFelices: true, brillos: true },
+  bien: { ceja: -5, cejaY: -1.5, parpado: 0, boca: 'sonrisa', mirada: [0, 0] },
+  genial: { ceja: -9, cejaY: -2.5, parpado: 0, boca: 'risa', mirada: [0, -.5], ojosFelices: true, brillos: true },
   flojo: { ceja: 8, cejaY: .5, parpado: .3, boca: 'recta', mirada: [0, .8] },
   cansado: { ceja: 12, cejaY: 1, parpado: .72, boca: 'chica', mirada: [0, 1.4], ojeras: true, zzz: true },
   seco: { ceja: 14, cejaY: 1, parpado: .15, boca: 'seca', mirada: [1, 0], gota: true },
   pesado: { ceja: 17, cejaY: 1.6, parpado: .3, boca: 'triste', mirada: [0, 1.8], ojeras: true },
   triste: { ceja: -20, cejaY: -.5, parpado: .15, boca: 'triste', mirada: [0, .5], lagrima: true },
 
-  /* De la fase 2 para arriba la cara deja de ser una carita contenta: cejas
-     hacia adentro, ojos apretados y la boca gritando. Una sonrisa tierna
-     encima de un aura de fuego se contradice sola y gana la sonrisa. */
-  furioso: { ceja: 24, cejaY: -1, parpado: .12, boca: 'grito', mirada: [0, -.4], intenso: true }
+  /* De la fase 2 para arriba la cara la manda la fase: cejas hacia adentro,
+     ojos apretados y la boca gritando. */
+  furioso: { ceja: 26, cejaY: -1, parpado: 0, boca: 'grito', mirada: [0, -.4], intenso: true }
 };
 
-/* Un color mezclado con otro. Se usa para apagar la remera cuando el día viene
-   mal: la piel no puede cambiar de color, pero la ropa sí. */
+/* Un color mezclado con otro, para apagar la ropa cuando el día viene mal. */
 function mezclar(hexA, hexB, t) {
   const a = parseInt(hexA.slice(1), 16);
   const b = parseInt(hexB.slice(1), 16);
@@ -182,204 +201,11 @@ function mezclar(hexA, hexB, t) {
 
 const APAGADOS = { flojo: .2, cansado: .42, seco: .3, pesado: .38, triste: .45 };
 
-/* ---------------- las partes ---------------- */
-
-function piernas(med, col, pose) {
-  const sep = med.cadera * 0.5 + 1 + (pose?.piernas || 0) * 10;
-  const g = med.pierna;
-  const iz = 60 - sep;
-  const de = 60 + sep;
-
-  return `
-    <g stroke="${col.piel}" fill="none" stroke-linecap="round">
-      <path d="M${iz} ${Y.cadera - 4} L${iz - 1} ${Y.rodilla}" stroke-width="${(g * 2).toFixed(1)}"/>
-      <path d="M${de} ${Y.cadera - 4} L${de + 1} ${Y.rodilla}" stroke-width="${(g * 2).toFixed(1)}"/>
-      <path d="M${iz - 1} ${Y.rodilla} L${iz - 1.5} ${Y.pie - 4}" stroke-width="${(g * 1.55).toFixed(1)}"/>
-      <path d="M${de + 1} ${Y.rodilla} L${de + 1.5} ${Y.pie - 4}" stroke-width="${(g * 1.55).toFixed(1)}"/>
-    </g>
-    <g fill="${PALETA.zapa}">
-      <path d="M${iz - 7.5} ${Y.pie - 2} h13.5 a3.2 3.2 0 0 0 0 -6.5 h-9.5 a4.2 4.2 0 0 0 -4 3.2z"/>
-      <path d="M${de + 7.5} ${Y.pie - 2} h-13.5 a3.2 3.2 0 0 1 0 -6.5 h9.5 a4.2 4.2 0 0 1 4 3.2z"/>
-    </g>
-    <g fill="${PALETA.zapaOsc}">
-      <path d="M${iz - 8} ${Y.pie - 2} h14.5 v2.6 h-14.5z"/>
-      <path d="M${de + 8} ${Y.pie - 2} h-14.5 v2.6 h14.5z"/>
-    </g>`;
-}
-
-function brazos(med, pose, col) {
-  const anchoSup = med.brazo * 2;
-  const anchoInf = med.brazo * 1.6;
-
-  /* El brazo nace apenas adentro del hombro y cae por FUERA del cuerpo. Con el
-     codo hacia adentro quedaba escondido detras del torso y la figura parecia
-     manca — que es exactamente lo que pasaba en la primera version. */
-  const hx = med.hombro - med.brazo * 0.3;
-  const codoY = Y.pecho + 12;
-  const manoY = Y.cadera + 4;
-  const codoX = Math.max(med.hombro, med.pecho) - med.brazo * 0.15;
-  const manoX = Math.max(med.cintura, med.cadera) + med.brazo * 0.35;
-
-  const uno = (s) => `
-    <g transform="rotate(${(pose.brazos * s).toFixed(1)} ${60 + hx * s} ${Y.hombro + 4})">
-      <path d="M${60 + hx * s} ${Y.hombro + 3} L${60 + codoX * s} ${codoY}"
-        stroke="${col.piel}" stroke-width="${anchoSup.toFixed(1)}" stroke-linecap="round" fill="none"/>
-      <path d="M${60 + codoX * s} ${codoY} L${60 + manoX * s} ${manoY}"
-        stroke="${col.piel}" stroke-width="${anchoInf.toFixed(1)}" stroke-linecap="round" fill="none"/>
-      <circle cx="${60 + manoX * s}" cy="${manoY + 2}" r="${(med.brazo * (pose.punos ? 1.25 : 0.95)).toFixed(1)}" fill="${col.piel}"/>
-      ${pose.punos ? `<path d="M${(60 + manoX * s - med.brazo).toFixed(1)} ${manoY + 2} h${(med.brazo * 2).toFixed(1)}"
-        stroke="${PALETA.pielSombra}" stroke-width="1.2" opacity=".6" stroke-linecap="round"/>` : ''}
-
-      ${med.m + med.p > 0.55 ? `<path d="M${60 + (hx + 1.5) * s} ${Y.hombro + 9} q${2.5 * s} 4 ${-0.5 * s} 7"
-        stroke="${PALETA.pielSombra}" stroke-width="1.1" fill="none" opacity=".5"/>` : ''}
-    </g>`;
-
-  return uno(-1) + uno(1);
-}
-
-function torso(med, col) {
-  const hemRemera = Y.cintura + 8;
-  const hemShort = Y.cadera + 17;
-
-  /* La remera es la misma silueta del cuerpo cortada a la altura del ruedo: por
-     eso sigue la panza en vez de quedar como un cartel colgado encima. */
-  return `
-    <path d="${silueta(med, Y.hombro - 4, Y.cadera + 2)}" fill="${col.piel}"/>
-    <path d="${silueta(med, Y.cadera - 6, hemShort)}" fill="${col.short}"/>
-    <path d="M60 ${Y.cadera + 4} v${hemShort - Y.cadera - 4}" stroke="${col.shortOsc}" stroke-width="1.4"/>
-    <path d="${silueta(med, Y.hombro - 5, hemRemera)}" fill="${col.remera}"/>
-    <path d="M${(60 - med.hombro).toFixed(1)} ${Y.hombro - 5} h${(med.hombro * 0.3).toFixed(1)}
-             q${(med.hombro * -0.06).toFixed(1)} 11 ${(med.hombro * 0.02).toFixed(1)} 19
-             q${(med.hombro * -0.16).toFixed(1)} 2 ${(med.hombro * -0.26).toFixed(1)} -2z" fill="${col.piel}"/>
-    <path d="M${(60 + med.hombro).toFixed(1)} ${Y.hombro - 5} h${(med.hombro * -0.3).toFixed(1)}
-             q${(med.hombro * 0.06).toFixed(1)} 11 ${(med.hombro * -0.02).toFixed(1)} 19
-             q${(med.hombro * 0.16).toFixed(1)} 2 ${(med.hombro * 0.26).toFixed(1)} -2z" fill="${col.piel}"/>
-    <path d="M${(60 - med.cuello * 1.5).toFixed(1)} ${Y.hombro - 5}
-             a${(med.cuello * 1.5).toFixed(1)} ${(med.cuello * 1.1).toFixed(1)} 0 0 0 ${(med.cuello * 3).toFixed(1)} 0z"
-      fill="${col.piel}"/>
-    ${med.m + med.p > 0.5 ? `<path d="M60 ${Y.pecho - 2} v9" stroke="${col.remeraOsc}" stroke-width="1.2" opacity=".7"/>` : ''}
-    <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 10} h${(med.cuello * 2).toFixed(1)} v8 h-${(med.cuello * 2).toFixed(1)}z" fill="${col.piel}"/>
-    <path d="M${(60 - med.cuello).toFixed(1)} ${Y.hombro - 3} q${med.cuello.toFixed(1)} 4 ${(med.cuello * 2).toFixed(1)} 0"
-      stroke="${PALETA.pielSombra}" stroke-width="1.2" fill="none" opacity=".45"/>`;
-}
-
-function ojo(cx, cy, cara, r = 4.6) {
-  const [mx, my] = cara.mirada;
-
-  if (cara.ojosFelices) {
-    return `<path d="M${cx - r} ${cy + 1} q${r} -${r * 1.4} ${r * 2} 0"
-      stroke="${PALETA.pupila}" stroke-width="1.9" fill="none" stroke-linecap="round"/>`;
-  }
-
-  /* Ojo apretado: media elipse en vez del ojo redondo. Un ojo grande y redondo
-     se lee tierno siempre, por más ceja enojada que tenga arriba. */
-  if (cara.intenso) {
-    return `<path d="M${(cx - r).toFixed(1)} ${(cy - 1).toFixed(1)} a${r} ${(r * 0.75).toFixed(1)} 0 0 1 ${(r * 2).toFixed(1)} 0
-        a${r} ${(r * 0.35).toFixed(1)} 0 0 1 ${(r * -2).toFixed(1)} 0z" fill="${PALETA.ojo}"/>
-      <circle cx="${cx}" cy="${(cy - 1.4).toFixed(1)}" r="${(r * 0.45).toFixed(1)}" fill="${PALETA.pupila}"/>`;
-  }
-
-  const px = cx + mx * 1.2;
-  const py = cy + my * 1.1;
-  const parpado = cara.parpado > 0
-    ? `<path d="M${cx - r} ${cy} a${r} ${r} 0 0 1 ${r * 2} 0 z" fill="${PALETA.piel}"
-         transform="translate(0 ${(-r * 2 + cara.parpado * r * 4).toFixed(1)})"/>`
-    : '';
-
-  return `
-    <ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${(r * 1.05).toFixed(2)}" fill="${PALETA.ojo}"/>
-    <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${(r * 0.5).toFixed(2)}" fill="${PALETA.pupila}"/>
-    <circle cx="${(px - r * 0.18).toFixed(1)}" cy="${(py - r * 0.22).toFixed(1)}" r="${(r * 0.17).toFixed(2)}" fill="#fff" opacity=".9"/>
-    ${cara.ojeras ? `<path d="M${(cx - r * 0.9).toFixed(1)} ${(cy + r * 1.5).toFixed(1)} q${(r * 0.9).toFixed(1)} ${(r * 0.5).toFixed(1)} ${(r * 1.8).toFixed(1)} 0"
-      stroke="${PALETA.pielSombra}" stroke-width="1.1" fill="none" opacity=".7"/>` : ''}
-    ${parpado}`;
-}
-
-function boca(tipo, cy) {
-  if (tipo === 'risa') {
-    return `<path d="M51 ${cy - 2} q9 12 18 0 q-9 4 -18 0z" fill="${PALETA.bocaOsc}"/>
-            <path d="M54 ${cy + 3} q6 4 12 0" fill="${PALETA.boca}"/>`;
-  }
-  if (tipo === 'sonrisa') {
-    return `<path d="M52.5 ${cy} q7.5 7.5 15 0" stroke="${PALETA.bocaOsc}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-  }
-  if (tipo === 'triste') {
-    return `<path d="M53 ${cy + 4} q7 -7 14 0" stroke="${PALETA.bocaOsc}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-  }
-  if (tipo === 'seca') {
-    return `<path d="M53 ${cy + 1} q7 3.5 14 0" stroke="${PALETA.bocaOsc}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-            <path d="M56 ${cy + 5} h8" stroke="${PALETA.bocaOsc}" stroke-width="1.5" opacity=".6" stroke-linecap="round"/>`;
-  }
-  if (tipo === 'chica') {
-    return `<ellipse cx="60" cy="${cy + 2}" rx="3.4" ry="2.8" fill="${PALETA.bocaOsc}"/>`;
-  }
-  if (tipo === 'grito') {
-    return `<path d="M53 ${cy - 2} q7 -3 14 0 q-1 12 -7 12 q-6 0 -7 -12z" fill="${PALETA.bocaOsc}"/>
-            <path d="M54.5 ${cy - 1} q5.5 -2 11 0 l-1 2.6 q-4.5 -1.6 -9 0z" fill="#ffffff"/>`;
-  }
-  return `<path d="M53.5 ${cy + 1} h13" stroke="${PALETA.bocaOsc}" stroke-width="2.4" stroke-linecap="round"/>`;
-}
-
-function cabeza(med, cara, col, fase) {
-  const cy = 34;
-  const rx = med.caraRx;
-  const ry = med.caraRy;
-  const ojoY = cy + 2;
-  const sep = rx * 0.40;
-
-  /* Con contextura alta la cara se redondea y aparece una sombra suave bajo la
-     mandíbula. Es un trazo, no una deformación: la idea es que se reconozca el
-     cuerpo, no que dé lástima. */
-  const papada = med.c > 0.68
-    ? `<path d="M${(60 - rx * 0.5).toFixed(1)} ${(cy + ry * 0.78).toFixed(1)} q${(rx * 0.5).toFixed(1)} ${((med.c - 0.5) * 8).toFixed(1)} ${rx.toFixed(1)} 0"
-        stroke="${PALETA.pielSombra}" stroke-width="1.3" fill="none" opacity=".55"/>`
-    : '';
-
-  return `
-    <path d="M${(60 - rx * 0.94).toFixed(1)} ${cy - 1} a4.4 4.4 0 0 0 0 9z" fill="${col.piel}"/>
-    <path d="M${(60 + rx * 0.94).toFixed(1)} ${cy - 1} a4.4 4.4 0 0 1 0 9z" fill="${col.piel}"/>
-    <ellipse cx="60" cy="${cy}" rx="${rx.toFixed(1)}" ry="${ry}" fill="${col.piel}"/>
-    ${papada}
-    ${pelo(cy, rx, ry, fase)}
-    ${ojo(60 - sep, ojoY, cara)}
-    ${ojo(60 + sep, ojoY, cara)}
-    <g stroke="${PALETA.ceja}" stroke-width="2.6" stroke-linecap="round" fill="none">
-      <path d="M${(60 - sep - 6).toFixed(1)} ${cy - 8} q6 -2.6 11.5 -1"
-        transform="rotate(${cara.ceja} ${(60 - sep).toFixed(1)} ${cy - 8}) translate(0 ${(cara.cejaY * 1.4).toFixed(1)})"/>
-      <path d="M${(60 + sep + 6).toFixed(1)} ${cy - 8} q-6 -2.6 -11.5 -1"
-        transform="rotate(${-cara.ceja} ${(60 + sep).toFixed(1)} ${cy - 8}) translate(0 ${(cara.cejaY * 1.4).toFixed(1)})"/>
-    </g>
-    <path d="M60 ${cy + 7} q2.2 3.2 -.8 4" stroke="${PALETA.pielSombra}" stroke-width="1.6"
-      fill="none" stroke-linecap="round" opacity=".8"/>
-    ${cara.mejillas ? `<ellipse cx="${(60 - rx * 0.72).toFixed(1)}" cy="${cy + 10}" rx="4.4" ry="3" fill="${PALETA.mejilla}" opacity=".45"/>
-       <ellipse cx="${(60 + rx * 0.72).toFixed(1)}" cy="${cy + 10}" rx="4.4" ry="3" fill="${PALETA.mejilla}" opacity=".45"/>` : ''}
-    ${boca(cara.boca, cy + 14)}
-    ${cara.lagrima ? `<path d="M${(60 - sep + 4).toFixed(1)} ${ojoY + 7} q2 5 0 7 q-2 -2 0 -7" fill="#7ec8f0" opacity=".85"/>` : ''}`;
-}
-
-function adornos(cara) {
-  let out = '';
-  if (cara.zzz) {
-    out += `<g fill="${PALETA.pupila}" opacity=".45" font-family="system-ui" font-weight="700">
-      <text x="90" y="30" font-size="13">z</text><text x="101" y="18" font-size="9">z</text></g>`;
-  }
-  if (cara.gota) out += `<path d="M88 30 q4.5 8 0 11.5 q-4.5 -3.5 0 -11.5" fill="#7ec8f0" opacity=".85"/>`;
-  if (cara.brillos) {
-    out += `<g fill="#ffd84d">
-      <path d="M17 30 l2.6 6 6 2.6 -6 2.6 -2.6 6 -2.6 -6 -6 -2.6 6 -2.6z"/>
-      <path d="M102 54 l1.9 4.4 4.4 1.9 -4.4 1.9 -1.9 4.4 -1.9 -4.4 -4.4 -1.9 4.4 -1.9z"/></g>`;
-  }
-  return out;
-}
-
-/* ---------------- el personaje entero ---------------- */
-
 /*
- * La postura de poder.
- *
- * Brazos separados del cuerpo, hombros arriba y piernas abiertas. Es lo que
- * separa "un tipo parado" de "un tipo cargando energía", y no depende del
- * dibujo sino de tres números.
+ * La postura de poder: brazos separados del cuerpo, hombros arriba y piernas
+ * abiertas. El ángulo del brazo es ABSOLUTO y no relativo al ánimo — 'genial'
+ * ya los levanta 26 grados y sumarle la fase los ponía en cruz, que se lee como
+ * rendición y no como fuerza.
  */
 function posturaDePoder(base, fase) {
   const t = fase.pose || 0;
@@ -388,34 +214,157 @@ function posturaDePoder(base, fase) {
     hombros: base.hombros - 2 * t,
     cabeza: base.cabeza - 1 * t,
     inclina: base.inclina * (1 - t * 0.7),
-    /* Absoluto, no relativo al ánimo: 'genial' ya levanta los brazos 26 grados
-       y sumarle la fase los terminaba de poner en cruz, que se lee como
-       rendición y no como fuerza. Acá manda la fase y punto. */
     brazos: -10 - 12 * t,
-    piernas: t,
+    piernas: Math.max(base.piernas || 0, t),
     punos: t > 0.3
   };
 }
 
-/**
- * El personaje entero, listo para meter en el DOM.
+/* ---------------- las partes ---------------- */
+
+/*
+ * Un miembro es un trazo grueso con contorno y su banda de sombra.
  *
- * `cuerpo` es lo que devuelve `cuerpoDe()`. Si no viene —o viene sin peso—, se
- * dibuja una contextura media: mostrar un cuerpo inventado como si fuera el de
- * Nico sería peor que no mostrar ninguno.
+ * Tres trazos superpuestos: el contorno (más ancho, oscuro), el relleno, y una
+ * banda fina corrida hacia la derecha que hace de sombra dura. Es todo el cel
+ * shading de brazos y piernas, sin una sola máscara.
+ */
+function miembro(d, ancho, col, sombra) {
+  return `
+    <path d="${d}" stroke="${PALETA.linea}" stroke-width="${(ancho + LINEA).toFixed(1)}"
+      fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" stroke="${col}" stroke-width="${ancho.toFixed(1)}"
+      fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${d}" stroke="${sombra}" stroke-width="${(ancho * 0.3).toFixed(1)}"
+      fill="none" stroke-linecap="butt" stroke-linejoin="round"
+      transform="translate(${(ancho * 0.3).toFixed(1)} 0)" opacity=".85"/>`;
+}
+
+function piernas(med, col, pose) {
+  const sep = med.cadera * 0.5 + 1 + (pose?.piernas || 0) * 10;
+  const g = med.pierna;
+  const iz = 60 - sep;
+  const de = 60 + sep;
+
+  /* La pierna entera en un solo trazo: dos trazos separados dejaban una costura
+     redonda en la rodilla y el conjunto parecia un muneco de salchichas. */
+  const pierna = (x, s2) => `M${x.toFixed(1)} ${Y.cadera - 4}
+      L${(x + s2 * 1).toFixed(1)} ${Y.rodilla} L${(x + s2 * 1.5).toFixed(1)} ${Y.pie - 5}`;
+
+  return `
+    ${miembro(pierna(iz, -1), g * 1.85, col.piel, col.pielSombra)}
+    ${miembro(pierna(de, 1), g * 1.85, col.piel, col.pielSombra)}
+
+    <g stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round">
+      <path d="M${(iz - 8.5).toFixed(1)} ${Y.pie - 2} h14.5 a3.4 3.4 0 0 0 0 -7 h-10 a4.4 4.4 0 0 0 -4.5 3.4z" fill="${PALETA.zapa}"/>
+      <path d="M${(de + 8.5).toFixed(1)} ${Y.pie - 2} h-14.5 a3.4 3.4 0 0 1 0 -7 h10 a4.4 4.4 0 0 1 4.5 3.4z" fill="${PALETA.zapa}"/>
+      <path d="M${(iz - 9).toFixed(1)} ${Y.pie - 2} h15.5 v3 h-15.5z" fill="${PALETA.zapaOsc}"/>
+      <path d="M${(de + 9).toFixed(1)} ${Y.pie - 2} h-15.5 v3 h15.5z" fill="${PALETA.zapaOsc}"/>
+    </g>`;
+}
+
+function brazos(med, pose, col) {
+  const hx = med.hombro - med.brazo * 0.3;
+  const codoY = Y.pecho + 12;
+  const manoY = Y.cadera + 4;
+  const codoX = Math.max(med.hombro, med.pecho) - med.brazo * 0.15;
+  const manoX = Math.max(med.cintura, med.cadera) + med.brazo * 0.35;
+
+  const uno = (s) => {
+    const hombroX = 60 + hx * s;
+    const codo = 60 + codoX * s;
+    const mano = 60 + manoX * s;
+
+    /* El bíceps: una curva sobre el brazo que solo aparece cuando hay músculo
+       de verdad. Es la línea que hace que un brazo grueso se lea entrenado en
+       vez de blando. */
+    const bicep = med.fuerza > 0.45
+      ? `<path d="M${(hombroX + 2.2 * s).toFixed(1)} ${Y.hombro + 9}
+           q${(4.5 * s).toFixed(1)} 5 ${(1 * s).toFixed(1)} 10"
+           stroke="${PALETA.pielSombra}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`
+      : '';
+
+    return `
+      <g transform="rotate(${(pose.brazos * s).toFixed(1)} ${hombroX.toFixed(1)} ${Y.hombro + 4})">
+        ${miembro(`M${hombroX.toFixed(1)} ${Y.hombro + 3} L${codo.toFixed(1)} ${codoY} L${mano.toFixed(1)} ${manoY}`,
+      med.brazo * 1.85, col.piel, col.pielSombra)}
+        <circle cx="${mano.toFixed(1)}" cy="${manoY + 2}" r="${(med.brazo * (pose.punos ? 1.15 : 0.9)).toFixed(1)}"
+          fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}"/>
+        ${pose.punos ? `<path d="M${(mano - med.brazo).toFixed(1)} ${manoY + 2} h${(med.brazo * 2).toFixed(1)}"
+          stroke="${PALETA.linea}" stroke-width="1.3" opacity=".7" stroke-linecap="round"/>` : ''}
+        ${bicep}
+      </g>`;
+  };
+
+  return uno(-1) + uno(1);
+}
+
+function torso(med, col) {
+  const hemTop = Y.hombro - 5;
+  const hemMusculosa = Y.cintura + 8;
+  const hemShort = Y.cadera + 17;
+  const cu = med.cuello;
+
+  /* Los pectorales se dibujan sobre la musculosa, no sobre la piel: es lo que
+     hace que la ropa se vea apoyada en un cuerpo y no pintada encima de una
+     silueta. */
+  const pecho = med.fuerza > 0.4
+    ? `<path d="M60 ${Y.pecho - 4} v${(9 + med.fuerza * 4).toFixed(1)}"
+         stroke="${col.remeraOsc}" stroke-width="1.8" stroke-linecap="round" opacity=".9"/>
+       <path d="M${(60 - med.pecho * 0.72).toFixed(1)} ${Y.pecho - 5}
+         q${(med.pecho * 0.72).toFixed(1)} ${(6 + med.fuerza * 3).toFixed(1)} ${(med.pecho * 1.44).toFixed(1)} 0"
+         stroke="${col.remeraOsc}" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".8"/>`
+    : '';
+
+  return `
+    <path d="${silueta(med, hemTop, Y.cadera + 4)}" fill="${col.piel}"
+      stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
+    <path d="${mediaSilueta(med, hemTop, Y.cadera + 4)}" fill="${col.pielSombra}" opacity=".85"/>
+
+    <path d="${silueta(med, Y.cadera - 6, hemShort)}" fill="${col.short}"
+      stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
+    <path d="${mediaSilueta(med, Y.cadera - 6, hemShort)}" fill="${col.shortOsc}" opacity=".95"/>
+    <path d="M60 ${Y.cadera + 4} v${(hemShort - Y.cadera - 4).toFixed(1)}"
+      stroke="${PALETA.linea}" stroke-width="1.5" opacity=".55"/>
+
+    <path d="${silueta(med, hemTop, hemMusculosa)}" fill="${col.remera}"
+      stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
+    <path d="${mediaSilueta(med, hemTop, hemMusculosa, 0.32)}" fill="${col.remeraOsc}" opacity=".95"/>
+    ${pecho}
+
+    <path d="M${(60 - med.hombro).toFixed(1)} ${hemTop} h${(med.hombro * 0.3).toFixed(1)}
+             q${(med.hombro * -0.06).toFixed(1)} 11 ${(med.hombro * 0.02).toFixed(1)} 19
+             q${(med.hombro * -0.16).toFixed(1)} 2 ${(med.hombro * -0.26).toFixed(1)} -2z"
+      fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="1.7" stroke-linejoin="round"/>
+    <path d="M${(60 + med.hombro).toFixed(1)} ${hemTop} h${(med.hombro * -0.3).toFixed(1)}
+             q${(med.hombro * 0.06).toFixed(1)} 11 ${(med.hombro * -0.02).toFixed(1)} 19
+             q${(med.hombro * 0.16).toFixed(1)} 2 ${(med.hombro * 0.26).toFixed(1)} -2z"
+      fill="${col.pielSombra}" stroke="${PALETA.linea}" stroke-width="1.7" stroke-linejoin="round"/>
+
+    <path d="M${(60 - cu).toFixed(1)} ${Y.hombro - 12} h${(cu * 2).toFixed(1)} v10 h${(cu * -2).toFixed(1)}z"
+      fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
+    <path d="M${(60 - cu * 1.45).toFixed(1)} ${hemTop}
+             a${(cu * 1.45).toFixed(1)} ${(cu * 1.05).toFixed(1)} 0 0 0 ${(cu * 2.9).toFixed(1)} 0z"
+      fill="${col.pielSombra}" stroke="${PALETA.linea}" stroke-width="1.7"/>`;
+}
+
+/* ---------------- el personaje entero ---------------- */
+
+/**
+ * El personaje, listo para meter en el DOM.
+ *
+ * `cuerpo` es lo que devuelve `cuerpoDe()` y `fase` lo que devuelve `faseDe()`.
+ * Sin cuerpo se dibuja una contextura media: mostrar un cuerpo inventado como
+ * si fuera el de Nico sería peor que no mostrar ninguno.
  */
 function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const base = POSES[animo] || POSES.neutral;
   const f = fase && fase.n ? fase : null;
 
-  /* De la fase 2 para arriba la cara la manda la fase, no el ánimo. Es el único
-     lugar donde la fase pisa al día: un día que llegó a fase 2 ya cumplió todo
-     dos veces seguidas, así que el ánimo iba a ser bueno igual. */
+  /* De la fase 2 para arriba la cara la manda la fase, no el ánimo: un día que
+     llegó a fase 2 ya cumplió todo dos veces seguidas. */
   const cara = (f && f.n >= 2) ? CARAS.furioso : (CARAS[animo] || CARAS.neutral);
 
-  /* La fase suma músculo y abre la postura SOLO en el dibujo. Sin esto la
-     transformación era un cambio de color de pelo sobre el mismo muñeco
-     parado de brazos caídos, que no transmite absolutamente nada. */
   const med = medidasDe(
     cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
     cuerpo?.musculatura ?? 0,
@@ -427,21 +376,22 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const apagado = APAGADOS[animo] || 0;
   const col = {
     piel: PALETA.piel,
+    pielSombra: PALETA.pielSombra,
     short: PALETA.short,
     shortOsc: PALETA.shortOsc,
-    remera: mezclar(PALETA.remera, '#8f9a90', apagado),
-    remeraOsc: mezclar(PALETA.remeraOsc, '#79837a', apagado)
+    remera: mezclar(PALETA.remera, '#7d8a80', apagado),
+    remeraOsc: mezclar(PALETA.remeraOsc, '#5e6a62', apagado)
   };
 
   const alto = Math.round(tam);
   const ancho = Math.round(tam * VB.w / VB.h);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB.x} ${VB.y} ${VB.w} ${VB.h}" width="${ancho}" height="${alto}"
-    class="mascota-svg${fase && fase.n ? ' fase-' + fase.n : ''}" role="img"
-    aria-label="Cómo venís: ${animo}${fase && fase.n ? ', en fase ' + fase.n : ''}">
+    class="mascota-svg${f ? ' fase-' + f.n : ''}" role="img"
+    aria-label="Cómo venís: ${animo}${f ? ', en fase ' + f.n : ''}">
 
     ${aura(med, fase)}
-    <ellipse cx="60" cy="${Y.pie + 3}" rx="${(med.cadera + 12).toFixed(1)}" ry="4" fill="${PALETA.pupila}" opacity=".13"/>
+    <ellipse cx="60" cy="${Y.pie + 3}" rx="${(med.cadera + 12).toFixed(1)}" ry="4" fill="${PALETA.linea}" opacity=".16"/>
     ${suelo(med, fase)}
 
     ${piernas(med, col, pose)}
@@ -459,7 +409,7 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   </svg>`;
 }
 
-/* El nombre viejo sigue andando: lo usan los tests del ciclo anterior, y
+/* El nombre viejo sigue andando: lo usan los tests de ciclos anteriores, y
    romperlos por un cambio de dibujo no aporta nada. */
 function svgMascota(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   return svgPersonaje(animo, tam, cuerpo, fase);

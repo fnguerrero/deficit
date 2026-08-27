@@ -226,3 +226,11 @@ Nico sumo despues el veredicto honesto de si va bien.
 #29 — El objetivo de agua salia del peso: 12 vasos para 86 kg. Nadie que hoy toma dos pasa a doce, asi que el casillero quedaba sin marcar todos los dias y terminaba ignorado. Arranca en 4 y se sube a mano de a uno; la referencia por peso sigue estando, como dato al costado y no como meta
 
 #30 — En pantallas anchas el modal se centra. Pegado al borde de abajo se leia como cortado, que fue justo lo que reporto Nico
+
+#31 — Reescritura completa de la capa de dibujo a estilo anime, sobre la referencia que paso Nico. Tres cosas: contorno oscuro en cada parte, cel shading de dos tonos con corte duro (la sombra del torso es la misma silueta partida al medio, asi que nunca se sale del cuerpo y no hace falta clipPath ni ids unicos), y angulos en vez de circulos — mandibula, ojos afilados, cejas en cuna, mechones puntiagudos
+
+#31b — personaje.js se paso de tamano y salio cara.js. El corte tiene sentido propio: el cuerpo lo manda la balanza y la cara el dia, asi que se tocan por motivos distintos
+
+#31c — Tres bugs de dibujo que solo se ven rasterizando: la boca estaba en coordenadas fijas y al achicarse la cabeza un grito ocupaba media cara; el iris llenaba casi todo el blanco del ojo y a tamano chico se fundia con la ceja en una sola mancha; y los miembros se dibujaban en dos trazos con punta redonda, o sea un muneco de salchichas articulado
+
+#31d — La linea del pelo bajo demasiado DOS veces seguidas y en las dos la frente entera quedaba del color del pelo, con los ojos flotando sobre una vincha. Se extrajo `lineaDelPelo()` a su propia funcion para poder probarla, y el test nuevo cazo el tercer intento fallado antes de que lo viera yo
