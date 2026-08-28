@@ -1300,3 +1300,9 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .muneco-cuerpo { position: relative; z-index: 1; }
 .muneco .muneco-capa:last-child { z-index: 2; }
 .muneco .muneco-atras { z-index: 0; }
+
+/* El plan por etapas del peso objetivo. Una baja grande no se reta: se parte. */
+.plan-etapas { margin-top: 6px; }
+.plan-etapas .etapas { margin: 6px 0; padding-left: 18px; display: grid; gap: 4px; }
+.plan-etapas .etapas li { font-size: 13px; }
+.plan-etapas .etapas small { color: var(--dim); margin-left: 6px; }

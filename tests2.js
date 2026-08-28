@@ -1052,6 +1052,40 @@ test('con panza no se dibujan abdominales', () => {
     `fibra dibuja ${trazos(fibra)} trazos de musculo y el panzon ${trazos(panzon)}`);
 });
 
+test('una baja grande se parte en etapas en vez de retar', () => {
+  /* Antes esto era un error que ademas no dejaba guardar: "es una baja muy
+     grande, mejor ponete una meta intermedia", sin decir cual. */
+  const p = planPorEtapas(300, 100, 0.5);
+
+  esperarQue(!!p, 'doscientos kilos tienen que dar un plan');
+  esperar(p.total, 200);
+  esperarQue(p.etapas.length > 1, 'y mas de una etapa');
+  esperarQue(p.etapas[0].hasta < 300 && p.etapas[0].hasta > 100,
+    'la primera etapa es intermedia: ' + p.etapas[0].hasta);
+  esperarQue(p.etapas.at(-1).hasta <= 100 + 1, 'la ultima llega a la meta');
+
+  /* Las semanas se acumulan: cada etapa dice en que semana del plan cae. */
+  esperarQue(p.etapas[1].semanas > p.etapas[0].semanas);
+
+  /* El ritmo escala con el peso: medio kilo por semana para alguien de 300 kg
+     da noventa y dos meses, un numero que no informa, desanima. */
+  esperarQue(p.meses < 40, 'a 300 kg el plan no puede dar ' + p.meses + ' meses');
+
+  /* Una baja chica no arma plan: no hay nada que partir. */
+  esperar(planPorEtapas(85, 80, 0.5), null);
+  esperar(planPorEtapas(85, 90, 0.5), null);
+  esperar(planPorEtapas(null, 80, 0.5), null);
+});
+
+test('el peso objetivo lejano ya no bloquea el guardado', () => {
+  const { ok, errores } = validarPerfil({
+    sexo: 'm', edad: 38, altura: 171, peso: 300, pesoObj: 100,
+    actividad: 1.375, ritmo: 0.5, manual: null
+  });
+  esperarQue(ok, 'tiene que poder guardarse: ' + JSON.stringify(errores));
+  esperarQue(!errores.pesoObj);
+});
+
 test('proximaComida dice cual viene y cuanto falta', () => {
   const a = (h, m = 0) => proximaComida(new Date(2026, 7, 28, h, m).getTime());
 

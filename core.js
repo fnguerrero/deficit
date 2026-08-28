@@ -450,7 +450,10 @@ function validarPerfil(p) {
   const peso = num(p.peso), obj = num(p.pesoObj);
   if (!errores.pesoObj && peso != null && obj != null) {
     if (obj > peso) errores.pesoObj = 'Tu meta está por encima de tu peso actual: esta app calcula déficit, no aumento.';
-    else if (peso - obj > peso * 0.4) errores.pesoObj = 'Es una baja muy grande de una sola vez. Mejor ponete una meta intermedia.';
+    /* Una baja grande NO es un error y no bloquea nada. Alguien de 140 kg que
+       pone 80 no se esta equivocando: esta poniendo su meta. Retarlo y no
+       dejarlo guardar es la app diciendole que su objetivo esta mal. Lo que
+       hace falta ahi es un plan por etapas, y eso lo arma planPorEtapas(). */
   }
 
   return { ok: Object.keys(errores).length === 0, errores };
