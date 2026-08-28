@@ -1052,6 +1052,19 @@ test('con panza no se dibujan abdominales', () => {
     `fibra dibuja ${trazos(fibra)} trazos de musculo y el panzon ${trazos(panzon)}`);
 });
 
+test('la fase pone musculo, pero no le borra la panza a nadie', () => {
+  /* En la lamina no hay un gordo musculoso: los tres cuerpos con musculo son
+     delgados. Sin freno, alguien con panza llegaba a Bestia y aparecia flaco y
+     marcado, o sea la app le borraba veinte kilos por cumplir tres dias. */
+  const flaco = { efectiva: .2, musculatura: 0 };
+  const panzon = { efectiva: .85, musculatura: 0 };
+  const bestia = FASES[3];
+
+  esperarQue(spritePara(flaco, bestia) !== spritePara(flaco, null),
+    'al flaco la fase tiene que cambiarle el cuerpo');
+  esperar(spritePara(panzon, bestia), spritePara(panzon, null));
+});
+
 test('el musculo del brazo abre arriba, no en la muneca', () => {
   /* El punto entero del relieve, del lado del brazo: entrenar tiene que dar
      hombro y biceps. Si los cuatro anchos crecieran parejo, el brazo del que

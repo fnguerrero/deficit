@@ -19,6 +19,11 @@
       ['<div style="width:180px">' + htmlPersonaje('neutral', alto, { efectiva: c, musculatura: 0 }, null) + '<div>c ' + c + '</div></div>',
        '<div style="width:180px">' + htmlPersonaje('neutral', alto, { efectiva: c, musculatura: 1 }, null) + '<div>c ' + c + ' m1</div></div>'].join('')
     );
+  } else if (que === 'progreso') {
+    const c = Number(q.get('c') || 0.45);
+    piezas = FASES.map(f =>
+      '<div style="width:180px">' + htmlPersonaje('genial', alto, { efectiva: c, musculatura: 0 }, f)
+      + '<div>' + f.n + ' ' + f.nombre + '</div></div>');
   } else {
     piezas = FASES.map(f =>
       '<div style="width:180px">' + htmlPersonaje('genial', alto, { efectiva: .4, musculatura: .5 }, f) + '<div>' + f.n + ' ' + f.nombre + '</div></div>');
