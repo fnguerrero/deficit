@@ -66,7 +66,9 @@ pantalla en blanco.
 | `modos.js` | Los 16 modos: objetivo del día y si una comida entra |
 | `habitos.js` | Ejercicio por MET, agua, ayuno, proyección de peso |
 | `cuerpo.js` | IMC, contextura y musculatura: los números del personaje |
-| `personaje.js` + `cara.js` + `transformacion.js` | El dibujo |
+| `sprite.js` + `sprite-datos.js` | El personaje que ve el usuario: sprite + capas |
+| `personaje.js` + `figura.js` + `cara.js` | El personaje dibujado entero, hoy solo para el taller |
+| `transformacion.js` + `aura.js` | El pelo de las fases y el fuego, que SI se dibujan |
 | `mascota.js` | En qué estado está el personaje hoy |
 | `juego.js` | Rachas, escudos, XP, niveles, logros, fases |
 | `voz.js` | Lo que dice la app, con personalidad |
@@ -87,6 +89,30 @@ dispositivo.
 Sonnet para platos, Haiku para etiquetas, y Opus solo si la confianza vuelve
 baja. Cada análisis se guarda en cache por huella de imagen: la misma foto no se
 paga dos veces.
+
+## El personaje es híbrido, y eso es a propósito
+
+El **cuerpo** son siete PNG recortados de una lámina dibujada a mano
+(`tools/sprites.py` los saca de `ref/cuerpos.png`). Son exactamente las siete
+contexturas que la app sabe distinguir, y se ven como Nico se las imaginó: eso no
+lo alcanzó el SVG paramétrico, y perseguirlo consumió dos ciclos enteros.
+
+Pero **solo** el cuerpo. Las fases se siguen dibujando por código y se apilan en
+capas: el fuego atrás, el sprite en el medio, el pelo de color adelante tapando
+al negro. Por dos razones:
+
+- Siete auras por siete contexturas son 49 dibujos que nadie va a hacer.
+- Con la lámina de fases como sprite, alguien con panza en fase 3 vería el cuerpo
+  flaco del dibujo. La regla 3 dice que el cuerpo no miente sobre el cuerpo.
+
+Lo que se perdió: los ocho ánimos en la cara, que ahora van como emoji al lado
+del título. El personaje SVG completo (`personaje.js`, `figura.js`, `cara.js`)
+sigue vivo para el taller y como vuelta atrás.
+
+Si cambia la lámina, se corre `py -3 tools/sprites.py` y listo: recorta, saca el
+fondo —con flood fill desde los bordes, no por color, o las zapatillas blancas
+quedan huecas—, mide dónde está la mata de pelo para poder taparla, y escribe
+`sprite-datos.js`.
 
 ## Antes de dar algo por terminado
 

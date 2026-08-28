@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Prueba del personaje por capas: sprite + aura + pelo de fase. -->
+<meta charset="utf-8">
+<link rel="stylesheet" href="styles.css">
+<body style="background:#fff;margin:0;padding:10px;font:11px system-ui">
+<div id="app" style="display:flex;gap:0;align-items:flex-end;text-align:center"></div>
+<script src="core.js"></script><script src="mascota.js"></script><script src="habitos.js"></script>
+<script src="cuerpo.js"></script><script src="juego.js"></script><script src="transformacion.js"></script>
+<script src="aura.js"></script><script src="cara.js"></script><script src="personaje.js"></script>
+<script src="figura.js"></script><script src="sprite-datos.js"></script><script src="sprite.js"></script>
+<script>
+  const q = new URLSearchParams(location.search);
+  const alto = Number(q.get('alto')) || 220;
+  const que = q.get('que') || 'fases';
+
+  let piezas;
+  if (que === 'cuerpos') {
+    piezas = [0, .3, .5, .7, .9, 1].map(c =>
+      ['<div style="width:180px">' + htmlPersonaje('neutral', alto, { efectiva: c, musculatura: 0 }, null) + '<div>c ' + c + '</div></div>',
+       '<div style="width:180px">' + htmlPersonaje('neutral', alto, { efectiva: c, musculatura: 1 }, null) + '<div>c ' + c + ' m1</div></div>'].join('')
+    );
+  } else {
+    piezas = FASES.map(f =>
+      '<div style="width:180px">' + htmlPersonaje('genial', alto, { efectiva: .4, musculatura: .5 }, f) + '<div>' + f.n + ' ' + f.nombre + '</div></div>');
+  }
+  app.innerHTML = piezas.join('');
+</script>

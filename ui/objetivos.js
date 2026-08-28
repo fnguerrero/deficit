@@ -349,7 +349,7 @@ function renderMascota() {
      nota al tocar un vaso. */
   const firmaSvg = [est.animo, fase.n, cuerpo.efectiva, cuerpo.musculatura].join('|');
   if (cont.dataset.firma !== firmaSvg) {
-    cont.innerHTML = svgPersonaje(est.animo, 76, cuerpo, fase);
+    cont.innerHTML = htmlPersonaje(est.animo, 76, cuerpo, fase);
     cont.dataset.firma = firmaSvg;
   }
   /* El SVG solo dice el animo. Quien no ve el dibujo necesita lo mismo que el
@@ -362,7 +362,9 @@ function renderMascota() {
     cuerpo.hayDatos ? `Cuerpo dibujado con tu IMC de ${fmtNum(cuerpo.imc, 1)}.` : 'Sin peso cargado.'
   ].filter(Boolean).join(' '));
   pintarFase(fase, perfectos);
-  $('mascotaTitulo').textContent = est.titulo;
+  /* El emoji va con el titulo porque el cuerpo es un dibujo fijo y ya no pone
+     cara. Ver EMOJI_ANIMO en sprite.js. */
+  $('mascotaTitulo').textContent = emojiDeAnimo(est.animo) + ' ' + est.titulo;
 
   /* Sin peso no se puede dibujar SU cuerpo: se dibuja uno medio y se pide el
      dato, en vez de disimular que el muneco es cualquiera. */
@@ -587,7 +589,7 @@ function transformarse(fase) {
   });
 
   const pico = { ...fase, pose: 1, musculo: Math.max(fase.musculo, 0.5), rayos: true, n: Math.max(fase.n, 2) };
-  cont.innerHTML = svgPersonaje('genial', 86, cuerpo, pico);
+  cont.innerHTML = htmlPersonaje('genial', 86, cuerpo, pico);
 
   cont.classList.remove('transformando');
   void cont.offsetWidth;

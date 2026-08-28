@@ -39,7 +39,14 @@ function lineaDelPelo(cy, ry) {
   };
 }
 
-function pelo(cy, rx, ry, fase) {
+/*
+ * `parte` existe por el personaje con sprite: la melena de las fases altas cae
+ * por detras de los hombros, y dibujada en la misma capa que el resto le queda
+ * a los costados de la cara como un par de orejeras. Partida en dos, la melena
+ * va en la capa de atras —donde anatomicamente esta— y el resto adelante.
+ * 'todo' es lo que usa el personaje dibujado entero, que no tiene capas.
+ */
+function pelo(cy, rx, ry, fase, parte = 'todo') {
   const color = fase && fase.pelo ? fase.color : PALETA.pelo;
   const sombra = fase && fase.pelo ? mezclar(color, PALETA.linea, 0.3) : PALETA.peloSombra;
   const brillo = fase && fase.pelo ? mezclar(color, '#ffffff', 0.45) : PALETA.peloBrillo;
@@ -203,5 +210,7 @@ function pelo(cy, rx, ry, fase) {
       stroke-linecap="round" opacity=".75"/>`;
   }).join('');
 
+  if (parte === 'atras') return melena;
+  if (parte === 'adelante') return contorno + relleno + nervios + flequillo + sombreado;
   return melena + contorno + relleno + nervios + flequillo + sombreado;
 }

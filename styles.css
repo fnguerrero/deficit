@@ -1287,3 +1287,16 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   .mascota-nivel { margin-top: 4px; }
   .mascota-barra { margin-top: 4px; }
 }
+
+/* El personaje por capas: fuego atras, el sprite del cuerpo, el pelo de la fase
+   encima. Todas apiladas en el mismo lugar; el <img> es el que manda el tamano. */
+.muneco { position: relative; display: inline-block; }
+.muneco-cuerpo { display: block; width: 100%; height: 100%; object-fit: contain; }
+.muneco-capa {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  pointer-events: none; overflow: visible;
+}
+.muneco-atras { z-index: 0; }
+.muneco-cuerpo { position: relative; z-index: 1; }
+.muneco .muneco-capa:last-child { z-index: 2; }
+.muneco .muneco-atras { z-index: 0; }
