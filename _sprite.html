@@ -20,6 +20,12 @@
       ['<div style="width:180px">' + htmlPersonaje('neutral', alto, { efectiva: c, musculatura: 0 }, null) + '<div>c ' + c + '</div></div>',
        '<div style="width:180px">' + htmlPersonaje('neutral', alto, { efectiva: c, musculatura: 1 }, null) + '<div>c ' + c + ' m1</div></div>'].join('')
     );
+  } else if (que === 'real') {
+    // el caso exacto de la tarjeta: 300 kg, fase 1, al tamano en que se ve
+    const base = cuerpoDe({ altura: 171, peso: 300 }, {}, '2026-08-28');
+    piezas = [0, 0.4, 0.7, 1].map(m =>
+      '<div style="width:170px">' + htmlPersonaje('bien', 240, { ...base, musculatura: m }, FASES[1])
+      + '<div>300 kg · musc ' + m + '</div></div>');
   } else if (que === 'progreso') {
     const c = Number(q.get('c') || 0.45);
     piezas = FASES.map(f =>
