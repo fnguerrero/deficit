@@ -179,3 +179,51 @@ $('btnSalir').onclick = async () => {
   renderCuenta();
   toast('Cerraste sesión. Tus datos siguen en este dispositivo.');
 };
+
+
+/* ---------------- el aviso de "estás sin cuenta" ---------------- */
+
+/*
+ * La barra al pie cuando no hay sesión.
+ *
+ * Sin cuenta, todo vive en el localStorage de UN navegador: alcanza con limpiar
+ * datos del sitio, cambiar de teléfono o que el sistema decida liberar espacio
+ * para que se pierdan meses. El login existía desde hace rato pero estaba en
+ * Ajustes y nada llevaba ahí, así que en la práctica no existía.
+ *
+ * Vuelve en cada arranque a propósito. Cerrarla la esconde por esta vez y no
+ * para siempre, porque el riesgo tampoco se va: mientras no haya cuenta, sigue
+ * siendo cierto todos los días. Y no bloquea nada —se puede usar la app entera
+ * sin cuenta, offline incluido—, que es lo que un login obligatorio rompería.
+ */
+let avisoCuentaCerrado = false;
+
+function renderAvisoCuenta() {
+  const barra = $('barraCuenta');
+  if (!barra) return;
+
+  const sinCuenta = !sesionActual();
+  barra.hidden = !sinCuenta || avisoCuentaCerrado;
+  if (barra.hidden) return;
+
+  /* El aviso dice CUÁNTO hay en juego. "Guardá tus datos" no mueve a nadie;
+     "31 días y 94 comidas viven solo en este navegador", sí. */
+  const dias = Object.keys(state.dias || {}).filter(f => (state.dias[f].comidas || []).length).length;
+  const comidas = Object.values(state.dias || {})
+    .reduce((a, d) => a + (d.comidas || []).length, 0);
+
+  $('barraCuentaTxt').textContent = comidas
+    ? `${fmtNum(dias)} ${dias === 1 ? 'día' : 'días'} y ${fmtNum(comidas)} ${comidas === 1 ? 'comida' : 'comidas'} viven solo en este navegador. Con una cuenta quedan a salvo.`
+    : 'Sin cuenta, lo que cargues va a vivir solo en este navegador.';
+}
+
+$('barraCuentaCerrar').onclick = () => {
+  avisoCuentaCerrado = true;
+  renderAvisoCuenta();
+};
+
+$('barraCuentaEntrar').onclick = () => {
+  irTab('ajustes');
+  $('cuentaEmail_in')?.focus();
+  $('cardCuenta')?.scrollIntoView({ block: 'center', behavior: quieto() ? 'auto' : 'smooth' });
+};
