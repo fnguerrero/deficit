@@ -1052,6 +1052,30 @@ test('con panza no se dibujan abdominales', () => {
     `fibra dibuja ${trazos(fibra)} trazos de musculo y el panzon ${trazos(panzon)}`);
 });
 
+test('la cuenta de un numero arranca rapido y frena al final', () => {
+  /* La animación no se puede verificar sin ojos —y requestAnimationFrame ni
+     siquiera corre con la pestaña oculta—, pero la curva sí. */
+  esperar(valorEnT(0, 100, 0), 0);
+  esperar(valorEnT(0, 100, 1), 100);
+  esperar(valorEnT(1200, 1450, 1), 1450);
+
+  /* A mitad de tiempo ya tiene que estar bastante mas alla de la mitad: eso es
+     lo que hace que se lea como algo que llega y no como una barra lineal. */
+  esperarQue(valorEnT(0, 100, 0.5) > 80, 'a mitad de camino: ' + valorEnT(0, 100, 0.5));
+
+  /* Y siempre avanza, nunca vuelve para atras. */
+  let previo = -Infinity;
+  for (let i = 0; i <= 10; i++) {
+    const v = valorEnT(0, 100, i / 10);
+    esperarQue(v >= previo, 'la cuenta retrocedio en t=' + (i / 10));
+    previo = v;
+  }
+
+  /* Fuera de rango no se pasa: un t de 1.4 por un frame tarde no puede dar 140. */
+  esperar(valorEnT(0, 100, 1.4), 100);
+  esperar(valorEnT(0, 100, -3), 0);
+});
+
 test('una baja grande se parte en etapas en vez de retar', () => {
   /* Antes esto era un error que ademas no dejaba guardar: "es una baja muy
      grande, mejor ponete una meta intermedia", sin decir cual. */

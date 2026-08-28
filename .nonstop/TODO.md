@@ -1,27 +1,24 @@
-# TODO — ciclo 9: diez mejoras
+# TODO — ciclo 10: que la app se sienta viva
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-Salen de las 31 que quedaron del ciclo 7 (`.nonstop/ciclo-7/TODO.md`) y de lo que dejó
-abierto el personaje híbrido. Prioridad: corrección real y plata ahorrada antes que
-cosmética.
+Animaciones al estilo Duolingo, con CSS y SVG: **cero dependencias**, como todo lo demás.
+La regla: la animación tiene que **decir algo** —qué cambió, cuánto, que valió la pena—.
+Una que solo decora es peso muerto que encima marea.
 
-- [x] 1. Dos comidas con el mismo id se duplican al fusionar (ciclo 7 #9) · verif: test de fusión con ids repetidos
-- [x] 2. La foto se comprime ANTES de mandarla, no después (ciclo 7 #52) · verif: medir los bytes que salen
-- [x] 3. Aviso claro cuando la foto pesa demasiado, con el número (ciclo 7 #53) · verif: test del tope
-- [x] 4. Reintentar un análisis fallido sin volver a sacar la foto (ciclo 7 #51) · verif: por DOM
-- [x] 5. Al guardar, el momento del día sale de la hora (ciclo 7 #56) · verif: test de las cuatro franjas
-- [x] 6. Las frecuentes se ordenan por uso reciente y no solo por cantidad (ciclo 7 #57) · verif: test
-- [x] 7. Los logros ganados dicen cuándo se ganaron (ciclo 7 #84) · verif: test
-- [x] 8. El cache de imágenes en base64 infla el localStorage (ciclo 7 #28) · verif: medir el tamaño guardado
-- [x] 9. core.js (NO tests.js: ver bitácora) se pasa de largo: partirlo (ciclo 7 #94) · verif: tamanos.py en verde
-- [x] 10. Sacar del shell el personaje SVG que la app ya no usa · verif: guardas.py, tests en verde y la app dibuja igual
+- [x] 1. Taller `_animaciones.html` que dispare cada una a demanda, para poder verlas sin cargar comida de verdad · verif: la página abre y cada botón dispara
+- [x] 2. Los números cuentan en vez de aparecer: el anillo y la XP · verif: por DOM, el texto pasa por valores intermedios
+- [x] 3. El anillo se llena con transición y late al llegar al objetivo · verif: por DOM
+- [x] 4. Las barras de macros crecen desde donde estaban, no desde cero · verif: por DOM
+- [x] 5. Un objetivo completado hace pop y suelta partículas · verif: por DOM, las partículas se crean y se limpian solas
+- [x] 6. El personaje reacciona: salto al subir de fase, tironcito al cargar comida · verif: por DOM
+- [x] 7. La racha se prende fuego al sumar un día · verif: por DOM
+- [x] 8. El toast entra y sale con rebote en vez de aparecer · verif: por DOM
+- [x] 9. Los botones y casilleros se hunden al tocarlos · verif: CSS presente
+- [x] 10. Transición al cambiar de pestaña · verif: por DOM
+- [x] 11. TODO respeta `prefers-reduced-motion`: con eso puesto no se mueve nada · verif: contar animaciones activas con el media query emulado
+- [x] 12. Nada de esto rompe lo que ya andaba · verif: tests, guardas, tamaños y consola
 
-## Reemplazos
+## Apareció en el camino
 
-Los ítems 2 y 5 resultaron ya resueltos en ciclos anteriores, así que no cuentan como
-mejora. Van dos más en su lugar para que sean diez de verdad.
-
-- [x] 11. Cuánto falta para la próxima comida esperada (ciclo 7 #49) · verif: test de las franjas + por DOM
-      (el #44 del ciclo 7 se descartó: los macros ya se ven al lado del anillo, tocarlo no agregaría nada)
-- [x] 12. El gráfico de peso marca los días sin pesar en vez de unirlos con una recta (ciclo 7 #67) · verif: test de la serie con huecos
+- [x] 13. `ui/objetivos.js` se pasó del límite al sumarle las animaciones · verif: tamanos.py en verde

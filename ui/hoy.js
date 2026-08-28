@@ -44,7 +44,10 @@ function renderHoy() {
   // lo quemado con ejercicio amplía el margen del día
   const objetivo = calc ? objetivoEfectivo(calc.objetivo, d.ejercicio) : 0;
 
-  $('ringKcal').textContent = fmtNum(t.kcal);
+  /* El numero cuenta hasta el valor nuevo: 1.200 que salta a 1.450 es un dato
+     que cambio, pero 1.200 subiendo hasta 1.450 es algo que paso, y ademas se ve
+     cuanto subio sin acordarse del anterior. Ver animar.js. */
+  contarHasta($('ringKcal'), t.kcal, { formato: (v) => fmtNum(Math.round(v)) });
   $('ringGoal').textContent = objetivo ? `/ ${fmtKcal(objetivo)}` : 'sin objetivo';
 
   const C = 2 * Math.PI * 52;
@@ -60,7 +63,9 @@ function renderHoy() {
      dice cuanto te pasaste, que es el dato que sirve. */
   const sobra = objetivo ? objetivo - t.kcal : 0;
   const stRest = $('statRestante');
-  stRest.textContent = objetivo ? (sobra >= 0 ? fmtNum(sobra) : '+' + fmtNum(-sobra)) : '—';
+  if (!objetivo) stRest.textContent = '—';
+  else contarHasta(stRest, sobra >= 0 ? sobra : -sobra,
+    { formato: (v) => (sobra >= 0 ? '' : '+') + fmtNum(Math.round(v)) });
   stRest.classList.toggle('pasado', objetivo > 0 && sobra < 0);
   stRest.parentElement?.querySelector('small')?.replaceChildren(
     document.createTextNode(objetivo && sobra < 0 ? 'de más' : 'restantes')
@@ -71,7 +76,7 @@ function renderHoy() {
   const m = calc ? calc.macros : { prot: 0, carb: 0, gras: 0 };
   const setMacro = (k, val, meta) => {
     $(`m${k}Txt`).textContent = meta ? `${fmtNum(val)} / ${fmtNum(meta)} g` : `${fmtNum(val)} g`;
-    $(`m${k}Bar`).style.width = meta ? Math.min((val / meta) * 100, 100) + '%' : '0%';
+    crecerBarra($(`m${k}Bar`), meta ? Math.min((val / meta) * 100, 100) : 0);
   };
   setMacro('Prot', t.prot, m.prot);
   setMacro('Carb', t.carb, m.carb);

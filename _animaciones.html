@@ -1,0 +1,64 @@
+<!doctype html>
+<!-- Taller del ciclo 10: dispara cada animación a demanda, sin tener que cargar
+     una comida de verdad para ver el festejo. No entra en la app ni en el shell. -->
+<meta charset="utf-8">
+<title>Animaciones — taller</title>
+<link rel="stylesheet" href="styles.css">
+<body style="padding:16px">
+<h1 style="font-size:16px">Animaciones</h1>
+<p class="hint">Cada botón dispara la suya. <code>?quieto=1</code> emula prefers-reduced-motion.</p>
+
+<div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:16px">
+  <div class="card" style="padding:16px;text-align:center">
+    <strong id="numero" style="font-size:30px">0</strong>
+    <div><button class="ghost" data-do="contar">Contar</button></div>
+  </div>
+
+  <div class="card" style="padding:16px;text-align:center">
+    <div class="objetivo" id="obj" style="width:90px">✓<br><small>Agua</small></div>
+    <div><button class="ghost" data-do="pop">Pop + partículas</button></div>
+  </div>
+
+  <div class="card" style="padding:16px;text-align:center">
+    <div id="muni" style="font-size:40px">🧍</div>
+    <div>
+      <button class="ghost" data-do="saltar">Saltar</button>
+      <button class="ghost" data-do="tiron">Tironcito</button>
+      <button class="ghost" data-do="error">Sacudir</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding:16px;text-align:center">
+    <div id="racha" style="font-size:34px">🔥</div>
+    <div><button class="ghost" data-do="fuego">Racha</button></div>
+  </div>
+
+  <div class="card" style="padding:16px;min-width:200px">
+    <div class="bar"><i id="barra" class="prot" style="width:20%"></i></div>
+    <div><button class="ghost" data-do="barra">Crecer barra</button></div>
+  </div>
+</div>
+
+<script src="animar.js"></script>
+<script>
+  if (new URLSearchParams(location.search).get('quieto')) {
+    /* Para poder probar el apagado sin tocar la config del sistema. */
+    window.quieto = () => true;
+    document.documentElement.classList.add('sin-movimiento');
+  }
+
+  let n = 0;
+  const acciones = {
+    contar: () => { n += Math.round(200 + Math.random() * 900); contarHasta(numero, n, { formato: v => Math.round(v).toLocaleString('es-AR') }); },
+    pop: () => { pop(obj); particulas(obj); },
+    saltar: () => saltar(muni),
+    tiron: () => tironcito(muni),
+    error: () => sacudir(muni),
+    fuego: () => repetirClase(racha, 'anim-fuego', 800),
+    barra: () => crecerBarra(barra, 20 + Math.round(Math.random() * 75))
+  };
+
+  document.querySelectorAll('[data-do]').forEach(b => {
+    b.onclick = () => acciones[b.dataset.do]();
+  });
+</script>
