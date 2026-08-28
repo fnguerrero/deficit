@@ -22,13 +22,13 @@
    plano contextura x musculatura. Son los mismos siete cuerpos del taller:
    flaco, medio, grande, maximo, fibra, macizo y fuerte. */
 const SPRITE_CUERPOS = [
-  { c: 0.00, m: 0 },
-  { c: 0.45, m: 0 },
-  { c: 0.80, m: 0 },
-  { c: 1.00, m: 0 },
-  { c: 0.20, m: 1 },
-  { c: 0.55, m: 1 },
-  { c: 1.00, m: 1 }
+  { c: 0.05, m: 0.00 },   // flaco
+  { c: 0.38, m: 0.00 },   // normal
+  { c: 0.75, m: 0.00 },   // con panza
+  { c: 1.00, m: 0.00 },   // panza grande
+  { c: 0.30, m: 0.45 },   // atletico
+  { c: 0.30, m: 0.80 },   // musculoso, con abdominales
+  { c: 0.35, m: 1.00 }    // musculoso ancho
 ];
 
 /**
@@ -39,9 +39,32 @@ const SPRITE_CUERPOS = [
  * grasa, y equivocarse de eje es lo que hace que alguien que levanta pesas se
  * vea a si mismo blando.
  */
-function spritePara(cuerpo) {
+function spritePara(cuerpo, fase = null) {
   const c = Math.min(1, Math.max(0, cuerpo?.efectiva ?? 0.42));
-  const m = Math.min(1, Math.max(0, cuerpo?.musculatura ?? 0));
+
+  /*
+   * La fase SUMA musculo, y no toca la grasa.
+   *
+   * Es la unica parte del cuerpo que la constancia puede mover, y puede porque
+   * un dia perfecto incluye haber entrenado: el muneco se pone fuerte porque
+   * entrenaste treinta dias seguidos, no porque la app te quiera premiar. La
+   * grasa se queda como esta hasta que lo diga la balanza, que es de donde sale
+   * la regla de que el dibujo no miente sobre el cuerpo.
+   */
+  /*
+   * El x1,5 adelanta el cambio de cuerpo a Bestia en vez de Leyenda: hay pocos
+   * saltos disponibles y conviene gastarlos a la mitad de la escalera y no al
+   * final, donde casi nadie llega.
+   *
+   * Y se apaga con la panza, porque EN LA LAMINA NO HAY UN GORDO MUSCULOSO: los
+   * tres cuerpos con musculo son delgados. Sin este freno, alguien con panza
+   * llegaba a Bestia y de golpe aparecia flaco y marcado, o sea la app le
+   * borraba veinte kilos por haber cumplido tres dias seguidos. Mientras la
+   * balanza no baje, la fase le da pelo y fuego; el cuerpo, no.
+   */
+  const margen = Math.min(1, Math.max(0, 1 - (c - 0.5) / 0.3));
+  const m = Math.min(1, Math.max(0,
+    (cuerpo?.musculatura ?? 0) + (fase?.musculo ?? 0) * 1.5 * margen));
 
   let mejor = 0;
   let menor = Infinity;
@@ -129,10 +152,10 @@ function emojiDeAnimo(animo) {
  * exactamente el problema que el sprite venia a evitar.
  */
 function htmlPersonaje(animo = 'neutral', alto = 96, cuerpo = null, fase = null) {
-  const i = spritePara(cuerpo);
+  const f = fase && fase.n ? fase : null;
+  const i = spritePara(cuerpo, f);
   const s = SPRITES.sprites[i];
   const ancho = Math.round(alto * s.ancho / SPRITES.alto);
-  const f = fase && fase.n ? fase : null;
 
   const med = medidasDe(
     cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
