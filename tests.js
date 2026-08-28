@@ -278,9 +278,13 @@ test('validarPerfil avisa si la meta es más alta que el peso actual', () => {
   esperarQue(/por encima/.test(errores.pesoObj), 'dio: ' + errores.pesoObj);
 });
 
-test('validarPerfil avisa si la baja es desmedida', () => {
-  const { errores } = validarPerfil({ ...PERFIL_OK, peso: 100, pesoObj: 45 });
-  esperarQue(/meta intermedia/.test(errores.pesoObj || ''), 'dio: ' + errores.pesoObj);
+test('una baja grande NO es un error de validacion', () => {
+  /* Lo era, y ademas no dejaba guardar. Alguien de 100 kg que pone 45 no se
+     esta equivocando: pone su meta. Lo que va ahi es un plan por etapas, que
+     arma planPorEtapas() y se prueba en tests2. */
+  const { ok, errores } = validarPerfil({ ...PERFIL_OK, peso: 100, pesoObj: 45 });
+  esperarQue(ok, 'tiene que poder guardarse');
+  esperarQue(!errores.pesoObj);
 });
 
 test('validarPerfil deja pasar el objetivo manual vacío', () => {

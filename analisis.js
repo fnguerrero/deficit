@@ -318,6 +318,62 @@ function pendienteLineal(serie) {
  * Proyección de peso según la tendencia de toda la serie.
  * Devuelve null si no hay datos suficientes para decir algo serio.
  */
+/*
+ * El plan por etapas para una baja grande.
+ *
+ * Nadie baja sesenta kilos "de una": se bajan en tramos, y el estandar clinico
+ * es del 5 al 10 % del peso corporal por etapa, consolidando entre una y otra.
+ * La app tenia esto al reves —bloqueaba el guardado y mandaba a poner "una meta
+ * intermedia" sin decir cual—, que es pedirle a la persona el trabajo que la
+ * app puede hacer sola.
+ *
+ * Devuelve null cuando la baja entra en una sola etapa: ahi no hay nada que
+ * partir y un plan seria ruido.
+ */
+const ETAPA_PCT = 0.1;
+
+function planPorEtapas(peso, objetivo, kgPorSemana = 0.5) {
+  const p = Number(peso), o = Number(objetivo);
+  if (!(p > 0) || !(o > 0) || o >= p) return null;
+
+  const total = p - o;
+  if (total <= p * ETAPA_PCT * 1.5) return null;
+
+  /*
+   * El ritmo escala con el peso, y por eso no alcanza con el del selector.
+   *
+   * Medio kilo por semana es razonable para alguien de 85 kg y absurdo para
+   * alguien de 300: da noventa y dos meses, un numero que no informa, desanima.
+   * El estandar clinico es de 0,5 a 1 % del peso corporal por semana, asi que se
+   * toma el mayor entre lo elegido y ese medio punto.
+   */
+  const elegido = Number(kgPorSemana) > 0 ? Number(kgPorSemana) : 0.5;
+  const ritmo = Math.max(elegido, p * 0.005);
+  const etapas = [];
+  let actual = p;
+  let semanas = 0;
+
+  /* El tramo se calcula sobre el peso de CADA etapa, no sobre el inicial: bajar
+     el 10 % de 140 son catorce kilos, y el 10 % de 100 son diez. */
+  /* El tope es alto a proposito: bajar de 300 a 100 en tramos del 10 % son once
+     etapas, y un plan que se corta antes de llegar a la meta no es un plan. La
+     pantalla ya se encarga de no listarlas todas. */
+  while (actual > o && etapas.length < 20) {
+    const tramo = Math.min(actual - o, Math.max(2, Math.round(actual * ETAPA_PCT)));
+    const hasta = Math.round((actual - tramo) * 10) / 10;
+    semanas += Math.ceil(tramo / ritmo);
+    etapas.push({ n: etapas.length + 1, desde: actual, hasta, kg: tramo, semanas });
+    actual = hasta;
+  }
+
+  return {
+    etapas,
+    total: Math.round(total * 10) / 10,
+    semanas,
+    meses: Math.round(semanas / 4.35)
+  };
+}
+
 function proyectarPeso(dias, semanas = 4, hoy = hoyISO()) {
   const serie = Object.keys(dias || {})
     .filter(f => typeof dias[f].peso === 'number')

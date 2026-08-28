@@ -5,6 +5,7 @@
 /* ---------------- render: PERFIL ---------------- */
 
 function renderPerfil() {
+  renderPlanEtapas();
   renderModos();
   const p = state.perfil;
   $('pSexo').value = p.sexo;
@@ -150,4 +151,48 @@ function renderModos() {
   if (modo.aviso) partes.push(modo.aviso);
 
   $('detalleModo').textContent = partes.join(' ');
+}
+
+/*
+ * El plan por etapas, cuando la meta esta lejos.
+ *
+ * Antes esto era un error que ademas no dejaba guardar: "es una baja muy grande,
+ * mejor ponete una meta intermedia", sin decir cual. Alguien de 140 kg que pone
+ * 80 no se esta equivocando, y calcular la meta intermedia es justo el trabajo
+ * que la app puede hacer sola.
+ */
+function renderPlanEtapas() {
+  const caja = $('planEtapas');
+  if (!caja) return;
+
+  const peso = parseFloat($('pPeso').value);
+  const obj = parseFloat($('pPesoObj').value);
+  const ritmo = parseFloat($('pRitmo')?.value) || 0.5;
+  const plan = planPorEtapas(peso, obj, ritmo);
+
+  caja.hidden = !plan;
+  if (!plan) return;
+
+  const meses = plan.meses === 1 ? '1 mes' : `${plan.meses} meses`;
+
+  /* Once etapas no se leen. Se muestran las tres primeras y la ultima, que es
+     lo que hace falta para saber por donde arranca y donde termina. */
+  const aMostrar = plan.etapas.length > 5
+    ? [...plan.etapas.slice(0, 3), null, plan.etapas.at(-1)]
+    : plan.etapas;
+  caja.innerHTML = `
+    <p class="hint"><b>${fmtNum(plan.total, 1)} kg</b> es mucho para una sola cuesta:
+      a este ritmo son unos ${meses}. Partido en etapas:</p>
+    <ol class="etapas">
+      ${aMostrar.map(e => e === null
+        ? '<li class="salto">…</li>'
+        : `<li><b>${fmtPeso(e.hasta)}</b>
+        <small>bajar ${fmtNum(e.kg, 1)} kg · semana ${e.semanas}</small></li>`).join('')}
+    </ol>
+    <p class="hint">La meta que guardás sigue siendo ${fmtPeso(obj)}. Esto es solo por dónde
+      pasa el camino.</p>`;
+}
+
+for (const id of ['pPeso', 'pPesoObj', 'pRitmo']) {
+  $(id)?.addEventListener('input', renderPlanEtapas);
 }
