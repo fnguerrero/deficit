@@ -379,9 +379,9 @@ const FASES = [
   { n: 1, nombre: 'Encendido', color: '#ffc107', pelo: 'punta', musculo: .14, pose: .35 },
   { n: 2, nombre: 'Furia', color: '#ffab00', pelo: 'punta', rayos: true, musculo: .24, pose: .55 },
   { n: 3, nombre: 'Bestia', color: '#ff6d00', pelo: 'punta', rayos: true, musculo: .34, pose: .75, suelo: true },
-  { n: 4, nombre: 'Titán', color: '#f4511e', pelo: 'largo', rayos: true, musculo: .44, pose: .9, suelo: true },
-  { n: 5, nombre: 'Leyenda', color: '#d50000', pelo: 'largo', rayos: true, musculo: .55, pose: 1, suelo: true, divino: true },
-  { n: 6, nombre: 'Fuera de escala', color: '#00b0ff', pelo: 'largo', rayos: true, musculo: .68, pose: 1, suelo: true, divino: true }
+  { n: 4, nombre: 'Titán', color: '#f4511e', pelo: 'punta', rayos: true, musculo: .44, pose: .9, suelo: true },
+  { n: 5, nombre: 'Leyenda', color: '#d50000', pelo: 'punta', rayos: true, musculo: .55, pose: 1, suelo: true, divino: true },
+  { n: 6, nombre: 'Fuera de escala', color: '#00b0ff', pelo: 'punta', rayos: true, musculo: .68, pose: 1, suelo: true, divino: true }
 ];
 
 const FASE_MAX = FASES.length - 1;

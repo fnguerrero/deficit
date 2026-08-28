@@ -141,16 +141,14 @@ function pelo(cy, rx, ry, fase, parte = 'todo') {
      flequillos quedaban encima como dos manchas oscuras con contorno propio en
      el medio de la cara. Se fueron: el problema que resolvian ya no existe. */
 
-  /* La melena de las fases altas: cae por detrás de los hombros. */
-  const melena = conFase && fase.pelo === 'largo'
-    ? [-1, 1].map(sg => {
-      const x0 = 60 + sg * (rx - 2);
-      return `<path d="M${x0.toFixed(1)} ${(tapa - 6).toFixed(1)}
-          q${(sg * 13).toFixed(1)} 28 ${(sg * 5).toFixed(1)} 62
-          q${(sg * -11).toFixed(1)} 3 ${(sg * -16).toFixed(1)} -8
-          q${(sg * 7).toFixed(1)} -24 ${(sg * 3).toFixed(1)} -52z" fill="${color}" ${linea}/>`;
-    }).join('')
-    : '';
+  /*
+   * Aca vivia la melena de las fases altas: dos mechones que caian por detras
+   * de los hombros. Se fue porque el pelo de una fase alta tiene que leerse
+   * como MAS PELO, no como otro peinado: la melena cambiaba la silueta del
+   * personaje a la mitad de la escalera y encima, sobre el sprite, quedaba a
+   * los costados de la cara como un par de orejeras. Ahora las fases altas
+   * crecen y nada mas.
+   */
 
   /* La sombra de la calota y el brillo: los dos tonos del cel shading.
      La sombra NO llega hasta la linea del pelo. Es un path suelto, sin recorte
@@ -210,7 +208,7 @@ function pelo(cy, rx, ry, fase, parte = 'todo') {
       stroke-linecap="round" opacity=".75"/>`;
   }).join('');
 
-  if (parte === 'atras') return melena;
+  if (parte === 'atras') return '';
   if (parte === 'adelante') return contorno + relleno + nervios + flequillo + sombreado;
-  return melena + contorno + relleno + nervios + flequillo + sombreado;
+  return contorno + relleno + nervios + flequillo + sombreado;
 }

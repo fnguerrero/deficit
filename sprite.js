@@ -88,7 +88,10 @@ function peloDeFase(fase, sprite, ancho, alto, parte = 'adelante') {
      fase esta dibujado midiendo tres veces la cabeza —al personaje de SVG le
      quedaba bien— y sobre este sprite tapaba medio cuerpo. Achatarlo lo deja
      ancho y alto como en la referencia, en vez de una antorcha. */
-  const sx = (pAncho * 1.08) / (rx * 2);
+  /* Y crece con la fase. Es lo unico que separa a un Titan de un Encendido
+     ahora que no hay melena: el mismo pelo, mas grande. */
+  const crece = 1 + (fase.n || 0) * 0.055;
+  const sx = (pAncho * 1.08 * crece) / (rx * 2);
   const sy = sx * 0.6;
   const tx = px - 60 * sx;
   const ty = frente - pico * sy;
@@ -149,7 +152,6 @@ function htmlPersonaje(animo = 'neutral', alto = 96, cuerpo = null, fase = null)
   return `<div class="${clase}" style="width:${ancho}px;height:${alto}px"
       role="img" aria-label="Cómo venís: ${animo}${f ? ', en fase ' + f.n : ''}">
       ${atras}
-      ${peloDeFase(f, s, ancho, alto, 'atras')}
       <img class="muneco-cuerpo" src="img/${s.archivo}" width="${ancho}" height="${alto}" alt="">
       ${peloDeFase(f, s, ancho, alto)}
     </div>`;
