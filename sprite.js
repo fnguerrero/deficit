@@ -43,28 +43,26 @@ function spritePara(cuerpo, fase = null) {
   const c = Math.min(1, Math.max(0, cuerpo?.efectiva ?? 0.42));
 
   /*
-   * La fase SUMA musculo, y no toca la grasa.
+   * El musculo se apaga con la grasa, y esto vale para TODO el musculo: el
+   * propio y el que suma la fase.
    *
-   * Es la unica parte del cuerpo que la constancia puede mover, y puede porque
-   * un dia perfecto incluye haber entrenado: el muneco se pone fuerte porque
-   * entrenaste treinta dias seguidos, no porque la app te quiera premiar. La
-   * grasa se queda como esta hasta que lo diga la balanza, que es de donde sale
-   * la regla de que el dibujo no miente sobre el cuerpo.
-   */
-  /*
-   * El x1,5 adelanta el cambio de cuerpo a Bestia en vez de Leyenda: hay pocos
-   * saltos disponibles y conviene gastarlos a la mitad de la escalera y no al
-   * final, donde casi nadie llega.
+   * En la lamina no hay un gordo musculoso —los tres cuerpos con musculo son
+   * delgados—, asi que cualquier musculatura alta le borra la panza a quien la
+   * tiene. Con 300 kg y musculatura 0.6 el muneco salia atletico: la app le
+   * decia a alguien con IMC 102 que su cuerpo era ese. Frenar solo el aporte de
+   * la fase no alcanzaba, porque la musculatura propia sube sola con los dias
+   * entrenados y con el bonus de dias perfectos.
    *
-   * Y se apaga con la panza, porque EN LA LAMINA NO HAY UN GORDO MUSCULOSO: los
-   * tres cuerpos con musculo son delgados. Sin este freno, alguien con panza
-   * llegaba a Bestia y de golpe aparecia flaco y marcado, o sea la app le
-   * borraba veinte kilos por haber cumplido tres dias seguidos. Mientras la
-   * balanza no baje, la fase le da pelo y fuego; el cuerpo, no.
+   * Mientras la balanza diga lo que dice, no hay dibujo que sirva: la fase le
+   * da pelo y fuego, el cuerpo se queda como esta.
    */
   const margen = Math.min(1, Math.max(0, 1 - (c - 0.5) / 0.3));
+
+  /* El x1,5 adelanta el cambio de cuerpo a Bestia en vez de Leyenda: hay pocos
+     saltos disponibles y conviene gastarlos a la mitad de la escalera y no al
+     final, donde casi nadie llega. */
   const m = Math.min(1, Math.max(0,
-    (cuerpo?.musculatura ?? 0) + (fase?.musculo ?? 0) * 1.5 * margen));
+    ((cuerpo?.musculatura ?? 0) + (fase?.musculo ?? 0) * 1.5) * margen));
 
   let mejor = 0;
   let menor = Infinity;

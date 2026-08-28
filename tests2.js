@@ -1165,6 +1165,19 @@ test('la fase pone musculo, pero no le borra la panza a nadie', () => {
   esperar(spritePara(panzon, bestia), spritePara(panzon, null));
 });
 
+test('con IMC de 102 el muneco es gordo, tenga la musculatura que tenga', () => {
+  /* Aparecio de verdad: 300 kg y musculatura 0.6 daban el cuerpo atletico, o
+     sea que la app le decia a alguien con IMC 102 que su cuerpo era ese. El
+     freno estaba puesto solo sobre el aporte de la fase, y la musculatura
+     propia sube sola con los dias entrenados y el bonus de perfectos. */
+  const gordo = SPRITES.sprites.length - 4;   // cuerpo-3, el de la panza grande
+
+  for (const m of [0, 0.3, 0.6, 0.8, 1]) {
+    esperar(spritePara({ efectiva: 1, musculatura: m }, null), gordo);
+    esperar(spritePara({ efectiva: 1, musculatura: m }, FASES[6]), gordo);
+  }
+});
+
 test('el musculo del brazo abre arriba, no en la muneca', () => {
   /* El punto entero del relieve, del lado del brazo: entrenar tiene que dar
      hombro y biceps. Si los cuatro anchos crecieran parejo, el brazo del que
