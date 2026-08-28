@@ -18,6 +18,25 @@ const API_VERSION = '2023-06-01';
  * La clave propia gana: si alguien se tomó el trabajo de cargarla, es porque
  * quiere usar esa. El proxy es el camino por defecto, no una imposición.
  */
+/*
+ * El tope de la foto, en bytes.
+ *
+ * No es por lo que sale mandarla —eso ya lo resuelve el redimensionado, que
+ * baja una foto de celular a unos 60 kB— sino por leerla: `readAsDataURL` de un
+ * archivo de veinte megas arma un string de treinta y pico y en un celular
+ * modesto la pestaña se cae sin decir nada. Vale mas negarse y explicar por que.
+ */
+const TOPE_FOTO = 14 * 1024 * 1024;
+
+/** El aviso si la foto no entra, o null si esta bien. Aparte para poder probarlo. */
+function avisoPorPeso(bytes) {
+  const n = Number(bytes) || 0;
+  if (n <= TOPE_FOTO) return null;
+  const mb = (n / 1024 / 1024).toFixed(1);
+  const tope = Math.round(TOPE_FOTO / 1024 / 1024);
+  return `Esa foto pesa ${mb} MB y el máximo son ${tope}. Sacala de nuevo con menos resolución.`;
+}
+
 function accesoApi(cfg = {}, config = null) {
   const app = config || (typeof CONFIG_APP !== 'undefined' ? CONFIG_APP : {});
   const apiKey = String(cfg.apiKey || '').trim();

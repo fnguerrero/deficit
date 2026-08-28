@@ -249,40 +249,30 @@ function animarEspera(modo) {
   return frenar;
 }
 
-/* Los dos inputs hacen exactamente lo mismo con lo que devuelven: uno trae la
-   foto de la cámara y el otro de la galería, pero de ahí en adelante es igual. */
-const recibirFotos = async (e) => {
-  const archivos = [...(e.target.files || [])].slice(0, 4);   // 4 fotos ya es de sobra
-  if (!archivos.length) return;
+/*
+ * Lo que se le manda al modelo, guardado aparte.
+ *
+ * Existe para poder REINTENTAR sin volver a sacar la foto. Cuando el analisis
+ * falla —se corto el wifi, el proxy devolvio 500— lo que se perdia no era el
+ * intento sino la foto: habia que cerrar, volver a abrir la camara y sacarla de
+ * nuevo, con el plato ya a medio comer. Las imagenes ya estan procesadas y en
+ * memoria; no hay ninguna razon para pedirlas otra vez.
+ */
+let ultimoIntento = null;
 
-  const modo = modoAnalisis;
-  const varias = archivos.length > 1;
+async function correrAnalisis(intento) {
+  ultimoIntento = intento;
+  const { imagenes, modo, foto, thumb, preview, varias } = intento;
+
   $('modalTitle').textContent = modo === 'etiqueta' ? 'Leyendo etiqueta'
-    : (varias ? `Analizando ${archivos.length} fotos` : 'Analizando foto');
+    : (varias ? `Analizando ${imagenes.length} fotos` : 'Analizando foto');
+  $('btnReintentar').hidden = true;
   mostrarEstado('loading');
   abrirModal();
   const frenar = animarEspera(modo);
 
   try {
-    const procesadas = [];
-    for (const file of archivos) {
-      const original = await leerArchivo(file);
-      procesadas.push({
-        /* 768 px alcanza para ver un plato: la porción se estima por el tamaño
-           relativo a los cubiertos, no por el detalle fino. Bajar de 1024 a 768
-           recorta casi la mitad de los tokens de entrada de cada análisis. */
-        grande: await redimensionar(original, 768, 0.78),
-        foto: await redimensionar(original, 384, 0.62),   // para el visor
-        thumb: await redimensionar(original, 128, 0.55)   // para la lista
-      });
-    }
-
-    // la primera foto es la que queda como imagen de la comida
-    const foto = procesadas[0].foto;
-    const thumb = procesadas[0].thumb;
-    $('preview').src = procesadas[0].grande;
-
-    const imagenes = procesadas.map(p => p.grande.split(',')[1]);
+    $('preview').src = preview;
     ultimaImagen = imagenes[0];
     ultimasImagenes = imagenes;
 
@@ -314,8 +304,47 @@ const recibirFotos = async (e) => {
     if (err.name === 'AbortError') return;   // lo canceló la persona: el modal ya se cerró
     $('modalTitle').textContent = 'No salió';
     $('errorTxt').textContent = err.message;
+    $('btnReintentar').hidden = false;
     mostrarEstado('error');
   }
+}
+
+/* Los dos inputs hacen exactamente lo mismo con lo que devuelven: uno trae la
+   foto de la cámara y el otro de la galería, pero de ahí en adelante es igual. */
+const recibirFotos = async (e) => {
+  const archivos = [...(e.target.files || [])].slice(0, 4);   // 4 fotos ya es de sobra
+  if (!archivos.length) return;
+
+  const modo = modoAnalisis;
+
+  const procesadas = [];
+  for (const file of archivos) {
+    const pesa = avisoPorPeso(file.size);
+    if (pesa) { toast(pesa); return; }
+
+    const original = await leerArchivo(file);
+    procesadas.push({
+      /* 768 px alcanza para ver un plato: la porción se estima por el tamaño
+         relativo a los cubiertos, no por el detalle fino. Bajar de 1024 a 768
+         recorta casi la mitad de los tokens de entrada de cada análisis. */
+      grande: await redimensionar(original, 768, 0.78),
+      foto: await redimensionar(original, 384, 0.62),   // para el visor
+      thumb: await redimensionar(original, 128, 0.55)   // para la lista
+    });
+  }
+
+  await correrAnalisis({
+    imagenes: procesadas.map(p => p.grande.split(',')[1]),
+    modo,
+    varias: archivos.length > 1,
+    foto: procesadas[0].foto,
+    thumb: procesadas[0].thumb,
+    preview: procesadas[0].grande
+  });
+};
+
+$('btnReintentar').onclick = () => {
+  if (ultimoIntento) correrAnalisis(ultimoIntento);
 };
 
 $('fileInput').onchange = recibirFotos;

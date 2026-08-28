@@ -298,6 +298,20 @@ function aplicarRemoto(estado, { comidas = [], dias = [] }) {
     if (tumba && (tumba.act || 0) >= (Number(fila.act) || 0)) { resumen.ignoradas++; continue; }
 
     if (!local) {
+      /*
+       * Antes de agregarla hay que sacarla de cualquier OTRO dia.
+       *
+       * Una comida cargada un dia y corregida a otro llega del remoto con la
+       * fecha nueva, y la busqueda solo mira la lista de esa fecha: no la
+       * encuentra, la agrega, y la vieja se queda donde estaba. La misma comida
+       * contada dos veces, en dos dias distintos, y el total de los dos mal.
+       */
+      for (const [f, dia] of Object.entries(salida.dias)) {
+        if (f === fecha || !Array.isArray(dia.comidas)) continue;
+        const otro = dia.comidas.findIndex(c => c.id === fila.id);
+        if (otro >= 0) dia.comidas.splice(otro, 1);
+      }
+
       lista.push(filaAComida(fila));
       resumen.nuevas++;
     } else if ((Number(fila.act) || 0) > (local.act || local.ts || 0)) {

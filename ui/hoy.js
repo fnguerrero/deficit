@@ -152,6 +152,7 @@ function renderHoy() {
   renderAvisoProteina();
   renderNota();
   renderFavoritos();
+  renderProximaComida();
   renderAgua();
   renderEjercicio();
 
@@ -533,3 +534,18 @@ $('btnPeso').onclick = () => {
   toast('Peso guardado');
   cerrarObjetivo();
 };
+
+/** El aviso de la próxima comida esperada. Ver proximaComida() en core.js. */
+function renderProximaComida() {
+  const el = $('proximaComida');
+  if (!el) return;
+
+  const p = fecha === hoyISO() ? proximaComida() : null;
+  el.hidden = !p;
+  if (!p) return;
+
+  const h = Math.floor(p.minutos / 60);
+  const m = p.minutos % 60;
+  const falta = h ? `${h} h ${m ? m + ' min' : ''}`.trim() : `${m} min`;
+  el.textContent = `${nombreMomento(p.dentroDe)} ahora · ${p.nombre} en ${falta}`;
+}

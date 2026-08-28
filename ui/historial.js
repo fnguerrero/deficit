@@ -53,21 +53,49 @@ function renderChartPeso() {
   const valores = pesos.map(p => p.kg).concat(media.map(p => p.kg), objetivo ? [objetivo] : []);
   const min = Math.min(...valores), max = Math.max(...valores);
   const span = (max - min) || 1;
-  const x = i => pad + (i * (W - pad * 2)) / Math.max(1, pesos.length - 1);
+  /*
+   * El eje X va por FECHA, no por indice.
+   *
+   * Con el indice, dos pesadas separadas por dos meses quedaban a la misma
+   * distancia que dos de dias seguidos: el grafico deformaba el tiempo y una
+   * bajada lenta parecia una caida en picada. Es peor que unir con una recta,
+   * porque la recta al menos no miente sobre cuando paso cada cosa.
+   */
+  const t0 = Date.parse(pesos[0].f + 'T00:00:00');
+  const tramo = (Date.parse(pesos.at(-1).f + 'T00:00:00') - t0) || 1;
+  const x = p => pad + ((Date.parse(p.f + 'T00:00:00') - t0) / tramo) * (W - pad * 2);
   const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
 
-  const pts = (serie) => serie.map((p, i) => `${x(i).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ');
+  const pts = (serie) => serie.map(p => `${x(p).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ');
 
-  svg.appendChild(svgEl('polygon', { class: 'area', points: `${pad},${H - pad} ${pts(media)} ${x(pesos.length - 1)},${H - pad}` }));
-  svg.appendChild(svgEl('polyline', { class: 'line diario', points: pts(pesos) }));
-  svg.appendChild(svgEl('polyline', { class: 'line media', points: pts(media) }));
+  /* Y con un hueco de mas de diez dias la linea se corta: unir dos pesos con
+     dos semanas de nada en el medio es dibujar una tendencia que nadie midio. */
+  const HUECO = 10 * 86400000;
+  const tramos = (serie) => {
+    const out = [];
+    let actual = [];
+    serie.forEach((p, i) => {
+      const previo = serie[i - 1];
+      if (previo && Date.parse(p.f + 'T00:00:00') - Date.parse(previo.f + 'T00:00:00') > HUECO) {
+        if (actual.length > 1) out.push(actual);
+        actual = [];
+      }
+      actual.push(p);
+    });
+    if (actual.length > 1) out.push(actual);
+    return out;
+  };
+
+  svg.appendChild(svgEl('polygon', { class: 'area', points: `${pad},${H - pad} ${pts(media)} ${x(pesos.at(-1))},${H - pad}` }));
+  for (const t of tramos(pesos)) svg.appendChild(svgEl('polyline', { class: 'line diario', points: pts(t) }));
+  for (const t of tramos(media)) svg.appendChild(svgEl('polyline', { class: 'line media', points: pts(t) }));
 
   if (objetivo) {
     svg.appendChild(svgEl('line', { class: 'goal', x1: pad, x2: W - pad, y1: y(objetivo), y2: y(objetivo) }));
     svg.appendChild(svgEl('text', { x: W - pad, y: y(objetivo) - 4, 'text-anchor': 'end' }, `meta ${fmtPeso(objetivo)}`));
   }
 
-  pesos.forEach((p, i) => svg.appendChild(svgEl('circle', { class: 'dot', cx: x(i), cy: y(p.kg), r: 2.2 })));
+  pesos.forEach(p => svg.appendChild(svgEl('circle', { class: 'dot', cx: x(p), cy: y(p.kg), r: 2.2 })));
 
   svg.appendChild(svgEl('text', { x: pad, y: 12 }, fmtPeso(pesos[0].kg)));
   svg.appendChild(svgEl('text', { x: W - pad, y: 12, 'text-anchor': 'end' }, fmtPeso(pesos.at(-1).kg)));
