@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Verifica el apagado por prefers-reduced-motion. Se abre con Edge y el flag
+     --force-prefers-reduced-motion=reduce y se lee el <title>, que es lo que
+     sobrevive a --dump-dom. -->
+<meta charset="utf-8">
+<title>midiendo…</title>
+<link rel="stylesheet" href="styles.css">
+<body>
+<div class="objetivo" id="a">obj</div>
+<div id="b">muni</div>
+<div class="bar"><i id="c" class="prot" style="width:10%"></i></div>
+<span id="d">0</span>
+<script src="animar.js"></script>
+<script>
+  pop(a); saltar(b); tironcito(b); sacudir(b);
+  particulas(a); crecerBarra(c, 90); contarHasta(d, 5000);
+
+  setTimeout(() => {
+    const corriendo = document.getAnimations().filter(x => x.playState === 'running').length;
+    document.title = JSON.stringify({
+      quieto: quieto(),
+      animacionesCorriendo: corriendo,
+      particulas: document.querySelectorAll('.particulas i').length,
+      numero: d.textContent,
+      barra: c.style.width
+    });
+  }, 260);
+</script>

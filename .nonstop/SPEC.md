@@ -110,3 +110,31 @@ pendiente en ciclos anteriores.
 4. El personaje se sigue dibujando igual después de la limpieza.
 
 **Presupuesto:** 40 iteraciones.
+
+---
+
+## Ciclo 10 — que la app se sienta viva (28/08/2026)
+
+**Objetivo.** Animaciones al estilo Duolingo: que cargar una comida, completar un objetivo
+o subir de fase se sientan como algo que pasó, no como un número que cambió de valor.
+
+**Supuestos:**
+
+- **CSS y SVG, cero dependencias.** Duolingo las hace así; una librería de animación pesa
+  más que toda la app.
+- **La animación tiene que decir algo**: qué cambió, cuánto, o que valió la pena. Una que
+  solo decora es peso muerto que encima marea a quien abre la app quince veces por día.
+- **Nada bloquea.** Ninguna animación puede demorar el poder tocar lo siguiente: se
+  disparan y la app sigue respondiendo.
+- **Todo apagable.** `prefers-reduced-motion` ya se respeta en la app y esto no es la
+  excepción: con eso puesto, no se mueve nada.
+
+**Criterios de aceptación:**
+
+1. Los tests propios en verde, `guardas.py` y `tamanos.py` OK.
+2. Consola limpia con la app real.
+3. Cada animación se puede disparar desde `_animaciones.html` y se verifica por DOM.
+4. Con `prefers-reduced-motion: reduce` no queda ninguna animación corriendo.
+5. Las partículas y los nodos temporales se limpian solos: el DOM no crece con el uso.
+
+**Presupuesto:** 40 iteraciones.

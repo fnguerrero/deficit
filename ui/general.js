@@ -143,6 +143,9 @@ const NOMBRE_TAB = {
 
 function irTab(name) {
   document.querySelectorAll('.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
+  /* La que entra se anuncia con un movimiento corto. Sin esto el cambio de
+     pestana es un corte seco y cuesta ver que cambio todo el contenido. */
+  repetirClase($('tab-' + name), 'tab-entrando', 260);
   document.querySelectorAll('.tab-btn').forEach(b => {
     const activo = b.dataset.tab === name;
     b.classList.toggle('active', activo);
@@ -188,6 +191,10 @@ function toast(msg, opcion) {
     el.appendChild(b);
   }
 
+  /* Se saca y se vuelve a poner para que el rebote se repita: un toast que
+     aparece mientras hay otro en pantalla no re-dispara su animacion. */
+  el.classList.remove('show');
+  void el.offsetWidth;
   el.classList.add('show');
   clearTimeout(toastT);
   toastT = setTimeout(() => el.classList.remove('show'), opcion ? 6000 : 2200);
