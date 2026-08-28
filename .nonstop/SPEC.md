@@ -138,3 +138,39 @@ o subir de fase se sientan como algo que pasó, no como un número que cambió d
 5. Las partículas y los nodos temporales se limpian solos: el DOM no crece con el uso.
 
 **Presupuesto:** 40 iteraciones.
+
+---
+
+## Ciclo 11 — diez mejoras potentes (28/08/2026)
+
+**Objetivo.** Diez mejoras elegidas por análisis, no por lista: las que evitan que la app
+se abandone en la primera semana de uso real.
+
+**El análisis.** La app está terminada como software y sin estrenar como herramienta. Los
+tres modos de perderla:
+
+1. **Pierde datos.** La foto sacada sin señal se evapora. La comida cargada dos veces
+   ensucia el día sin que nadie se entere.
+2. **Pierde tiempo.** Corregir una porción obliga a editar alimento por alimento, cuando
+   "comí la mitad" es la corrección más frecuente que existe. Cargar el café de todas las
+   mañanas cuesta lo mismo que cargar algo nuevo.
+3. **Pierde credibilidad.** Si el modelo devuelve 10.000 kcal en un plato, entra igual. Y
+   si lo registrado no cuadra con lo que dice la balanza, la app se calla: sigue mostrando
+   un déficit que no está pasando.
+
+**Supuestos:**
+
+- Cero dependencias, como siempre.
+- Todo lo que se agrega tiene que poder verificarse sin manos: función pura + test, o por
+  DOM. Nada de "lo miré y andaba".
+- Las cosas que la app decidió NO hacer (push real, ligas, castigo) siguen afuera.
+
+**Criterios de aceptación:**
+
+1. Tests propios en verde, `guardas.py` y `tamanos.py` OK.
+2. Consola limpia y las cinco pestañas renderizan.
+3. Una foto sacada sin red sobrevive a recargar la app y se analiza al volver la señal.
+4. "Comí la mitad" se resuelve en un toque y los macros acompañan.
+5. Un análisis con números imposibles no se guarda en silencio.
+
+**Presupuesto:** 40 iteraciones.

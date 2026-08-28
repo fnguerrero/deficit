@@ -6,6 +6,8 @@
    ============================================================ */
 
 function renderProgreso() {
+  renderBrecha();
+  renderSemana();
   const cont = $('selPeriodo');
   if (!cont) return;
 
@@ -100,4 +102,91 @@ function pintarDelModo(s) {
   $('grModoNota').textContent = g.meta
     ? `La línea punteada es tu tope de ${g.meta} g por día.`
     : 'Cuanto más parejo entre los días, mejor.';
+}
+
+/*
+ * El aviso de que los números propios no cuadran con la balanza.
+ *
+ * Se muestra en Progreso y no en Hoy a propósito: es una conclusión sobre
+ * semanas, no sobre el día, y en Hoy competiría con lo único que Hoy tiene que
+ * decir, que es cuánto te queda.
+ */
+function renderBrecha() {
+  const caja = $('cardBrecha');
+  if (!caja) return;
+
+  const b = brechaConLaBalanza(state.dias, state.perfil);
+
+  /*
+   * El sesgo aprendido va acá y no solo en Calibración.
+   *
+   * `sesgoAprendido()` existe desde hace ciclos y solo se muestra en una
+   * pantalla que hay que ir a buscar, cuando es exactamente la misma pregunta
+   * que la brecha con la balanza: ¿los números de esta app son creíbles? Las
+   * dos respuestas tienen que estar en el mismo lugar.
+   */
+  const s = sesgoAprendido(state.correcciones);
+  const hayAlgo = (b && b.hayBrecha) || (s && s.avisar);
+
+  caja.hidden = !hayAlgo;
+  if (!hayAlgo) return;
+
+  $('brechaTexto').textContent = b && b.hayBrecha
+    ? b.texto
+    : `Sobre ${fmtNum(s.n)} correcciones tuyas, el análisis viene estimando ${fmtNum(Math.abs(s.sesgo), 1)}% ${s.lado} de forma pareja.`;
+
+  const detalle = [];
+  if (b && b.hayBrecha) {
+    detalle.push(`Son ${b.dias} días de datos: la app calculaba ${fmtKcal(b.estimado)} de gasto y la balanza dice ${fmtKcal(b.medido)}.`);
+  }
+  if (s && s.avisar && b && b.hayBrecha) {
+    detalle.push(`Y sobre ${fmtNum(s.n)} correcciones tuyas viene estimando ${fmtNum(Math.abs(s.sesgo), 1)}% ${s.lado}.`);
+  }
+
+  $('brechaDetalle').textContent = detalle.join(' ');
+  caja.classList.toggle('mala', !!(b && b.lectura === 'come-mas'));
+}
+
+/*
+ * La semana de un vistazo.
+ *
+ * `resumenPeriodo()` estaba escrito y probado desde hacía rato y no lo mostraba
+ * ninguna pantalla: los gráficos cuentan la forma de la semana, pero para saber
+ * cómo viniste hay que leerlos, y nadie lee un gráfico de reojo. Cuatro números
+ * grandes sí se leen.
+ */
+function renderSemana() {
+  const caja = $('cardSemana');
+  if (!caja) return;
+
+  const calc = calcular();
+  const r = resumenPeriodo(state.dias, { largo: 7, objetivo: calc?.objetivo || null });
+
+  caja.hidden = !r.hay;
+  if (!r.hay) return;
+
+  $('semanaPill').textContent = `${r.dias} de 7 días`;
+
+  const nums = [
+    { n: fmtNum(r.promedio), t: 'kcal por día' },
+    { n: r.pctCumplidos != null ? r.pctCumplidos + '%' : '—', t: 'dentro del objetivo' },
+    { n: fmtNum(r.proteina) + ' g', t: 'proteína por día' },
+    { n: fmtNum(r.maximo.kcal), t: 'el día más alto' }
+  ];
+
+  $('semanaNums').innerHTML = nums.map(x =>
+    `<div><strong>${x.n}</strong><small>${x.t}</small></div>`).join('');
+
+  /* El día más alto se nombra, no se reta: saber CUÁL fue es lo que permite
+     acordarse de qué pasó ese día. */
+  $('semanaNota').textContent = r.dias < 4
+    ? 'Con menos de cuatro días registrados esto es una foto borrosa.'
+    : `El más alto fue ${enFrase(etiquetaFecha(r.maximo.fecha))} y el más bajo ${enFrase(etiquetaFecha(r.minimo.fecha))}.`;
+}
+
+/* "El más alto fue el Hoy" no se puede leer. Las etiquetas relativas van en
+   minúscula y sin artículo; las fechas sueltas lo llevan. */
+function enFrase(etiqueta) {
+  const e = String(etiqueta || '');
+  return /^(hoy|ayer)$/i.test(e) ? e.toLowerCase() : 'el ' + e;
 }

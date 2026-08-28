@@ -253,6 +253,41 @@ function balanceSemanal(dias, tdee, hasta = hoyISO(), cantidad = 7) {
  * gasto = consumo promedio + (peso perdido × 7700 / días).
  * Necesita al menos 10 días con comidas y dos pesos separados.
  */
+/*
+ * Los topes de cordura de un análisis.
+ *
+ * El modelo puede devolver cualquier cosa, y hasta ahora cualquier cosa entraba:
+ * un plato de 12.000 kcal se guardaba en silencio, arruinaba el día, el promedio
+ * de la semana y de paso el TDEE adaptativo, que aprende de esos números.
+ *
+ * No se rechaza nada —la app no sabe más que el modelo sobre lo que comiste—,
+ * pero se avisa, que es distinto: el número raro se ve antes de que ensucie el
+ * historial.
+ */
+const TOPE_PLATO = 3000;
+const TOPE_ITEM = 2000;
+
+/*
+ * Cuando lo registrado no cuadra con la balanza.
+ *
+ * Es la mejora más incómoda de todas y por eso la más necesaria: la app compara
+ * su propio gasto estimado contra el que se deduce del peso real, y cuando la
+ * diferencia es grande LO DICE, aunque lo que esté diciendo sea que sus propios
+ * números vienen mal.
+ *
+ * Sin esto, alguien puede registrar déficit durante dos meses, no bajar un
+ * gramo, y no tener forma de saber si le erró la app, la balanza o la memoria.
+ * La app sabe la respuesta: la tiene en los datos y se la estaba guardando.
+ *
+ * Las dos lecturas posibles, y las dos se dicen:
+ *   - el gasto real es MENOR que el estimado → el objetivo está alto
+ *   - el consumo real es MAYOR que el registrado → falta cargar comidas
+ *
+ * Devuelve null mientras no haya con qué: sin datos no hay veredicto, que es la
+ * regla de toda esta parte de la app.
+ */
+const BRECHA_MINIMA = 250;
+
 function tdeeAdaptativo(dias, minDias = 10) {
   const fechas = Object.keys(dias).sort();
 
@@ -331,48 +366,6 @@ function pendienteLineal(serie) {
  * partir y un plan seria ruido.
  */
 const ETAPA_PCT = 0.1;
-
-function planPorEtapas(peso, objetivo, kgPorSemana = 0.5) {
-  const p = Number(peso), o = Number(objetivo);
-  if (!(p > 0) || !(o > 0) || o >= p) return null;
-
-  const total = p - o;
-  if (total <= p * ETAPA_PCT * 1.5) return null;
-
-  /*
-   * El ritmo escala con el peso, y por eso no alcanza con el del selector.
-   *
-   * Medio kilo por semana es razonable para alguien de 85 kg y absurdo para
-   * alguien de 300: da noventa y dos meses, un numero que no informa, desanima.
-   * El estandar clinico es de 0,5 a 1 % del peso corporal por semana, asi que se
-   * toma el mayor entre lo elegido y ese medio punto.
-   */
-  const elegido = Number(kgPorSemana) > 0 ? Number(kgPorSemana) : 0.5;
-  const ritmo = Math.max(elegido, p * 0.005);
-  const etapas = [];
-  let actual = p;
-  let semanas = 0;
-
-  /* El tramo se calcula sobre el peso de CADA etapa, no sobre el inicial: bajar
-     el 10 % de 140 son catorce kilos, y el 10 % de 100 son diez. */
-  /* El tope es alto a proposito: bajar de 300 a 100 en tramos del 10 % son once
-     etapas, y un plan que se corta antes de llegar a la meta no es un plan. La
-     pantalla ya se encarga de no listarlas todas. */
-  while (actual > o && etapas.length < 20) {
-    const tramo = Math.min(actual - o, Math.max(2, Math.round(actual * ETAPA_PCT)));
-    const hasta = Math.round((actual - tramo) * 10) / 10;
-    semanas += Math.ceil(tramo / ritmo);
-    etapas.push({ n: etapas.length + 1, desde: actual, hasta, kg: tramo, semanas });
-    actual = hasta;
-  }
-
-  return {
-    etapas,
-    total: Math.round(total * 10) / 10,
-    semanas,
-    meses: Math.round(semanas / 4.35)
-  };
-}
 
 function proyectarPeso(dias, semanas = 4, hoy = hoyISO()) {
   const serie = Object.keys(dias || {})

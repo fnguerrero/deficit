@@ -290,11 +290,22 @@ async function correrAnalisis(intento) {
      * no vio bien, y meter ese numero a ciegas seria ensuciar el historial sin
      * que la persona se entere. Eso si se revisa.
      */
-    if (r.confianza === 'baja') {
+    /*
+     * Un número imposible tampoco entra solo.
+     *
+     * Antes cualquier cosa que devolviera el modelo se guardaba en silencio: un
+     * plato de 12.000 kcal arruinaba el día, el promedio de la semana y de paso
+     * el TDEE adaptativo, que aprende de esos números. No se rechaza nada —la
+     * app no sabe más que el modelo sobre lo que comiste— pero se muestra antes
+     * de que ensucie el historial.
+     */
+    const raros = revisarAnalisis(r);
+
+    if (r.confianza === 'baja' || raros.length) {
       $('modalTitle').textContent = 'Revisá esto';
       mostrarResultado(pendiente);
       mostrarEstado('result');
-      toast('No se vio del todo bien: revisalo antes de guardar');
+      toast(raros[0] || 'No se vio del todo bien: revisalo antes de guardar');
       return;
     }
 
@@ -302,12 +313,70 @@ async function correrAnalisis(intento) {
   } catch (err) {
     frenar();
     if (err.name === 'AbortError') return;   // lo canceló la persona: el modal ya se cerró
+
+    /*
+     * Sin señal la foto NO se pierde: se guarda y se analiza cuando vuelva.
+     *
+     * Una foto de un plato tiene una ventana de treinta segundos; después el
+     * plato está a medio comer o ya te levantaste. Contestar "no hay conexión"
+     * en un subte o en un restaurante con wifi malo significa que ese almuerzo
+     * no se registra nunca.
+     */
+    if (!navigator.onLine || /red|conexi|fetch|network/i.test(err.message || '')) {
+      state.colaAnalisis = encolarAnalisis(state.colaAnalisis, intento);
+      save();
+      cerrarModal(true);
+      toast(textoCola(state.colaAnalisis));
+      pintarCola();
+      return;
+    }
+
     $('modalTitle').textContent = 'No salió';
     $('errorTxt').textContent = err.message;
     $('btnReintentar').hidden = false;
     mostrarEstado('error');
   }
 }
+
+/*
+ * Vaciar la cola cuando vuelve la red.
+ *
+ * De a una y en orden: cuatro análisis en paralelo contra el proxy es la forma
+ * más rápida de comerse un límite de tasa justo cuando la conexión recién
+ * vuelve y encima está mala.
+ */
+let vaciando = false;
+
+async function vaciarCola() {
+  if (vaciando || !navigator.onLine || !(state.colaAnalisis || []).length) return;
+  vaciando = true;
+
+  try {
+    while ((state.colaAnalisis || []).length && navigator.onLine) {
+      const siguiente = state.colaAnalisis[state.colaAnalisis.length - 1];   // la más vieja
+      /* Se saca ANTES de analizar: si el análisis falla de nuevo, el catch la
+         vuelve a encolar. Dejarla puesta mientras corre es la receta para que
+         una foto que siempre falla trabe la cola para siempre. */
+      state.colaAnalisis = sacarDeCola(state.colaAnalisis, siguiente.id);
+      save();
+      await correrAnalisis(siguiente);
+    }
+  } finally {
+    vaciando = false;
+    pintarCola();
+  }
+}
+
+/** El aviso de que hay fotos esperando. */
+function pintarCola() {
+  const el = $('avisoCola');
+  if (!el) return;
+  const txt = textoCola(state.colaAnalisis);
+  el.hidden = !txt;
+  el.textContent = txt;
+}
+
+addEventListener('online', vaciarCola);
 
 /* Los dos inputs hacen exactamente lo mismo con lo que devuelven: uno trae la
    foto de la cámara y el otro de la galería, pero de ahí en adelante es igual. */

@@ -1,24 +1,24 @@
-# TODO — ciclo 10: que la app se sienta viva
+# TODO — ciclo 11: diez mejoras potentes
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-Animaciones al estilo Duolingo, con CSS y SVG: **cero dependencias**, como todo lo demás.
-La regla: la animación tiene que **decir algo** —qué cambió, cuánto, que valió la pena—.
-Una que solo decora es peso muerto que encima marea.
+**El análisis que las eligió.** La app está terminada como software y sin estrenar como
+herramienta: 775 tests y cero días de uso. Así que "potente" acá no es agregar funciones,
+es sacar lo que va a hacer que se abandone en la primera semana. Se buscaron los momentos
+donde la app pierde datos, pierde tiempo o pierde credibilidad.
 
-- [x] 1. Taller `_animaciones.html` que dispare cada una a demanda, para poder verlas sin cargar comida de verdad · verif: la página abre y cada botón dispara
-- [x] 2. Los números cuentan en vez de aparecer: el anillo y la XP · verif: por DOM, el texto pasa por valores intermedios
-- [x] 3. El anillo se llena con transición y late al llegar al objetivo · verif: por DOM
-- [x] 4. Las barras de macros crecen desde donde estaban, no desde cero · verif: por DOM
-- [x] 5. Un objetivo completado hace pop y suelta partículas · verif: por DOM, las partículas se crean y se limpian solas
-- [x] 6. El personaje reacciona: salto al subir de fase, tironcito al cargar comida · verif: por DOM
-- [x] 7. La racha se prende fuego al sumar un día · verif: por DOM
-- [x] 8. El toast entra y sale con rebote en vez de aparecer · verif: por DOM
-- [x] 9. Los botones y casilleros se hunden al tocarlos · verif: CSS presente
-- [x] 10. Transición al cambiar de pestaña · verif: por DOM
-- [x] 11. TODO respeta `prefers-reduced-motion`: con eso puesto no se mueve nada · verif: contar animaciones activas con el media query emulado
-- [x] 12. Nada de esto rompe lo que ya andaba · verif: tests, guardas, tamaños y consola
+- [x] 1. Cola offline: la foto sacada sin red se guarda y se analiza sola al volver · verif: test de la cola + por DOM cortando la red
+- [x] 2. Ajuste de porción en un toque: ¼ ½ ¾ 1 1½ 2 sobre lo ya analizado · verif: test del reescalado + por DOM
+- [x] 3. La app avisa cuando lo registrado no cuadra con la balanza · verif: test con datos que no cierran
+- [x] 4. Lo que solés comer a esta hora, a un toque, en Hoy · verif: test del ranking por franja + por DOM
+- [x] 5. Deshacer global con pila, no solo al borrar una comida · verif: por DOM, deshacer un peso y una comida
+- [x] 6. El sesgo aprendido sale a Progreso (el ítem original se descartó: ver bitácora) · verif: por DOM
+- [x] 7. Aviso de comida cargada dos veces por error · verif: test del detector
+- [x] 8. Un análisis absurdo (10.000 kcal en un plato) no entra sin avisar · verif: test de los topes
+- [x] 9. Resumen de la semana de un vistazo · verif: test de los números + por DOM
+- [x] 10. Si a la hora de siempre no cargaste, la app lo nota · verif: test con patrón de comidas
+- [x] 11. Nada de esto rompe lo que ya andaba · verif: tests, guardas, tamaños y consola
 
 ## Apareció en el camino
 
-- [x] 13. `ui/objetivos.js` se pasó del límite al sumarle las animaciones · verif: tamanos.py en verde
+- [x] 12. core.js y analisis.js se pasaron del límite: salen platos.js y chequeos.js · verif: tamanos.py
