@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=330">
+<link rel="stylesheet" href="styles.css?v=332">
 </head>
 <body>
 
@@ -925,55 +925,66 @@
   <button id="btnActualizar">Actualizar</button>
 </div>
 
+<!-- Sin cuenta, los datos viven en un solo navegador. La barra vuelve en cada
+     arranque porque el riesgo tambien vuelve: se cierra por esta vez, no para
+     siempre. Ver renderAvisoCuenta() en ui/cuenta.js. -->
+<div id="barraCuenta" class="barra-cuenta" role="region" aria-label="Cuenta" hidden>
+  <p id="barraCuentaTxt"></p>
+  <div class="barra-cuenta-acciones">
+    <button id="barraCuentaEntrar" class="primary">Entrar</button>
+    <button id="barraCuentaCerrar" class="ghost" aria-label="Cerrar el aviso">✕</button>
+  </div>
+</div>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <!-- Lo que se le cuenta a un lector de pantalla cuando cambia algo sin que se
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=330"></script>
-<script src="core.js?v=330"></script>
-<script src="platos.js?v=330"></script>
-<script src="animar.js?v=330"></script>
-<script src="fotos.js?v=330"></script>
-<script src="calibracion.js?v=330"></script>
-<script src="modos.js?v=330"></script>
-<script src="habitos.js?v=330"></script>
-<script src="mascota.js?v=330"></script>
-<script src="cuerpo.js?v=330"></script>
-<script src="personaje.js?v=330"></script>
-<script src="sprite-datos.js?v=330"></script>
-<script src="sprite.js?v=330"></script>
-<script src="transformacion.js?v=330"></script>
-<script src="aura.js?v=330"></script>
-<script src="juego.js?v=330"></script>
-<script src="sonidos.js?v=330"></script>
-<script src="voz.js?v=330"></script>
-<script src="graficos.js?v=330"></script>
-<script src="analisis.js?v=330"></script>
-<script src="chequeos.js?v=330"></script>
-<script src="claude.js?v=330"></script>
-<script src="productos.js?v=330"></script>
-<script src="sync.js?v=330"></script>
-<script src="auth.js?v=330"></script>
-<script src="app.js?v=330"></script>
-<script src="ui/general.js?v=330"></script>
-<script src="ui/hoy.js?v=330"></script>
-<script src="ui/objetivos.js?v=330"></script>
-<script src="ui/tarjeta.js?v=330"></script>
-<script src="ui/logros.js?v=330"></script>
-<script src="ui/comidas.js?v=330"></script>
-<script src="ui/edicion.js?v=330"></script>
-<script src="ui/escaner.js?v=330"></script>
-<script src="ui/asistente.js?v=330"></script>
-<script src="ui/historial.js?v=330"></script>
-<script src="ui/progreso.js?v=330"></script>
-<script src="ui/perfil.js?v=330"></script>
-<script src="ui/sincronizacion.js?v=330"></script>
-<script src="ui/cuenta.js?v=330"></script>
-<script src="ui/calibracion.js?v=330"></script>
-<script src="ui/actividades.js?v=330"></script>
-<script src="ui/recordatorios.js?v=330"></script>
-<script src="ui/ajustes.js?v=330"></script>
-<script src="arranque.js?v=330"></script>
+<script src="config.js?v=332"></script>
+<script src="core.js?v=332"></script>
+<script src="platos.js?v=332"></script>
+<script src="animar.js?v=332"></script>
+<script src="fotos.js?v=332"></script>
+<script src="calibracion.js?v=332"></script>
+<script src="modos.js?v=332"></script>
+<script src="habitos.js?v=332"></script>
+<script src="mascota.js?v=332"></script>
+<script src="cuerpo.js?v=332"></script>
+<script src="personaje.js?v=332"></script>
+<script src="sprite-datos.js?v=332"></script>
+<script src="sprite.js?v=332"></script>
+<script src="transformacion.js?v=332"></script>
+<script src="aura.js?v=332"></script>
+<script src="juego.js?v=332"></script>
+<script src="sonidos.js?v=332"></script>
+<script src="voz.js?v=332"></script>
+<script src="graficos.js?v=332"></script>
+<script src="analisis.js?v=332"></script>
+<script src="chequeos.js?v=332"></script>
+<script src="claude.js?v=332"></script>
+<script src="productos.js?v=332"></script>
+<script src="sync.js?v=332"></script>
+<script src="auth.js?v=332"></script>
+<script src="app.js?v=332"></script>
+<script src="ui/general.js?v=332"></script>
+<script src="ui/hoy.js?v=332"></script>
+<script src="ui/objetivos.js?v=332"></script>
+<script src="ui/tarjeta.js?v=332"></script>
+<script src="ui/logros.js?v=332"></script>
+<script src="ui/comidas.js?v=332"></script>
+<script src="ui/edicion.js?v=332"></script>
+<script src="ui/escaner.js?v=332"></script>
+<script src="ui/asistente.js?v=332"></script>
+<script src="ui/historial.js?v=332"></script>
+<script src="ui/progreso.js?v=332"></script>
+<script src="ui/perfil.js?v=332"></script>
+<script src="ui/sincronizacion.js?v=332"></script>
+<script src="ui/cuenta.js?v=332"></script>
+<script src="ui/calibracion.js?v=332"></script>
+<script src="ui/actividades.js?v=332"></script>
+<script src="ui/recordatorios.js?v=332"></script>
+<script src="ui/ajustes.js?v=332"></script>
+<script src="arranque.js?v=332"></script>
 </body>
 </html>

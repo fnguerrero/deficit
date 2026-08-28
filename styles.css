@@ -1434,3 +1434,16 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* El deshacer del día. Discreto: aparece solo cuando hay algo que deshacer. */
 .deshacer { display: block; width: 100%; margin-top: 8px; font-size: 13px; }
+
+/* El aviso de "estás sin cuenta". Al pie, sobre la barra de pestañas, y por
+   encima del contenido: es lo único que puede costar meses de datos. */
+.barra-cuenta {
+  position: fixed; left: 8px; right: 8px; bottom: 68px; z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 12px;
+  background: var(--card2); border: 1px solid var(--line);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+}
+.barra-cuenta p { margin: 0; font-size: 12.5px; flex: 1; }
+.barra-cuenta-acciones { display: flex; gap: 6px; align-items: center; flex: none; }
+.barra-cuenta button { padding: 7px 12px; font-size: 12.5px; border-radius: 9px; }
