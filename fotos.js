@@ -69,3 +69,42 @@ function leerDeCache(cache, huella, ts = Date.now(), diasValidez = 90) {
   if (ts - entrada.ts > diasValidez * 86400000) return null;
   return clonar(entrada.valor);
 }
+
+
+/*
+ * La cola de fotos sacadas sin señal.
+ *
+ * Es la unica de las mejoras que evita perder algo que no se puede recuperar.
+ * Una foto de un plato tiene una ventana de treinta segundos: despues el plato
+ * esta a medio comer, o vacio, o ya te levantaste de la mesa. Que la app conteste
+ * "no hay conexión" en un subte, un ascensor o un restaurante con wifi malo
+ * significa que ese almuerzo no se registra nunca.
+ *
+ * Asi que la foto se guarda con todo lo que hace falta para analizarla despues,
+ * y cuando vuelve la red se procesa sola. La cola vive en el estado: tiene que
+ * sobrevivir a cerrar la app, que es exactamente lo que uno hace cuando algo no
+ * anda.
+ */
+const MAX_COLA = 4;
+
+function encolarAnalisis(cola, entrada, ts = Date.now()) {
+  if (!entrada || !Array.isArray(entrada.imagenes) || !entrada.imagenes.length) return cola || [];
+
+  const id = entrada.id || 'c' + ts.toString(36) + Math.random().toString(36).slice(2, 6);
+  /* Las mas nuevas primero y con tope: sin limite, tres dias sin señal dejan el
+     localStorage lleno de fotos y no entra ni el dia de hoy. */
+  return [{ ...entrada, id, ts }, ...(cola || []).filter(x => x.id !== id)].slice(0, MAX_COLA);
+}
+
+function sacarDeCola(cola, id) {
+  return (cola || []).filter(x => x.id !== id);
+}
+
+/** Lo que se dice de una cola con cosas adentro. Vacía no dice nada. */
+function textoCola(cola) {
+  const n = (cola || []).length;
+  if (!n) return '';
+  return n === 1
+    ? 'Hay 1 foto esperando señal. Se analiza sola cuando vuelva.'
+    : `Hay ${n} fotos esperando señal. Se analizan solas cuando vuelva.`;
+}

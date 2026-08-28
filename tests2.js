@@ -1052,6 +1052,199 @@ test('con panza no se dibujan abdominales', () => {
     `fibra dibuja ${trazos(fibra)} trazos de musculo y el panzon ${trazos(panzon)}`);
 });
 
+test('la pila de deshacer guarda el dia entero y no la operacion', () => {
+  /* Guardar el dia completo funciona igual para cualquier cambio sin escribir
+     un inverso por cada uno, y no hay forma de que un deshacer quede a mitad
+     de camino. */
+  const antes = { peso: 90, agua: 2, comidas: [{ id: 'a', kcal: 500 }] };
+  let pila = apilarCambio([], '2026-08-28', antes, 'el peso', 100);
+  esperar(pila.length, 1);
+  esperar(pila[0].que, 'el peso');
+
+  /* Es una copia: tocar el dia despues no puede cambiar lo guardado. */
+  antes.peso = 85;
+  esperar(pila[0].dia.peso, 90);
+
+  pila = apilarCambio(pila, '2026-08-28', { peso: 85 }, 'el agua', 200);
+  const { pila: quedan, cambio } = desapilarCambio(pila);
+  esperar(cambio.que, 'el agua');          // sale el ultimo primero
+  esperar(quedan.length, 1);
+
+  /* Con tope: no es un historial, es el error que acabas de cometer. */
+  let larga = [];
+  for (let i = 0; i < 30; i++) larga = apilarCambio(larga, '2026-08-28', { peso: i }, 'x', i);
+  esperarQue(larga.length <= 12, 'la pila no puede crecer sin limite: ' + larga.length);
+
+  esperar(desapilarCambio([]).cambio, null);
+  esperar(apilarCambio([], null, { peso: 1 }, 'x').length, 0);
+});
+
+test('lo que solés comer a esta hora sale de la misma franja', () => {
+  const dias = {};
+  const desayuno = (n) => ({ titulo: 'Café con tostadas', kcal: 320, momento: 'desayuno', ts: n });
+  const cena = (n) => ({ titulo: 'Pizza', kcal: 900, momento: 'cena', ts: n });
+
+  for (let i = 0; i < 6; i++) dias['2026-08-0' + (i + 1)] = { comidas: [desayuno(i), cena(i)] };
+  dias['2026-08-07'] = { comidas: [{ titulo: 'Sushi', kcal: 600, momento: 'cena', ts: 9 }] };
+
+  const d = sugerenciasPorMomento(dias, 'desayuno');
+  esperar(d.length, 1);
+  esperar(d[0].titulo, 'Café con tostadas');
+
+  /* Lo que se come a las 21 no dice nada sobre las 8: mezclarlas daria una
+     lista de la que nunca sirve nada. */
+  const c = sugerenciasPorMomento(dias, 'cena');
+  esperar(c[0].titulo, 'Pizza');
+  esperarQue(!c.some(x => x.titulo === 'Sushi'), 'una sola vez no es una costumbre');
+});
+
+test('la app nota que falta la comida de siempre, y no molesta antes', () => {
+  const dias = {};
+  for (let i = 1; i <= 20; i++) {
+    const f = '2026-08-' + String(i).padStart(2, '0');
+    dias[f] = { comidas: [{ titulo: 'Almuerzo', kcal: 700, momento: 'almuerzo', ts: 1 }] };
+  }
+  dias['2026-08-28'] = { comidas: [] };
+
+  /* Tres de la tarde y sin almuerzo: eso es un olvido. */
+  const tarde = faltaLaDeSiempre(dias, new Date(2026, 7, 28, 15, 0).getTime());
+  esperarQue(!!tarde, 'a las 15 sin almuerzo tiene que avisar');
+  esperar(tarde.momento, 'almuerzo');
+
+  /* A las 11:05 todavia no se hace tarde para almorzar. */
+  esperar(faltaLaDeSiempre(dias, new Date(2026, 7, 28, 11, 5).getTime()), null);
+
+  /* Y si ya cargaste, no hay nada que decir. */
+  dias['2026-08-28'].comidas.push({ titulo: 'Ensalada', kcal: 400, momento: 'almuerzo', ts: 2 });
+  esperar(faltaLaDeSiempre(dias, new Date(2026, 7, 28, 15, 0).getTime()), null);
+
+  /* Insistirle a alguien con dos dias cargados es la forma mas rapida de que
+     apague los avisos. */
+  esperar(faltaLaDeSiempre({ '2026-08-27': { comidas: [] } },
+    new Date(2026, 7, 28, 15, 0).getTime()), null);
+});
+
+test('un analisis con numeros imposibles no entra en silencio', () => {
+  /* Un plato de 12.000 kcal arruinaba el dia, el promedio de la semana y de
+     paso el TDEE adaptativo, que aprende de esos numeros. */
+  esperar(revisarAnalisis({ calorias: 650, items: [] }).length, 0);
+  esperarQue(revisarAnalisis({ calorias: 12000, items: [] }).length > 0, 'doce mil tiene que avisar');
+  esperarQue(revisarAnalisis({ calorias: 0, items: [] }).length > 0, 'cero tambien');
+
+  /* Los macros tienen que dar las calorias: 4, 4 y 9 por gramo. Cuando no dan,
+     uno de los dos numeros esta mal, y en keto los macros son los que mandan. */
+  const mienten = revisarAnalisis({
+    calorias: 500,
+    items: [{ nombre: 'x', calorias: 500, proteinas: 100, carbohidratos: 100, grasas: 50 }]
+  });
+  esperarQue(mienten.some(a => /macros/i.test(a)), JSON.stringify(mienten));
+
+  /* Y uno coherente no molesta: 25 x 4 + 60 x 4 + 12 x 9 = 448, contra 450. */
+  esperar(revisarAnalisis({
+    calorias: 450,
+    items: [{ nombre: 'x', calorias: 450, proteinas: 25, carbohidratos: 60, grasas: 12 }]
+  }).length, 0);
+});
+
+test('cargar dos veces la misma comida se detecta', () => {
+  const ahora = Date.parse('2026-08-28T13:00:00');
+  const comidas = [{ id: 'a', titulo: 'Milanesa', kcal: 900, ts: ahora - 5 * 60000 }];
+
+  esperarQue(!!pareceDuplicada(comidas, { titulo: 'Milanesa', kcal: 920 }, ahora),
+    'mismo plato cinco minutos despues');
+  esperarQue(!pareceDuplicada(comidas, { titulo: 'Ensalada', kcal: 200 }, ahora),
+    'otra comida no es duplicado');
+
+  /* Tres horas despues ya no: se puede comer lo mismo dos veces en un dia. */
+  const vieja = [{ id: 'a', titulo: 'Milanesa', kcal: 900, ts: ahora - 3 * 3600000 }];
+  esperarQue(!pareceDuplicada(vieja, { titulo: 'Milanesa', kcal: 900 }, ahora));
+
+  /* Y no se marca a si misma. */
+  esperarQue(!pareceDuplicada(comidas, { id: 'a', titulo: 'Milanesa', kcal: 900 }, ahora));
+});
+
+test('la app avisa cuando sus numeros no cuadran con la balanza', () => {
+  /* Alguien puede registrar deficit dos meses, no bajar un gramo y no tener
+     forma de saber si le erro la app, la balanza o la memoria. La app tiene la
+     respuesta en los datos: lo que faltaba era decirla. */
+  const perfil = { sexo: 'm', edad: 38, altura: 178, peso: 92, pesoObj: 82,
+    actividad: 1.375, ritmo: 0.5, manual: null };
+
+  /* Veinte dias comiendo 2.000 y sin moverse de peso: el gasto real son 2.000,
+     bastante menos que el que la formula calcula para 92 kg. */
+  const dias = {};
+  for (let i = 0; i < 20; i++) {
+    dias[sumarDias('2026-08-01', i)] = {
+      comidas: [{ kcal: 2000 }], peso: 92, agua: 0, ejercicio: 0
+    };
+  }
+
+  const b = brechaConLaBalanza(dias, perfil);
+  esperarQue(!!b, 'con veinte dias tiene que poder opinar');
+  esperarQue(b.hayBrecha, 'no bajar nada comiendo 2.000 es una brecha');
+  esperar(b.lectura, 'come-mas');
+  esperarQue(b.texto.includes('comiendo'), b.texto);
+
+  /* Sin datos no hay veredicto: es la regla de toda esta parte de la app. */
+  esperar(brechaConLaBalanza({}, perfil), null);
+  esperar(brechaConLaBalanza(dias, null), null);
+});
+
+test('comi la mitad se resuelve en un toque, y los macros acompanan', () => {
+  const plato = {
+    titulo: 'Milanesa con pure', kcal: 900, prot: 45, carb: 80, gras: 40,
+    items: [{ nombre: 'Milanesa', calorias: 600, proteinas: 40, carbohidratos: 30, grasas: 32 },
+    { nombre: 'Pure', calorias: 300, proteinas: 5, carbohidratos: 50, grasas: 8 }]
+  };
+
+  const mitad = escalarComida(plato, 0.5);
+  esperar(mitad.kcal, 450);
+  esperar(mitad.prot, 22.5);
+  esperar(mitad.items[0].calorias, 300);
+  esperar(mitad.items[1].calorias, 150);
+  esperarQue(mitad.titulo.includes('½'), 'la porcion queda dicha en el titulo: ' + mitad.titulo);
+
+  /* Los items tienen que sumar el total: si no, el dia cierra mal. */
+  esperar(mitad.items.reduce((a, i) => a + i.calorias, 0), mitad.kcal);
+
+  const doble = escalarComida(plato, 2);
+  esperar(doble.kcal, 1800);
+  esperar(escalarComida(plato, 1).titulo, 'Milanesa con pure');   // sin marca si es entero
+
+  /* Un factor invalido devuelve la comida tal cual: mejor no tocar nada que
+     ensuciar el dia con ceros o NaN. */
+  esperar(escalarComida(plato, 0).kcal, 900);
+  esperar(escalarComida(plato, null).kcal, 900);
+});
+
+test('una foto sacada sin senal no se pierde', () => {
+  /* Una foto de un plato tiene una ventana de treinta segundos: despues el
+     plato esta a medio comer o ya te levantaste de la mesa. */
+  let cola = encolarAnalisis([], { imagenes: ['AAA'], modo: 'plato' }, 1000);
+  esperar(cola.length, 1);
+  esperarQue(!!cola[0].id, 'tiene que quedar con id para poder sacarla');
+
+  cola = encolarAnalisis(cola, { imagenes: ['BBB'], modo: 'plato' }, 2000);
+  esperar(cola.length, 2);
+  esperar(cola[0].imagenes[0], 'BBB');            // la mas nueva primero
+  esperar(cola.at(-1).imagenes[0], 'AAA');        // la mas vieja al final: se procesa antes
+
+  /* Con tope: tres dias sin senal no pueden dejar el localStorage lleno de
+     fotos y sin lugar para el dia de hoy. */
+  for (let i = 0; i < 10; i++) cola = encolarAnalisis(cola, { imagenes: ['X' + i] }, 3000 + i);
+  esperarQue(cola.length <= 4, 'la cola no puede crecer sin limite: ' + cola.length);
+
+  const id = cola[0].id;
+  esperar(sacarDeCola(cola, id).length, cola.length - 1);
+
+  /* Sin imagenes no se encola nada: una entrada vacia trabaria la cola. */
+  esperar(encolarAnalisis([], { imagenes: [] }).length, 0);
+  esperar(encolarAnalisis([], null).length, 0);
+
+  esperar(textoCola([]), '');
+  esperarQue(textoCola([{ id: 'a', imagenes: ['x'] }]).includes('1 foto'));
+});
+
 test('la cuenta de un numero arranca rapido y frena al final', () => {
   /* La animación no se puede verificar sin ojos —y requestAnimationFrame ni
      siquiera corre con la pestaña oculta—, pero la curva sí. */

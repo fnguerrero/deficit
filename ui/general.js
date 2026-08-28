@@ -483,3 +483,46 @@ function devolverFoco() {
   if (focoPrevio && document.body.contains(focoPrevio)) focoPrevio.focus();
   focoPrevio = null;
 }
+
+
+/* ---------------- deshacer global ---------------- */
+
+/*
+ * La pila vive en memoria y no en el estado: deshacer es para el error que
+ * acabás de cometer, no para el de anteayer. Guardarla en el localStorage la
+ * llenaría de copias de días viejos que nadie va a deshacer nunca.
+ */
+let pilaDeshacer = [];
+
+/** Se llama ANTES de tocar el día: guarda cómo estaba. */
+function recordarCambio(que, f = fecha) {
+  pilaDeshacer = apilarCambio(pilaDeshacer, f, dia(f), que);
+  pintarDeshacer();
+}
+
+function deshacerUltimo() {
+  const { pila, cambio } = desapilarCambio(pilaDeshacer);
+  if (!cambio) { toast('No hay nada para deshacer'); return; }
+
+  pilaDeshacer = pila;
+  state.dias[cambio.fecha] = cambio.dia;
+  save();
+  renderAll();
+  pintarDeshacer();
+  toast('Deshice ' + cambio.que);
+}
+
+function pintarDeshacer() {
+  const b = $('btnDeshacer');
+  if (!b) return;
+  b.hidden = !pilaDeshacer.length;
+  b.textContent = pilaDeshacer.length ? 'Deshacer ' + pilaDeshacer[0].que : 'Deshacer';
+}
+
+/* Ctrl+Z en escritorio, salvo mientras se escribe: ahí el deshacer del sistema
+   sobre el texto es el que corresponde. */
+addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.key !== 'z' || escribiendo()) return;
+  e.preventDefault();
+  deshacerUltimo();
+});

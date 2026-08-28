@@ -158,6 +158,9 @@ function renderHoy() {
   renderNota();
   renderFavoritos();
   renderProximaComida();
+  if (typeof pintarCola === 'function') pintarCola();
+  renderSugeridas();
+  renderFaltaSiempre();
   renderAgua();
   renderEjercicio();
 
@@ -448,6 +451,7 @@ function pintarMetaAgua(meta) {
 }
 
 function ponerAgua(cantidad) {
+  recordarCambio('el agua');
   const d = dia();
   d.agua = Math.max(0, cantidad);
   d.act = Date.now();
@@ -473,6 +477,7 @@ function renderEjercicio() {
 $('btnEjercicio').onclick = () => {
   const v = parseInt($('ejercicioHoy').value, 10);
   if (isNaN(v) || v < 0 || v > 5000) { toast('Valor inválido'); return; }
+  recordarCambio('el ejercicio');
   dia().ejercicio = v;
   save(); renderHoy();
   toast('Ejercicio guardado');
@@ -533,6 +538,7 @@ function borrarComida(id) {
 $('btnPeso').onclick = () => {
   const v = parseFloat($('pesoHoy').value);
   if (!v || v < 20 || v > 400) { toast('Peso inválido'); return; }
+  recordarCambio('el peso');
   dia().peso = v;
   if (fecha === hoyISO()) state.perfil.peso = v;
   save(); renderHoy(); renderPerfil(); renderHistorial();
@@ -553,4 +559,75 @@ function renderProximaComida() {
   const m = p.minutos % 60;
   const falta = h ? `${h} h ${m ? m + ' min' : ''}`.trim() : `${m} min`;
   el.textContent = `${nombreMomento(p.dentroDe)} ahora · ${p.nombre} en ${falta}`;
+}
+
+/*
+ * Lo que solés comer a esta hora, a un toque.
+ *
+ * Cargar el café de todas las mañanas cuesta hoy lo mismo que cargar algo que
+ * nunca comiste: foto, espera y pago del análisis. Y el desayuno es la comida
+ * más repetida que hay.
+ *
+ * Solo en el día de hoy: en un día pasado no se está cargando lo que se comió
+ * recién, se está corrigiendo, y ahí una sugerencia por hora estorba.
+ */
+function renderSugeridas() {
+  const cont = $('sugeridasHora');
+  if (!cont) return;
+
+  const propias = fecha === hoyISO()
+    ? sugerenciasPorMomento(state.dias, momentoDe(Date.now()), { limite: 3 })
+    : [];
+
+  cont.hidden = !propias.length;
+  cont.innerHTML = '';
+  if (!propias.length) return;
+
+  const tit = document.createElement('small');
+  tit.textContent = 'De siempre a esta hora:';
+  cont.appendChild(tit);
+
+  for (const s of propias) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.innerHTML = `${s.titulo} <small>${fmtNum(s.kcal)} kcal</small>`;
+    b.onclick = () => { repetirPorTitulo(s.titulo); pop(b); };
+    cont.appendChild(b);
+  }
+}
+
+/** Vuelve a cargar la última vez que se comió eso, tal cual estaba. */
+function repetirPorTitulo(titulo) {
+  const clave = String(titulo || '').toLowerCase();
+  let mejor = null;
+
+  for (const d of Object.values(state.dias || {})) {
+    for (const c of (d.comidas || [])) {
+      if (String(c.titulo || '').toLowerCase() !== clave) continue;
+      if (!mejor || (c.ts || 0) > (mejor.ts || 0)) mejor = c;
+    }
+  }
+  if (!mejor) return;
+
+  const copia = {
+    ...clonar(mejor),
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    ts: Date.now(),
+    act: Date.now(),
+    momento: momentoDe(Date.now())
+  };
+
+  dia().comidas.push(copia);
+  save(); renderHoy(); renderHistorial();
+  toast(`Cargué ${mejor.titulo}`, { texto: 'Deshacer', accion: () => borrarComida(copia.id) });
+}
+
+/** El aviso de que se pasó la hora de la comida que siempre cargás. */
+function renderFaltaSiempre() {
+  const el = $('faltaSiempre');
+  if (!el) return;
+
+  const f = fecha === hoyISO() ? faltaLaDeSiempre(state.dias) : null;
+  el.hidden = !f;
+  if (f) el.textContent = f.texto;
 }

@@ -344,6 +344,27 @@ function guardarComidaPendiente({ avisar = false } = {}) {
   // con datos cargados ya vale la pena pedirle al navegador que no los borre
   if (typeof pedirPersistencia === 'function') pedirPersistencia();
 
+  /*
+   * ¿Esto ya estaba cargado?
+   *
+   * Pasa de verdad: se saca la foto, no se ve el toast porque la pantalla estaba
+   * apagada, se saca de nuevo. O se toca "repetir" dos veces. El día queda con
+   * el doble y nadie se entera hasta que la semana no cierra. El aviso trae el
+   * deshacer al lado, que es lo único que hace falta.
+   */
+  const gemela = pareceDuplicada(
+    (dia().comidas || []).filter(c => c.id !== ultimaComidaId),
+    { id: ultimaComidaId, titulo: pendiente.titulo, kcal: suma('calorias') }
+  );
+
+  if (gemela) {
+    toast('¿Esta comida ya la habías cargado?', {
+      texto: 'Borrar la nueva',
+      accion: () => { borrarComida(ultimaComidaId); }
+    });
+    return;
+  }
+
   if (datosAviso) avisarComidaGuardada(datosAviso);
   else toast('Comida guardada');
 }
@@ -369,7 +390,8 @@ function avisarComidaGuardada({ titulo, kcal, comida, id }) {
 
 function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
   $('resumenTitulo').textContent = titulo;
-  $('resumenKcal').textContent = fmtNum(Math.round(kcal));
+  contarHasta($('resumenKcal'), Math.round(kcal), { formato: (v) => fmtNum(Math.round(v)) });
+  pintarPorciones(id, kcal);
 
   const marca = $('resumenApta');
   if (etiqueta) {
@@ -390,6 +412,57 @@ function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
 
   abrirCapa('modalResumen');
   tomarFoco($('modalResumen'));
+}
+
+/*
+ * Los botones de "cuánto comiste".
+ *
+ * Reescalan la comida YA GUARDADA, en el acto. El plato pudo estar perfectamente
+ * entendido y aun así uno comió dos tercios: sin esto hay que abrir la edición y
+ * dividir a mano seis números, y nadie hace eso dos veces.
+ *
+ * Se aplican sobre lo estimado original y no sobre lo que quedó de la última
+ * vez: tocar ½ y después ¾ tiene que dar tres cuartos de la estimación, no tres
+ * cuartos de la mitad.
+ */
+function pintarPorciones(id, kcalOriginal) {
+  const cont = $('resumenPorciones');
+  if (!cont) return;
+
+  cont.innerHTML = '';
+  if (!id) { cont.hidden = true; return; }
+  cont.hidden = false;
+
+  const original = comidaPorId(id);
+  if (!original) { cont.hidden = true; return; }
+  const base = clonar(original);
+
+  for (const p of PORCIONES) {
+    const b = document.createElement('button');
+    b.textContent = p.txt;
+    b.setAttribute('aria-label', `Comí ${p.txt} de lo estimado`);
+    b.className = p.f === 1 ? 'elegida' : '';
+
+    b.onclick = () => {
+      const d = dia();
+      const pos = (d.comidas || []).findIndex(c => c.id === id);
+      if (pos < 0) return;
+
+      const escalada = escalarComida(base, p.f);
+      d.comidas[pos] = { ...escalada, id, ts: d.comidas[pos].ts, act: Date.now() };
+      save(); renderHoy(); renderHistorial();
+
+      contarHasta($('resumenKcal'), escalada.kcal, { formato: (v) => fmtNum(Math.round(v)) });
+      cont.querySelectorAll('button').forEach(x => x.classList.toggle('elegida', x === b));
+      pop(b);
+    };
+    cont.appendChild(b);
+  }
+}
+
+/** La comida de hoy con ese id, si sigue estando. */
+function comidaPorId(id) {
+  return (dia().comidas || []).find(c => c.id === id) || null;
 }
 
 function cerrarResumen() {

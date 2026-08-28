@@ -26,6 +26,8 @@ const DEFAULT_STATE = {
   frecuentes: [],
   recetas: [],
   cacheAnalisis: {},
+  /* Fotos sacadas sin señal, esperando red. Ver fotos.js. */
+  colaAnalisis: [],
   historialAnalisis: [],
   errores: [],
   referencias: [],
@@ -198,6 +200,10 @@ function migrar(guardado) {
 
   s.cacheAnalisis = (guardado.cacheAnalisis && typeof guardado.cacheAnalisis === 'object')
     ? guardado.cacheAnalisis : {};
+
+  s.colaAnalisis = (Array.isArray(guardado.colaAnalisis) ? guardado.colaAnalisis : [])
+    .filter(x => x && x.id && Array.isArray(x.imagenes) && x.imagenes.length)
+    .slice(0, MAX_COLA);
 
   s.historialAnalisis = (Array.isArray(guardado.historialAnalisis) ? guardado.historialAnalisis : [])
     .filter(a => a && a.ts)
@@ -909,65 +915,10 @@ function textoRecordatorio(momento, restante = null) {
 
 /* ---------------- momentos del día ---------------- */
 
-const MOMENTOS = [
-  { id: 'desayuno', nombre: 'Desayuno', articulo: 'el', icono: '☕', desde: 5 * 60, hasta: 10 * 60 + 59 },
-  { id: 'almuerzo', nombre: 'Almuerzo', articulo: 'el', icono: '🍽️', desde: 11 * 60, hasta: 15 * 60 + 29 },
-  { id: 'merienda', nombre: 'Merienda', articulo: 'la', icono: '🥐', desde: 15 * 60 + 30, hasta: 19 * 60 + 29 },
-  { id: 'cena', nombre: 'Cena', articulo: 'la', icono: '🌙', desde: 19 * 60 + 30, hasta: 23 * 60 + 59 },
-  { id: 'snack', nombre: 'Snack', articulo: 'el', icono: '🍎', desde: 0, hasta: 4 * 60 + 59 }
-];
-
 /** "el almuerzo", "la cena": el artículo cambia según el momento. */
 function conArticulo(id) {
   const m = MOMENTOS.find(x => x.id === id);
   return m ? `${m.articulo} ${m.nombre.toLowerCase()}` : 'la comida';
-}
-
-/** Momento probable según la hora del día (0-23 y minutos). */
-function momentoPorHora(hora, minutos = 0) {
-  const t = hora * 60 + minutos;
-  const m = MOMENTOS.find(x => t >= x.desde && t <= x.hasta);
-  return m ? m.id : 'snack';
-}
-
-function momentoDe(ts) {
-  const d = new Date(ts);
-  return momentoPorHora(d.getHours(), d.getMinutes());
-}
-
-/*
- * Cuanto falta para la proxima comida esperada.
- *
- * No es un recordatorio: es saber si conviene cargar ahora o esperar. Sin esto,
- * a las cinco de la tarde uno no sabe si lo que va a comer cuenta como merienda
- * o como cena, y termina eligiendo mal el momento, que es de donde salen los
- * graficos de reparto del dia.
- *
- * Devuelve null cuando ya paso la ultima del dia: a esa hora lo que falta no es
- * una comida sino dormir.
- */
-function proximaComida(ts = Date.now()) {
-  const d = new Date(ts);
-  const ahora = d.getHours() * 60 + d.getMinutes();
-  const actual = momentoPorHora(d.getHours(), d.getMinutes());
-
-  const siguiente = MOMENTOS
-    .filter(m => m.desde > ahora && m.id !== 'snack')
-    .sort((a, b) => a.desde - b.desde)[0];
-
-  if (!siguiente) return null;
-
-  return {
-    id: siguiente.id,
-    nombre: siguiente.nombre,
-    minutos: siguiente.desde - ahora,
-    dentroDe: actual
-  };
-}
-
-function nombreMomento(id) {
-  const m = MOMENTOS.find(x => x.id === id);
-  return m ? m.nombre : 'Otro';
 }
 
 /** Hora representativa de un momento, para fechar comidas cargadas a destiempo. */
@@ -1262,6 +1213,35 @@ function calcularPlan(p) {
       gras: Math.round((objetivo * 0.30) / 9)
     }
   };
+}
+
+/* ---------------- deshacer ---------------- */
+
+/*
+ * La pila de deshacer.
+ *
+ * La app ya ofrecía "Deshacer" en algunos toasts, pero solo ahí y solo mientras
+ * el toast estaba en pantalla: dos segundos. Todo lo demás —el peso mal
+ * tipeado, el vaso de más, el ejercicio en el día equivocado— no tenía vuelta
+ * atrás, y arreglarlo a mano significa acordarse de qué había antes.
+ *
+ * Se guarda el DÍA entero y no la operación: es un objeto chico, funciona igual
+ * para cualquier cambio sin escribir un inverso por cada uno, y no hay forma de
+ * que un deshacer quede a mitad de camino.
+ */
+const MAX_DESHACER = 12;
+
+function apilarCambio(pila, fecha, dia, que, ts = Date.now()) {
+  if (!fecha || !dia) return pila || [];
+  return [{ fecha, dia: clonar(dia), que: String(que || 'el último cambio'), ts }, ...(pila || [])]
+    .slice(0, MAX_DESHACER);
+}
+
+/** Saca el último y devuelve qué hay que restaurar. */
+function desapilarCambio(pila) {
+  const p = pila || [];
+  if (!p.length) return { pila: p, cambio: null };
+  return { pila: p.slice(1), cambio: p[0] };
 }
 
 /* ---------------- sesgo aprendido de las correcciones ---------------- */
