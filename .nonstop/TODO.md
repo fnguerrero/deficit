@@ -43,3 +43,18 @@ de dibujo; media docena aparecieron solo mirando el render.
 
 - [x] 15. Los 763 tests, guardas y tamaños en verde · verif: correr los tres
 - [x] 16. La app real anda: consola limpia y el personaje se ve en Hoy · verif: navegador
+
+## H. Abierto — el personaje híbrido no convence del todo (28/08/2026)
+
+Nico lo dio por bueno "por ahora", sin estar convencido. Lo que quedó en falta:
+
+- [ ] Un gordo musculoso en la lámina: hoy la fase no puede tocarle el cuerpo a quien
+      tiene panza, porque el único dibujo con músculo es delgado y le borraría los kilos
+      · verif: sumarlo a ref/cuerpos.png, correr tools/sprites.py y sacar el freno de
+      `margen` en spritePara()
+- [ ] Los 8 ánimos: hoy son un emoji al lado del título porque el sprite tiene cara fija
+      · verif: una lámina con las 8 caras del mismo personaje, recortadas y superpuestas
+      sobre la cabeza como ya se hace con el pelo
+- [ ] El personaje SVG completo (personaje.js, figura.js, cara.js) ya no lo usa la app:
+      pesa en el shell offline y solo sirve al taller · verif: decidir si se saca, una vez
+      que el híbrido esté confirmado
