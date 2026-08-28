@@ -85,3 +85,28 @@ short azul y zapatillas blancas.
 7. El personaje entra en la tarjeta de Hoy sin desbordar.
 
 **Presupuesto:** 40 iteraciones.
+
+---
+
+## Ciclo 9 — diez mejoras (28/08/2026)
+
+**Objetivo.** Diez mejoras sueltas sobre la app ya andando, elegidas de lo que quedó
+pendiente en ciclos anteriores.
+
+**Supuestos:**
+
+- Las diez salen de las 31 del ciclo 7 y de lo que dejó abierto el personaje híbrido, no
+  de ideas nuevas: hay una lista de pendientes escrita y revisada, y estrenar ideas
+  mientras esa lista existe es empezar cosas en vez de terminarlas.
+- Se priorizan las que corrigen algo que hoy está mal o ahorran plata de API, antes que
+  las cosméticas.
+- El ciclo 8 se archiva en `.nonstop/ciclo-8/`.
+
+**Criterios de aceptación:**
+
+1. Los tests propios en verde, `guardas.py` y `tamanos.py` OK.
+2. Consola limpia con la app real cargada.
+3. Cada una de las diez verificada con el método que declara su ítem.
+4. El personaje se sigue dibujando igual después de la limpieza.
+
+**Presupuesto:** 40 iteraciones.

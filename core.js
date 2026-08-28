@@ -22,7 +22,7 @@ const DEFAULT_STATE = {
   },
   dias: {},
   /* Rachas, XP y logros. Ver juego.js. */
-  juego: { xp: 0, logros: [], anunciados: [], escudosGastados: 0, escudosUsados: {} },
+  juego: { xp: 0, logros: [], anunciados: [], fechasLogros: {}, escudosGastados: 0, escudosUsados: {} },
   frecuentes: [],
   recetas: [],
   cacheAnalisis: {},
@@ -100,6 +100,19 @@ function clonar(o) {
 }
 
 /** Lleva cualquier state guardado al esquema actual sin perder datos. */
+/*
+ * Las fotos viejas se van, y esto no es opcional.
+ *
+ * Cada comida guarda dos imagenes en base64: la de 384 px del visor (unos 16 kB)
+ * y el thumb de 128 (unos 4). Son 20 kB por comida, o sea 21 MB al año con tres
+ * comidas por dia, contra los 5 MB que da un localStorage. La app no se pone
+ * lenta: revienta, y con ella todo el historial.
+ *
+ * Asi que la del visor dura tres semanas y el thumb medio año. Lo que se pierde
+ * es poder mirar la foto de un guiso de hace ocho meses; lo que se salva es el
+ * dato, que es lo unico que despues alimenta un grafico.
+ */
+
 function migrar(guardado) {
   const s = clonar(DEFAULT_STATE);
   if (!guardado || typeof guardado !== 'object') return s;
@@ -109,6 +122,9 @@ function migrar(guardado) {
   /* Un estado del ciclo 5 no trae `juego`: se completa con los valores vacíos y
      el primer recálculo lo llena contra el historial que ya existe. */
   s.juego = { ...s.juego, ...(guardado.juego || {}) };
+  /* Los logros ganados antes de que se guardara la fecha se quedan sin fecha:
+     inventarles una seria peor que no mostrarla. */
+  if (!s.juego.fechasLogros || typeof s.juego.fechasLogros !== 'object') s.juego.fechasLogros = {};
   if (!s.cfg.sonidoElegido) s.cfg.sonido = DEFAULT_STATE.cfg.sonido;
   if (!Array.isArray(s.cfg.horarios) || !s.cfg.horarios.length) s.cfg.horarios = clonar(RECORDATORIOS_DEFAULT);
   s.dias = {};
@@ -214,6 +230,8 @@ function migrar(guardado) {
   };
 
   s.esquema = ESQUEMA;
+  podarFotos(s.dias);
+
   return s;
 }
 
@@ -685,48 +703,6 @@ function objetivoEfectivo(objetivo, ejercicio) {
 
 /* Cada entrada es un analisis ya pagado: guardar mas es plata que no se
    vuelve a gastar. 60 entradas siguen siendo pocos KB. */
-const MAX_CACHE = 60;
-
-/**
- * Huella de una imagen para reconocerla sin guardarla entera.
- * FNV-1a sobre una muestra: recorrer 1 MB de base64 en cada foto sería tirar
- * tiempo, y con 4.000 caracteres repartidos ya no hay colisiones en la práctica.
- */
-function huellaImagen(b64) {
-  const txt = String(b64 || '');
-  if (!txt) return '';
-
-  let h = 0x811c9dc5;
-  const paso = Math.max(1, Math.floor(txt.length / 4000));
-
-  for (let i = 0; i < txt.length; i += paso) {
-    h ^= txt.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-
-  // el largo entra en la huella: dos fotos distintas rara vez pesan igual
-  return (h >>> 0).toString(36) + '-' + txt.length.toString(36);
-}
-
-/** Guarda un resultado en el cache, tirando lo más viejo si se pasa del tope. */
-function guardarEnCache(cache, huella, valor, ts = Date.now()) {
-  if (!huella) return cache || {};
-  const nuevo = { ...(cache || {}) };
-  nuevo[huella] = { valor: clonar(valor), ts };
-
-  const claves = Object.keys(nuevo).sort((a, b) => nuevo[b].ts - nuevo[a].ts);
-  const recortado = {};
-  for (const k of claves.slice(0, MAX_CACHE)) recortado[k] = nuevo[k];
-  return recortado;
-}
-
-/** Busca en el cache. Las entradas viejas se ignoran. */
-function leerDeCache(cache, huella, ts = Date.now(), diasValidez = 90) {
-  const entrada = (cache || {})[huella];
-  if (!entrada) return null;
-  if (ts - entrada.ts > diasValidez * 86400000) return null;
-  return clonar(entrada.valor);
-}
 
 /* ---------------- registro de análisis ---------------- */
 
@@ -956,6 +932,36 @@ function momentoDe(ts) {
   return momentoPorHora(d.getHours(), d.getMinutes());
 }
 
+/*
+ * Cuanto falta para la proxima comida esperada.
+ *
+ * No es un recordatorio: es saber si conviene cargar ahora o esperar. Sin esto,
+ * a las cinco de la tarde uno no sabe si lo que va a comer cuenta como merienda
+ * o como cena, y termina eligiendo mal el momento, que es de donde salen los
+ * graficos de reparto del dia.
+ *
+ * Devuelve null cuando ya paso la ultima del dia: a esa hora lo que falta no es
+ * una comida sino dormir.
+ */
+function proximaComida(ts = Date.now()) {
+  const d = new Date(ts);
+  const ahora = d.getHours() * 60 + d.getMinutes();
+  const actual = momentoPorHora(d.getHours(), d.getMinutes());
+
+  const siguiente = MOMENTOS
+    .filter(m => m.desde > ahora && m.id !== 'snack')
+    .sort((a, b) => a.desde - b.desde)[0];
+
+  if (!siguiente) return null;
+
+  return {
+    id: siguiente.id,
+    nombre: siguiente.nombre,
+    minutos: siguiente.desde - ahora,
+    dentroDe: actual
+  };
+}
+
 function nombreMomento(id) {
   const m = MOMENTOS.find(x => x.id === id);
   return m ? m.nombre : 'Otro';
@@ -1051,9 +1057,27 @@ function registrarFrecuentes(frecuentes, items, ts = Date.now()) {
     }
   }
 
-  // ranking: primero los más usados, y a igual uso, los más recientes
-  lista.sort((a, b) => (b.usos - a.usos) || (b.ultimoUso - a.ultimoUso));
+  lista.sort((a, b) => puntajeFrecuente(b, ts) - puntajeFrecuente(a, ts));
   return lista.slice(0, MAX_FRECUENTES);
+}
+
+/*
+ * El ranking de frecuentes, con la recencia pesando.
+ *
+ * Ordenar por cantidad de usos a secas congela la lista: algo comido cuarenta
+ * veces hace un año le gana para siempre a lo que se come todos los días desde
+ * hace un mes, y la lista termina mostrando lo que uno comía antes en vez de lo
+ * que come. Cada 45 días sin usarse, un alimento vale la mitad.
+ */
+const VIDA_MEDIA_FRECUENTE = 45 * 24 * 3600 * 1000;
+
+function puntajeFrecuente(f, ahora = Date.now()) {
+  const usos = Number(f?.usos) || 0;
+  const ultimo = Number(f?.ultimoUso) || 0;
+  if (!ultimo) return usos * 0.25;   // sin fecha no se puede saber: pesa poco, no cero
+
+  const antiguedad = Math.max(0, ahora - ultimo);
+  return usos * Math.pow(0.5, antiguedad / VIDA_MEDIA_FRECUENTE);
 }
 
 /** Marca o desmarca un alimento como favorito. Devuelve un array nuevo. */

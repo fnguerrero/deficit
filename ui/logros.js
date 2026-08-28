@@ -14,10 +14,18 @@ function renderLogros() {
 
   const ganados = new Set(state.juego?.logros || []);
 
-  cont.innerHTML = LOGROS.map(l => `
+  const fechas = state.juego?.fechasLogros || {};
+
+  cont.innerHTML = LOGROS.map(l => {
+    /* Los ganados dicen cuando. Un logro es algo que paso un dia concreto, y sin
+       la fecha la tarjeta solo repite lo que ya dice el color. Los de antes de
+       que se guardara la fecha se quedan con el detalle de siempre. */
+    const cuando = ganados.has(l.id) && fechas[l.id] ? etiquetaFecha(fechas[l.id]) : null;
+    return `
     <div class="logro${ganados.has(l.id) ? ' ganado' : ''}" title="${l.detalle}">
-      <i>${l.icono}</i><b>${l.nombre}</b><small>${l.detalle}</small>
-    </div>`).join('');
+      <i>${l.icono}</i><b>${l.nombre}</b><small>${cuando || l.detalle}</small>
+    </div>`;
+  }).join('');
 
   $('logrosPill').textContent = `${ganados.size} de ${LOGROS.length}`;
   pintarProximoLogro();

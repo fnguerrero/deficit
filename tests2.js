@@ -1052,6 +1052,106 @@ test('con panza no se dibujan abdominales', () => {
     `fibra dibuja ${trazos(fibra)} trazos de musculo y el panzon ${trazos(panzon)}`);
 });
 
+test('proximaComida dice cual viene y cuanto falta', () => {
+  const a = (h, m = 0) => proximaComida(new Date(2026, 7, 28, h, m).getTime());
+
+  esperar(a(8).id, 'almuerzo');
+  esperar(a(8).dentroDe, 'desayuno');
+  esperar(a(10, 30).minutos, 30);
+  esperar(a(13).id, 'merienda');
+  esperar(a(17).id, 'cena');
+
+  /* Pasada la cena no falta ninguna comida: falta dormir. */
+  esperar(a(22), null);
+});
+
+test('las fotos viejas se podan antes de que revienten el localStorage', () => {
+  /* Veinte kB por comida son 21 MB al año con tres comidas por dia, contra los
+     5 MB que da un localStorage. No se pone lenta: revienta, y con ella todo el
+     historial. */
+  const dias = {
+    '2026-08-27': { comidas: [{ id: 'a', foto: 'F', thumb: 'T' }] },
+    '2026-07-01': { comidas: [{ id: 'b', foto: 'F', thumb: 'T' }] },
+    '2025-11-01': { comidas: [{ id: 'c', foto: 'F', thumb: 'T' }] }
+  };
+
+  podarFotos(dias, '2026-08-28');
+
+  esperar(dias['2026-08-27'].comidas[0].foto, 'F');   // de ayer: entera
+  esperar(dias['2026-07-01'].comidas[0].foto, undefined);
+  esperar(dias['2026-07-01'].comidas[0].thumb, 'T');  // dos meses: queda el thumb
+  esperar(dias['2025-11-01'].comidas[0].thumb, undefined);
+  esperar(dias['2025-11-01'].comidas[0].id, 'c');     // el dato no se toca nunca
+});
+
+test('un logro guarda el dia en que se gano, y no se pisa despues', () => {
+  const dias = {};
+  for (let i = 0; i < 8; i++) {
+    dias[sumarDias('2026-08-01', i)] = { comidas: [{ kcal: 500 }], agua: 0, ejercicio: 0 };
+  }
+
+  const j1 = recalcularJuego(dias, { xp: 0, logros: [], anunciados: [] },
+    { hoy: '2026-08-08', vasos: 4 });
+  esperarQue(j1.juego.fechasLogros['primer-dia'] === '2026-08-08',
+    'el dia en que se detecto es el que queda: ' + j1.juego.fechasLogros['primer-dia']);
+
+  /* Y una semana despues sigue diciendo lo mismo: la fecha no se recalcula. */
+  const j2 = recalcularJuego(dias, j1.juego, { hoy: '2026-08-15', vasos: 4 });
+  esperar(j2.juego.fechasLogros['primer-dia'], '2026-08-08');
+});
+
+test('las frecuentes no se congelan con lo que se comia antes', () => {
+  /* Cuarenta usos de hace un año contra ocho de la semana pasada. Ordenando por
+     cantidad a secas, la milanesa del año pasado queda primera para siempre y
+     la lista muestra lo que uno comia, no lo que come. */
+  const ahora = Date.parse('2026-08-28T12:00:00');
+  const viejo = { nombre: 'Milanesa', usos: 40, ultimoUso: ahora - 365 * 24 * 3600 * 1000 };
+  const nuevo = { nombre: 'Ensalada', usos: 8, ultimoUso: ahora - 3 * 24 * 3600 * 1000 };
+
+  esperarQue(puntajeFrecuente(nuevo, ahora) > puntajeFrecuente(viejo, ahora),
+    'lo de esta semana tiene que ir primero');
+
+  /* Pero a igual antiguedad manda la cantidad: la recencia pesa, no reemplaza. */
+  const mismoDia = { nombre: 'Tostada', usos: 3, ultimoUso: nuevo.ultimoUso };
+  esperarQue(puntajeFrecuente(nuevo, ahora) > puntajeFrecuente(mismoDia, ahora));
+});
+
+test('una foto demasiado pesada se rechaza con el numero', () => {
+  /* El problema no es mandarla —el redimensionado la deja en unos 60 kB— sino
+     leerla: readAsDataURL de veinte megas arma un string de treinta y pico y la
+     pestana se cae sin decir nada. */
+  esperar(avisoPorPeso(0), null);
+  esperar(avisoPorPeso(5 * 1024 * 1024), null);
+  esperar(avisoPorPeso(14 * 1024 * 1024), null);
+
+  const aviso = avisoPorPeso(21 * 1024 * 1024);
+  esperarQue(!!aviso, 'veintiun megas tienen que rebotar');
+  esperarQue(aviso.includes('21.0'), 'y el aviso dice cuanto pesa: ' + aviso);
+  esperarQue(aviso.includes('14'), 'y cual es el tope');
+});
+
+test('una comida que cambio de dia no queda duplicada al sincronizar', () => {
+  /* Se cargo el martes, se corrigio al miercoles, y del remoto llega con la
+     fecha nueva. Buscandola solo en la lista del miercoles no aparece, se
+     agrega, y la del martes se queda: la misma comida contada dos veces. */
+  const estado = {
+    dias: {
+      '2026-08-25': { comidas: [{ id: 'abc', titulo: 'Milanesa', kcal: 600, act: 10 }] },
+      '2026-08-26': { comidas: [] }
+    },
+    borradas: []
+  };
+
+  const { estado: r } = aplicarRemoto(estado, {
+    comidas: [{ id: 'abc', fecha: '2026-08-26', titulo: 'Milanesa', calorias: 600, act: 99 }]
+  });
+
+  const todas = Object.values(r.dias).flatMap(d => d.comidas || []);
+  esperar(todas.filter(c => c.id === 'abc').length, 1);
+  esperar(r.dias['2026-08-25'].comidas.length, 0);
+  esperar(r.dias['2026-08-26'].comidas.length, 1);
+});
+
 test('la fase pone musculo, pero no le borra la panza a nadie', () => {
   /* En la lamina no hay un gordo musculoso: los tres cuerpos con musculo son
      delgados. Sin freno, alguien con panza llegaba a Bestia y aparecia flaco y

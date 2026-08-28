@@ -445,6 +445,19 @@ function torso(med, col) {
  * Sin cuerpo se dibuja una contextura media: mostrar un cuerpo inventado como
  * si fuera el de Nico sería peor que no mostrar ninguno.
  */
+/*
+ * El personaje dibujado ENTERO, que la app ya no usa.
+ *
+ * Desde que el cuerpo es un sprite (ver sprite.js), esto vive para el taller
+ * —_personaje.html, que lo muestra en todas sus combinaciones— y como vuelta
+ * atras si el hibrido no convence. Por eso `figura.js` y `cara.js` salieron de
+ * index.html y del shell offline: son treinta kB que la app cargaba en cada
+ * arranque para no dibujar nada.
+ *
+ * Lo que SI sigue usando la app de este archivo: PALETA, LINEA, VB, medidasDe y
+ * mezclar, que son de donde salen el aura y el pelo de las fases.
+ */
+
 function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const base = POSES[animo] || POSES.neutral;
   const f = fase && fase.n ? fase : null;

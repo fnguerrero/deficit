@@ -1,60 +1,27 @@
-# TODO — ciclo 8: el personaje contra la referencia
+# TODO — ciclo 9: diez mejoras
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-Verificación visual: rasterizar con Edge headless (`--headless=new --screenshot`) contra
-`_personaje.html?modo=cuerpo|fase|animo` y MIRAR el PNG. Es la única forma de ver los bugs
-de dibujo; media docena aparecieron solo mirando el render.
+Salen de las 31 que quedaron del ciclo 7 (`.nonstop/ciclo-7/TODO.md`) y de lo que dejó
+abierto el personaje híbrido. Prioridad: corrección real y plata ahorrada antes que
+cosmética.
 
-## A. Relieve sobre la ropa
+- [x] 1. Dos comidas con el mismo id se duplican al fusionar (ciclo 7 #9) · verif: test de fusión con ids repetidos
+- [x] 2. La foto se comprime ANTES de mandarla, no después (ciclo 7 #52) · verif: medir los bytes que salen
+- [x] 3. Aviso claro cuando la foto pesa demasiado, con el número (ciclo 7 #53) · verif: test del tope
+- [x] 4. Reintentar un análisis fallido sin volver a sacar la foto (ciclo 7 #51) · verif: por DOM
+- [x] 5. Al guardar, el momento del día sale de la hora (ciclo 7 #56) · verif: test de las cuatro franjas
+- [x] 6. Las frecuentes se ordenan por uso reciente y no solo por cantidad (ciclo 7 #57) · verif: test
+- [x] 7. Los logros ganados dicen cuándo se ganaron (ciclo 7 #84) · verif: test
+- [x] 8. El cache de imágenes en base64 infla el localStorage (ciclo 7 #28) · verif: medir el tamaño guardado
+- [x] 9. core.js (NO tests.js: ver bitácora) se pasa de largo: partirlo (ciclo 7 #94) · verif: tamanos.py en verde
+- [x] 10. Sacar del shell el personaje SVG que la app ya no usa · verif: guardas.py, tests en verde y la app dibuja igual
 
-- [x] 1. Pectorales marcados sobre la musculosa: surco al medio y borde inferior de cada uno · verif: render fibra vs flaco, se tienen que distinguir
-- [x] 2. Abdominales: línea media más los transversales, solo con músculo · verif: render de fibra y fuerte+
-- [x] 3. El relieve del abdomen NO aparece con la panza grande, que lo taparía · verif: test sobre el SVG de contextura .9
-- [x] 4. Trapecios: la diagonal cuello-hombro, que es lo que más rápido lee "entrena" · verif: render de macizo
+## Reemplazos
 
-## B. La panza empuja la prenda
+Los ítems 2 y 5 resultaron ya resueltos en ciclos anteriores, así que no cuentan como
+mejora. Van dos más en su lugar para que sean diez de verdad.
 
-- [x] 5. La musculosa se abomba sobre la panza en vez de seguir el torso plano · verif: render de contextura .85 y 1
-- [x] 6. El ruedo de la musculosa sube al frente cuando hay panza · verif: render, el pliegue tiene que quedar por debajo
-- [x] 7. La papada aparece antes y se lee a tamaño real · verif: render de máximo a 96 px
-
-## C. El short
-
-- [x] 8. Short hasta media pierna con dobladillo, como la referencia · verif: render + test de que el ruedo queda arriba de la rodilla
-- [x] 9. La pierna nace debajo del short sin que se vea la costura · verif: render de los 7 cuerpos
-
-## D. El aura de las fases
-
-- [x] 10. Llamas con forma de fuego (puntas irregulares) en vez de pétalos lisos · verif: render de las 7 fases
-- [x] 11. Escombros flotando desde fase 3, como en la referencia · verif: render
-- [x] 12. El aura queda detrás del personaje y no le come el contorno · verif: render de fase 6
-
-## E. Cara y proporciones
-
-- [x] 13. Cejas, boca y oreja reubicadas para la cabeza nueva (caraRy bajó de 20.5 a 18.6) · verif: render de los 8 ánimos
-- [x] 14. El personaje entra en la tarjeta de Hoy sin desbordar · verif: leer el alto real en el navegador
-
-## G. Apareció en el camino
-
-- [x] 17. transformacion.js se pasó del límite al crecer el aura · verif: tamanos.py en verde
-
-## F. Cierre
-
-- [x] 15. Los 763 tests, guardas y tamaños en verde · verif: correr los tres
-- [x] 16. La app real anda: consola limpia y el personaje se ve en Hoy · verif: navegador
-
-## H. Abierto — el personaje híbrido no convence del todo (28/08/2026)
-
-Nico lo dio por bueno "por ahora", sin estar convencido. Lo que quedó en falta:
-
-- [ ] Un gordo musculoso en la lámina: hoy la fase no puede tocarle el cuerpo a quien
-      tiene panza, porque el único dibujo con músculo es delgado y le borraría los kilos
-      · verif: sumarlo a ref/cuerpos.png, correr tools/sprites.py y sacar el freno de
-      `margen` en spritePara()
-- [ ] Los 8 ánimos: hoy son un emoji al lado del título porque el sprite tiene cara fija
-      · verif: una lámina con las 8 caras del mismo personaje, recortadas y superpuestas
-      sobre la cabeza como ya se hace con el pelo
-- [ ] El personaje SVG completo (personaje.js, figura.js, cara.js) ya no lo usa la app:
-      pesa en el shell offline y solo sirve al taller · verif: decidir si se saca, una vez
-      que el híbrido esté confirmado
+- [x] 11. Cuánto falta para la próxima comida esperada (ciclo 7 #49) · verif: test de las franjas + por DOM
+      (el #44 del ciclo 7 se descartó: los macros ya se ven al lado del anillo, tocarlo no agregaría nada)
+- [x] 12. El gráfico de peso marca los días sin pesar en vez de unirlos con una recta (ciclo 7 #67) · verif: test de la serie con huecos

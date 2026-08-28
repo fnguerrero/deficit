@@ -52,7 +52,11 @@ function juegoDe(state) {
     anunciados: Array.isArray(j.anunciados) ? j.anunciados.slice() : [],
     escudosGastados: Number(j.escudosGastados) || 0,
     /* Qué día tapó un escudo, por actividad: `{ agua: ['2026-08-20'] }`. */
-    escudosUsados: j.escudosUsados && typeof j.escudosUsados === 'object' ? clonar(j.escudosUsados) : {}
+    escudosUsados: j.escudosUsados && typeof j.escudosUsados === 'object' ? clonar(j.escudosUsados) : {},
+    /* Y qué día se ganó cada logro. Va acá y no afuera porque esta función es
+       una lista blanca: lo que no se nombre se pierde en cada recálculo, que es
+       exactamente lo que pasaba con las fechas. */
+    fechasLogros: j.fechasLogros && typeof j.fechasLogros === 'object' ? clonar(j.fechasLogros) : {}
   };
 }
 
@@ -342,6 +346,14 @@ function recalcularJuego(dias, juegoPrevio, { hoy = hoyISO(), vasos = 8 } = {}) 
   const ctx = contextoLogros(dias, juego, { hoy, vasos });
   const ganados = logrosGanados(ctx);
   const nuevos = ganados.filter(id => !juego.logros.includes(id));
+
+  /* La fecha se anota una sola vez, la primera. Un logro es una cosa que paso
+     un dia concreto y sin eso la pantalla solo puede decir que esta ganado, que
+     es justamente lo que ya se ve por el color. */
+  juego.fechasLogros = { ...(juego.fechasLogros || {}) };
+  for (const id of nuevos) {
+    if (!juego.fechasLogros[id]) juego.fechasLogros[id] = hoy;
+  }
 
   juego.logros = ganados;
   juego.xp = xpTotal(dias, { vasos, logros: ganados });
