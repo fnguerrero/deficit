@@ -342,6 +342,17 @@ function renderAjustes() {
     ? `Copia de respaldo: ${plural(backup.dias, 'día')}, ${fmtNum(backup.kb)} KB.`
     : 'Todavía no hay copia de respaldo.';
 
+  /* El respaldo del paso irreversible. Se queda hasta que se lo descarte a
+     mano: es la única red que hay para volver de una fusión que salió mal. */
+  const hito = hayRespaldoDeHito();
+  $('hitoInfo').hidden = !hito;
+  $('hitoAcciones').hidden = !hito;
+  if (hito) {
+    const cuando = new Date(hito.cuando).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    $('hitoInfo').textContent = `Copia de antes de ${hito.motivo} (${cuando}): ` +
+      `${plural(hito.dias, 'día')} y ${plural(hito.comidas, 'comida')}. Sin las fotos.`;
+  }
+
   const u = state.uso;
   $('usoInfo').textContent = u.llamadas
     ? `${fmtNum(u.llamadas)} ${u.llamadas === 1 ? 'análisis' : 'análisis'} · ${fmtNum(u.tokens)} tokens · US$ ${fmtNum(u.costo, 4)} en total`

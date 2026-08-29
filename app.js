@@ -129,6 +129,83 @@ function restaurarBackup() {
   toast('Copia restaurada');
 }
 
+/* ============================================================
+   El respaldo de un paso irreversible
+
+   `deficit.backup` guarda la versión anterior en CADA save(), así que a los
+   pocos segundos de uso ya no sirve para volver atrás de nada: lo que tiene es
+   el estado de hace un vaso de agua.
+
+   Hay un solo momento en la app que no se puede deshacer, y es entrar con la
+   cuenta por primera vez: ahí el servidor adopta las filas que estaban sueltas
+   y todo lo que hay allá se fusiona con lo de acá. Si eso sale mal —una
+   fusión rara, datos de otra cuenta, lo que sea— no hay vuelta, y justo es el
+   único punto donde el historial entero está en juego de una sola vez.
+
+   Este respaldo se escribe una vez, antes de ese paso, y se queda hasta que
+   se lo descarte a mano.
+   ============================================================ */
+
+const KEY_HITO = 'deficit.antes-de';
+
+/*
+ * Las fotos no entran. Son el 95 % del peso y guardarlas duplicaría el
+ * almacenamiento entero justo cuando ya está lleno; lo que importa recuperar
+ * son las comidas y los pesos, no las imágenes.
+ */
+function sinFotos(estado) {
+  const copia = clonar(estado);
+  for (const d of Object.values(copia.dias || {})) {
+    (d.comidas || []).forEach(c => { c.foto = null; c.thumb = null; });
+  }
+  return copia;
+}
+
+/** Devuelve false si no entró: un respaldo que no se pudo escribir no frena el paso. */
+function guardarRespaldoDeHito(motivo) {
+  try {
+    localStorage.setItem(KEY_HITO, JSON.stringify({
+      motivo, cuando: Date.now(), datos: JSON.stringify(sinFotos(state))
+    }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function hayRespaldoDeHito() {
+  try {
+    const r = JSON.parse(localStorage.getItem(KEY_HITO) || 'null');
+    if (!r || !r.datos) return null;
+
+    const s = JSON.parse(r.datos);
+    return {
+      motivo: String(r.motivo || ''),
+      cuando: Number(r.cuando) || 0,
+      texto: r.datos,
+      dias: Object.keys(s.dias || {}).length,
+      comidas: Object.values(s.dias || {}).reduce((a, d) => a + (d.comidas || []).length, 0)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function restaurarRespaldoDeHito() {
+  const r = hayRespaldoDeHito();
+  if (!r) { toast('No hay copia para volver'); return false; }
+
+  state = migrar(JSON.parse(r.texto));
+  guardarYa();
+  renderAll();
+  toast('Volviste a como estaba antes');
+  return true;
+}
+
+function olvidarRespaldoDeHito() {
+  try { localStorage.removeItem(KEY_HITO); } catch { /* da igual */ }
+}
+
 /**
  * Libera espacio por etapas: primero las fotos de 384 px (las que pesan),
  * y solo si sigue sin entrar, las miniaturas de los días viejos.

@@ -55,18 +55,6 @@ function resolverCredenciales(local = {}, app = {}) {
   };
 }
 
-/**
- * Si vale la pena sincronizar sola en este momento.
- *
- * El piso de tiempo existe para que abrir y cerrar la app cinco veces seguidas
- * no dispare cinco rondas: sincronizar de más no rompe nada, pero gasta batería
- * y datos del celular sin traer nada nuevo.
- */
-function convieneSincronizar({ configurada = false, ultimoSync = 0, ahora = Date.now(), minimoMs = 120000 } = {}) {
-  if (!configurada) return false;
-  return (ahora - (ultimoSync || 0)) >= minimoMs;
-}
-
 /* ---------------- cliente REST ---------------- */
 
 /* Los mismos que reintenta el cliente de Claude: nada de esto es culpa nuestra
@@ -264,6 +252,57 @@ function cambiosLocales(estado, desde = 0) {
 /* ---------------- fusión de lo remoto ---------------- */
 
 /**
+ * Un día, campo por campo, cuando el mismo día se tocó en dos dispositivos.
+ *
+ * Antes el día se resolvía entero por `act`: ganaba el más nuevo y el otro se
+ * tiraba completo. Eso perdía datos en el caso más común que hay, que es usar
+ * el celular y la compu el mismo día:
+ *
+ *   En la compu tomás cuatro vasos de agua (act = 10:00). En el celu registrás
+ *   la caminata (act = 18:00, y su agua es 0 porque ahí nunca tocaste el agua).
+ *   Al sincronizar, el día del celu es más nuevo y pisa: **los cuatro vasos
+ *   desaparecen.** Y al revés, si la compu sincroniza última, se pierde la
+ *   caminata.
+ *
+ * Hay un `act` por día y no uno por campo, así que no se puede saber cuál de
+ * los cinco se tocó. Lo que sí se sabe es qué es cada campo:
+ *
+ *   · **agua y ejercicio** son acumuladores: durante el día solo suben. El
+ *     máximo de los dos es lo que efectivamente pasó. El costo es que borrar
+ *     un vaso desde el otro dispositivo no se propaga —vuelve—, y a cambio no
+ *     se pierde nunca lo que sí se registró.
+ *   · **el peso** lo pone una balanza una vez al día: si uno de los dos lo
+ *     tiene y el otro no, vale el que lo tiene. Con los dos cargados, el `act`
+ *     desempata.
+ *   · **la nota** es texto que se escribe: gana la más nueva, pero una vacía
+ *     nunca pisa una escrita. Mismo trade-off que el agua, y por el mismo
+ *     motivo: perder algo escrito es peor que arrastrar algo borrado.
+ */
+function fusionarDia(local, remoto) {
+  const actL = Number(local?.act) || 0;
+  const actR = Number(remoto?.act) || 0;
+  const ganaR = actR > actL;
+
+  const agua = Math.max(Number(local?.agua) || 0, Number(remoto?.agua) || 0);
+  const ejercicio = Math.max(Number(local?.ejercicio) || 0, Number(remoto?.ejercicio) || 0);
+
+  const pesoL = local?.peso == null || local.peso === '' ? null : Number(local.peso);
+  const pesoR = remoto?.peso == null || remoto.peso === '' ? null : Number(remoto.peso);
+  const peso = pesoL == null ? pesoR : (pesoR == null ? pesoL : (ganaR ? pesoR : pesoL));
+
+  const notaL = String(local?.nota || '');
+  const notaR = String(remoto?.nota || '');
+  const nota = !notaR ? notaL : (!notaL ? notaR : (ganaR ? notaR : notaL));
+
+  const cambio = peso !== (pesoL == null ? null : pesoL) ||
+    agua !== (Number(local?.agua) || 0) ||
+    ejercicio !== (Number(local?.ejercicio) || 0) ||
+    nota !== notaL;
+
+  return { peso, agua, ejercicio, nota, act: Math.max(actL, actR), cambio };
+}
+
+/**
  * Aplica lo que vino del servidor sobre el estado local.
  * Regla: gana la versión modificada más tarde. Es simple y predecible, que es
  * lo que hace falta cuando el conflicto lo generó una sola persona en dos
@@ -327,12 +366,13 @@ function aplicarRemoto(estado, { comidas = [], dias = [] }) {
     if (!salida.dias[fecha]) salida.dias[fecha] = { peso: null, agua: 0, ejercicio: 0, nota: '', comidas: [] };
 
     const d = salida.dias[fecha];
-    if ((Number(fila.act) || 0) > (d.act || 0)) {
-      d.peso = fila.peso == null ? d.peso : Number(fila.peso);
-      d.agua = Number(fila.agua) || 0;
-      d.ejercicio = Number(fila.ejercicio) || 0;
-      d.nota = String(fila.nota || '');
-      d.act = Number(fila.act) || 0;
+    const f = fusionarDia(d, fila);
+    if (f.cambio) {
+      d.peso = f.peso;
+      d.agua = f.agua;
+      d.ejercicio = f.ejercicio;
+      d.nota = f.nota;
+      d.act = f.act;
       resumen.diasTocados++;
     }
   }
@@ -384,6 +424,10 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
 
   return {
     estado: fusionado,
+    /* Las filas crudas salen con el resultado para que el llamador pueda volver
+       a fusionarlas sobre el estado que este vivo al terminar. Ver
+       fusionarAlFinal(), justo abajo. */
+    remotas: { comidas: remotasComidas, dias: remotosDias },
     resumen: {
       ...resumen,
       subidasComidas: filasComidas.length,
@@ -395,11 +439,42 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
   };
 }
 
+/**
+ * Fusiona lo remoto sobre el estado que esta vivo AHORA, no sobre el que se
+ * clono al empezar.
+ *
+ * Sin esto se pierden comidas, y en silencio. El sync automatico corre cuatro
+ * segundos despues de cada cambio y tarda lo que tarde la red: si en esos
+ * segundos se carga otra comida —que es exactamente lo que pasa cuando alguien
+ * esta cargando el almuerzo—, `sincronizar` la ignora, porque trabajo sobre un
+ * clon anterior. Asignar ese clon al estado global borra la comida nueva. No
+ * avisa nada, no falla nada, y en la pantalla la comida simplemente ya no esta.
+ *
+ * Re-aplicar es seguro: `aplicarRemoto` decide por `act` y no acumula, asi que
+ * pasarle dos veces las mismas filas da el mismo resultado.
+ *
+ * Lo que se cargo durante el sync no sube en esta ronda —su `act` es posterior
+ * al `ultimoSync` que queda anotado—, asi que la siguiente lo agarra.
+ */
+function fusionarAlFinal(estadoVivo, resultado) {
+  const remotas = resultado?.remotas || { comidas: [], dias: [] };
+
+  /* Sin nada que bajar no hay nada que fusionar, y el clon de aplicarRemoto es
+     un JSON.stringify del historial entero: caro para repetirlo al pedo cada
+     vez que se guarda un vaso de agua. */
+  if (!remotas.comidas.length && !remotas.dias.length) {
+    return { estado: estadoVivo, resumen: resultado.resumen };
+  }
+
+  const r = aplicarRemoto(estadoVivo, remotas);
+  return { estado: r.estado, resumen: { ...resultado.resumen, ...r.resumen } };
+}
+
 if (typeof window !== 'undefined') {
   window.__sync = {
     TABLA_DIAS, TABLA_COMIDAS, LARGO_LLAVE,
     generarLlave, llaveValida, llaveLegible, clienteSupabase,
     comidaAFila, filaAComida, diaAFila,
-    cambiosLocales, aplicarRemoto, sincronizar
+    cambiosLocales, aplicarRemoto, fusionarDia, sincronizar, fusionarAlFinal
   };
 }

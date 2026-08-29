@@ -46,7 +46,11 @@ function crearAuth({ url, anonKey, fetchFn, almacen = null }) {
         body: cuerpo ? JSON.stringify(cuerpo) : undefined
       });
     } catch {
-      throw new Error('No se pudo conectar. Revisá tu conexión.');
+      /* Marcado como fallo de RED, no de credenciales. La diferencia decide si
+         una sesión se conserva o se borra: ver token(), más abajo. */
+      const e = new Error('No se pudo conectar. Revisá tu conexión.');
+      e.red = true;
+      throw e;
     }
 
     let datos = null;
@@ -99,8 +103,20 @@ function crearAuth({ url, anonKey, fetchFn, almacen = null }) {
     },
 
     /**
-     * Un token vivo, renovándolo si está por vencer. Devuelve null sin sesión,
-     * que es lo que le dice al resto de la app que hay que trabajar local.
+     * Un token vivo, renovándolo si está por vencer.
+     *
+     * Tres respuestas distintas, y la diferencia importa:
+     *   · `null` — no hay sesión, o el servidor rechazó el refresco. Hay que
+     *     volver a entrar, y la sesión local ya se borró.
+     *   · un string — el token, listo para usar.
+     *   · **lanza** con `.red = true` — no se pudo preguntar. La sesión se
+     *     conserva intacta.
+     *
+     * Esa última rama es la que faltaba, y lo que costaba era la cuenta. El
+     * catch era uno solo, así que quedarse sin señal justo cuando vencía el
+     * token —un subte, un ascensor, el campo— **deslogueaba**: la app volvía a
+     * decir "sin cuenta" y a partir de ahí guardaba todo local sin subir nada.
+     * No poder preguntar no es lo mismo que recibir un no.
      */
     async token() {
       const s = guardado.leer();
@@ -109,19 +125,22 @@ function crearAuth({ url, anonKey, fetchFn, almacen = null }) {
       if (Date.now() < s.vence - MARGEN_RENOVACION) return s.token;
       if (!s.refresco) { guardado.escribir(null); return null; }
 
+      let r;
       try {
-        const r = await pedir('token?grant_type=refresh_token', { refresh_token: s.refresco });
-        const nueva = sesionDesdeRespuesta(r);
-        if (!nueva) throw new Error('sin sesión');
-        // el usuario no siempre vuelve en el refresco: se conserva el que había
-        nueva.usuario = nueva.usuario.id ? nueva.usuario : s.usuario;
-        guardado.escribir(nueva);
-        return nueva.token;
-      } catch {
-        // el refresco vencido no es un error a mostrar: es "volvé a entrar"
-        guardado.escribir(null);
+        r = await pedir('token?grant_type=refresh_token', { refresh_token: s.refresco });
+      } catch (e) {
+        if (e && e.red) throw e;          // sin respuesta: la sesión se queda
+        guardado.escribir(null);          // el servidor dijo que no: a entrar de nuevo
         return null;
       }
+
+      const nueva = sesionDesdeRespuesta(r);
+      if (!nueva) { guardado.escribir(null); return null; }
+
+      // el usuario no siempre vuelve en el refresco: se conserva el que había
+      nueva.usuario = nueva.usuario.id ? nueva.usuario : s.usuario;
+      guardado.escribir(nueva);
+      return nueva.token;
     }
   };
 }

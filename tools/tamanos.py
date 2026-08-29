@@ -32,6 +32,7 @@ LIMITES = [
     ('voz.js', 350),
     ('graficos.js', 400),
     ('sync.js', 600),
+    ('estado-sync.js', 250),
     ('auth.js', 300),
     ('tests.js', 6000),   # la suite crece con cada feature
     ('tests2.js', 6000),  # se partio en el ciclo 6, al pasarse la primera
