@@ -1,24 +1,12 @@
-# TODO — ciclo 11: diez mejoras potentes
+# TODO — ciclo 12: que no se pierdan datos
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-**El análisis que las eligió.** La app está terminada como software y sin estrenar como
-herramienta: 775 tests y cero días de uso. Así que "potente" acá no es agregar funciones,
-es sacar lo que va a hacer que se abandone en la primera semana. Se buscaron los momentos
-donde la app pierde datos, pierde tiempo o pierde credibilidad.
-
-- [x] 1. Cola offline: la foto sacada sin red se guarda y se analiza sola al volver · verif: test de la cola + por DOM cortando la red
-- [x] 2. Ajuste de porción en un toque: ¼ ½ ¾ 1 1½ 2 sobre lo ya analizado · verif: test del reescalado + por DOM
-- [x] 3. La app avisa cuando lo registrado no cuadra con la balanza · verif: test con datos que no cierran
-- [x] 4. Lo que solés comer a esta hora, a un toque, en Hoy · verif: test del ranking por franja + por DOM
-- [x] 5. Deshacer global con pila, no solo al borrar una comida · verif: por DOM, deshacer un peso y una comida
-- [x] 6. El sesgo aprendido sale a Progreso (el ítem original se descartó: ver bitácora) · verif: por DOM
-- [x] 7. Aviso de comida cargada dos veces por error · verif: test del detector
-- [x] 8. Un análisis absurdo (10.000 kcal en un plato) no entra sin avisar · verif: test de los topes
-- [x] 9. Resumen de la semana de un vistazo · verif: test de los números + por DOM
-- [x] 10. Si a la hora de siempre no cargaste, la app lo nota · verif: test con patrón de comidas
-- [x] 11. Nada de esto rompe lo que ya andaba · verif: tests, guardas, tamaños y consola
-
-## Apareció en el camino
-
-- [x] 12. core.js y analisis.js se pasaron del límite: salen platos.js y chequeos.js · verif: tamanos.py
+- [x] 1. Andamiaje: un doble del servidor con la forma de `clienteSupabase`, para probar la coreografía completa sin red · verif: un sync entero contra el doble, con filas que suben y bajan
+- [x] 2. El sync automático deja de comerse lo que se cargó mientras corría · verif: test que carga una comida en medio del sync y la busca al final
+- [x] 3. Quedarse sin señal no desloguea: la sesión solo se borra si el servidor la rechaza · verif: test con fetch que explota vs. fetch que devuelve 401
+- [x] 4. Con sesión y sin token vivo, el sync no sigue como anónimo · verif: test de que no llama a guardar, y el mensaje que queda
+- [x] 5. El día se fusiona campo por campo: el agua de un dispositivo no borra el peso del otro · verif: test con los dos lados tocando el mismo día
+- [x] 6. Un respaldo que sobrevive a la primera fusión, con botón para volver atrás · verif: test del guardado + por DOM el botón aparece y restaura
+- [x] 7. Si el sync viene fallando hace días, se ve · verif: test del cálculo + por DOM el aviso
+- [x] 8. Nada de esto rompe lo que ya andaba · verif: suite completa, guardas, tamaños y las cinco pestañas en consola

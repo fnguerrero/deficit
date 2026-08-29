@@ -1,93 +1,107 @@
-# Informe — ciclo 11: diez mejoras potentes
+# Informe — ciclo 12: que no se pierdan datos
 
-28/08/2026 · 7 iteraciones (#48 a #54) sobre un presupuesto de 40 · ninguna bloqueada.
+29/08/2026 · 8 iteraciones (#56 a #63) sobre un presupuesto de 40 · ninguna bloqueada.
 
-## El análisis que las eligió
+## De dónde salieron las mejoras
 
-La app está terminada como software y sin estrenar como herramienta: 783 tests y cero días
-de uso. Así que "potente" acá no era agregar funciones sino sacar lo que la haría
-abandonar en la primera semana. Se buscaron los tres modos de perderla:
+No de una lista de funciones que faltan. De seguir el camino de un dato desde que se
+carga hasta que llega al otro dispositivo, y marcar dónde se pierde. Aparecieron cuatro
+puntos, y los cuatro perdían **en silencio**: sin error, sin aviso, sin nada raro en
+pantalla. Es la única categoría que una app de registro diario no puede permitirse —un
+número mal estimado se corrige; una comida que desapareció no vuelve, y nadie se entera
+de que faltaba.
 
-**Pierde datos.** La foto sacada sin señal se evaporaba. La comida cargada dos veces
-ensuciaba el día sin que nadie se enterara. El peso mal tipeado no tenía vuelta atrás.
+El ciclo 11 protegió los datos contra el afuera. Este los protege contra la app misma.
 
-**Pierde tiempo.** Corregir una porción obligaba a editar seis números a mano, cuando
-"comí la mitad" es la corrección más frecuente que existe. Cargar el café de todas las
-mañanas costaba lo mismo que cargar algo nuevo: foto, espera y pago del análisis.
+## Los cuatro agujeros
 
-**Pierde credibilidad.** Un plato de 12.000 kcal entraba en silencio. Y si lo registrado
-no cuadraba con la balanza, la app se callaba: seguía mostrando un déficit que no estaba
-pasando.
+**1. El sync automático se comía lo que se cargaba mientras corría.** `sincronizar` clona
+el estado al fusionar lo remoto y después se queda subiendo. Todo lo cargado durante esa
+subida quedaba afuera del clon, y `correrSync` asignaba ese clon al estado global. El sync
+automático corre **cuatro segundos después de cada cambio**, que es exactamente cuando se
+está cargando la comida siguiente. Ahora `fusionarAlFinal()` re-aplica lo remoto sobre el
+estado vivo; es idempotente, y sin nada que bajar ni siquiera clona.
 
-## Las diez
+**2. Quedarse sin señal deslogueaba.** El `catch` del refresco era uno solo, así que un
+fetch que ni sale —un subte, un ascensor— se trataba igual que un "ese refresco no sirve"
+del servidor: borraba la sesión. A partir de ahí la app guardaba todo local sin subir
+nada. Ahora `pedir()` marca los fallos de red y `token()` los relanza conservando la
+sesión: **no poder preguntar no es lo mismo que recibir un no.**
 
-1. **Cola offline.** La foto sacada sin señal se guarda en el estado y se analiza sola al
-   volver la red. Una foto de un plato tiene una ventana de treinta segundos: después está
-   a medio comer o ya te levantaste. Se saca de la cola *antes* de analizar, para que una
-   foto que siempre falla no trabe el resto.
-2. **"Comí la mitad" en un toque.** ¼ ½ ¾ 1 1½ 2 sobre la comida ya guardada, reescalando
-   items y macros. Siempre sobre lo estimado original: tocar ½ y después ¾ da tres cuartos
-   de la estimación, no tres cuartos de la mitad.
-3. **La app avisa cuando sus números no cuadran con la balanza.** Compara su gasto estimado
-   contra el que se deduce del peso real y lo dice, aunque lo que diga sea que sus propios
-   números vienen mal.
-4. **Lo que solés comer a esta hora, a un toque.** Sin gastar API. Solo de la misma franja:
-   lo que comés a las 8 no dice nada sobre las 21.
-5. **Deshacer global.** Ctrl+Z y un botón. Guarda el día entero y no la operación: funciona
-   igual para cualquier cambio sin escribir un inverso por cada uno.
-6. **El sesgo aprendido sale a Progreso.** Vivía en una pantalla que hay que ir a buscar,
-   cuando es la misma pregunta que la brecha con la balanza.
-7. **Aviso de comida cargada dos veces.** Con el deshacer al lado.
-8. **Un análisis imposible no entra en silencio.** Topes de plato y de alimento, y el
-   chequeo de que los macros den las calorías (4, 4 y 9 por gramo).
-9. **La semana de un vistazo.** Cuatro números grandes: un gráfico hay que leerlo.
-10. **Si se pasó la hora de la que siempre cargás, la app lo nota.** No por horario fijo,
-    sino por lo que la persona hace: 18 de los últimos 20 días, y hoy no.
+**3. Con la sesión rechazada, el sync seguía como anónimo.** El cliente caía en la anon
+key, y con RLS eso es un 401 seguro. El mensaje que salía era *"Supabase rechazó la clave.
+Revisá la anon key y las políticas"*: mandaba a revisar una configuración perfecta cuando
+lo único que pasaba era que había que volver a entrar. Y de paso habría subido filas sin
+`user_id`, huérfanas. Ahora `decisionDeSync()` junta las cuatro razones en un lugar puro.
+
+**4. El día se resolvía entero por `act`.** Ganaba el más nuevo y el otro se tiraba
+completo. Con celular y compu el mismo día eso perdía datos siempre: cuatro vasos de agua
+en la compu a las 10 y una caminata en el celu a las 18 —cuyo agua es 0 porque ahí nunca
+se tocó— y al sincronizar desaparecían los cuatro vasos. `fusionarDia()` ahora decide por
+campo según **qué es cada uno**: agua y ejercicio son acumuladores (máximo), el peso lo
+pone una balanza (vale el que lo tiene), y una nota vacía nunca pisa una escrita.
+
+## Y dos redes que no existían
+
+**Un respaldo antes del único paso irreversible.** `deficit.backup` se pisa en cada
+`save()`, así que a los pocos segundos ya no sirve para volver de nada: lo que tiene es el
+estado de hace un vaso de agua. Entrar con la cuenta por primera vez —el servidor adopta
+las filas sueltas y todo lo de allá se fusiona con lo de acá— es el único momento en que
+el historial entero está en juego de una sola vez. Ahora queda una copia aparte, sin las
+fotos (95 % del peso), que se queda hasta que se la descarte a mano.
+
+**El sync que falla en silencio ahora se ve.** El caso peor no era no tener cuenta: era
+tenerla y **creer** que estaba todo a salvo mientras el sync venía fallando hace una
+semana. Falla en silencio a propósito, y el aviso vivía en Ajustes, una pantalla donde
+nadie entra si no tiene un problema; o sea que el problema se conocía recién cuando ya
+había pasado. La barra al pie cubre ahora los cuatro casos, y con cuenta el botón dice
+**Sincronizar** y lo hace ahí mismo.
 
 ## Verificación
 
 | Qué | Resultado |
 |---|---|
-| Tests propios | **783 en verde** (9 nuevos) |
-| `guardas.py` | OK — 45 scripts, 598 globales, 367 ids |
+| Tests propios | **814 en verde** (31 nuevos) |
+| `guardas.py` | OK — 46 scripts, 610 globales, 375 ids |
 | `tamanos.py` | Todo dentro de límite |
-| Consola | Limpia; las cinco pestañas y los ocho render sin errores |
-| Cola offline | Se cortó la red, se encoló, sobrevivió en `deficit.v1` y al volver se analizó sola |
-| Porciones | 900 → ½ → 450 → ¾ → 675, y el título queda "¾ Milanesa" |
-| Deshacer | Peso y agua deshechos en orden inverso; el botón se oculta al vaciarse |
-| Sesgo en Progreso | Seis correcciones del 25% y la tarjeta lo dice |
-| `prefers-reduced-motion` | Sigue apagando todo: 0 animaciones, 0 partículas |
+| Consola | Limpia: 0 errores en los diez render y las cinco pestañas |
+| Sesión vencida, en la app real | Con 401 no toca `/rest/` y avisa bien; sin red la sesión sobrevive |
+| Respaldo | Se guardó, se destruyó el día, se volvió: el peso y la comida estaban |
+| Barra al pie | Los cuatro casos, la ✕ y el botón que sincroniza |
+| **Primer login completo** | Contra un servidor falso: auth → reclamar llave → bajar → subir, **con el peso local sobreviviendo a un día remoto más nuevo** |
 
-Los cinco criterios de aceptación pasan.
+Los siete criterios de aceptación pasan.
 
-## Casi duplico código, por tercera vez
+## El andamiaje que hacía falta
 
-El ítem 6 original —"el código de barras calibra solo"— estaba mal pensado, y al ir a
-escribirlo empecé una `sesgoDeCorrecciones()` que **ya existía**: `registrarCorreccion()` y
-`sesgoAprendido()` están en `core.js` desde hace ciclos y la app ya aprende sola de cada
-corrección. Lo borré antes de que entrara.
-
-Es la tercera vez en este proyecto. Lo que lo frenó esta vez fue buscar el nombre del
-concepto —"correcciones"— antes de escribir, y no después. La guarda de duplicados no lo
-habría agarrado: los nombres eran distintos.
-
-Lo que sí faltaba de verdad era que ese sesgo **se viera**, y eso es lo que se hizo.
+Cada pieza del sync se probaba sola: `aplicarRemoto` con filas a mano, `cambiosLocales`
+con un estado a mano. Lo que nunca se probaba era la **coreografía** —bajar, fusionar,
+decidir qué subir, subirlo—, y ahí es donde estaban los cuatro bugs, porque ninguno vive
+dentro de una función: viven entre dos. El doble del servidor tiene la forma de
+`clienteSupabase` y no la de `fetch`: probar otra vez el REST no aportaba nada, poder
+mirar **qué** se subió y en qué orden sí.
 
 ## Desvíos de la SPEC
 
-- **El ítem 6 se reemplazó** por lo de arriba: el original habría duplicado código.
-- **Aparecieron dos archivos nuevos que no estaban planeados**: `core.js` y `analisis.js`
-  se pasaron del límite y salieron `platos.js` (los momentos del día y el reescalado de
-  porciones) y `chequeos.js` (las cuatro preguntas incómodas: si un análisis tiene sentido,
-  si algo ya se cargó, si los números cuadran con la balanza, si una meta entra en una sola
-  cuesta).
+- **Salió un archivo que no estaba planeado.** `sync.js` llegó a 589 de 600 y se partió
+  antes de reventar: `estado-sync.js` se lleva las tres preguntas que se leen en pantalla
+  (si conviene sincronizar, si se puede, si está a salvo lo que hay). Son la parte que
+  cambia cuando cambia el producto, no cuando cambia el servidor.
 - Nada más se desvió.
 
-## Un test tuvo razón
+## Casi lo duplico, otra vez
 
-El de `faltaLaDeSiempre` falló con `d.getTime is not a function`. Era mío: `hoyISO()`
-espera un `Date` y le estaba pasando un timestamp. Habría reventado en la primera llamada
-real, con la app abierta.
+Antes de escribir el aviso de "hace días que no sincronizás" busqué el concepto, y
+`estadoRespaldo()` y `diasSinRespaldo()` ya existían. `estadoRespaldo()` **no** era lo
+mismo —responde hace cuánto que no se exporta un archivo, que es otra red— pero
+`diasSinRespaldo()` se reusó tal cual. Buscar el nombre del concepto antes de escribir
+sigue siendo lo único que frena esto.
+
+## Un susto que valió la pena
+
+La suite pasó de 808 a 591 de golpe. No era un test roto: era `tests2.js` **entero** que
+dejaba de cargar por un `const DIA_MS` que ya vivía en `tests.js`. Que el total baje en
+bloque es la señal de un archivo que no parsea, no de una regresión.
 
 ## Bloqueados
 

@@ -69,6 +69,17 @@ function ocupado(si) {
  * posible.
  */
 async function despuesDeEntrar() {
+  /*
+   * Lo primero, antes de tocar nada: el estado de acá queda guardado aparte.
+   *
+   * Lo que viene es el único paso de la app que no se puede deshacer —el
+   * servidor adopta las filas sueltas y todo lo de allá se fusiona con lo de
+   * acá— y es justo el momento en que el historial entero está en juego de una
+   * sola vez. Si el respaldo no entra, se sigue igual: no vale bloquear el
+   * login por falta de espacio.
+   */
+  guardarRespaldoDeHito('entrar con tu cuenta');
+
   const cfg = configSync();
   const llave = llaveDeEsteDispositivo();
   const s = sesionActual();
@@ -198,23 +209,28 @@ $('btnSalir').onclick = async () => {
  */
 let avisoCuentaCerrado = false;
 
+/* Qué hace el botón según por qué salió la barra: entrar, o sincronizar ya. */
+let accionDelAviso = 'entrar';
+
 function renderAvisoCuenta() {
   const barra = $('barraCuenta');
   if (!barra) return;
 
-  const sinCuenta = !sesionActual();
-  barra.hidden = !sinCuenta || avisoCuentaCerrado;
+  const cfg = configSync();
+  const e = estadoDeLaCuenta({
+    haySesion: !!sesionActual(),
+    ultimoSync: cfg.ultimoSync || 0,
+    ultimoError: cfg.ultimoError || '',
+    dias: Object.keys(state.dias || {}).filter(f => (state.dias[f].comidas || []).length).length,
+    comidas: Object.values(state.dias || {}).reduce((a, d) => a + (d.comidas || []).length, 0)
+  });
+
+  barra.hidden = !e.avisar || avisoCuentaCerrado;
   if (barra.hidden) return;
 
-  /* El aviso dice CUÁNTO hay en juego. "Guardá tus datos" no mueve a nadie;
-     "31 días y 94 comidas viven solo en este navegador", sí. */
-  const dias = Object.keys(state.dias || {}).filter(f => (state.dias[f].comidas || []).length).length;
-  const comidas = Object.values(state.dias || {})
-    .reduce((a, d) => a + (d.comidas || []).length, 0);
-
-  $('barraCuentaTxt').textContent = comidas
-    ? `${fmtNum(dias)} ${dias === 1 ? 'día' : 'días'} y ${fmtNum(comidas)} ${comidas === 1 ? 'comida' : 'comidas'} viven solo en este navegador. Con una cuenta quedan a salvo.`
-    : 'Sin cuenta, lo que cargues va a vivir solo en este navegador.';
+  accionDelAviso = e.accion;
+  $('barraCuentaTxt').textContent = e.texto;
+  $('barraCuentaEntrar').textContent = e.accion === 'sincronizar' ? 'Sincronizar' : 'Entrar';
 }
 
 $('barraCuentaCerrar').onclick = () => {
@@ -223,6 +239,16 @@ $('barraCuentaCerrar').onclick = () => {
 };
 
 $('barraCuentaEntrar').onclick = () => {
+  /* Con cuenta, el botón hace la única cosa que hace falta acá y ahora. Mandar
+     a Ajustes a buscar el botón de sincronizar sería mandar a otra pantalla
+     por algo que se resuelve en un toque. */
+  if (accionDelAviso === 'sincronizar') {
+    avisoCuentaCerrado = true;
+    renderAvisoCuenta();
+    correrSync({ silencioso: false });
+    return;
+  }
+
   irTab('ajustes');
   $('cuentaEmail_in')?.focus();
   $('cardCuenta')?.scrollIntoView({ block: 'center', behavior: quieto() ? 'auto' : 'smooth' });

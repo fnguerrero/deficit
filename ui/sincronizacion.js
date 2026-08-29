@@ -164,18 +164,48 @@ async function correrSync({ silencioso = false } = {}) {
   if (sincronizando) return { salteada: 'ya hay una corriendo' };
 
   const cfg = configSync();
-  if (!cfg.url || !cfg.anonKey) {
-    if (!silencioso) toast('Faltan la URL y la clave');
-    return { salteada: 'sin credenciales' };
-  }
 
-  /* Desde que los datos son de un usuario y no de un dispositivo, sin sesion no
+  /* Desde que los datos son de un usuario y no de un dispositivo, sin sesión no
      hay nada que sincronizar: el servidor devuelve 401 y punto. Intentarlo
      igual llenaba la consola de errores en cada guardado. */
-  const haySesion = typeof sesionActual === 'function' && sesionActual();
-  if (!haySesion) {
-    if (!silencioso) toast('Entrá con tu cuenta para sincronizar', { texto: 'Ir', accion: () => irTab('ajustes') });
-    return { salteada: 'sin sesión' };
+  const sesion = typeof sesionActual === 'function' ? sesionActual() : null;
+
+  /* El token se pide ANTES de decidir: puede estar vencido y renovarse solo, o
+     puede haber sido rechazado, y eso último cambia qué se puede hacer. Si acá
+     no hay red, `token()` lanza y la sesión queda intacta. */
+  let token = null;
+  try {
+    if (sesion && typeof auth === 'function') token = await auth().token();
+  } catch (e) {
+    // sin conexión: no es un error para mostrar, es "más tarde"
+    state.cfg.sync = { ...configSyncLocal(), ultimoError: e.message };
+    save();
+    renderSync();
+    if (!silencioso) toast('Sin conexión: se sincroniza cuando vuelva');
+    return { salteada: 'sin red' };
+  }
+
+  const puede = decisionDeSync({
+    hayCredenciales: !!(cfg.url && cfg.anonKey),
+    haySesion: !!sesion,
+    token
+  });
+
+  if (!puede.ok) {
+    if (puede.motivo === 'sesión vencida') {
+      // auth() ya borró la sesión muerta: hay que decirlo y que la pantalla lo refleje
+      state.cfg.sync = { ...configSyncLocal(), ultimoError: puede.mensaje };
+      save();
+      if (typeof renderCuenta === 'function') renderCuenta();
+      if (typeof renderAvisoCuenta === 'function') renderAvisoCuenta();
+      renderSync();
+    }
+    if (!silencioso) {
+      toast(puede.mensaje, puede.motivo === 'sin credenciales'
+        ? null
+        : { texto: 'Ir', accion: () => irTab('ajustes') });
+    }
+    return { salteada: puede.motivo };
   }
 
   sincronizando = true;
@@ -185,10 +215,7 @@ async function correrSync({ silencioso = false } = {}) {
 
   try {
     /* Con sesión iniciada manda el token del usuario y las filas viajan con su
-       user_id; sin sesión sigue funcionando como antes, agrupando por llave. */
-    const sesion = typeof sesionActual === 'function' ? sesionActual() : null;
-    const token = sesion && typeof auth === 'function' ? await auth().token() : null;
-
+       user_id. El token ya está resuelto arriba. */
     const resultado = await sincronizar({
       cliente: clienteSupabase({ url: cfg.url, anonKey: cfg.anonKey, token, fetchFn: (...a) => fetch(...a) }),
       estado: state,
@@ -197,11 +224,16 @@ async function correrSync({ silencioso = false } = {}) {
       userId: sesion?.usuario?.id || null
     });
 
-    const r = resultado.resumen;
+    /* Sobre el estado VIVO, no sobre el clon con el que arranco la ronda: el
+       sync automatico corre mientras la persona sigue cargando, y pisar el
+       estado global con el clon de hace tres segundos se come lo que cargo en
+       el medio. */
+    const fusion = fusionarAlFinal(state, resultado);
+    state = fusion.estado;
+
+    const r = fusion.resumen;
     const subidas = r.subidasComidas + r.subidasBorradas + r.subidasDias;
     const bajadas = r.nuevas + r.actualizadas + r.borradas + r.diasTocados;
-
-    state = resultado.estado;
     // configSyncLocal y no configSync: si no, las credenciales que trae la app
     // quedarían copiadas en el estado de este dispositivo.
     state.cfg.sync = {

@@ -1883,3 +1883,377 @@ test('sin objetivo no se inventa un porcentaje', () => {
    que habia empezado a escribir: la primera compara tambien el peso, la segunda
    busca en las notas del dia e ignora acentos. Los duplicados se borraron. */
 
+
+
+/* ============================================================
+   El sync, contra un doble del servidor — ciclo 12
+
+   Hasta ahora cada pieza del sync se probaba sola: aplicarRemoto con filas a
+   mano, cambiosLocales con un estado a mano. Lo que nunca se probo es la
+   COREOGRAFIA: bajar, fusionar, decidir que subir y subirlo, en ese orden y
+   con dos dispositivos de por medio. Ahi es donde estan los bugs que quedan,
+   porque ninguno vive dentro de una funcion: viven entre dos.
+
+   El doble tiene la forma de `clienteSupabase` y no la de `fetch`. Probar otra
+   vez el REST no aporta nada —eso ya esta probado—; lo que hace falta es poder
+   mirar QUE se subio y en que orden.
+   ============================================================ */
+
+function servidorFalso({ comidas = [], dias = [], huerfanas = null, falla = null } = {}) {
+  const tablas = { comidas: comidas.map(c => ({ ...c })), dias: dias.map(d => ({ ...d })) };
+  const llamadas = [];
+
+  /* La PK de verdad es (user_id, id) para comidas y (user_id, fecha) para dias.
+     Aca alcanza con la segunda mitad: los tests tienen un solo usuario. */
+  const claveDe = (tabla) => (tabla === 'comidas' ? 'id' : 'fecha');
+
+  return {
+    tablas,
+    llamadas,
+    subidas: (tabla) => llamadas.filter(l => l.op === 'guardar' && l.tabla === tabla).flatMap(l => l.filas),
+
+    async guardar(tabla, filas) {
+      if (falla === 'guardar') throw new Error('Supabase respondió 500');
+      llamadas.push({ op: 'guardar', tabla, filas: filas.map(f => ({ ...f })) });
+      const k = claveDe(tabla);
+      for (const f of filas) {
+        const i = tablas[tabla].findIndex(x => x[k] === f[k]);
+        if (i >= 0) tablas[tabla][i] = { ...f };
+        else tablas[tabla].push({ ...f });
+      }
+      return [];
+    },
+
+    async traer(tabla, llave, desde = 0) {
+      if (falla === 'traer') throw new Error('No se pudo conectar con Supabase.');
+      llamadas.push({ op: 'traer', tabla, desde });
+      // el mismo margen por relojes desfasados que usa el cliente de verdad
+      const piso = Math.max(0, desde - 5 * 60000);
+      return tablas[tabla]
+        .filter(f => (Number(f.subido) || 0) > piso)
+        .sort((a, b) => a.subido - b.subido)
+        .map(f => ({ ...f }));
+    },
+
+    async reclamarLlave(llave) {
+      llamadas.push({ op: 'reclamar', llave });
+      return huerfanas || { comidas: 0, dias: 0 };
+    },
+
+    async probar() { return true; }
+  };
+}
+
+const LLAVE_T = 'abcdefghjkmnpqrstuvwxyz23456789a';
+
+/** Un estado minimo con las comidas y los datos de dia que se le pidan. */
+function estadoT(dias = {}) {
+  const salida = { dias: {}, borradas: [], cfg: {} };
+  for (const [fecha, d] of Object.entries(dias)) {
+    salida.dias[fecha] = {
+      peso: null, agua: 0, ejercicio: 0, nota: '', comidas: [], act: 0, ...d
+    };
+  }
+  return salida;
+}
+
+function comidaT(id, ts, extra = {}) {
+  return { id, ts, titulo: 'Comida ' + id, items: [], kcal: 500, prot: 30, carb: 40, gras: 20,
+    momento: 'almuerzo', notas: '', act: ts, ...extra };
+}
+
+testAsync('el sync completo sube lo local y baja lo remoto', async () => {
+  const srv = servidorFalso({
+    comidas: [{ ...comidaT('r1', 1000), llave: LLAVE_T, fecha: '2026-08-01', subido: 5000, borrada: false }]
+  });
+
+  const estado = estadoT({ '2026-08-01': { comidas: [comidaT('l1', 2000)] } });
+  const r = await sincronizar({ cliente: srv, estado, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  // bajo la remota y la sumo al dia
+  const ids = r.estado.dias['2026-08-01'].comidas.map(c => c.id);
+  esperar(ids.sort(), ['l1', 'r1']);
+  esperar(r.resumen.nuevas, 1);
+
+  // y subio la local (y de paso la remota, que ahora tambien es suya: no molesta)
+  esperarQue(srv.subidas('comidas').some(f => f.id === 'l1'), 'no subio la comida local');
+});
+
+testAsync('primero baja y despues sube: al reves pisaria lo nuevo con lo viejo', async () => {
+  const srv = servidorFalso();
+  const estado = estadoT({ '2026-08-01': { comidas: [comidaT('l1', 2000)] } });
+  await sincronizar({ cliente: srv, estado, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  const orden = srv.llamadas.map(l => l.op);
+  esperar(orden.indexOf('traer') < orden.indexOf('guardar'), true);
+});
+
+testAsync('lo remoto mas nuevo gana sobre lo local viejo', async () => {
+  const srv = servidorFalso({
+    comidas: [{ ...comidaT('c1', 1000, { titulo: 'corregida', kcal: 900, act: 8000 }),
+      llave: LLAVE_T, fecha: '2026-08-01', subido: 8000, borrada: false }]
+  });
+
+  const estado = estadoT({ '2026-08-01': { comidas: [comidaT('c1', 1000, { titulo: 'vieja', act: 1000 })] } });
+  const r = await sincronizar({ cliente: srv, estado, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  esperar(r.estado.dias['2026-08-01'].comidas[0].titulo, 'corregida');
+  esperar(r.estado.dias['2026-08-01'].comidas[0].kcal, 900);
+});
+
+testAsync('una llave invalida no llega a tocar el servidor', async () => {
+  const srv = servidorFalso();
+  try {
+    await sincronizar({ cliente: srv, estado: estadoT(), llave: 'corta', ultimoSync: 0 });
+    throw new Error('deberia haber fallado');
+  } catch (e) {
+    esperarQue(/llave/i.test(e.message), 'otro error: ' + e.message);
+  }
+  esperar(srv.llamadas.length, 0);
+});
+
+/* --- lo que se carga mientras el sync corre no se pierde (ciclo 12) --- */
+
+/*
+ * La ventana exacta donde se perdian las comidas.
+ *
+ * `sincronizar` clona el estado al fusionar lo remoto, y despues se queda un
+ * rato subiendo. Todo lo que se cargue durante esa subida —la parte lenta, la
+ * que manda datos por la red del celular— queda afuera del clon. Asignar ese
+ * clon al estado global es lo que se comia la comida.
+ */
+function conCargaDuranteLaSubida(srv, vivo, fecha, comida) {
+  const guardarOriginal = srv.guardar;
+  let ya = false;
+  srv.guardar = async (...a) => {
+    if (!ya) { ya = true; vivo.dias[fecha].comidas.push(comida); }
+    return guardarOriginal.call(srv, ...a);
+  };
+  return srv;
+}
+
+testAsync('el estado que devuelve sincronizar es el de ANTES: por eso no se asigna directo', async () => {
+  const vivo = estadoT({ '2026-08-01': { comidas: [comidaT('l1', 2000)] } });
+  const srv = conCargaDuranteLaSubida(servidorFalso(), vivo, '2026-08-01', comidaT('mientras', 2500));
+
+  const r = await sincronizar({ cliente: srv, estado: vivo, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  // el clon que quedo adentro no la tiene: es una foto de antes de subir
+  esperar(r.estado.dias['2026-08-01'].comidas.map(c => c.id), ['l1']);
+  // el estado vivo si
+  esperarQue(vivo.dias['2026-08-01'].comidas.some(c => c.id === 'mientras'), 'se perdio el postre');
+});
+
+testAsync('fusionarAlFinal conserva lo cargado durante el sync y suma lo remoto', async () => {
+  const vivo = estadoT({ '2026-08-01': { comidas: [comidaT('l1', 2000)] } });
+
+  const srv = conCargaDuranteLaSubida(servidorFalso({
+    comidas: [{ ...comidaT('r1', 1000), llave: LLAVE_T, fecha: '2026-08-01', subido: 5000, borrada: false }]
+  }), vivo, '2026-08-01', comidaT('mientras', 2500));
+
+  const r = await sincronizar({ cliente: srv, estado: vivo, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+  const final = fusionarAlFinal(vivo, r).estado;
+
+  esperar(final.dias['2026-08-01'].comidas.map(c => c.id).sort(), ['l1', 'mientras', 'r1']);
+});
+
+test('fusionar dos veces las mismas filas da lo mismo: es idempotente', () => {
+  const base = estadoT({ '2026-08-01': { comidas: [] } });
+  const remotas = {
+    comidas: [{ ...comidaT('r1', 1000), fecha: '2026-08-01', borrada: false }],
+    dias: [{ fecha: '2026-08-01', peso: 80, agua: 3, ejercicio: 0, nota: '', act: 5000 }]
+  };
+  const una = fusionarAlFinal(base, { remotas, resumen: {} }).estado;
+  const dos = fusionarAlFinal(una, { remotas, resumen: {} }).estado;
+  esperar(dos, una);
+});
+
+test('sin nada que bajar, fusionarAlFinal devuelve el mismo objeto y no clona el historial', () => {
+  const base = estadoT({ '2026-08-01': { comidas: [comidaT('l1', 2000)] } });
+  const r = fusionarAlFinal(base, { remotas: { comidas: [], dias: [] }, resumen: { nuevas: 0 } });
+  esperarQue(r.estado === base, 'clono al pedo');
+});
+
+/* --- quedarse sin senal no desloguea (ciclo 12) --- */
+
+testAsync('sin red, el refresco NO borra la sesion: la conserva y avisa', async () => {
+  const alm = almacenFalso({ token: 'viejo', refresco: 'r1', vence: Date.now() - 1000, usuario: { id: 'u1', email: 'a@b.com' } });
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => { throw new TypeError('Failed to fetch'); }
+  });
+
+  try {
+    await a.token();
+    esperarQue(false, 'tendria que haber lanzado');
+  } catch (e) {
+    esperarQue(e.red, 'el error tiene que venir marcado como de red');
+  }
+  esperarQue(alm.ver(), 'la sesion se tiene que quedar: no poder preguntar no es un no');
+  esperar(alm.ver().refresco, 'r1');
+});
+
+testAsync('un rechazo del servidor SI borra la sesion', async () => {
+  const alm = almacenFalso({ token: 'viejo', refresco: 'r1', vence: Date.now() - 1000, usuario: { id: 'u1', email: 'a@b.com' } });
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => respuestaAuth(401, { msg: 'Invalid Refresh Token' })
+  });
+
+  esperar(await a.token(), null);
+  esperar(alm.ver(), null, 'esa sesion ya no sirve');
+});
+
+testAsync('sin red y con el token todavia vigente, ni se entera', async () => {
+  const alm = almacenFalso({ token: 't1', refresco: 'r1', vence: Date.now() + 3600000, usuario: { id: 'u1', email: 'a@b.com' } });
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => { throw new TypeError('Failed to fetch'); }
+  });
+
+  esperar(await a.token(), 't1', 'no hace falta la red para un token que sirve');
+});
+
+testAsync('una respuesta sin token tampoco deja la sesion a medias', async () => {
+  const alm = almacenFalso({ token: 'viejo', refresco: 'r1', vence: Date.now() - 1000, usuario: { id: 'u1', email: 'a@b.com' } });
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => respuestaAuth(200, { ok: true })   // 200 pero sin access_token
+  });
+
+  esperar(await a.token(), null);
+  esperar(alm.ver(), null);
+});
+
+/* --- con la sesion caida no se sincroniza como anonimo (ciclo 12) --- */
+
+test('sin credenciales no se sincroniza y se dice por que', () => {
+  const d = decisionDeSync({ hayCredenciales: false, haySesion: true, token: 'tok' });
+  esperar(d.ok, false);
+  esperar(d.motivo, 'sin credenciales');
+});
+
+test('sin sesion no se sincroniza: los datos son de un usuario', () => {
+  esperar(decisionDeSync({ hayCredenciales: true, haySesion: false, token: null }).motivo, 'sin sesión');
+});
+
+test('con sesion y sin token vivo NO se sigue como anonimo', () => {
+  const d = decisionDeSync({ hayCredenciales: true, haySesion: true, token: null });
+  esperar(d.ok, false);
+  esperar(d.motivo, 'sesión vencida');
+  // el mensaje tiene que hablar de la sesion, no de la anon key ni de las politicas
+  esperarQue(/sesión/i.test(d.mensaje), d.mensaje);
+  esperarQue(!/anon key|polític/i.test(d.mensaje), 'mandaba a revisar una configuración que está bien: ' + d.mensaje);
+});
+
+test('con todo en orden, se sincroniza', () => {
+  esperar(decisionDeSync({ hayCredenciales: true, haySesion: true, token: 'tok' }).ok, true);
+});
+
+/* --- el dia se fusiona campo por campo (ciclo 12) --- */
+
+test('el agua de un dispositivo no borra el ejercicio del otro', () => {
+  const local = { peso: null, agua: 4, ejercicio: 0, nota: '', act: 10 };
+  const remoto = { peso: null, agua: 0, ejercicio: 30, nota: '', act: 20 };
+  const f = fusionarDia(local, remoto);
+  esperar(f.agua, 4, 'los cuatro vasos tienen que quedar');
+  esperar(f.ejercicio, 30, 'y la caminata también');
+});
+
+test('el peso que cargo uno solo sobrevive aunque el otro sea mas nuevo', () => {
+  const local = { peso: 82.4, agua: 0, ejercicio: 0, nota: '', act: 10 };
+  const remoto = { peso: null, agua: 6, ejercicio: 0, nota: '', act: 99 };
+  esperar(fusionarDia(local, remoto).peso, 82.4);
+});
+
+test('y al reves: el peso remoto entra aunque lo local sea mas nuevo', () => {
+  const local = { peso: null, agua: 6, ejercicio: 0, nota: '', act: 99 };
+  const remoto = { peso: 82.4, agua: 0, ejercicio: 0, nota: '', act: 10 };
+  const f = fusionarDia(local, remoto);
+  esperar(f.peso, 82.4);
+  esperar(f.agua, 6);
+});
+
+test('con los dos pesos cargados desempata el mas nuevo', () => {
+  esperar(fusionarDia({ peso: 80, act: 10 }, { peso: 81, act: 20 }).peso, 81);
+  esperar(fusionarDia({ peso: 80, act: 30 }, { peso: 81, act: 20 }).peso, 80);
+});
+
+test('una nota vacia no pisa una escrita', () => {
+  esperar(fusionarDia({ nota: 'me sentí flojo', act: 10 }, { nota: '', act: 99 }).nota, 'me sentí flojo');
+  esperar(fusionarDia({ nota: '', act: 99 }, { nota: 'ayuno', act: 10 }).nota, 'ayuno');
+});
+
+test('dos notas escritas: gana la mas nueva', () => {
+  esperar(fusionarDia({ nota: 'vieja', act: 10 }, { nota: 'nueva', act: 20 }).nota, 'nueva');
+});
+
+test('si no cambia nada, el dia no se marca como tocado', () => {
+  const d = { peso: 80, agua: 4, ejercicio: 30, nota: 'x', act: 20 };
+  esperar(fusionarDia(d, { ...d, act: 99 }).cambio, false);
+});
+
+test('el act del dia fusionado es el mas alto de los dos', () => {
+  esperar(fusionarDia({ act: 10 }, { act: 20 }).act, 20);
+  esperar(fusionarDia({ act: 30 }, { act: 20 }).act, 30);
+});
+
+testAsync('el mismo dia en dos dispositivos: quedan el peso y el agua de los dos', async () => {
+  // acá: el peso de la mañana. allá: el agua de la tarde, mas nueva
+  const estado = estadoT({ '2026-08-01': { peso: 82.4, agua: 0, ejercicio: 0, act: 1000 } });
+  const srv = servidorFalso({
+    dias: [{ llave: LLAVE_T, subido: 5000, fecha: '2026-08-01', peso: null, agua: 6, ejercicio: 45, nota: '', act: 5000 }]
+  });
+
+  const r = await sincronizar({ cliente: srv, estado, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+  const d = r.estado.dias['2026-08-01'];
+  esperar(d.peso, 82.4);
+  esperar(d.agua, 6);
+  esperar(d.ejercicio, 45);
+});
+
+/* --- el sync que falla en silencio se ve (ciclo 12) --- */
+
+const AHORA_C = new Date(2026, 7, 29, 12, 0, 0).getTime();   // DIA_MS ya vive en tests.js
+
+test('sin cuenta, el aviso dice cuanto hay en juego', () => {
+  const e = estadoDeLaCuenta({ haySesion: false, dias: 31, comidas: 94, ahora: AHORA_C });
+  esperar(e.avisar, true);
+  esperar(e.accion, 'entrar');
+  esperarQue(/31 días y 94 comidas/.test(e.texto), e.texto);
+});
+
+test('sin cuenta y sin datos todavia, se avisa igual pero en futuro', () => {
+  const e = estadoDeLaCuenta({ haySesion: false, dias: 0, comidas: 0, ahora: AHORA_C });
+  esperar(e.avisar, true);
+  esperarQue(/lo que cargues/.test(e.texto), e.texto);
+});
+
+test('con cuenta y sincronizado hoy, no se molesta a nadie', () => {
+  const e = estadoDeLaCuenta({ haySesion: true, ultimoSync: AHORA_C - 3600000, ahora: AHORA_C });
+  esperar(e.avisar, false);
+});
+
+test('con cuenta pero sin haber sincronizado nunca, se avisa', () => {
+  const e = estadoDeLaCuenta({ haySesion: true, ultimoSync: 0, ahora: AHORA_C });
+  esperar(e.avisar, true);
+  esperar(e.motivo, 'nunca');
+  esperar(e.accion, 'sincronizar');
+});
+
+test('dos dias sin sincronizar todavia no molesta; tres si', () => {
+  esperar(estadoDeLaCuenta({ haySesion: true, ultimoSync: AHORA_C - 2 * DIA_MS, ahora: AHORA_C }).avisar, false);
+  const e = estadoDeLaCuenta({ haySesion: true, ultimoSync: AHORA_C - 3 * DIA_MS, ahora: AHORA_C });
+  esperar(e.avisar, true);
+  esperar(e.motivo, 'atrasado');
+  esperar(e.dias, 3);
+});
+
+test('si hay un error anotado, el aviso lo dice en vez de dejarlo en Ajustes', () => {
+  const e = estadoDeLaCuenta({
+    haySesion: true, ultimoSync: AHORA_C - 9 * DIA_MS, ahora: AHORA_C,
+    ultimoError: 'Se cerró tu sesión. Entrá de nuevo para volver a sincronizar.'
+  });
+  esperarQue(/Hace 9 días/.test(e.texto), e.texto);
+  esperarQue(/Se cerró tu sesión/.test(e.texto), e.texto);
+});

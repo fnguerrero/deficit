@@ -214,6 +214,23 @@ $('btnLiberar').onclick = () => {
 
 $('btnRestaurar').onclick = restaurarBackup;
 
+/*
+ * Volver a antes de entrar con la cuenta.
+ *
+ * Sin diálogo de confirmación: el botón ya dice de qué fecha es la copia y
+ * cuánto trae, y lo que hace es justamente deshacer. Preguntar "¿estás
+ * seguro?" acá agregaría un paso a la salida de emergencia.
+ */
+$('btnRestaurarHito').onclick = () => {
+  if (restaurarRespaldoDeHito()) renderAjustes();
+};
+
+$('btnOlvidarHito').onclick = () => {
+  olvidarRespaldoDeHito();
+  renderAjustes();
+  toast('Listo, la borré');
+};
+
 $('btnImport').onclick = () => $('importInput').click();
 $('importInput').onchange = async (e) => {
   const f = e.target.files?.[0];
