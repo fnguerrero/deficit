@@ -161,6 +161,61 @@ $('btnRegistrar').onclick = async () => {
   }
 };
 
+/*
+ * Entrar con Google.
+ *
+ * Se va de la app y se vuelve: no hay ventana emergente ni nada que esperar.
+ * Antes de irse queda anotado que se está en el medio de un login, porque al
+ * volver la app arranca de cero y no tiene otra forma de saberlo.
+ */
+$('btnGoogle').onclick = () => {
+  const a = auth();
+  if (!a) return mostrarErrorCuenta('Falta configurar Supabase.');
+
+  if (location.protocol === 'file:') {
+    return mostrarErrorCuenta('Google necesita que la app esté servida por http o https. ' +
+      'Abrila desde su dirección web, no desde el archivo.');
+  }
+
+  /* Se vuelve a la misma página, sin la query: si quedara el `?accion=foto` del
+     acceso directo, al volver se abriría la cámara sola. */
+  const volverA = location.origin + location.pathname;
+  try { sessionStorage.setItem('deficit.volviendo-de-google', '1'); } catch { /* da igual */ }
+  location.href = a.urlDeGoogle(volverA);
+};
+
+/**
+ * Al arrancar: si volvimos de Google, la sesión viene en el fragmento de la URL.
+ *
+ * Lo primero que se hace con ese fragmento es borrarlo de la barra de
+ * direcciones. Un token en la URL se copia, se comparte y queda en el
+ * historial sin que nadie lo note.
+ */
+async function volverDeGoogle() {
+  const hash = location.hash || '';
+  let esperado = false;
+  try { esperado = sessionStorage.getItem('deficit.volviendo-de-google') === '1'; } catch { /* da igual */ }
+  try { sessionStorage.removeItem('deficit.volviendo-de-google'); } catch { /* da igual */ }
+
+  if (!/access_token=|error/.test(hash)) return;
+
+  history.replaceState(null, '', location.pathname + location.search);
+
+  const a = auth();
+  if (!a) return;
+
+  try {
+    const s = await a.entrarConHash(hash);
+    if (!s) return;
+    toast(`Entraste como ${s.usuario.email || 'tu cuenta de Google'}`);
+    await despuesDeEntrar();
+  } catch (e) {
+    irTab('ajustes');
+    mostrarErrorCuenta(e.message);
+    if (!esperado) anotarError('Google: ' + e.message, 'auth', 0);
+  }
+}
+
 $('btnOlvide').onclick = async () => {
   const a = auth();
   const email = $('cuentaEmail_in').value.trim();

@@ -10,6 +10,9 @@ programarCambioDeDia();
 mostrarOnboarding();
 sincronizarAlArrancar();
 
+// si volvemos de Google, la sesion viene en el fragmento de la URL
+volverDeGoogle();
+
 // acceso directo "Analizar foto" del ícono de la app
 if (new URLSearchParams(location.search).get('accion') === 'foto') {
   history.replaceState(null, '', location.pathname);

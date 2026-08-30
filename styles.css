@@ -1447,3 +1447,25 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .barra-cuenta p { margin: 0; font-size: 12.5px; flex: 1; }
 .barra-cuenta-acciones { display: flex; gap: 6px; align-items: center; flex: none; }
 .barra-cuenta button { padding: 7px 12px; font-size: 12.5px; border-radius: 9px; }
+
+/* Entrar con Google. Blanco con borde en los dos temas, que es como se ve en
+   todos lados: un botón de Google teñido con la paleta de la app no se
+   reconoce, y lo único que este botón tiene que hacer es reconocerse. */
+.btn-google {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; padding: 11px 14px; margin-bottom: 4px;
+  background: #fff; color: #1f1f1f;
+  border: 1px solid #dadce0; border-radius: 10px;
+  font-size: 14px; font-weight: 600;
+}
+.btn-google:hover { background: #f7f8f8; }
+.btn-google svg { flex: none; }
+
+/* "o con mail y contraseña", con una línea a cada lado. */
+.separador-o {
+  display: flex; align-items: center; gap: 10px;
+  margin: 14px 0 10px; font-size: 12px;
+}
+.separador-o::before, .separador-o::after {
+  content: ''; flex: 1; height: 1px; background: var(--line);
+}
