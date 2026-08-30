@@ -28,6 +28,56 @@ function sesionDesdeRespuesta(r) {
   };
 }
 
+/* ---------------- entrar con Google ---------------- */
+
+/*
+ * Google va por redirección y no por fetch, y por eso no se parece a nada más
+ * de este archivo.
+ *
+ * El flujo es: la app manda el navegador a Supabase, Supabase manda a Google,
+ * Google pregunta, y de vuelta Supabase deja la sesión **en el fragmento de la
+ * URL** (`#access_token=...`). El fragmento no viaja al servidor, así que el
+ * token nunca sale de la máquina: por eso se usa el hash y no la query.
+ *
+ * Nada de esto necesita un SDK. Lo que sí necesita es que el `redirect_to` esté
+ * en la lista de URLs permitidas del proyecto, o Supabase devuelve a la página
+ * por defecto y la sesión se pierde en el camino.
+ */
+function urlDeGoogle(base, volverA) {
+  const u = String(base || '').replace(/\/+$/, '');
+  if (!u) return '';
+  return `${u}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(volverA)}`;
+}
+
+/**
+ * La sesión que viene en el fragmento de la URL, si es que viene.
+ *
+ * Devuelve null cuando no hay nada que leer —que es el caso normal, cada vez
+ * que se abre la app— y un objeto `{ error }` cuando Google o Supabase
+ * rebotaron, para poder decirlo en vez de quedarse en silencio.
+ */
+function sesionDesdeHash(hash) {
+  const txt = String(hash || '').replace(/^#/, '');
+  if (!txt) return null;
+
+  const p = new URLSearchParams(txt);
+  if (p.get('error') || p.get('error_description')) {
+    return { error: p.get('error_description') || p.get('error') };
+  }
+
+  const token = p.get('access_token');
+  if (!token) return null;
+
+  return {
+    token,
+    refresco: p.get('refresh_token') || '',
+    vence: Date.now() + (Number(p.get('expires_in')) || 3600) * 1000,
+    /* Google no manda el mail acá. Se completa después con /auth/v1/user, y
+       mientras tanto la sesión ya sirve: lo que hace falta es el token. */
+    usuario: { id: '', email: '' }
+  };
+}
+
 function crearAuth({ url, anonKey, fetchFn, almacen = null }) {
   if (!url || !anonKey) throw new Error('Faltan la URL y la clave de Supabase.');
 
@@ -62,6 +112,16 @@ function crearAuth({ url, anonKey, fetchFn, almacen = null }) {
     return datos;
   }
 
+  /* Un GET firmado. `pedir()` es siempre POST porque todo lo demás de auth lo
+     es; /auth/v1/user es el único que no. */
+  async function pedirGet(ruta, token) {
+    const res = await fetchFn(base + ruta, {
+      headers: { apikey: anonKey, Authorization: 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('No se pudo leer el usuario.');
+    return res.json();
+  }
+
   return {
     /** La sesión guardada, sin validar si venció. */
     sesion: () => guardado.leer(),
@@ -83,6 +143,30 @@ function crearAuth({ url, anonKey, fetchFn, almacen = null }) {
       const r = await pedir('token?grant_type=password', { email, password });
       const s = sesionDesdeRespuesta(r);
       if (!s) throw new Error('La respuesta no trajo una sesión válida.');
+      guardado.escribir(s);
+      return s;
+    },
+
+    /** A dónde mandar el navegador para entrar con Google. */
+    urlDeGoogle: (volverA) => urlDeGoogle(url, volverA),
+
+    /**
+     * Guarda la sesión que volvió en la URL y completa quién es.
+     *
+     * El mail se pide aparte porque el fragmento no lo trae, y sin mail la
+     * pantalla diría "sesión iniciada como" y nada. Si esa consulta falla, la
+     * sesión se guarda igual: tener el token es lo que importa.
+     */
+    async entrarConHash(hash) {
+      const s = sesionDesdeHash(hash);
+      if (!s) return null;
+      if (s.error) throw new Error(mensajeDeGoogle(s.error));
+
+      try {
+        const r = await pedirGet('user', s.token);
+        s.usuario = { id: r?.id || '', email: r?.email || '' };
+      } catch { /* sin el mail se sigue igual */ }
+
       guardado.escribir(s);
       return s;
     },
@@ -161,6 +245,15 @@ function mensajeDeAuth(status, datos) {
   if (status >= 500) return 'Supabase está con problemas. Probá en un rato.';
 
   return crudo || `Error ${status}`;
+}
+
+/** Lo que puede rebotar de Google, en castellano. */
+function mensajeDeGoogle(crudo) {
+  const t = String(crudo || '');
+  if (/access_denied|cancel/i.test(t)) return 'Cancelaste el ingreso con Google.';
+  if (/provider is not enabled|not enabled/i.test(t)) return 'Google todavía no está habilitado en el proyecto de Supabase.';
+  if (/redirect|not allowed/i.test(t)) return 'Esta dirección no está en la lista de URLs permitidas del proyecto.';
+  return t || 'No se pudo entrar con Google.';
 }
 
 /** Un mail con forma de mail. No valida que exista, eso lo dirá el servidor. */

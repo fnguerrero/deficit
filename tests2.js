@@ -2277,3 +2277,80 @@ testAsync('un macro decimal contra una columna integer dice que hacer', async ()
     esperarQue(!/invalid input syntax/.test(e.message), 'el mensaje crudo no le sirve a nadie');
   }
 });
+
+/* --- entrar con Google (ciclo 12) --- */
+
+test('la url de Google lleva el proveedor y a donde volver', () => {
+  const u = urlDeGoogle('https://x.supabase.co/', 'https://fnguerrero.github.io/deficit/');
+  esperarQue(u.startsWith('https://x.supabase.co/auth/v1/authorize?'), u);
+  esperarQue(/provider=google/.test(u), u);
+  esperarQue(/redirect_to=https%3A%2F%2Ffnguerrero\.github\.io%2Fdeficit%2F/.test(u), u);
+});
+
+test('sin url de proyecto no hay a donde mandar a nadie', () => {
+  esperar(urlDeGoogle('', 'https://x.com'), '');
+});
+
+test('el hash de vuelta trae la sesion', () => {
+  const s = sesionDesdeHash('#access_token=tok-1&refresh_token=ref-1&expires_in=3600&token_type=bearer');
+  esperar(s.token, 'tok-1');
+  esperar(s.refresco, 'ref-1');
+  esperarQue(s.vence > Date.now(), 'tiene que vencer en el futuro');
+});
+
+test('sin hash no pasa nada: es el caso normal de cada arranque', () => {
+  esperar(sesionDesdeHash(''), null);
+  esperar(sesionDesdeHash('#'), null);
+  esperar(sesionDesdeHash('#otra=cosa'), null);
+});
+
+test('si Google rebota, se dice en vez de quedarse en silencio', () => {
+  const s = sesionDesdeHash('#error=access_denied&error_description=El+usuario+cancelo');
+  esperarQue(s.error, 'tiene que traer el error');
+});
+
+test('los rebotes de Google se explican en castellano', () => {
+  esperarQue(/Cancelaste/.test(mensajeDeGoogle('access_denied')), mensajeDeGoogle('access_denied'));
+  esperarQue(/no está habilitado/.test(mensajeDeGoogle('Provider is not enabled')), mensajeDeGoogle('Provider is not enabled'));
+  esperarQue(/URLs permitidas/.test(mensajeDeGoogle('redirect_uri not allowed')), mensajeDeGoogle('redirect_uri not allowed'));
+});
+
+testAsync('entrarConHash guarda la sesion y completa el mail', async () => {
+  const alm = almacenFalso();
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async (u) => {
+      esperarQue(/\/auth\/v1\/user$/.test(u), 'tiene que pedir el usuario: ' + u);
+      return { ok: true, status: 200, json: async () => ({ id: 'u1', email: 'nico@gmail.com' }) };
+    }
+  });
+
+  const s = await a.entrarConHash('#access_token=tok-1&refresh_token=ref-1&expires_in=3600');
+  esperar(s.usuario.email, 'nico@gmail.com');
+  esperar(alm.ver().token, 'tok-1');
+});
+
+testAsync('si no se puede leer el mail, la sesion se guarda igual', async () => {
+  const alm = almacenFalso();
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => { throw new TypeError('Failed to fetch'); }
+  });
+
+  const s = await a.entrarConHash('#access_token=tok-1&expires_in=3600');
+  esperar(s.token, 'tok-1', 'el token es lo que importa');
+  esperar(alm.ver().token, 'tok-1');
+});
+
+testAsync('un hash con error no guarda ninguna sesion', async () => {
+  const alm = almacenFalso();
+  const a = crearAuth({ url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm, fetchFn: async () => ({ ok: true, json: async () => ({}) }) });
+
+  try {
+    await a.entrarConHash('#error=access_denied');
+    esperarQue(false, 'tendria que haber fallado');
+  } catch (e) {
+    esperarQue(/Cancelaste/.test(e.message), e.message);
+  }
+  esperar(alm.ver(), null);
+});
