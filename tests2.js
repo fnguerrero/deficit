@@ -2257,3 +2257,23 @@ test('si hay un error anotado, el aviso lo dice en vez de dejarlo en Ajustes', (
   esperarQue(/Hace 9 días/.test(e.texto), e.texto);
   esperarQue(/Se cerró tu sesión/.test(e.texto), e.texto);
 });
+
+/* --- el 400 de los macros decimales se explica (ciclo 12) --- */
+
+testAsync('un macro decimal contra una columna integer dice que hacer', async () => {
+  const cli = clienteSupabase({
+    url: 'https://x.supabase.co', anonKey: 'anon', token: 'tok', intentos: 1,
+    fetchFn: async () => ({
+      ok: false, status: 400,
+      json: async () => ({ message: 'invalid input syntax for type integer: "28.6"' })
+    })
+  });
+
+  try {
+    await cli.guardar('comidas', [{ id: 'a', gras: 28.6 }]);
+    esperarQue(false, 'tendria que haber fallado');
+  } catch (e) {
+    esperarQue(/supabase-decimales\.sql/.test(e.message), 'tiene que decir que correr: ' + e.message);
+    esperarQue(!/invalid input syntax/.test(e.message), 'el mensaje crudo no le sirve a nadie');
+  }
+});

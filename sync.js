@@ -113,6 +113,17 @@ function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, d
       if (res.status === 404) {
         throw new Error('No encontré las tablas. ¿Corriste el SQL de supabase.sql?');
       }
+      /*
+       * Las tablas viejas tienen los macros como `integer`, y los macros son
+       * decimales: 28,6 g de grasa, media porción de 15,3 g de proteína. Como
+       * todas las comidas van en un solo POST, una sola con decimales hace
+       * fallar la subida entera. El mensaje crudo de Postgres —"invalid input
+       * syntax for type integer"— no le dice a nadie qué hacer.
+       */
+      if (res.status === 400 && /invalid input syntax for type integer/i.test(detalle)) {
+        throw new Error('La base tiene los macros como números enteros y son decimales. ' +
+          'Corré supabase-decimales.sql en Supabase y volvé a sincronizar.');
+      }
       throw new Error(`Supabase respondió ${res.status}${detalle ? ': ' + detalle : ''}`);
     }
 
