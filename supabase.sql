@@ -17,10 +17,12 @@ create table if not exists public.comidas (
   ts       bigint  not null default 0,
   titulo   text    not null default '',
   items    jsonb   not null default '[]'::jsonb,
-  kcal     integer not null default 0,
-  prot     integer not null default 0,
-  carb     integer not null default 0,
-  gras     integer not null default 0,
+  -- numeric y no integer: un analisis devuelve 28,6 g de grasa, y media
+  -- porcion da 15,3 g de proteina. Con integer, Postgres rechaza la fila.
+  kcal     numeric not null default 0,
+  prot     numeric not null default 0,
+  carb     numeric not null default 0,
+  gras     numeric not null default 0,
   momento  text    not null default 'almuerzo',
   notas    text    not null default '',
   borrada  boolean not null default false,
@@ -39,8 +41,8 @@ create table if not exists public.dias (
   llave      text    not null,
   fecha      date    not null,
   peso       numeric,
-  agua       integer not null default 0,
-  ejercicio  integer not null default 0,
+  agua       integer not null default 0,   -- vasos: se cuentan de a uno
+  ejercicio  numeric not null default 0,
   nota       text    not null default '',
   act        bigint  not null default 0,
   subido     bigint  not null default 0,
