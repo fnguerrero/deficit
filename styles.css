@@ -688,7 +688,13 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* Los tres que se usan siempre, del mismo tamaño y en una sola línea: la
    decisión de "con qué cargo esto" tiene que ser de un vistazo. */
-.acciones-fila { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+/* Una sola acción, a lo ancho.
+   Era una grilla de tres columnas para Foto, Código y Etiqueta; con los otros
+   dos mudados al menú de la flechita, Foto se quedaba en un tercio del ancho y
+   los otros dos tercios en blanco. Y es la acción principal de la app: cuanto
+   más grande, mejor. */
+.acciones-fila { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 12px 0; }
+.acciones-fila .accion-doble { width: 100%; }
 .acciones-fila .accion {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
   padding: 12px 4px; border-radius: 14px; border: 1px solid var(--line);
@@ -1550,3 +1556,8 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* La línea que separa la foto de lo que casi no se usa. */
 .separa-origen { border: 0; border-top: 1px solid var(--line); margin: 4px 0 2px; }
+
+/* Con el botón a lo ancho, el ícono y la palabra van uno al lado del otro:
+   apilados dejaban un botón muy alto y medio vacío. Va al final del archivo
+   porque la regla de arriba lo define como columna y gana la última. */
+.acciones-fila .accion { flex-direction: row; gap: 8px; padding: 14px 4px; }
