@@ -2511,3 +2511,95 @@ test('sin pesos previos no hay referencia', () => {
   esperar(referenciaDePeso({ '2026-08-30': { peso: 80 } }, '2026-08-30'), 0);
   esperar(referenciaDePeso({}, '2026-08-30'), 0);
 });
+
+/* --- que sacar para que la comida entre (ciclo 12) --- */
+
+test('las unidades se distinguen de los gramos', () => {
+  esperar(unidadesDe('3 empanadas'), 3);
+  esperar(unidadesDe('2 unidades'), 2);
+  esperar(unidadesDe('150 g'), 0);
+  esperar(unidadesDe('250 ml'), 0);
+  esperar(unidadesDe('1 taza'), 0, 'una sola unidad no se puede repartir');
+  esperar(unidadesDe(''), 0);
+});
+
+test('la fraccion es una que alguien pueda ejecutar', () => {
+  esperar(fraccionQueAlcanza(10, 100).txt, 'un cuarto');
+  esperar(fraccionQueAlcanza(45, 100).txt, 'la mitad');
+  esperar(fraccionQueAlcanza(70, 100), null, '"dejá tres cuartos sin comer" no es un consejo');
+  esperar(fraccionQueAlcanza(90, 100), null, 'sacar casi todo es sacar todo');
+});
+
+const KETO_ITEMS = [
+  { nombre: 'Empanadas de carne', porcion: '3 unidades', calorias: 750, carbohidratos: 90 },
+  { nombre: 'Ensalada', porcion: '1 plato', calorias: 60, carbohidratos: 6 }
+];
+
+test('con empanadas dice cuantas sacar', () => {
+  // sobran 30 g de carbos: un tercio de las tres empanadas = 1
+  esperar(queSacar(KETO_ITEMS, 'carbohidratos', 30), 'Sacá 1 de las 3 empanadas de carne y entra.');
+});
+
+test('en gramos se dice en fracciones', () => {
+  const items = [{ nombre: 'Fideos', porcion: '200 g', calorias: 400, carbohidratos: 80 }];
+  esperar(queSacar(items, 'carbohidratos', 20), 'Dejá un cuarto de fideos sin comer y entra.');
+});
+
+test('si hay que sacarlo todo, no hay consejo', () => {
+  const items = [{ nombre: 'Fideos', porcion: '200 g', carbohidratos: 80 }];
+  esperar(queSacar(items, 'carbohidratos', 79), null);
+});
+
+test('si con uno no alcanza, se suman', () => {
+  const items = [
+    { nombre: 'Pan', porcion: '2 rebanadas', carbohidratos: 30 },
+    { nombre: 'Papas', porcion: '150 g', carbohidratos: 25 },
+    { nombre: 'Pollo', porcion: '120 g', carbohidratos: 2 }
+  ];
+  esperar(queSacar(items, 'carbohidratos', 50), 'Sacá pan y papas y entra.');
+});
+
+testAsync('en keto, el consejo sale de los carbohidratos que sobran', async () => {
+  const comida = { kcal: 810, carb: 96, prot: 30, gras: 40, items: KETO_ITEMS };
+  const r = comoHacerlaApta(comida, 'keto', null, { carb: 0 });
+  esperar(r.posible, true);
+  esperarQue(/empanadas de carne/.test(r.texto), r.texto);
+});
+
+/* El id del modo vegetariano sale de la tabla, no de suponerlo: los ids y las
+   reglas no se llaman igual (`regla: 'vegetariana'`). */
+const ID_VEGE = Object.keys(MODOS).find(k => MODOS[k].regla === 'vegetariana');
+
+test('si el problema es de que esta hecha, no hay arreglo', () => {
+  const comida = { kcal: 500, carb: 10, items: [{ nombre: 'Milanesa', carbohidratos: 10 }],
+    perfil: { vegetariano: false } };
+  const r = comoHacerlaApta(comida, ID_VEGE, null, null);
+  esperar(r.posible, false);
+  esperarQue(/de qué está hecha/.test(r.texto), r.texto);
+});
+
+test('una comida que ya entra no necesita consejo', () => {
+  const comida = { kcal: 400, carb: 8, items: [{ nombre: 'Huevos', carbohidratos: 2 }] };
+  esperar(comoHacerlaApta(comida, 'keto', null, { carb: 0 }), { posible: true, texto: '' });
+});
+
+test('cuando se pasa y no hay de donde sacar, se dice que es no apta', () => {
+  const comida = { kcal: 900, carb: 100, items: [{ nombre: 'Arroz', porcion: '300 g', carbohidratos: 100 }] };
+  const r = comoHacerlaApta(comida, 'keto', null, { carb: 0 });
+  esperar(r.posible, false);
+  esperarQue(/no apta/.test(r.texto), r.texto);
+});
+
+test('si hay que sacar todas las unidades, se dice el alimento entero', () => {
+  // 3 empanadas con 90 g de carbos y un exceso de 66: no alcanza con sacar dos
+  esperar(queSacar(KETO_ITEMS, 'carbohidratos', 66), 'Sacá empanadas de carne y entra.');
+});
+
+test('sacar una sola cosa no arma una enumeracion rota', () => {
+  const items = [
+    { nombre: 'Pan', porcion: '100 g', carbohidratos: 50 },
+    { nombre: 'Pollo', porcion: '120 g', carbohidratos: 2 }
+  ];
+  // el pan solo no llega por fraccion (más de la mitad) pero entero sí, y queda el pollo
+  esperar(queSacar(items, 'carbohidratos', 40), 'Sacá pan y entra.');
+});

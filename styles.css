@@ -18,6 +18,12 @@
   --sobre-acc: #06210f;      /* texto sobre el verde lleno */
   --warn: #fbbf24;
   --bad: #f87171;
+  /* `--err` se usa en cuatro lugares del CSS y NO existía fuera de los temas
+     alternativos, así que en el tema normal —el que usa casi todo el mundo—
+     esos cuatro no tenían color: la marca "no entra" de la lista de comidas
+     nunca se vio roja, ni en la lista ni en el resumen. Se resuelve contra
+     `--bad`, que sí se redefine en claro y en oscuro. */
+  --err: var(--bad);
   --prot: #60a5fa;
   --carb: #fbbf24;
   --gras: #f472b6;
@@ -1495,3 +1501,15 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--txt);
 }
 .objetivo.nivel-mal b { color: var(--bad); }
+
+/* "No entra" tiene que leerse de lejos: es lo único de la pantalla que pide
+   una decisión antes de comer. */
+.marca-apta.grande.no { font-size: 15px; padding: 6px 14px; letter-spacing: -.2px; }
+
+/* Y debajo, qué hacer al respecto. Un cartel que dice que está mal y no dice
+   qué hacer deja a la persona en el peor lugar posible. */
+.consejo-apta {
+  margin: 6px 0 0; font-size: 13px; font-weight: 600; line-height: 1.35;
+  color: var(--acc);
+}
+.consejo-apta.sin-vuelta { color: var(--err); font-weight: 650; }
