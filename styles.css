@@ -103,7 +103,20 @@ body {
 }
 .icon-btn:active { background: var(--card2); }
 
-main { padding: 0 14px; max-width: 620px; margin: 0 auto; }
+/*
+ * `min-width: 0` y `width: 100%`: es lo que impide que un contenido ancho
+ * estire la página entera.
+ *
+ * `body` es flex, así que `main` es un flex item, y un flex item arranca con
+ * `min-width: auto`: no puede achicarse por debajo del ancho mínimo de lo que
+ * tiene adentro. Un título largo, una fila que no entra o un número de muchos
+ * dígitos hacían crecer a `main` más allá de la pantalla, y con él a TODO —el
+ * encabezado quedaba fuera de vista y la app aparecía corrida hacia un lado.
+ *
+ * No era un problema del elemento culpable de turno: mientras esto faltara,
+ * cualquier contenido podía volver a hacerlo.
+ */
+main { padding: 0 14px; max-width: 620px; margin: 0 auto; min-width: 0; width: 100%; }
 
 /* ---------- tabs ---------- */
 .tab { display: none; animation: fade .18s ease; }
@@ -1076,8 +1089,25 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* Las tiras se reparten el ancho en vez de quedar apretadas a la izquierda con
    media pantalla vacía al lado. Con una sola —lo normal, porque el ayuno solo
    aparece si hay uno corriendo— ocupa la fila entera. */
-.tiras { display: flex; gap: 6px; margin-bottom: 8px; }
-.tiras > * { flex: 1 1 0; min-width: 0; justify-content: center; }
+/*
+ * Grid y no flex, y esto importa.
+ *
+ * Con `display: flex` y sin `flex-wrap`, cuando los chips no entran el
+ * contenedor crece hasta su contenido y arrastra a toda la página: el ancho de
+ * `main` pasaba de 375 a 486 px y la pantalla entera quedaba corrida, con el
+ * título fuera de vista. `flex: 1 1 0` no alcanza para frenarlo porque el
+ * contenido de cada chip tiene su propio mínimo.
+ *
+ * `grid-auto-columns: minmax(0, 1fr)` reparte las columnas que haya sin que
+ * ninguna pueda pasarse de su parte, sin importar qué tan largo sea el texto
+ * de adentro.
+ */
+.tiras {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  gap: 6px; margin-bottom: 8px;
+}
+.tiras > * { min-width: 0; justify-content: center; overflow: hidden; }
+.tira small, .tira span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tira {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11.5px; font-weight: 600; color: var(--txt);

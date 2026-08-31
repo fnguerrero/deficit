@@ -125,8 +125,13 @@ function renderHoy() {
         marca.className = 'marca-apta ' + veredicto.nivel;
         marca.textContent = veredicto.nivel === 'no' ? 'no entra' : 'justo';
         marca.title = veredicto.motivo;
-        b.appendChild(document.createTextNode(' '));
-        b.appendChild(marca);
+        /* Junto a los macros y NO dentro del título: el título tiene
+           `white-space: nowrap` y `overflow: hidden`, así que con un nombre
+           largo —"Plato de comida con embutidos, papas y verduras"— la marca
+           quedaba recortada e invisible. Es decir que el aviso desaparecía
+           justo en los platos más complicados, que son los que lo necesitan. */
+        sm.appendChild(document.createTextNode(' · '));
+        sm.appendChild(marca);
       }
 
       const kcal = document.createElement('span');

@@ -4,8 +4,8 @@
     {
       "name": "deficit",
       "runtimeExecutable": "py",
-      "runtimeArgs": ["-3", "-m", "http.server", "5599"],
-      "port": 5599
+      "runtimeArgs": ["-3", "-m", "http.server", "8765"],
+      "port": 8765
     }
   ]
 }
