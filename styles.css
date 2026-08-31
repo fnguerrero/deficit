@@ -1513,3 +1513,19 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   color: var(--acc);
 }
 .consejo-apta.sin-vuelta { color: var(--err); font-weight: 650; }
+
+/* La pregunta que la foto no puede contestar: de qué son las empanadas.
+   Aparece después de guardar, así que no frena nada; es una corrección que se
+   ofrece, no un formulario que se exige. */
+.duda { margin-top: 10px; text-align: left; }
+.duda p { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--txt); }
+.duda-opciones { display: flex; flex-wrap: wrap; gap: 6px; }
+.duda-opcion {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 7px 11px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--card2); color: var(--txt);
+  font-size: 12.5px; font-weight: 600;
+}
+.duda-opcion small { font-size: 10px; color: var(--dim); font-weight: 500; }
+.duda-opcion.elegida { border-color: var(--acc); color: var(--acc); }
+.duda-opcion.elegida small { color: var(--acc); }

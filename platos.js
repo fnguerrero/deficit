@@ -181,3 +181,70 @@ function faltaLaDeSiempre(dias, ahora = Date.now(), { minimoDias = 8, ratio = 0.
     texto: `Cargaste ${m.nombre.toLowerCase()} ${conEsa.length} de los últimos ${fechas.length} días, y hoy todavía no.`
   };
 }
+
+/* ---------------- lo que la foto no puede mostrar ---------------- */
+
+/*
+ * Empanadas.
+ *
+ * De carne, de humita y de jamón y queso son idénticas por fuera, y ninguna
+ * foto va a resolver eso nunca. La diferencia es real: cambian los macros y,
+ * en keto, cambia si el plato entra o no.
+ *
+ * El análisis viene con las variantes ya calculadas, así que elegir una es
+ * reemplazar un alimento y volver a sumar. Sin red, sin espera y sin pagar
+ * otro análisis.
+ */
+
+/** El item del que se duda, buscado por su nombre base (puede ya estar renombrado). */
+function itemDeLaDuda(items, nombre) {
+  const base = String(nombre || '').trim().toLowerCase();
+  if (!base) return -1;
+  return (items || []).findIndex(i => String(i.nombre || '').trim().toLowerCase().startsWith(base));
+}
+
+/**
+ * Aplica una de las opciones y devuelve la comida recalculada.
+ *
+ * Fibra, azúcar y sodio se quedan como estaban: el modelo no los desglosa por
+ * variante y estimarlos acá sería inventar. Es una imprecisión conocida y
+ * chica al lado de acertarle al relleno.
+ */
+function aplicarOpcion(comida, indice) {
+  const amb = comida?.ambiguedad;
+  const op = amb?.opciones?.[indice];
+  if (!amb || !op) return comida;
+
+  const items = [...(comida.items || [])];
+  const pos = itemDeLaDuda(items, amb.item);
+  if (pos < 0) return comida;
+
+  const etiqueta = String(op.etiqueta || '').trim();
+  items[pos] = {
+    ...items[pos],
+    nombre: `${amb.item} ${etiqueta.toLowerCase()}`.trim(),
+    calorias: Number(op.calorias) || 0,
+    proteinas: Number(op.proteinas) || 0,
+    carbohidratos: Number(op.carbohidratos) || 0,
+    grasas: Number(op.grasas) || 0
+  };
+
+  const t = sumarItems(items);
+  return {
+    ...comida,
+    items,
+    kcal: t.calorias,
+    prot: t.proteinas,
+    carb: t.carbohidratos,
+    gras: t.grasas,
+    fibra: t.fibra,
+    azucar: t.azucar,
+    sodio: t.sodio,
+    ambiguedad: { ...amb, elegida: indice }
+  };
+}
+
+/** Si vale la pena preguntar: hace falta la pregunta y al menos dos opciones. */
+function hayQuePreguntar(amb) {
+  return !!(amb && amb.pregunta && Array.isArray(amb.opciones) && amb.opciones.length >= 2);
+}

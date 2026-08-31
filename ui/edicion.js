@@ -323,7 +323,11 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
     foto: pendiente.foto || null,
     notas: pendiente.notas || '',
     // de qué está hecho el plato: es lo que permite decir si entra en el modo
-    perfil: pendiente.perfil || null
+    perfil: pendiente.perfil || null,
+    /* Y la duda que la foto no puede resolver, con sus variantes ya
+       calculadas: se guarda para poder cambiar de opinión más tarde, no solo
+       en el momento. */
+    ambiguedad: pendiente.ambiguedad || null
   });
 
   save();
@@ -346,7 +350,9 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
       prot: suma('proteinas'),
       carb: suma('carbohidratos'),
       gras: suma('grasas'),
-      perfil: pendiente.perfil || null
+      perfil: pendiente.perfil || null,
+      items,
+      ambiguedad: pendiente.ambiguedad || null
     },
     id: ultimaComidaId
   } : null;
@@ -409,6 +415,70 @@ function avisarComidaGuardada({ titulo, kcal, comida, id }) {
   mostrarResumenComida({ titulo, kcal, veredicto: { ...v, comida, previo }, etiqueta: etiquetaApta(v, state.perfil.modo), id });
 }
 
+/* ---------------- lo que la foto no puede mostrar ---------------- */
+
+/*
+ * La pregunta que la app no puede contestar sola.
+ *
+ * Unas empanadas de carne y unas de humita son la misma foto. Hasta acá el
+ * modelo elegía la más probable y lo dejaba escrito en las notas, donde nadie
+ * lo lee, y el número quedaba mal sin que nadie se enterara.
+ *
+ * Aparece DESPUÉS de guardar y no antes, a propósito. La comida ya quedó
+ * registrada con la opción más probable: si nadie toca nada, no pasa nada malo.
+ * Preguntar antes de guardar sería volver al peaje que sacamos ayer —foto,
+ * espera, formulario— por un caso que ni siquiera es el más común.
+ */
+function pintarDuda(comida, id) {
+  const caja = $('resumenDuda');
+  if (!caja) return;
+
+  const amb = comida?.ambiguedad;
+  caja.hidden = !hayQuePreguntar(amb);
+  if (caja.hidden) return;
+
+  $('resumenDudaTxt').textContent = amb.pregunta;
+
+  const cont = $('resumenDudaOpciones');
+  cont.innerHTML = '';
+
+  amb.opciones.forEach((op, i) => {
+    const b = document.createElement('button');
+    /* La elegida se marca: sin eso, después de tocar una no hay forma de saber
+       cuál quedó, y la pregunta parece seguir abierta. */
+    const elegida = (amb.elegida ?? 0) === i;
+    b.className = 'duda-opcion' + (elegida ? ' elegida' : '');
+    b.innerHTML = `${op.etiqueta}<small>${fmtNum(Math.round(op.calorias))} kcal</small>`;
+    b.onclick = () => elegirOpcion(id, i);
+    cont.appendChild(b);
+  });
+}
+
+/**
+ * Aplica la opción sobre la comida YA guardada y vuelve a pintar el resumen.
+ *
+ * Todo local: los números de cada variante vinieron en el mismo análisis, así
+ * que cambiar de opción no cuesta una llamada ni una espera.
+ */
+function elegirOpcion(id, indice) {
+  const d = dia();
+  const pos = (d.comidas || []).findIndex(c => c.id === id);
+  if (pos < 0) return;
+
+  const nueva = aplicarOpcion(d.comidas[pos], indice);
+  d.comidas[pos] = { ...d.comidas[pos], ...nueva };
+  d.act = Date.now();
+  save();
+  renderHoy();
+
+  /* Se vuelve a pintar el resumen entero y no solo el número: el veredicto del
+     modo puede haber cambiado con la elección, que es medio el punto —unas de
+     humita tienen bastante más carbohidrato que unas de carne. */
+  const c = d.comidas[pos];
+  avisarComidaGuardada({ titulo: c.titulo, kcal: c.kcal, comida: c, id });
+  toast(c.ambiguedad?.opciones?.[indice]?.etiqueta || 'Actualizado');
+}
+
 /* ---------------- el resumen de lo que se guardó ---------------- */
 
 function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
@@ -432,6 +502,8 @@ function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
    * lugar: sabe que está mal y no sabe qué hacer. Cuando el exceso es de
    * cantidad casi siempre alcanza con sacar algo, y eso se puede calcular.
    */
+  pintarDuda(veredicto.comida, id);
+
   const consejo = $('resumenConsejo');
   if (veredicto.nivel === 'no' && veredicto.comida) {
     const c = comoHacerlaApta(veredicto.comida, state.perfil.modo, calcular(), veredicto.previo);
