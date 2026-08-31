@@ -311,6 +311,76 @@ function objetivoDeModo(perfil, idModo = MODO_DEFECTO) {
  * llamada más. `consumido` permite juzgar en contexto del día —lo que sobra en
  * el desayuno puede no sobrar en la cena.
  */
+/**
+ * Carbohidratos netos: los totales menos la fibra.
+ *
+ * Es como se cuenta en keto, y no es una sutileza. La fibra no se digiere ni
+ * levanta la glucemia, así que sumarla al total castiga justo lo que esta
+ * dieta quiere que comas: verduras de hoja, palta, frutos secos. Una ensalada
+ * con palta puede tener 20 g de carbohidratos y 12 de fibra —8 netos—, y con
+ * el total se veía como si se hubiera comido dos tercios del día.
+ */
+function carbosNetos(comida) {
+  const carb = Number(comida?.carb) || 0;
+  const fibra = Number(comida?.fibra) || 0;
+  return Math.max(0, carb - fibra);
+}
+
+/*
+ * Si el reparto de macros se fue de lo que pide el modo.
+ *
+ * Los márgenes son anchos a propósito: se juzga UNA comida, y un desayuno de
+ * huevos es más proteico que el promedio del día sin que eso esté mal. Lo que
+ * se busca no es el desvío, es el patrón equivocado —el plato que parece keto
+ * porque no tiene carbos, pero es pechuga hervida.
+ */
+const TOLERANCIA_PROT = 1.6;    // hasta un 60 % por encima de lo que pide el modo
+const TOLERANCIA_GRAS = 0.7;    // y no menos del 70 % de la grasa que pide
+
+function repartoKeto(comida, modo) {
+  const kcal = Number(comida?.kcal) || 0;
+  const objetivo = modo?.macros;
+
+  /* En platos chicos el reparto no dice nada: un café con crema es 100 % grasa
+     y una feta de jamón es casi toda proteína, y ninguna de las dos cosas es
+     un problema. */
+  if (!objetivo || kcal < 300) return null;
+
+  const prot = Number(comida?.prot) || 0;
+  const gras = Number(comida?.gras) || 0;
+  const carb = Number(comida?.carb) || 0;
+
+  /*
+   * Y solo si los macros explican las calorías.
+   *
+   * Con un macro sin cargar, la cuenta da que falta grasa —porque el número no
+   * está, no porque el plato no la tenga— y el aviso sería puro ruido. Se pide
+   * que los tres juntos den al menos el 70 % de las calorías para creerles.
+   */
+  if ((prot * 4 + carb * 4 + gras * 9) < kcal * 0.7) return null;
+
+  const pctProt = prot * 4 / kcal;
+  const pctGras = gras * 9 / kcal;
+
+  if (pctProt > objetivo.prot * TOLERANCIA_PROT) {
+    return {
+      apta: true,
+      nivel: 'justo',
+      motivo: `${Math.round(pctProt * 100)}% de proteína: mucha para keto, donde el combustible es la grasa.`
+    };
+  }
+
+  if (pctGras < objetivo.gras * TOLERANCIA_GRAS) {
+    return {
+      apta: true,
+      nivel: 'justo',
+      motivo: `Solo ${Math.round(pctGras * 100)}% de grasa: en keto tendría que ser el ${Math.round(objetivo.gras * 100)}%.`
+    };
+  }
+
+  return null;
+}
+
 function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy = null) {
   const modo = modoDe(idModo);
   const kcal = Number(comida?.kcal) || 0;
@@ -329,25 +399,42 @@ function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy
 
   // keto: el carbohidrato es la regla, no una sugerencia
   if (modo.carbosMaxDia) {
-    const yaConsumidos = Number(consumidoHoy?.carb) || 0;
+    const netos = carbosNetos(comida);
+    const yaConsumidos = carbosNetos(consumidoHoy);
     const tope = modo.carbosMaxDia;
 
-    if (yaConsumidos + carb > tope) {
+    if (yaConsumidos + netos > tope) {
       const restantes = Math.max(0, tope - yaConsumidos);
       return {
         apta: false,
         nivel: 'no',
-        motivo: `${Math.round(carb)} g de carbohidratos y te quedaban ${Math.round(restantes)} g para hoy.`
+        motivo: `${Math.round(netos)} g de carbohidratos netos y te quedaban ${Math.round(restantes)} g para hoy.`
       };
     }
-    if (carb > tope * 0.5) {
+
+    /*
+     * Y el reparto, que en keto es la mitad de la regla.
+     *
+     * Con los carbos bajos todavía se puede estar haciendo cualquier cosa: el
+     * error clásico es comer pechuga a la plancha y ensalada, quedarse en cero
+     * carbohidratos y en realidad estar haciendo alta proteína. El exceso de
+     * proteína se convierte en glucosa y saca de cetosis igual, solo que por
+     * la puerta de atrás y sin que el contador de carbos lo muestre.
+     *
+     * Esto no invalida la comida —una comida suelta no rompe nada— así que va
+     * como "justo" y no como "no entra". La regla dura sigue siendo el carbo.
+     */
+    const reparto = repartoKeto(comida, modo);
+    if (reparto) return reparto;
+
+    if (netos > tope * 0.5) {
       return {
         apta: true,
         nivel: 'justo',
-        motivo: `${Math.round(carb)} g de carbohidratos: entra, pero se lleva media jornada.`
+        motivo: `${Math.round(netos)} g de carbohidratos netos: entra, pero se lleva media jornada.`
       };
     }
-    return { apta: true, nivel: 'si', motivo: `${Math.round(carb)} g de carbohidratos.` };
+    return { apta: true, nivel: 'si', motivo: `${Math.round(netos)} g de carbohidratos netos.` };
   }
 
   // el resto de los modos: la comida no debería comerse el día entero

@@ -133,17 +133,22 @@ function comoHacerlaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumi
     }
   }
 
-  // keto: sobran gramos de carbohidrato
+  // keto: sobran gramos de carbohidrato neto
   if (modo.carbosMaxDia) {
-    const carb = Number(comida?.carb) || 0;
-    const ya = Number(consumidoHoy?.carb) || 0;
-    const exceso = (ya + carb) - modo.carbosMaxDia;
+    const exceso = (carbosNetos(consumidoHoy) + carbosNetos(comida)) - modo.carbosMaxDia;
     if (exceso <= 0) return { posible: true, texto: '' };
 
-    const texto = queSacar(items, 'carbohidratos', exceso);
+    /* Se saca por netos, igual que se cuenta: sacar la ensalada para bajar
+       carbohidratos sería el consejo exactamente al revés. */
+    const porNetos = items.map(i => ({
+      ...i,
+      netos: Math.max(0, (Number(i.carbohidratos) || 0) - (Number(i.fibra) || 0))
+    }));
+
+    const texto = queSacar(porNetos, 'netos', exceso);
     return texto
       ? { posible: true, texto }
-      : { posible: false, texto: `Se pasa por ${Math.round(exceso)} g y no hay de dónde sacarlos: es no apta.` };
+      : { posible: false, texto: `Se pasa por ${Math.round(exceso)} g netos y no hay de dónde sacarlos: es no apta.` };
   }
 
   // el resto: la comida se lleva demasiado del día
