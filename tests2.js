@@ -2674,3 +2674,63 @@ test('solo se pregunta con dos opciones o mas', () => {
   esperarQue(!hayQuePreguntar({ pregunta: '¿?', opciones: [{ etiqueta: 'una' }] }));
   esperarQue(!hayQuePreguntar({ opciones: AMB_EMPANADAS.opciones }), 'sin pregunta no hay nada que mostrar');
 });
+
+/* --- keto: netos y reparto de macros (ciclo 12) --- */
+
+test('los carbohidratos netos descuentan la fibra', () => {
+  esperar(carbosNetos({ carb: 20, fibra: 12 }), 8);
+  esperar(carbosNetos({ carb: 20 }), 20, 'sin fibra son los totales');
+  esperar(carbosNetos({ carb: 5, fibra: 9 }), 0, 'nunca negativo');
+  esperar(carbosNetos(null), 0);
+});
+
+test('una ensalada con palta entra en keto por los netos', () => {
+  // 20 g de carbos y 12 de fibra: con totales se comía dos tercios del día
+  const v = comidaApta({ kcal: 400, carb: 20, fibra: 12, prot: 8, gras: 32 }, 'keto', null, null);
+  esperar(v.apta, true);
+  esperarQue(/8 g de carbohidratos netos/.test(v.motivo), v.motivo);
+});
+
+test('con los mismos gramos pero sin fibra, no entra', () => {
+  const v = comidaApta({ kcal: 400, carb: 40, fibra: 0, prot: 8, gras: 32 }, 'keto', null, null);
+  esperar(v.apta, false);
+});
+
+test('pechuga hervida: sin carbos pero no es keto', () => {
+  // 500 kcal, 60 g de proteína (48%) y poca grasa: el error clásico
+  const v = comidaApta({ kcal: 500, carb: 2, fibra: 0, prot: 60, gras: 27 }, 'keto', null, null);
+  esperar(v.nivel, 'justo');
+  esperarQue(/proteína/.test(v.motivo), v.motivo);
+});
+
+test('poca grasa también se avisa', () => {
+  // 40% de grasa cuando keto pide 70
+  const v = comidaApta({ kcal: 400, carb: 4, fibra: 0, prot: 35, gras: 18 }, 'keto', null, null);
+  esperar(v.nivel, 'justo');
+  esperarQue(/grasa/.test(v.motivo), v.motivo);
+});
+
+test('un plato keto de verdad pasa sin peros', () => {
+  // 600 kcal: 5 g netos, 30 g de proteína (20%), 47 g de grasa (70%)
+  const v = comidaApta({ kcal: 600, carb: 8, fibra: 3, prot: 30, gras: 47 }, 'keto', null, null);
+  esperar(v.nivel, 'si');
+});
+
+test('en un plato chico el reparto no dice nada', () => {
+  // un café con crema es casi toda grasa, y una feta de jamón casi toda proteína
+  esperar(repartoKeto({ kcal: 120, prot: 18, gras: 4 }, MODOS.keto), null);
+});
+
+test('el consejo saca por netos, no por totales', () => {
+  const items = [
+    { nombre: 'Arroz', porcion: '150 g', carbohidratos: 45, fibra: 1 },
+    { nombre: 'Ensalada', porcion: '1 plato', carbohidratos: 20, fibra: 12 }
+  ];
+  const c = comoHacerlaApta({ kcal: 700, carb: 65, fibra: 13, items }, 'keto', null, null);
+  esperarQue(/arroz/.test(c.texto), 'tiene que sacar el arroz, no la ensalada: ' + c.texto);
+});
+
+test('con un macro sin cargar, el reparto no se juzga', () => {
+  // sin grasa declarada la cuenta dice que falta grasa, pero es el dato el que falta
+  esperar(repartoKeto({ kcal: 600, carb: 6, prot: 40 }, MODOS.keto), null);
+});
