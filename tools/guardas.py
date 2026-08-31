@@ -73,7 +73,23 @@ for f in archivos:
 for u in sorted(usados - ids_html):
     problemas.append("$('%s') no existe en index.html" % u)
 
-# ---- 3. scripts fuera del shell offline ----
+# ---- 3. ids repetidos en el HTML ----
+#
+# `$('x')` devuelve SIEMPRE el primero del documento, asi que un id repetido
+# deja al segundo elemento muerto sin que nada falle. Aparecio de verdad: las
+# tarjetas de Peso de Historial y de Progreso compartian `pesoDelta`, y dos
+# archivos distintos escribian sobre el mismo nodo; una de las dos pestanas
+# mostraba el numero de la otra. Como los dos existen y ninguno tira error, la
+# guarda de ids inexistentes no lo veia.
+todos_los_ids = re.findall(r'id="([^"]+)"', indice)
+for nombre in sorted(set(todos_los_ids)):
+    veces = todos_los_ids.count(nombre)
+    if veces > 1:
+        problemas.append('id="%s" aparece %d veces en index.html: '
+                         "$('%s') solo va a encontrar el primero"
+                         % (nombre, veces, nombre))
+
+# ---- 4. scripts fuera del shell offline ----
 en_sw = set(re.findall(r"'\./([^'?]+\.js)", leer('sw.js')))
 for f in archivos:
     if f not in en_sw:

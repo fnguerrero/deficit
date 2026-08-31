@@ -5,6 +5,10 @@
    modo: en keto se miran los carbohidratos, en definición la proteína.
    ============================================================ */
 
+/* `pesoDeltaProgreso` y no `pesoDelta`: las tarjetas de Peso de Historial y de
+   Progreso tenían el MISMO id, así que `$('pesoDelta')` devolvía siempre el
+   primero del documento —el de Historial— y esta tarjeta mostraba el número de
+   la otra pestaña, o ninguno. */
 function renderProgreso() {
   renderBrecha();
   renderSemana();
@@ -56,12 +60,12 @@ function pintarPeso(s, periodo) {
   const conPeso = s.puntos.filter(p => p.peso != null);
   if (conPeso.length >= 2) {
     const delta = +(conPeso.at(-1).peso - conPeso[0].peso).toFixed(1);
-    $('pesoDelta').textContent = `${delta <= 0 ? '▼' : '▲'} ${fmtNum(Math.abs(delta), 1)} kg`;
+    $('pesoDeltaProgreso').textContent = `${delta <= 0 ? '▼' : '▲'} ${fmtNum(Math.abs(delta), 1)} kg`;
     $('pesoNota').textContent = periodo === 'dia'
       ? 'Día a día el peso es ruido: agua, sal y la hora de la balanza. Mirá la tendencia, no el salto.'
       : `Promedio por ${periodo === 'semana' ? 'semana' : 'mes'}, que es donde se ve la tendencia real.`;
   } else {
-    $('pesoDelta').textContent = '';
+    $('pesoDeltaProgreso').textContent = '';
     $('pesoNota').textContent = 'Con dos registros de peso ya se puede ver algo.';
   }
 }

@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=344">
+<link rel="stylesheet" href="styles.css?v=347">
 </head>
 <body>
 
@@ -49,10 +49,6 @@
         <b id="mascotaTitulo"></b>
         <span class="fase-chip" id="mascotaFase" hidden></span>
         <small id="mascotaDetalle"></small>
-        <div class="mascota-nivel">
-          <div class="rachas" id="rachasFila"></div>
-          <span id="mascotaLvl"></span>
-        </div>
         <span class="mascota-barra"><i id="mascotaBarra"></i></span>
       </div>
     </button>
@@ -67,6 +63,10 @@
         <div class="ring-center">
           <strong id="ringKcal">0</strong>
           <span id="ringGoal">/ 0 kcal</span>
+          <!-- Lo que queda: es el único número con el que se decide qué comer.
+               Vivía en una fila aparte que repetía el objetivo y el consumido,
+               los dos ya presentes acá arriba. -->
+          <span class="ring-resta" id="ringResta"></span>
         </div>
       </div>
       </div>
@@ -84,32 +84,13 @@
         <div class="macro-head"><span>Grasas</span><b id="mGrasTxt">0 g</b></div>
         <div class="bar"><i id="mGrasBar" class="gras"></i></div>
       </div>
-      <div id="listaNutrientes" class="nutrientes" hidden></div>
     </div>
     </div>
 
-    <div class="ring-stats">
-      <div><span id="statRestante">0</span><small>restantes</small></div>
-      <div><span id="statObjetivo">0</span><small>objetivo</small></div>
-      <div><span id="statTdee">0</span><small>gasto est.</small></div>
-    </div>
+    <!-- Fibra, azúcar y sodio a lo ancho: adentro de la tarjeta de macros
+         tenían 200 px para tres columnas y se envolvían en dos filas. -->
+    <div id="listaNutrientes" class="nutrientes" hidden></div>
 
-    <div class="card sin-key" id="cardSinKey" hidden>
-      <p>El análisis por foto necesita una API key de Anthropic. Todo lo demás anda sin eso.</p>
-      <div class="actions-row">
-        <button id="btnIrAjustes" class="ghost small">Cargar la key</button>
-        <button id="btnOcultarKey" class="ghost small">Ahora no</button>
-      </div>
-    </div>
-
-    <div class="aviso-proteina" id="avisoProteina" hidden>
-      <span id="avisoProteinaTxt"></span>
-    </div>
-
-    <div class="card" id="cardFavoritos" hidden>
-      <div class="card-head"><h2>Favoritos</h2><span class="pill">1 toque</span></div>
-      <div class="chips" id="listaFavoritos"></div>
-    </div>
 
     <div class="card sin-key" id="cardSinKey" hidden>
       <p>El análisis por foto necesita una API key de Anthropic. Todo lo demás anda sin eso.</p>
@@ -133,8 +114,6 @@
         <button id="btnFoto" class="accion primary">📷<span>Foto</span></button>
         <button id="btnOrigenFoto" class="flechita" aria-label="Elegir cámara o galería">▾</button>
       </div>
-      <button id="btnEscanear" class="accion">📊<span>Código</span></button>
-      <button id="btnEtiqueta" class="accion">🏷️<span>Etiqueta</span></button>
     </div>
     <!-- No es un recordatorio: es saber si lo que estas por cargar cuenta como
          merienda o como cena, que es de donde sale el reparto del dia. -->
@@ -286,7 +265,7 @@
     <div class="periodos" id="selPeriodo"></div>
 
     <div class="card">
-      <div class="card-head"><h2>Peso</h2><span id="pesoDelta" class="pill"></span></div>
+      <div class="card-head"><h2>Peso</h2><span id="pesoDeltaProgreso" class="pill"></span></div>
       <div id="grPeso"></div>
       <p class="hint" id="pesoNota"></p>
     </div>
@@ -501,6 +480,12 @@
       <div class="modal-body opciones-origen">
         <button id="btnDesdeCamara" class="primary big">📷 Sacar una foto</button>
         <button id="btnDesdeGaleria" class="ghost big">🖼️ Elegir de la galería</button>
+        <!-- El código de barras y la etiqueta ocupaban dos tercios de la fila
+             de acciones para un puñado de usos al mes, contra decenas de la
+             foto. Acá siguen a un toque de distancia. -->
+        <hr class="separa-origen">
+        <button id="btnEscanear" class="ghost big">📊 Código de barras</button>
+        <button id="btnEtiqueta" class="ghost big">🏷️ Leer una etiqueta</button>
       </div>
     </div>
   </div>
@@ -968,52 +953,52 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=344"></script>
-<script src="core.js?v=344"></script>
-<script src="platos.js?v=344"></script>
-<script src="animar.js?v=344"></script>
-<script src="fotos.js?v=344"></script>
-<script src="calibracion.js?v=344"></script>
-<script src="modos.js?v=344"></script>
-<script src="arreglos.js?v=344"></script>
-<script src="habitos.js?v=344"></script>
-<script src="mascota.js?v=344"></script>
-<script src="cuerpo.js?v=344"></script>
-<script src="personaje.js?v=344"></script>
-<script src="sprite-datos.js?v=344"></script>
-<script src="sprite.js?v=344"></script>
-<script src="transformacion.js?v=344"></script>
-<script src="aura.js?v=344"></script>
-<script src="juego.js?v=344"></script>
-<script src="sonidos.js?v=344"></script>
-<script src="voz.js?v=344"></script>
-<script src="graficos.js?v=344"></script>
-<script src="analisis.js?v=344"></script>
-<script src="chequeos.js?v=344"></script>
-<script src="claude.js?v=344"></script>
-<script src="productos.js?v=344"></script>
-<script src="sync.js?v=344"></script>
-<script src="estado-sync.js?v=344"></script>
-<script src="auth.js?v=344"></script>
-<script src="app.js?v=344"></script>
-<script src="ui/general.js?v=344"></script>
-<script src="ui/hoy.js?v=344"></script>
-<script src="ui/objetivos.js?v=344"></script>
-<script src="ui/tarjeta.js?v=344"></script>
-<script src="ui/logros.js?v=344"></script>
-<script src="ui/comidas.js?v=344"></script>
-<script src="ui/edicion.js?v=344"></script>
-<script src="ui/escaner.js?v=344"></script>
-<script src="ui/asistente.js?v=344"></script>
-<script src="ui/historial.js?v=344"></script>
-<script src="ui/progreso.js?v=344"></script>
-<script src="ui/perfil.js?v=344"></script>
-<script src="ui/sincronizacion.js?v=344"></script>
-<script src="ui/cuenta.js?v=344"></script>
-<script src="ui/calibracion.js?v=344"></script>
-<script src="ui/actividades.js?v=344"></script>
-<script src="ui/recordatorios.js?v=344"></script>
-<script src="ui/ajustes.js?v=344"></script>
-<script src="arranque.js?v=344"></script>
+<script src="config.js?v=347"></script>
+<script src="core.js?v=347"></script>
+<script src="platos.js?v=347"></script>
+<script src="animar.js?v=347"></script>
+<script src="fotos.js?v=347"></script>
+<script src="calibracion.js?v=347"></script>
+<script src="modos.js?v=347"></script>
+<script src="arreglos.js?v=347"></script>
+<script src="habitos.js?v=347"></script>
+<script src="mascota.js?v=347"></script>
+<script src="cuerpo.js?v=347"></script>
+<script src="personaje.js?v=347"></script>
+<script src="sprite-datos.js?v=347"></script>
+<script src="sprite.js?v=347"></script>
+<script src="transformacion.js?v=347"></script>
+<script src="aura.js?v=347"></script>
+<script src="juego.js?v=347"></script>
+<script src="sonidos.js?v=347"></script>
+<script src="voz.js?v=347"></script>
+<script src="graficos.js?v=347"></script>
+<script src="analisis.js?v=347"></script>
+<script src="chequeos.js?v=347"></script>
+<script src="claude.js?v=347"></script>
+<script src="productos.js?v=347"></script>
+<script src="sync.js?v=347"></script>
+<script src="estado-sync.js?v=347"></script>
+<script src="auth.js?v=347"></script>
+<script src="app.js?v=347"></script>
+<script src="ui/general.js?v=347"></script>
+<script src="ui/hoy.js?v=347"></script>
+<script src="ui/objetivos.js?v=347"></script>
+<script src="ui/tarjeta.js?v=347"></script>
+<script src="ui/logros.js?v=347"></script>
+<script src="ui/comidas.js?v=347"></script>
+<script src="ui/edicion.js?v=347"></script>
+<script src="ui/escaner.js?v=347"></script>
+<script src="ui/asistente.js?v=347"></script>
+<script src="ui/historial.js?v=347"></script>
+<script src="ui/progreso.js?v=347"></script>
+<script src="ui/perfil.js?v=347"></script>
+<script src="ui/sincronizacion.js?v=347"></script>
+<script src="ui/cuenta.js?v=347"></script>
+<script src="ui/calibracion.js?v=347"></script>
+<script src="ui/actividades.js?v=347"></script>
+<script src="ui/recordatorios.js?v=347"></script>
+<script src="ui/ajustes.js?v=347"></script>
+<script src="arranque.js?v=347"></script>
 </body>
 </html>
