@@ -26,7 +26,16 @@ const CARITAS = [
 /** Qué objetivos del día hay y cuáles están cumplidos. */
 function objetivosDelDia() {
   const d = dia();
-  const peso = state.perfil.peso || null;
+
+  /*
+   * `listo` y `nivel` responden dos preguntas distintas, y por eso son dos.
+   *
+   * `listo` es "¿lo cargaste?", y de ahí salen la racha, los días perfectos y
+   * la fase del muñeco. `nivel` es "¿cómo estuvo?", y solo decide el color.
+   * Mezclarlos rompería el juego: tres horas de sueño están mal, pero el día
+   * quedó registrado igual, y esa racha se ganó.
+   */
+  const ref = referenciaDePeso(state.dias, fecha);
 
   return [
     {
@@ -34,6 +43,7 @@ function objetivosDelDia() {
       emoji: '⚖️',
       nombre: 'Peso',
       listo: typeof d.peso === 'number' && d.peso > 0,
+      nivel: nivelPeso(d.peso, ref, state.perfil.pesoObj),
       valor: d.peso ? fmtNum(d.peso) + ' kg' : ''
     },
     {
@@ -41,6 +51,7 @@ function objetivosDelDia() {
       emoji: '💧',
       nombre: 'Agua',
       listo: (d.agua || 0) >= metaVasos(),
+      nivel: nivelAgua(d.agua, metaVasos()),
       valor: `${d.agua || 0}/${metaVasos()}`
     },
     {
@@ -48,6 +59,7 @@ function objetivosDelDia() {
       emoji: '🏃',
       nombre: 'Ejercicio',
       listo: (d.ejercicio || 0) > 0,
+      nivel: nivelEjercicio(d.ejercicio),
       valor: d.ejercicio ? fmtNum(d.ejercicio) + ' kcal' : ''
     },
     {
@@ -55,6 +67,7 @@ function objetivosDelDia() {
       emoji: '😴',
       nombre: 'Sueño',
       listo: !!(d.sueno && d.sueno.horas),
+      nivel: nivelSueno(d.sueno?.horas),
       valor: d.sueno?.horas ? d.sueno.horas + ' h' : ''
     },
     {
@@ -62,6 +75,7 @@ function objetivosDelDia() {
       emoji: '🙂',
       nombre: 'Ánimo',
       listo: !!d.animo,
+      nivel: nivelAnimo(d.animo),
       valor: d.animo ? (CARITAS.find(c => c.id === d.animo)?.emoji || '') : ''
     }
   ];
@@ -146,8 +160,13 @@ function renderObjetivos() {
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {
     const b = document.createElement('button');
-    b.className = 'objetivo' + (o.listo ? ' listo' : '');
-    b.setAttribute('aria-label', `${o.nombre}${o.valor ? ': ' + o.valor : ', sin cargar'}`);
+    /* El color sale del nivel; `listo` solo pone el tilde y el estado. Un
+       casillero cargado con un dato malo tiene que verse malo. */
+    b.className = 'objetivo' + (o.listo ? ' listo' : '') + (o.nivel ? ' nivel-' + o.nivel : '');
+    /* El color no puede ser el único que lo diga: quien no lo distingue, o usa
+       un lector de pantalla, se perdería justo el aviso. */
+    const comoEstuvo = { bien: '', flojo: ', flojo', mal: ', mal' }[o.nivel] || '';
+    b.setAttribute('aria-label', `${o.nombre}${o.valor ? ': ' + o.valor : ', sin cargar'}${comoEstuvo}`);
     /* El casillero es un interruptor con estado, no un boton suelto: sin esto un
        lector de pantalla no distingue el cumplido del pendiente. */
     b.setAttribute('role', 'switch');
