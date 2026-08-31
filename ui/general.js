@@ -119,9 +119,16 @@ addEventListener('storage', (e) => {
 
   try {
     const otro = migrar(JSON.parse(e.newValue));
+
+    /* El aviso solo si cambió algo que se ve. La otra pestaña también escribe
+       al sincronizar —hora del último sync, resumen, errores— y avisar por eso
+       llenaba la pantalla de toasts que no correspondían a nada que la persona
+       hubiera hecho. */
+    const cambioVisible = JSON.stringify(otro.dias || {}) !== JSON.stringify(state.dias || {});
+
     Object.assign(state, otro);
     renderAll();
-    toast('Se actualizó con lo que cargaste en otra pestaña');
+    if (cambioVisible) toast('Se actualizó con lo que cargaste en otra pestaña');
   } catch {
     /* Un JSON roto en la otra pestaña no puede tirar abajo esta. */
   }

@@ -4,6 +4,22 @@
 
 let sincronizando = false;
 
+/*
+ * El sync escribe en el estado —`ultimoSync`, `ultimoError`, el resumen— y ese
+ * guardado NO tiene que disparar otro sync.
+ *
+ * Sin esta marca la app entraba en un bucle infinito: correrSync guarda,
+ * guardarYa() llama a sincronizarTrasCambio(), eso programa otra ronda a los
+ * cuatro segundos, esa ronda vuelve a guardar, y así para siempre. Una
+ * sincronización completa contra Supabase cada cuatro segundos, gastando datos
+ * y batería, y con la otra pestaña avisando "se actualizó" sin parar.
+ *
+ * No alcanzaba con mirar `sincronizando`: para cuando corre el guardado
+ * —save() junta los cambios de un cuarto de segundo— la ronda ya terminó y la
+ * bandera volvió a false.
+ */
+let guardadoDelSync = false;
+
 /**
  * Lo que hay guardado en ESTE dispositivo. Para escribir siempre se parte de
  * acá: si se partiera de configSync(), el default global quedaría copiado al
@@ -179,6 +195,7 @@ async function correrSync({ silencioso = false } = {}) {
   } catch (e) {
     // sin conexión: no es un error para mostrar, es "más tarde"
     state.cfg.sync = { ...configSyncLocal(), ultimoError: e.message };
+    guardadoDelSync = true;
     save();
     renderSync();
     if (!silencioso) toast('Sin conexión: se sincroniza cuando vuelva');
@@ -195,6 +212,7 @@ async function correrSync({ silencioso = false } = {}) {
     if (puede.motivo === 'sesión vencida') {
       // auth() ya borró la sesión muerta: hay que decirlo y que la pantalla lo refleje
       state.cfg.sync = { ...configSyncLocal(), ultimoError: puede.mensaje };
+      guardadoDelSync = true;
       save();
       if (typeof renderCuenta === 'function') renderCuenta();
       if (typeof renderAvisoCuenta === 'function') renderAvisoCuenta();
@@ -243,12 +261,14 @@ async function correrSync({ silencioso = false } = {}) {
       ultimoResumen: `Subí ${subidas} y bajé ${bajadas}.`
     };
 
+    guardadoDelSync = true;
     save();
     renderAll();
     if (!silencioso) toast(bajadas ? `${bajadas} ${bajadas === 1 ? 'cambio nuevo' : 'cambios nuevos'}` : 'Todo al día');
     return { subidas, bajadas };
   } catch (err) {
     state.cfg.sync = { ...configSyncLocal(), ultimoError: err.message };
+    guardadoDelSync = true;
     save();
     renderSync();
     if (!silencioso) toast('No se pudo sincronizar');
@@ -287,9 +307,20 @@ let relojCambio = null;
 function sincronizarTrasCambio({ esperaMs = 4000 } = {}) {
   // el save() de la propia sincronización no puede disparar otra
   if (sincronizando) return;
+  if (guardadoDelSync) { guardadoDelSync = false; return; }
 
   const cfg = configSync();
   if (!cfg.url || !cfg.anonKey) return;
+
+  /*
+   * Y si no hay ningún dato nuevo, tampoco hay nada que subir.
+   *
+   * Cambiar el tema, la precisión o cualquier preferencia también llama a
+   * save(), y ninguna de esas cosas viaja al servidor. Sin este chequeo, tocar
+   * un switch en Ajustes disparaba una ronda completa contra Supabase.
+   */
+  const c = cambiosLocales(state, cfg.ultimoSync || 0);
+  if (!c.comidas.length && !c.dias.length && !c.borradas.length) return;
 
   clearTimeout(relojCambio);
   relojCambio = setTimeout(() => {
