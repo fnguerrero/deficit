@@ -153,9 +153,50 @@ const SCHEMA_COMIDA = {
                  'lacteos', 'cereales', 'integral', 'aceiteOliva', 'frutosSecos',
                  'ultraprocesado', 'azucarAgregada', 'frito', 'gluten', 'vegetariano'],
       additionalProperties: false
+    },
+    /*
+     * Lo que la foto NO puede mostrar.
+     *
+     * Unas empanadas de carne, de humita y de jamón y queso son idénticas por
+     * fuera, y la diferencia entre ellas es real: cambian los macros y, en
+     * keto, cambian si el plato entra o no. Hasta acá el modelo elegía la más
+     * probable y lo anotaba en las notas, donde nadie lo lee.
+     *
+     * En vez de preguntar y volver a llamar a la API —otra espera, otro
+     * costo—, se le piden TODAS las variantes de una: la app ya tiene los
+     * números de cada una y aplicar la elección es instantáneo y gratis.
+     *
+     * Solo cuando la diferencia importa. Preguntar por cosas que cambian
+     * treinta calorías convierte cada foto en un formulario.
+     */
+    ambiguedad: {
+      type: ['object', 'null'],
+      description: 'Solo si de verdad no se puede saber de la foto y la diferencia entre las opciones supera el 15% de las calorías del plato o cambia los macros de forma clara. Si no, null.',
+      properties: {
+        pregunta: { type: 'string', description: 'Corta y directa, ej: "¿De qué son las empanadas?"' },
+        item: { type: 'string', description: 'El nombre exacto, tal cual figura en items, del alimento del que se duda' },
+        opciones: {
+          type: 'array',
+          description: 'De 2 a 5. La primera tiene que ser la que ya usaste en items: es la que queda si no se elige nada.',
+          items: {
+            type: 'object',
+            properties: {
+              etiqueta: { type: 'string', description: 'Corta, ej: "De carne"' },
+              calorias: { type: 'number', description: 'De ese alimento con esta opción, no del plato entero' },
+              proteinas: { type: 'number' },
+              carbohidratos: { type: 'number' },
+              grasas: { type: 'number' }
+            },
+            required: ['etiqueta', 'calorias', 'proteinas', 'carbohidratos', 'grasas'],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ['pregunta', 'item', 'opciones'],
+      additionalProperties: false
     }
   },
-  required: ['titulo', 'confianza', 'items', 'notas', 'perfil'],
+  required: ['titulo', 'confianza', 'items', 'notas', 'perfil', 'ambiguedad'],
   additionalProperties: false
 };
 
@@ -174,7 +215,8 @@ Pautas:
 - Los números tienen que ser realistas y coherentes: 4 kcal por gramo de proteína y de carbohidratos, 9 por gramo de grasa.
 - Fibra, azúcar y sodio: estimalos si el alimento los tiene de forma evidente (una fruta tiene fibra, una gaseosa azúcar, un embutido sodio). Si no podés, poné 0; es mejor que inventar.
 - Respondé todo en español.
-- El campo "perfil" describe de qué está hecho el plato, para poder juzgarlo contra distintas dietas. Marcá cada cosa solo si está presente de forma clara: no adivines.`;
+- El campo "perfil" describe de qué está hecho el plato, para poder juzgarlo contra distintas dietas. Marcá cada cosa solo si está presente de forma clara: no adivines.
+- El campo "ambiguedad" es para lo que la foto no puede mostrar: el relleno de una empanada o una tarta, si la milanesa es de carne o de soja, si el yogur es entero o descremado. Usalo SOLO cuando no se pueda saber mirando y la diferencia sea grande. Poné primero la opción que ya usaste en los items. Si la foto alcanza para saberlo, va null.`;
 
 const PROMPT_ETIQUETA = `Sos un nutricionista leyendo la etiqueta nutricional de un producto envasado.
 

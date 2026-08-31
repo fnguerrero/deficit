@@ -2603,3 +2603,74 @@ test('sacar una sola cosa no arma una enumeracion rota', () => {
   // el pan solo no llega por fraccion (más de la mitad) pero entero sí, y queda el pollo
   esperar(queSacar(items, 'carbohidratos', 40), 'Sacá pan y entra.');
 });
+
+/* --- lo que la foto no puede mostrar (ciclo 12) --- */
+
+const AMB_EMPANADAS = {
+  pregunta: '¿De qué son las empanadas?',
+  item: 'Empanadas',
+  opciones: [
+    { etiqueta: 'De carne', calorias: 750, proteinas: 30, carbohidratos: 84, grasas: 33 },
+    { etiqueta: 'De humita', calorias: 690, proteinas: 15, carbohidratos: 105, grasas: 24 },
+    { etiqueta: 'De jamón y queso', calorias: 810, proteinas: 33, carbohidratos: 81, grasas: 42 }
+  ]
+};
+
+function comidaAmbigua() {
+  return {
+    titulo: 'Empanadas', kcal: 810, prot: 33, carb: 90, gras: 36,
+    fibra: 4, azucar: 2, sodio: 900,
+    items: [
+      { nombre: 'Empanadas', porcion: '3 unidades', calorias: 750, proteinas: 30, carbohidratos: 84, grasas: 33, fibra: 3, azucar: 2, sodio: 800 },
+      { nombre: 'Ensalada', porcion: '1 plato', calorias: 60, proteinas: 3, carbohidratos: 6, grasas: 3, fibra: 1, azucar: 0, sodio: 100 }
+    ],
+    ambiguedad: AMB_EMPANADAS
+  };
+}
+
+test('elegir una opcion reemplaza el alimento y recalcula el total', () => {
+  const r = aplicarOpcion(comidaAmbigua(), 1);   // humita
+  esperar(r.items[0].nombre, 'Empanadas de humita');
+  esperar(r.items[0].carbohidratos, 105);
+  esperar(r.carb, 111, 'el total suma la ensalada');
+  esperar(r.kcal, 750);
+});
+
+test('la ensalada queda intacta', () => {
+  const r = aplicarOpcion(comidaAmbigua(), 2);
+  esperar(r.items[1], comidaAmbigua().items[1]);
+});
+
+test('se puede cambiar de opinion: elegir otra parte de lo mismo', () => {
+  const humita = aplicarOpcion(comidaAmbigua(), 1);
+  const jamon = aplicarOpcion(humita, 2);
+  esperar(jamon.items[0].nombre, 'Empanadas de jamón y queso');
+  esperar(jamon.carb, 87, 'no se acumula sobre la eleccion anterior');
+});
+
+test('queda anotado qué se eligió', () => {
+  esperar(aplicarOpcion(comidaAmbigua(), 1).ambiguedad.elegida, 1);
+});
+
+test('una opcion que no existe no rompe nada', () => {
+  const c = comidaAmbigua();
+  esperar(aplicarOpcion(c, 9), c);
+  esperar(aplicarOpcion(c, -1), c);
+});
+
+test('sin ambiguedad, la comida no se toca', () => {
+  const c = { kcal: 500, items: [{ nombre: 'x', calorias: 500 }] };
+  esperar(aplicarOpcion(c, 0), c);
+});
+
+test('si el alimento no aparece en la lista, no se inventa', () => {
+  const c = { ...comidaAmbigua(), ambiguedad: { ...AMB_EMPANADAS, item: 'Pizza' } };
+  esperar(aplicarOpcion(c, 1), c);
+});
+
+test('solo se pregunta con dos opciones o mas', () => {
+  esperarQue(hayQuePreguntar(AMB_EMPANADAS));
+  esperarQue(!hayQuePreguntar(null));
+  esperarQue(!hayQuePreguntar({ pregunta: '¿?', opciones: [{ etiqueta: 'una' }] }));
+  esperarQue(!hayQuePreguntar({ opciones: AMB_EMPANADAS.opciones }), 'sin pregunta no hay nada que mostrar');
+});
