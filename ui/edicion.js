@@ -243,7 +243,7 @@ $('btnGuardarComida').onclick = () => {
 /**
  * Guarda lo que quedo en `pendiente`. La usan el boton y el guardado directo.
  */
-function guardarComidaPendiente({ avisar = false } = {}) {
+function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
   if (!pendiente) return;
   const items = pendiente.items
     .filter(i => i.nombre.trim() || i.calorias)
@@ -325,8 +325,15 @@ function guardarComidaPendiente({ avisar = false } = {}) {
   /* Lo que hace falta para el aviso se toma ANTES de cerrar: cerrarModal limpia
      `pendiente`, y leerlo despues dejaba el resumen con el nombre del primer
      alimento en vez del titulo del plato. */
+  /* Y el título también, por el mismo motivo: `pareceDuplicada` lo necesita
+     después de cerrar, y leerlo de `pendiente` ahí explotaba con "Cannot read
+     properties of null". La comida se guardaba igual —el save ya había
+     pasado— así que el error no se veía: lo que se perdía en silencio eran el
+     resumen de lo guardado y el aviso de comida repetida. */
+  const tituloGuardado = pendiente.titulo?.trim() || items[0]?.nombre || 'Comida';
+
   const datosAviso = avisar ? {
-    titulo: pendiente.titulo?.trim() || items[0]?.nombre || 'Comida',
+    titulo: tituloGuardado,
     kcal: suma('calorias'),
     comida: {
       kcal: suma('calorias'),
@@ -354,7 +361,7 @@ function guardarComidaPendiente({ avisar = false } = {}) {
    */
   const gemela = pareceDuplicada(
     (dia().comidas || []).filter(c => c.id !== ultimaComidaId),
-    { id: ultimaComidaId, titulo: pendiente.titulo, kcal: suma('calorias') }
+    { id: ultimaComidaId, titulo: tituloGuardado, kcal: suma('calorias') }
   );
 
   if (gemela) {
@@ -362,6 +369,14 @@ function guardarComidaPendiente({ avisar = false } = {}) {
       texto: 'Borrar la nueva',
       accion: () => { borrarComida(ultimaComidaId); }
     });
+    return;
+  }
+
+  /* Se guardó igual, pero algo no cerraba: lo que hace falta es decirlo y dar
+     el camino para arreglarlo, no haber frenado el guardado. */
+  if (dudoso) {
+    const id = ultimaComidaId;
+    toast(dudoso, { texto: 'Revisar', accion: () => editarComida(id) });
     return;
   }
 

@@ -226,7 +226,7 @@ $('btnEtiqueta').onclick = () => pedirFoto('etiqueta');
 
 const FRASES = {
   plato: [
-    'Claude está mirando el plato…',
+    'Analizando…',
     'Identificando los alimentos…',
     'Estimando las porciones…',
     'Calculando calorías y macros…'
@@ -299,17 +299,23 @@ async function correrAnalisis(intento) {
      * app no sabe más que el modelo sobre lo que comiste— pero se muestra antes
      * de que ensucie el historial.
      */
+    /*
+     * Se guarda SIEMPRE, incluso cuando el número es raro.
+     *
+     * Antes, la confianza baja o un total imposible abrían la pantalla de
+     * revisión y frenaban todo hasta que alguien apretara Guardar. La idea era
+     * no ensuciar el historial, pero el precio es peor que la enfermedad: la
+     * comida queda sin cargar si en ese momento no se puede atender el
+     * teléfono, y una comida que no se registró vale menos que una registrada
+     * mal, porque la mal cargada por lo menos se puede corregir.
+     *
+     * El aviso no se pierde: se guarda y se dice qué está raro, con el botón
+     * para ir a arreglarlo al lado.
+     */
     const raros = revisarAnalisis(r);
+    const dudoso = raros[0] || (r.confianza === 'baja' ? 'No se vio del todo bien: revisá si está OK' : '');
 
-    if (r.confianza === 'baja' || raros.length) {
-      $('modalTitle').textContent = 'Revisá esto';
-      mostrarResultado(pendiente);
-      mostrarEstado('result');
-      toast(raros[0] || 'No se vio del todo bien: revisalo antes de guardar');
-      return;
-    }
-
-    guardarComidaPendiente({ avisar: true });
+    guardarComidaPendiente({ avisar: true, dudoso });
   } catch (err) {
     frenar();
     if (err.name === 'AbortError') return;   // lo canceló la persona: el modal ya se cerró
