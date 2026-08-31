@@ -231,7 +231,13 @@ $('btnGuardarComida').onclick = () => {
 
     if (v.nivel === 'no') {
       pendiente.avisado = true;   // al segundo toque guarda sin repetir el aviso
-      $('avisoModo').textContent = `${etiquetaApta(v, state.perfil.modo)}: ${v.motivo} Tocá Guardar de nuevo si va igual.`;
+      const arreglo = comoHacerlaApta({
+        kcal: suma('calorias'), prot: suma('proteinas'), carb: suma('carbohidratos'),
+        gras: suma('grasas'), sodio: suma('sodio'), perfil: pendiente.perfil || null, items
+      }, state.perfil.modo, calcular(), totalesDia());
+
+      $('avisoModo').textContent = `${etiquetaApta(v, state.perfil.modo)}: ${v.motivo}` +
+        (arreglo.texto ? ` ${arreglo.texto}` : '') + ' Tocá Guardar de nuevo si va igual.';
       $('avisoModo').hidden = false;
       return;
     }
@@ -398,7 +404,9 @@ function avisarComidaGuardada({ titulo, kcal, comida, id }) {
   const previo = { carb: Math.max(0, (hoy.carb || 0) - (comida.carb || 0)) };
 
   const v = comidaApta(comida, state.perfil.modo, calcular(), previo);
-  mostrarResumenComida({ titulo, kcal, veredicto: v, etiqueta: etiquetaApta(v, state.perfil.modo), id });
+  /* La comida viaja con el veredicto: el consejo necesita los alimentos, y sin
+     ellos solo se puede repetir que no entra. */
+  mostrarResumenComida({ titulo, kcal, veredicto: { ...v, comida, previo }, etiqueta: etiquetaApta(v, state.perfil.modo), id });
 }
 
 /* ---------------- el resumen de lo que se guardó ---------------- */
@@ -415,6 +423,23 @@ function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
     marca.hidden = false;
   } else {
     marca.hidden = true;
+  }
+
+  /*
+   * Y qué hacer al respecto.
+   *
+   * Un cartel que dice "no entra" y nada más deja a la persona en el peor
+   * lugar: sabe que está mal y no sabe qué hacer. Cuando el exceso es de
+   * cantidad casi siempre alcanza con sacar algo, y eso se puede calcular.
+   */
+  const consejo = $('resumenConsejo');
+  if (veredicto.nivel === 'no' && veredicto.comida) {
+    const c = comoHacerlaApta(veredicto.comida, state.perfil.modo, calcular(), veredicto.previo);
+    consejo.textContent = c.texto;
+    consejo.className = 'consejo-apta' + (c.posible ? '' : ' sin-vuelta');
+    consejo.hidden = !c.texto;
+  } else {
+    consejo.hidden = true;
   }
 
   $('resumenIcono').textContent = veredicto?.nivel === 'no' ? '⚠️' : '✓';

@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=340">
+<link rel="stylesheet" href="styles.css?v=342">
 </head>
 <body>
 
@@ -473,6 +473,7 @@
         <div class="resumen-kcal"><strong id="resumenKcal">0</strong><span>kcal</span></div>
         <div class="marca-apta grande" id="resumenApta" hidden></div>
         <p class="hint" id="resumenMotivo"></p>
+        <p class="consejo-apta" id="resumenConsejo" hidden></p>
         <!-- "Comí la mitad" es la corrección más frecuente y la más cara de hacer
              a mano: seis números por plato. Ver escalarComida() en core.js. -->
         <div class="porciones" id="resumenPorciones" role="group" aria-label="Cuánto comiste"></div>
@@ -960,51 +961,52 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=340"></script>
-<script src="core.js?v=340"></script>
-<script src="platos.js?v=340"></script>
-<script src="animar.js?v=340"></script>
-<script src="fotos.js?v=340"></script>
-<script src="calibracion.js?v=340"></script>
-<script src="modos.js?v=340"></script>
-<script src="habitos.js?v=340"></script>
-<script src="mascota.js?v=340"></script>
-<script src="cuerpo.js?v=340"></script>
-<script src="personaje.js?v=340"></script>
-<script src="sprite-datos.js?v=340"></script>
-<script src="sprite.js?v=340"></script>
-<script src="transformacion.js?v=340"></script>
-<script src="aura.js?v=340"></script>
-<script src="juego.js?v=340"></script>
-<script src="sonidos.js?v=340"></script>
-<script src="voz.js?v=340"></script>
-<script src="graficos.js?v=340"></script>
-<script src="analisis.js?v=340"></script>
-<script src="chequeos.js?v=340"></script>
-<script src="claude.js?v=340"></script>
-<script src="productos.js?v=340"></script>
-<script src="sync.js?v=340"></script>
-<script src="estado-sync.js?v=340"></script>
-<script src="auth.js?v=340"></script>
-<script src="app.js?v=340"></script>
-<script src="ui/general.js?v=340"></script>
-<script src="ui/hoy.js?v=340"></script>
-<script src="ui/objetivos.js?v=340"></script>
-<script src="ui/tarjeta.js?v=340"></script>
-<script src="ui/logros.js?v=340"></script>
-<script src="ui/comidas.js?v=340"></script>
-<script src="ui/edicion.js?v=340"></script>
-<script src="ui/escaner.js?v=340"></script>
-<script src="ui/asistente.js?v=340"></script>
-<script src="ui/historial.js?v=340"></script>
-<script src="ui/progreso.js?v=340"></script>
-<script src="ui/perfil.js?v=340"></script>
-<script src="ui/sincronizacion.js?v=340"></script>
-<script src="ui/cuenta.js?v=340"></script>
-<script src="ui/calibracion.js?v=340"></script>
-<script src="ui/actividades.js?v=340"></script>
-<script src="ui/recordatorios.js?v=340"></script>
-<script src="ui/ajustes.js?v=340"></script>
-<script src="arranque.js?v=340"></script>
+<script src="config.js?v=342"></script>
+<script src="core.js?v=342"></script>
+<script src="platos.js?v=342"></script>
+<script src="animar.js?v=342"></script>
+<script src="fotos.js?v=342"></script>
+<script src="calibracion.js?v=342"></script>
+<script src="modos.js?v=342"></script>
+<script src="arreglos.js?v=342"></script>
+<script src="habitos.js?v=342"></script>
+<script src="mascota.js?v=342"></script>
+<script src="cuerpo.js?v=342"></script>
+<script src="personaje.js?v=342"></script>
+<script src="sprite-datos.js?v=342"></script>
+<script src="sprite.js?v=342"></script>
+<script src="transformacion.js?v=342"></script>
+<script src="aura.js?v=342"></script>
+<script src="juego.js?v=342"></script>
+<script src="sonidos.js?v=342"></script>
+<script src="voz.js?v=342"></script>
+<script src="graficos.js?v=342"></script>
+<script src="analisis.js?v=342"></script>
+<script src="chequeos.js?v=342"></script>
+<script src="claude.js?v=342"></script>
+<script src="productos.js?v=342"></script>
+<script src="sync.js?v=342"></script>
+<script src="estado-sync.js?v=342"></script>
+<script src="auth.js?v=342"></script>
+<script src="app.js?v=342"></script>
+<script src="ui/general.js?v=342"></script>
+<script src="ui/hoy.js?v=342"></script>
+<script src="ui/objetivos.js?v=342"></script>
+<script src="ui/tarjeta.js?v=342"></script>
+<script src="ui/logros.js?v=342"></script>
+<script src="ui/comidas.js?v=342"></script>
+<script src="ui/edicion.js?v=342"></script>
+<script src="ui/escaner.js?v=342"></script>
+<script src="ui/asistente.js?v=342"></script>
+<script src="ui/historial.js?v=342"></script>
+<script src="ui/progreso.js?v=342"></script>
+<script src="ui/perfil.js?v=342"></script>
+<script src="ui/sincronizacion.js?v=342"></script>
+<script src="ui/cuenta.js?v=342"></script>
+<script src="ui/calibracion.js?v=342"></script>
+<script src="ui/actividades.js?v=342"></script>
+<script src="ui/recordatorios.js?v=342"></script>
+<script src="ui/ajustes.js?v=342"></script>
+<script src="arranque.js?v=342"></script>
 </body>
 </html>
