@@ -202,7 +202,7 @@ function elegirOrigenFoto(modo = 'plato') {
   }
 
   modoAnalisis = modo;
-  $('tituloOrigenFoto').textContent = modo === 'etiqueta' ? 'Leer etiqueta' : 'Analizar foto';
+  $('tituloOrigenFoto').textContent = modo === 'etiqueta' ? 'Leer etiqueta' : 'Cargar comida';
   abrirCapa('modalOrigenFoto');
   tomarFoco($('modalOrigenFoto'));
 }
@@ -222,7 +222,10 @@ $('btnDesdeGaleria').onclick = () => { cerrarOrigenFoto(); $('fileInput').click(
 
 $('btnFoto').onclick = () => pedirFoto('plato');
 $('btnOrigenFoto').onclick = (e) => { e.stopPropagation(); elegirOrigenFoto('plato'); };
-$('btnEtiqueta').onclick = () => pedirFoto('etiqueta');
+/* Etiqueta y código viven ahora dentro del menú de la flechita, así que lo
+   primero que hacen es cerrarlo: si no, el selector de archivos se abre con el
+   menú todavía en pantalla y al volver la app parece trabada. */
+$('btnEtiqueta').onclick = () => { cerrarOrigenFoto(); pedirFoto('etiqueta'); };
 
 const FRASES = {
   plato: [

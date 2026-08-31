@@ -62,16 +62,13 @@ function renderHoy() {
      igual que si hubieras cerrado justo. Ahora el numero se pone en negativo y
      dice cuanto te pasaste, que es el dato que sirve. */
   const sobra = objetivo ? objetivo - t.kcal : 0;
-  const stRest = $('statRestante');
-  if (!objetivo) stRest.textContent = '—';
-  else contarHasta(stRest, sobra >= 0 ? sobra : -sobra,
-    { formato: (v) => (sobra >= 0 ? '' : '+') + fmtNum(Math.round(v)) });
-  stRest.classList.toggle('pasado', objetivo > 0 && sobra < 0);
-  stRest.parentElement?.querySelector('small')?.replaceChildren(
-    document.createTextNode(objetivo && sobra < 0 ? 'de más' : 'restantes')
-  );
-  $('statObjetivo').textContent = objetivo ? fmtNum(objetivo) : '—';
-  $('statTdee').textContent = calc ? fmtNum(calc.tdee) : '—';
+  /* Dentro del anillo y no en una fila aparte: el objetivo y el consumido ya
+     están ahí arriba, así que esa fila repetía dos de sus tres números. El
+     gasto estimado se mira una vez cada tanto y vive en Progreso. */
+  const resta = $('ringResta');
+  resta.textContent = !objetivo ? ''
+    : (sobra >= 0 ? `quedan ${fmtNum(Math.round(sobra))}` : `+${fmtNum(Math.round(-sobra))} de más`);
+  resta.classList.toggle('pasado', objetivo > 0 && sobra < 0);
 
   const m = calc ? calc.macros : { prot: 0, carb: 0, gras: 0 };
   const setMacro = (k, val, meta) => {

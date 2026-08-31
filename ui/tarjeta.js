@@ -69,20 +69,12 @@ function renderMascota() {
     ? 'Cargá tu peso y el muñeco va a tener tu cuerpo, no uno cualquiera.'
     : (cuerpo.aviso || fraseDelDia(d) || est.texto);
 
-  const lvl = nivelDe(state.juego?.xp || 0);
-  $('mascotaBarra').style.width = Math.round(lvl.pct * 100) + '%';
-  /* En Hoy va solo el número: el nombre del nivel no entra al lado de las
-     cuatro rachas, y está entero en Progreso. */
-  /* "Nv 3" sin contexto es un numero suelto. Lo que empuja es saber que faltan
-     40 XP, que es media tarde de cumplir. */
-  $('mascotaLvl').textContent = lvl.siguiente == null
-    ? `Nv ${lvl.nivel}`
-    : `Nv ${lvl.nivel} · ${fmtNum(lvl.faltan)} XP`;
-  $('mascotaLvl').title = lvl.siguiente == null
-    ? `${lvl.nombre}. Es el último nivel.`
-    : `${lvl.nombre}. Faltan ${fmtNum(lvl.faltan)} XP para el nivel ${lvl.nivel + 1}.`;
+  /* Queda la barra, que muestra el avance sin ocupar un renglón. El número de
+     nivel, la XP que falta y las cuatro rachas se fueron: estaban completos en
+     Progreso y acá eran una segunda copia, más chica y menos legible. */
+  $('mascotaBarra').style.width = Math.round(nivelDe(state.juego?.xp || 0).pct * 100) + '%';
 
-  pintarRachas();
+  avisarRachasEnPeligro();
 
   $('mascotaCard').onclick = () => abrirObjetivo(est.dim === 'sueno' ? 'sueno' : (est.dim || 'animo'));
 }
@@ -295,46 +287,14 @@ function transformarse(fase) {
   }, 780);
 }
 
-/**
- * Las cuatro rachas, chiquitas.
+/*
+ * Las cuatro rachas chiquitas se fueron de Hoy.
  *
- * Se apagan en vez de desaparecer cuando están en cero: un hueco donde antes
- * había un número dice más que no mostrar nada.
+ * Estaban dentro de la tarjeta del muñeco, ilegibles y sin poder tocarse, y
+ * las mismas cuatro viven en Progreso a tamaño real. Lo único que había que
+ * conservar es `avisarRachasEnPeligro()`, que no dibujaba nada: avisa cuando
+ * una racha larga está por cortarse, y eso sirve igual sin verlas.
  */
-function pintarRachas() {
-  const cont = $('rachasFila');
-  if (!cont) return;
 
-  avisarRachasEnPeligro();
-
-  const rachas = todasLasRachas(state.dias, {
-    vasos: metaVasos(),
-    juego: state.juego
-  });
-
-  cont.innerHTML = rachas.map(r => {
-    const viva = r.actual > 0;
-    return `<span class="racha${viva ? ' viva' : ''}${r.hoyCumplido ? ' hoy' : ''}"
-      data-racha="${r.id}" title="${r.nombre}: ${r.actual} días">
-      <i>${r.icono}</i>${viva ? r.actual : '–'}</span>`;
-  }).join('');
-
-  /*
-   * La que sumó un día se prende fuego.
-   *
-   * Es la unica animacion que festeja algo que no se ve en el numero: pasar de
-   * 6 a 7 dias no cambia nada en pantalla mas que un digito, y sin embargo es
-   * exactamente lo que la racha existe para sostener.
-   */
-  for (const r of rachas) {
-    if (largoAnterior[r.id] != null && r.actual > largoAnterior[r.id]) {
-      repetirClase(cont.querySelector(`[data-racha="${r.id}"]`), 'anim-fuego', 800);
-    }
-    largoAnterior[r.id] = r.actual;
-  }
-}
-
-/* El largo de cada racha en el render anterior. */
-const largoAnterior = {};
 
 /* ---------------- sueño ---------------- */

@@ -129,6 +129,15 @@ function renderTiras() {
   chipModo.onclick = () => irTab('perfil');
   cont.appendChild(chipModo);
 
+  /*
+   * El ayuno solo cuando está pasando algo.
+   *
+   * Ocupaba un lugar fijo en la pantalla que más se mira, para una función que
+   * se usa de vez en cuando y que además ya no es un objetivo diario. Si hoy
+   * hubo uno, se muestra cuánto duró; si no, se arranca desde Perfil.
+   */
+  if (!enCurso && !d.ayuno) return;
+
   const chipAyuno = document.createElement('button');
   chipAyuno.className = 'tira' + (enCurso ? ' corriendo' : '');
   chipAyuno.innerHTML = `<i>⏱️</i>${ayunoTexto}` +

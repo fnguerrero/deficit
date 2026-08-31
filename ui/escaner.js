@@ -21,6 +21,8 @@ function hayDetectorDeCodigos() {
 }
 
 $('btnEscanear').onclick = async () => {
+  // vive dentro del menú de la flechita: se cierra antes de abrir la cámara
+  if (typeof cerrarOrigenFoto === 'function') cerrarOrigenFoto();
   productoActual = null;
   $('modalTitle').textContent = 'Escanear producto';
   mostrarEstado('escaner');

@@ -662,11 +662,6 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 #barraGasto.bloqueado { background: var(--bad); }
 
 /* ---------- nutrientes opcionales ---------- */
-.nutrientes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
-.nutrientes div { flex: 1; min-width: 82px; }
-.nutrientes span { display: block; font-size: 11px; color: var(--dim); }
-.nutrientes b { font-size: 15px; font-weight: 600; }
-.nutrientes b.pasado { color: var(--warn); }
 
 /* Menú de dónde sacar la foto. Solo aparece en pantallas táctiles: en la compu
    el botón va derecho al explorador, porque "sacar una foto" no significa nada ahí. */
@@ -705,7 +700,12 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* Cada objetivo cargado se apaga: lo que ya está hecho no tiene que seguir
    pidiendo atención. Es lo que hace que la pantalla se vacíe durante el día. */
-.objetivos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+/* minmax(0, 1fr) y no 1fr a secas: `1fr` respeta el ancho mínimo del contenido,
+   así que un valor largo —"16.000 kcal"— ensancha su columna y empuja a las
+   demás fuera de la pantalla. Con el 0 las cinco se reparten el ancho parejo
+   pase lo que pase adentro. */
+.objetivos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.objetivo b, .objetivo small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .objetivo {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 10px 2px; border-radius: 14px; border: 1px dashed var(--line);
@@ -822,7 +822,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* El cronómetro del ayuno: es lo único que hay que ver al abrirlo. */
 .ayuno-reloj { font-size: 40px; font-weight: 700; text-align: center; margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
 .ayuno-reloj.completo { color: var(--acc); }
-.objetivos { grid-template-columns: repeat(5, 1fr); }
+.objetivos { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .chip.activo { border-color: var(--acc); color: var(--acc); }
 
 /* El veredicto: lo primero que se ve al entrar al historial. */
@@ -1529,3 +1529,24 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .duda-opcion small { font-size: 10px; color: var(--dim); font-weight: 500; }
 .duda-opcion.elegida { border-color: var(--acc); color: var(--acc); }
 .duda-opcion.elegida small { color: var(--acc); }
+
+/* Lo que queda del día, dentro del anillo. Vivía en una fila de tres números
+   que repetía el objetivo y el consumido, los dos ya presentes en el anillo. */
+.ring-resta { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 650; color: var(--acc); }
+.ring-resta.pasado { color: var(--bad); }
+.ring-resta:empty { display: none; }
+
+/* Fibra, azúcar y sodio a lo ancho de la pantalla, en tres columnas parejas.
+   Adentro de la tarjeta de macros tenían 200 px y se envolvían en dos filas. */
+.nutrientes {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+  margin: 0 0 12px; padding: 10px 12px;
+  background: var(--card); border-radius: 14px;
+}
+.nutrientes div { min-width: 0; text-align: center; }
+.nutrientes span { display: block; font-size: 11px; color: var(--dim); }
+.nutrientes b { font-size: 15px; font-weight: 600; }
+.nutrientes b.pasado { color: var(--warn); }
+
+/* La línea que separa la foto de lo que casi no se usa. */
+.separa-origen { border: 0; border-top: 1px solid var(--line); margin: 4px 0 2px; }
