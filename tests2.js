@@ -2354,3 +2354,54 @@ testAsync('un hash con error no guarda ninguna sesion', async () => {
   }
   esperar(alm.ver(), null);
 });
+
+/* --- revisarAnalisis con la forma REAL del analisis (ciclo 12) --- */
+
+/* Los tests viejos le daban un objeto con `calorias` en la raiz, que el modelo
+   nunca devuelve: el schema solo trae items. Estos usan la forma de verdad. */
+function analisisT(items, extra = {}) {
+  return { titulo: 'Plato', confianza: 'alta', items, notas: '', ...extra };
+}
+
+test('un analisis normal no dispara ningun aviso', () => {
+  esperar(revisarAnalisis(analisisT([
+    { nombre: 'pasta', calorias: 380, proteinas: 12, carbohidratos: 68, grasas: 6 },
+    { nombre: 'pollo', calorias: 270, proteinas: 26, carbohidratos: 10, grasas: 14 }
+  ])), []);
+});
+
+test('sin total en la raiz, las calorias se suman de los items', () => {
+  // el bug: esto avisaba "volvio sin calorias" y despues la pantalla mostraba 650
+  const avisos = revisarAnalisis(analisisT([{ nombre: 'pasta', calorias: 650, proteinas: 40, carbohidratos: 68, grasas: 27 }]));
+  esperarQue(!avisos.some(a => /sin calorías/.test(a)), 'no tiene que decir que no hay calorias: ' + JSON.stringify(avisos));
+});
+
+test('un analisis realmente vacio si se avisa', () => {
+  esperarQue(revisarAnalisis(analisisT([])).some(a => /sin calorías/.test(a)));
+  esperarQue(revisarAnalisis(analisisT([{ nombre: 'algo', calorias: 0 }])).some(a => /sin calorías/.test(a)));
+});
+
+test('el tope del plato ahora si se alcanza a evaluar', () => {
+  const avisos = revisarAnalisis(analisisT([{ nombre: 'torta', calorias: 12000, proteinas: 10, carbohidratos: 1500, grasas: 600 }]));
+  esperarQue(avisos.some(a => /muchísimo/.test(a)), JSON.stringify(avisos));
+});
+
+test('y el chequeo de macros tambien', () => {
+  // 900 kcal declaradas contra macros que dan 200: uno de los dos esta mal
+  const mal = revisarAnalisis(analisisT([{ nombre: 'x', calorias: 900, proteinas: 10, carbohidratos: 10, grasas: 13.3 }]));
+  esperarQue(mal.some(a => /alguno de los dos está mal/.test(a)), JSON.stringify(mal));
+
+  // y unos macros que si dan las calorias no molestan a nadie
+  const bien = revisarAnalisis(analisisT([{ nombre: 'x', calorias: 650, proteinas: 40, carbohidratos: 68, grasas: 27 }]));
+  esperar(bien, []);
+});
+
+/* --- el aviso de duplicada usa el titulo, no el objeto ya limpiado (ciclo 12) --- */
+
+test('pareceDuplicada funciona con el titulo suelto', () => {
+  // el bug era de la UI —leia pendiente.titulo despues de limpiarlo— pero el
+  // contrato de aca es lo que importa: alcanza con id, titulo y kcal
+  const previas = [{ id: 'a', titulo: 'Pasta con pollo', kcal: 650, ts: Date.now() - 60000 }];
+  const g = pareceDuplicada(previas, { id: 'b', titulo: 'Pasta con pollo', kcal: 650, ts: Date.now() });
+  esperarQue(g, 'tendria que detectarla');
+});

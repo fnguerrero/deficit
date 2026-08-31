@@ -12,7 +12,22 @@
 function revisarAnalisis(r) {
   if (!r) return [];
   const avisos = [];
-  const kcal = Number(r.calorias ?? r.kcal) || 0;
+
+  /*
+   * Las calorías del plato SE SUMAN de los items.
+   *
+   * El schema del modelo no tiene un total: solo `items`, cada uno con lo suyo.
+   * Esta función leía `r.calorias`, que no existe nunca, así que el total daba
+   * 0 siempre. Consecuencia: cada foto disparaba "el análisis volvió sin
+   * calorías" —y acto seguido la pantalla mostraba las calorías, porque el
+   * resto de la app sí las suma— y los otros dos chequeos, el tope del plato y
+   * la coherencia de los macros, quedaban detrás de un `kcal > 0` y no corrían
+   * nunca.
+   *
+   * Los tests pasaban porque le daban de comer un objeto con `calorias` en la
+   * raíz, que es una forma que la app real no produce.
+   */
+  const kcal = Number(r.calorias ?? r.kcal) || sumarItems(r.items).calorias || 0;
 
   if (kcal > TOPE_PLATO) {
     avisos.push(`${Math.round(kcal)} kcal en un plato es muchísimo. Revisalo antes de guardarlo.`);
