@@ -1073,7 +1073,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 
 /* La fila de chips de arriba: el modo activo y el ayuno. */
-.tiras { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+/* Las tiras se reparten el ancho en vez de quedar apretadas a la izquierda con
+   media pantalla vacía al lado. Con una sola —lo normal, porque el ayuno solo
+   aparece si hay uno corriendo— ocupa la fila entera. */
+.tiras { display: flex; gap: 6px; margin-bottom: 8px; }
+.tiras > * { flex: 1 1 0; min-width: 0; justify-content: center; }
 .tira {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11.5px; font-weight: 600; color: var(--txt);
@@ -1561,3 +1565,13 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    apilados dejaban un botón muy alto y medio vacío. Va al final del archivo
    porque la regla de arriba lo define como columna y gana la última. */
 .acciones-fila .accion { flex-direction: row; gap: 8px; padding: 14px 4px; }
+
+/* El ícono y la palabra, centrados dentro del botón.
+   Con `flex-direction: row` el reparto por defecto es desde la izquierda, así
+   que en un botón que ocupa toda la pantalla el contenido quedaba pegado a un
+   costado. */
+.acciones-fila .accion { justify-content: center; }
+
+/* Y la flechita deja de robarle ancho al texto: se apoya sobre el borde
+   derecho en vez de ocupar su propia columna. */
+.accion-doble .accion { padding-right: 4px; }
