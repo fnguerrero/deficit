@@ -2405,3 +2405,37 @@ test('pareceDuplicada funciona con el titulo suelto', () => {
   const g = pareceDuplicada(previas, { id: 'b', titulo: 'Pasta con pollo', kcal: 650, ts: Date.now() });
   esperarQue(g, 'tendria que detectarla');
 });
+
+/* --- de donde sale el nombre de quien entro (ciclo 12) --- */
+
+test('el nombre de Google gana sobre el mail', () => {
+  esperar(nombreDeUsuario({ email: 'f.nicolas.guerrero@gmail.com', user_metadata: { full_name: 'Nico Guerrero' } }), 'Nico Guerrero');
+  esperar(nombreDeUsuario({ email: 'a@b.com', user_metadata: { name: 'Ana' } }), 'Ana');
+  esperar(nombreDeUsuario({ email: 'a@b.com', user_metadata: { given_name: 'Ana' } }), 'Ana');
+});
+
+test('sin nombre queda lo de adelante del arroba', () => {
+  esperar(nombreDeUsuario({ email: 'f.nicolas.guerrero@gmail.com' }), 'f.nicolas.guerrero');
+  esperar(nombreDeUsuario({ email: 'a@b.com', user_metadata: {} }), 'a');
+});
+
+test('sin nada, no se inventa un nombre', () => {
+  esperar(nombreDeUsuario(null), '');
+  esperar(nombreDeUsuario({}), '');
+  esperar(nombreDeUsuario({ email: '   ' }), '');
+});
+
+testAsync('entrar guarda tambien el nombre', async () => {
+  const alm = almacenFalso();
+  const a = crearAuth({
+    url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
+    fetchFn: async () => respuestaAuth(200, {
+      access_token: 'tok', refresh_token: 'ref', expires_in: 3600,
+      user: { id: 'u1', email: 'nico@gmail.com', user_metadata: { full_name: 'Nico Guerrero' } }
+    })
+  });
+
+  const s = await a.entrar('nico@gmail.com', 'secreta');
+  esperar(s.usuario.nombre, 'Nico Guerrero');
+  esperar(alm.ver().usuario.nombre, 'Nico Guerrero');
+});
