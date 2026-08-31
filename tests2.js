@@ -2439,3 +2439,75 @@ testAsync('entrar guarda tambien el nombre', async () => {
   esperar(s.usuario.nombre, 'Nico Guerrero');
   esperar(alm.ver().usuario.nombre, 'Nico Guerrero');
 });
+
+/* --- que tan bien esta cada dato del dia (ciclo 12) --- */
+
+test('el sueño corto es malo y el largo tampoco es bueno', () => {
+  esperar(nivelSueno(3), 'mal');
+  esperar(nivelSueno(5.9), 'mal');
+  esperar(nivelSueno(6.5), 'flojo');
+  esperar(nivelSueno(7), 'bien');
+  esperar(nivelSueno(9), 'bien');
+  esperar(nivelSueno(11), 'flojo');
+});
+
+test('sin sueño cargado no hay color', () => {
+  esperar(nivelSueno(null), '');
+  esperar(nivelSueno(0), '');
+});
+
+test('el agua mira la hora: un vaso a la mañana no está mal', () => {
+  esperar(nivelAgua(1, 4, 9), '', 'a las 9 el día recién arranca');
+  esperar(nivelAgua(1, 4, 22), 'mal', 'a las 22 ya no hay excusa');
+  esperar(nivelAgua(2, 4, 22), 'flojo');
+  esperar(nivelAgua(4, 4, 9), 'bien');
+  esperar(nivelAgua(6, 4, 22), 'bien', 'de más no es peor');
+});
+
+test('el ejercicio nunca se pinta de rojo', () => {
+  esperar(nivelEjercicio(300), 'bien');
+  esperar(nivelEjercicio(0), '', 'un día sin entrenar es parte del plan');
+});
+
+test('el ánimo tampoco: se marca en ámbar, no en rojo', () => {
+  esperar(nivelAnimo('genial'), 'bien');
+  esperar(nivelAnimo('bien'), 'bien');
+  esperar(nivelAnimo('normal'), '');
+  esperar(nivelAnimo('flojo'), 'flojo');
+  esperar(nivelAnimo('mal'), 'flojo', 'sentirse mal no es un error que se pueda cometer');
+});
+
+test('el peso se compara contra la tendencia, no contra ayer', () => {
+  // bajando hacia 80: la referencia es 85
+  esperar(nivelPeso(84.5, 85, 80), 'bien');
+  esperar(nivelPeso(85.5, 85, 80), 'mal');
+  esperar(nivelPeso(85.05, 85, 80), '', 'medio kilo de agua no es un fracaso');
+});
+
+test('subir hacia el objetivo también es bueno', () => {
+  // el objetivo está por encima: hay que ganar peso
+  esperar(nivelPeso(61, 60, 70), 'bien');
+  esperar(nivelPeso(59, 60, 70), 'mal');
+});
+
+test('estando en el objetivo no hay nada que corregir', () => {
+  esperar(nivelPeso(80.2, 81, 80), 'bien');
+});
+
+test('sin objetivo de peso no se pinta nada', () => {
+  esperar(nivelPeso(85, 86, null), '');
+  esperar(nivelPeso(85, 0, 80), '', 'sin días previos no hay tendencia contra la cual comparar');
+});
+
+test('la referencia de peso ignora el día de hoy', () => {
+  const dias = {
+    '2026-08-27': { peso: 86 }, '2026-08-28': { peso: 85 },
+    '2026-08-29': { peso: 84 }, '2026-08-30': { peso: 70 }   // hoy, no cuenta
+  };
+  esperar(referenciaDePeso(dias, '2026-08-30'), 85);
+});
+
+test('sin pesos previos no hay referencia', () => {
+  esperar(referenciaDePeso({ '2026-08-30': { peso: 80 } }, '2026-08-30'), 0);
+  esperar(referenciaDePeso({}, '2026-08-30'), 0);
+});

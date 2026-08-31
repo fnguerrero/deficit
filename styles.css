@@ -1481,3 +1481,17 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .quien-soy:hover { color: var(--txt2); }
+
+/* El color de los casilleros dice cómo estuvo el dato, no si lo cargaste.
+   Cargar tres horas de sueño y ocho no puede verse igual. */
+.objetivo.nivel-flojo {
+  border-style: solid; border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--txt);
+}
+.objetivo.nivel-flojo b { color: var(--warn); }
+
+.objetivo.nivel-mal {
+  border-style: solid; border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--txt);
+}
+.objetivo.nivel-mal b { color: var(--bad); }

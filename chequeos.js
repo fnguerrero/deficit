@@ -162,3 +162,102 @@ function planPorEtapas(peso, objetivo, kgPorSemana = 0.5) {
     meses: Math.round(semanas / 4.35)
   };
 }
+
+/* ============================================================
+   Qué tan bien está cada dato del día
+
+   Los casilleros de Hoy eran binarios: cargado se pinta verde, sin cargar
+   queda gris. O sea que anotar tres horas de sueño se veía exactamente igual
+   que anotar ocho, y el verde terminaba premiando el acto de registrar en vez
+   de decir algo sobre el dato.
+
+   La regla que decide dónde va el rojo: **el color describe el dato, no juzga
+   a la persona.** Dormir tres horas es malo y punto, no importa por qué. En
+   cambio no haber entrenado hoy no es malo —entrenar cuatro de siete días es
+   un buen mes—, y sentirse mal tampoco: es información, no un error.
+   ============================================================ */
+
+/* Menos de seis horas es privación de sueño con todas las letras. Y dormir
+   diez o más tampoco es "bien": o se está enfermo o se venía muy en deuda. */
+function nivelSueno(horas) {
+  const h = Number(horas) || 0;
+  if (!h) return '';
+  if (h < 6) return 'mal';
+  if (h < 7) return 'flojo';
+  if (h <= 9) return 'bien';
+  return 'flojo';
+}
+
+/*
+ * El agua depende de la hora, y esto no es un detalle.
+ *
+ * Un vaso de cuatro a las nueve de la mañana no está mal: el día recién
+ * arranca. El mismo vaso a las once de la noche sí. Sin mirar la hora, el
+ * casillero pasaría la mañana entera en rojo por algo que todavía se puede
+ * arreglar, y un aviso que siempre está encendido deja de mirarse.
+ */
+function nivelAgua(vasos, meta, hora = new Date().getHours()) {
+  const v = Number(vasos) || 0;
+  const m = Number(meta) || 0;
+  if (!m) return '';
+  if (v >= m) return 'bien';
+  if (v >= m / 2) return 'flojo';
+  return hora >= 18 ? 'mal' : '';
+}
+
+/* Nunca en rojo: el ejercicio no es un objetivo diario. Un día sin entrenar
+   es parte de cualquier plan que funcione, y marcarlo como falla haría que la
+   app mienta sobre lo que es entrenar bien. */
+function nivelEjercicio(kcal) {
+  return (Number(kcal) || 0) > 0 ? 'bien' : '';
+}
+
+/* Tampoco en rojo, y por otro motivo: sentirse mal no es un error que se
+   pueda cometer. Se marca en ámbar, que es "lo estoy viendo", no "corregilo". */
+function nivelAnimo(id) {
+  if (id === 'genial' || id === 'bien') return 'bien';
+  if (id === 'flojo' || id === 'mal') return 'flojo';
+  return '';
+}
+
+/*
+ * El peso se compara contra la TENDENCIA, no contra el día anterior.
+ *
+ * Entre dos días seguidos hay hasta un kilo de diferencia por sal, agua y
+ * digestión, sin que haya cambiado un gramo de grasa. Pintar eso de rojo sería
+ * inventar un fracaso a partir de ruido, y de paso enseñar a no pesarse.
+ *
+ * `referencia` es la media móvil de los días anteriores. Contra eso, subir o
+ * bajar sí quiere decir algo.
+ */
+const RUIDO_PESO = 0.15;
+
+function nivelPeso(kg, referencia, objetivo) {
+  const p = Number(kg) || 0;
+  const ref = Number(referencia) || 0;
+  const meta = Number(objetivo) || 0;
+  if (!p || !ref || !meta) return '';
+
+  // ya está en el objetivo: el color no tiene nada que corregir
+  if (Math.abs(p - meta) < 0.5) return 'bien';
+
+  const delta = p - ref;
+  if (Math.abs(delta) < RUIDO_PESO) return '';
+
+  // hacia dónde hay que ir, según de qué lado del objetivo se está
+  const haciaAbajo = ref > meta;
+  const acercandose = haciaAbajo ? delta < 0 : delta > 0;
+  return acercandose ? 'bien' : 'mal';
+}
+
+/** La media de los últimos días con peso, sin contar el de hoy. */
+function referenciaDePeso(dias, hoy, ventana = 7) {
+  const previos = Object.keys(dias || {})
+    .filter(f => f < hoy && typeof dias[f].peso === 'number' && dias[f].peso > 0)
+    .sort()
+    .slice(-ventana)
+    .map(f => dias[f].peso);
+
+  if (!previos.length) return 0;
+  return previos.reduce((a, p) => a + p, 0) / previos.length;
+}
