@@ -14,6 +14,24 @@ const CLAVE_SESION = 'deficit.sesion';
    primera sincronización después de un rato fallaría siempre. */
 const MARGEN_RENOVACION = 5 * 60 * 1000;
 
+/**
+ * Cómo se llama quien entró.
+ *
+ * Google manda el nombre en `user_metadata`, con tres nombres distintos según
+ * cómo se haya configurado el proveedor. Con mail y contraseña no hay ninguno,
+ * y ahí lo que queda es la parte de adelante del arroba: es fea pero es la
+ * persona, y sirve para lo único que importa acá, que es saber con qué cuenta
+ * estás entrado cuando tenés más de una.
+ */
+function nombreDeUsuario(u) {
+  const m = (u && u.user_metadata) || {};
+  const nombre = String(m.full_name || m.name || m.given_name || '').trim();
+  if (nombre) return nombre;
+
+  const email = String((u && u.email) || '').trim();
+  return email ? email.split('@')[0] : '';
+}
+
 /** Lo que guardamos de la sesión. El token de refresco es lo que evita relogin. */
 function sesionDesdeRespuesta(r) {
   if (!r || !r.access_token) return null;
@@ -23,7 +41,8 @@ function sesionDesdeRespuesta(r) {
     vence: Date.now() + (Number(r.expires_in) || 3600) * 1000,
     usuario: {
       id: r.user?.id || '',
-      email: r.user?.email || ''
+      email: r.user?.email || '',
+      nombre: nombreDeUsuario(r.user)
     }
   };
 }
@@ -164,7 +183,7 @@ function crearAuth({ url, anonKey, fetchFn, almacen = null }) {
 
       try {
         const r = await pedirGet('user', s.token);
-        s.usuario = { id: r?.id || '', email: r?.email || '' };
+        s.usuario = { id: r?.id || '', email: r?.email || '', nombre: nombreDeUsuario(r) };
       } catch { /* sin el mail se sigue igual */ }
 
       guardado.escribir(s);

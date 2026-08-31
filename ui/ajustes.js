@@ -381,6 +381,7 @@ function renderAll() {
   /* El aviso de cuenta va afuera de las pestañas: es una barra fija y tiene que
      actualizarse aunque la pintada de esta vuelta sea de otra pantalla. */
   if (typeof renderAvisoCuenta === 'function') renderAvisoCuenta();
+  if (typeof renderQuienSoy === 'function') renderQuienSoy();
 
   const activa = document.querySelector('.tab.active')?.id?.replace('tab-', '') || 'hoy';
 
