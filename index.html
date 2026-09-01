@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=428">
+<link rel="stylesheet" href="styles.css?v=432">
 </head>
 <body>
 
@@ -137,9 +137,11 @@
          vuelve por una semana: un cartel siempre encendido deja de leerse. -->
     <div class="aviso-modo" id="avisoModoDias" hidden>
       <span id="avisoModoTxt"></span>
+      <!-- Seguir primero y destacado: el aviso está para empujar hacia el modo,
+           no para ofrecer la salida. Cambiar sigue estando, en segundo plano. -->
       <div class="actions-row">
+        <button id="btnModoSigo" class="primary small">Sigo en esto</button>
         <button id="btnCambiarModo" class="ghost small">Cambiar de modo</button>
-        <button id="btnModoSigo" class="ghost small">Sigo así</button>
       </div>
     </div>
 
@@ -865,6 +867,9 @@
         <p id="repetirVacio" class="vacio">Acá van a aparecer las comidas que más repetís, para cargarlas de un toque. Se llena solo a medida que registrás.</p>
       </div>
       <div id="analisisSugerencias" hidden>
+        <!-- Para qué comida. Arranca en la que toca por hora, pero a las cinco
+             de la tarde uno puede estar pensando la cena. -->
+        <div class="chips momento-sug" id="momentoSugerencia"></div>
         <p class="hint" id="sugerenciasMargen"></p>
         <ul id="listaSugerencias" class="lista"></ul>
         <p class="hint costo" id="sugerenciasCosto"></p>
@@ -1006,55 +1011,55 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=428"></script>
-<script src="core.js?v=428"></script>
-<script src="platos.js?v=428"></script>
-<script src="animar.js?v=428"></script>
-<script src="fotos.js?v=428"></script>
-<script src="calibracion.js?v=428"></script>
-<script src="modos.js?v=428"></script>
-<script src="arreglos.js?v=428"></script>
-<script src="habitos.js?v=428"></script>
-<script src="mascota.js?v=428"></script>
-<script src="cuerpo.js?v=428"></script>
-<script src="personaje.js?v=428"></script>
-<script src="sprite-datos.js?v=428"></script>
-<script src="sprite.js?v=428"></script>
-<script src="transformacion.js?v=428"></script>
-<script src="aura.js?v=428"></script>
-<script src="juego.js?v=428"></script>
-<script src="sonidos.js?v=428"></script>
-<script src="voz.js?v=428"></script>
-<script src="graficos.js?v=428"></script>
-<script src="plazo.js?v=428"></script>
-<script src="compartir.js?v=428"></script>
-<script src="analisis.js?v=428"></script>
-<script src="chequeos.js?v=428"></script>
-<script src="claude.js?v=428"></script>
-<script src="productos.js?v=428"></script>
-<script src="sync.js?v=428"></script>
-<script src="estado-sync.js?v=428"></script>
-<script src="auth.js?v=428"></script>
-<script src="app.js?v=428"></script>
-<script src="ui/general.js?v=428"></script>
-<script src="ui/hoy.js?v=428"></script>
-<script src="ui/dia.js?v=428"></script>
-<script src="ui/objetivos.js?v=428"></script>
-<script src="ui/tarjeta.js?v=428"></script>
-<script src="ui/logros.js?v=428"></script>
-<script src="ui/comidas.js?v=428"></script>
-<script src="ui/edicion.js?v=428"></script>
-<script src="ui/escaner.js?v=428"></script>
-<script src="ui/asistente.js?v=428"></script>
-<script src="ui/historial.js?v=428"></script>
-<script src="ui/progreso.js?v=428"></script>
-<script src="ui/perfil.js?v=428"></script>
-<script src="ui/sincronizacion.js?v=428"></script>
-<script src="ui/cuenta.js?v=428"></script>
-<script src="ui/calibracion.js?v=428"></script>
-<script src="ui/actividades.js?v=428"></script>
-<script src="ui/recordatorios.js?v=428"></script>
-<script src="ui/ajustes.js?v=428"></script>
-<script src="arranque.js?v=428"></script>
+<script src="config.js?v=432"></script>
+<script src="core.js?v=432"></script>
+<script src="platos.js?v=432"></script>
+<script src="animar.js?v=432"></script>
+<script src="fotos.js?v=432"></script>
+<script src="calibracion.js?v=432"></script>
+<script src="modos.js?v=432"></script>
+<script src="arreglos.js?v=432"></script>
+<script src="habitos.js?v=432"></script>
+<script src="mascota.js?v=432"></script>
+<script src="cuerpo.js?v=432"></script>
+<script src="personaje.js?v=432"></script>
+<script src="sprite-datos.js?v=432"></script>
+<script src="sprite.js?v=432"></script>
+<script src="transformacion.js?v=432"></script>
+<script src="aura.js?v=432"></script>
+<script src="juego.js?v=432"></script>
+<script src="sonidos.js?v=432"></script>
+<script src="voz.js?v=432"></script>
+<script src="graficos.js?v=432"></script>
+<script src="plazo.js?v=432"></script>
+<script src="compartir.js?v=432"></script>
+<script src="analisis.js?v=432"></script>
+<script src="chequeos.js?v=432"></script>
+<script src="claude.js?v=432"></script>
+<script src="productos.js?v=432"></script>
+<script src="sync.js?v=432"></script>
+<script src="estado-sync.js?v=432"></script>
+<script src="auth.js?v=432"></script>
+<script src="app.js?v=432"></script>
+<script src="ui/general.js?v=432"></script>
+<script src="ui/hoy.js?v=432"></script>
+<script src="ui/dia.js?v=432"></script>
+<script src="ui/objetivos.js?v=432"></script>
+<script src="ui/tarjeta.js?v=432"></script>
+<script src="ui/logros.js?v=432"></script>
+<script src="ui/comidas.js?v=432"></script>
+<script src="ui/edicion.js?v=432"></script>
+<script src="ui/escaner.js?v=432"></script>
+<script src="ui/asistente.js?v=432"></script>
+<script src="ui/historial.js?v=432"></script>
+<script src="ui/progreso.js?v=432"></script>
+<script src="ui/perfil.js?v=432"></script>
+<script src="ui/sincronizacion.js?v=432"></script>
+<script src="ui/cuenta.js?v=432"></script>
+<script src="ui/calibracion.js?v=432"></script>
+<script src="ui/actividades.js?v=432"></script>
+<script src="ui/recordatorios.js?v=432"></script>
+<script src="ui/ajustes.js?v=432"></script>
+<script src="arranque.js?v=432"></script>
 </body>
 </html>

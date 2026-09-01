@@ -371,3 +371,54 @@ function resumenHabitos(objetivos) {
     total
   };
 }
+
+/*
+ * De dónde vienen los carbos, cuando el modo tiene techo.
+ *
+ * Decir "hace cuatro días que no entrás" y ofrecer cambiar de modo es ofrecer
+ * bajar la vara. Lo útil es lo otro: cuánto de más venís comiendo y qué platos
+ * lo traen, que es sobre lo que se puede hacer algo mañana.
+ */
+function loQueTeSaca(dias, techoDia, { hasta = hoyISO(), largo = 7, cuantos = 3 } = {}) {
+  if (!(techoDia > 0)) return null;
+
+  const porNombre = new Map();
+  let carbosTotales = 0;
+  let diasConDatos = 0;
+
+  for (let i = 0; i < largo; i++) {
+    const comidas = (dias?.[sumarDias(hasta, -i)]?.comidas) || [];
+    if (!comidas.length) continue;
+    diasConDatos++;
+
+    for (const c of comidas) {
+      const netos = Math.max(0, (Number(c.carb) || 0) - (Number(c.fibra) || 0));
+      carbosTotales += netos;
+      /* Por ítem cuando el análisis los trajo, y si no por el plato entero: es
+         la diferencia entre decir "el pan" y decir "el sándwich". */
+      const partes = (c.items || []).filter(it => it && it.nombre && Number(it.carbohidratos) > 0);
+      if (partes.length) {
+        for (const it of partes) {
+          const g = Number(it.carbohidratos) || 0;
+          porNombre.set(it.nombre, (porNombre.get(it.nombre) || 0) + g);
+        }
+      } else if (netos > 0) {
+        const n = c.titulo || 'esa comida';
+        porNombre.set(n, (porNombre.get(n) || 0) + netos);
+      }
+    }
+  }
+
+  if (!diasConDatos) return null;
+
+  const top = [...porNombre.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, cuantos)
+    .map(([nombre]) => nombre.toLowerCase());
+
+  return {
+    porDia: Math.round(carbosTotales / diasConDatos),
+    techo: Math.round(techoDia),
+    culpables: top
+  };
+}
