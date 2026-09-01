@@ -62,7 +62,7 @@ function pintarComidasDelDia(comidas, cont) {
       card.appendChild(n);
     }
 
-    card.onclick = () => abrirMomento(g);
+    card.onclick = (e) => abrirMomento(g, e);
     fila.appendChild(card);
   }
 
@@ -74,7 +74,20 @@ function pintarComidasDelDia(comidas, cont) {
   if (abierto) cont.appendChild(tiraDeComidas(abierto));
 }
 
-function abrirMomento(g) {
+function abrirMomento(g, e) {
+  /*
+   * Con el dedo, el foco se suelta.
+   *
+   * El anillo de foco es verde, igual que el borde del momento abierto, así
+   * que después de tocar una tarjeta —y sobre todo después de cancelar la
+   * cámara y volver— quedaba una tarjeta remarcada en verde que parecía
+   * seleccionada sin estarlo.
+   *
+   * `e.detail > 0` distingue el toque del teclado: con Enter vale 0, y ahí el
+   * foco tiene que quedarse donde está o quien navega sin mouse se pierde.
+   */
+  if (e && e.detail > 0 && e.currentTarget?.blur) e.currentTarget.blur();
+
   if (!g.comidas.length) {
     /* Vacío: se saca la foto para ESE momento, aunque el reloj diga otra cosa.
        Cargar la cena a la mañana siguiente es de lo más común. */
