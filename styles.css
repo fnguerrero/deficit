@@ -178,7 +178,7 @@ main { padding: 0 14px; max-width: 620px; margin: 0 auto; min-width: 0; width: 1
 }
 .ring-center strong { font-size: 38px; font-weight: 700; letter-spacing: -1.5px; }
 .ring-center strong.largo { font-size: 30px; letter-spacing: -1.2px; }
-.ring-center span { font-size: 13px; color: var(--dim); }
+.ring-center span { font-size: 12px; color: var(--dim); }
 
 .ring-stats { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; margin-top: 14px; text-align: center; }
 .ring-stats div { display: flex; flex-direction: column; gap: 2px; }
@@ -783,11 +783,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    un celular, o sea media pantalla para dos cosas que se leen de un vistazo. */
 .resumen { display: grid; grid-template-columns: minmax(0, 148px) 1fr; gap: 8px; align-items: stretch; }
 .resumen > .card { margin: 0; }
-.resumen .ring-card { display: flex; flex-direction: column; justify-content: center; padding: 10px 6px; }
+.resumen .ring-card { display: flex; flex-direction: column; justify-content: center; padding: 6px; }
 .resumen .ring-stats { display: flex; flex-direction: column; gap: 1px; margin-top: 6px; font-size: 10.5px; }
 .resumen .ring-stats > div { display: flex; justify-content: space-between; gap: 6px; }
 .resumen .ring-stats small { font-size: 9.5px; }
-.resumen .macros { padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+.resumen .macros { padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
 .resumen .macro-head { font-size: 11.5px; }
 
 /* Los tres números del día en una franja, a todo el ancho: en columna dentro de
@@ -806,11 +806,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    estructura de arriba queda siempre a la vista. */
 @media (max-width: 480px) {
   main { padding: 8px 10px 74px; }
-  #tab-hoy .card { margin-bottom: 8px; padding: 10px 12px; }
-  #tab-hoy .card-head { padding: 0 0 6px; }
+  #tab-hoy .card { margin-bottom: 5px; padding: 9px 12px; }
+  #tab-hoy .card-head { padding: 0 0 4px; }
   #tab-hoy .card-head h2 { font-size: 14px; }
   .acciones-fila { margin: 8px 0; }
-  .objetivos { margin-bottom: 8px; }
+  .objetivos { margin-bottom: 4px; }
   #listaComidas { max-height: 30vh; overflow-y: auto; }
   #cardComidas { margin-bottom: 6px; }
   .mas-opciones { padding: 8px; }
@@ -832,8 +832,14 @@ textarea:focus { outline: none; border-color: var(--acc2); }
      una pantalla, y sin esto Historial, Progreso, Perfil y Ajustes —que son
      mas largos que la pantalla— quedaban sin poder scrollear. */
   main { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
+  /* `flex: 0 0 auto` y no `1 1 auto`: estirado a la altura de `main`, el
+     contenido que no entraba —la tira de comidas de un momento abierto— se
+     comprimía adentro en vez de generar scroll, así que quedaba escondida
+     detrás del botón sin forma de llegar a ella. Ahora manda el contenido: en
+     el día normal entra entero y no aparece la barra; si abrís un momento y no
+     alcanza, se scrollea, que es lo que uno espera al desplegar algo. */
   #tab-hoy.active {
-    display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; height: auto;
+    display: flex; flex-direction: column; min-height: 0; flex: 0 0 auto; height: auto;
   }
   /* Los cinco objetivos entran en una sola fila. En dos filas se comian 80 px
      de alto para lo mismo.
@@ -854,6 +860,23 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   #cardComidas { flex: 0 0 auto; display: flex; flex-direction: column; }
   #listaComidas { flex: 0 0 auto; min-height: 0; max-height: none; overflow: visible; }
   .resumen { grid-template-columns: minmax(0, 132px) 1fr; }
+
+  /*
+   * Sacar la foto es la acción principal y estaba a mitad de la pantalla: con
+   * el día cargado había que scrollear para encontrarla. Apoyada sobre la
+   * barra de pestañas queda siempre debajo del pulgar, y de paso libera los
+   * 64 px de alto que se llevaba del flujo.
+   */
+  #tab-hoy .acciones-fila {
+    position: fixed; left: 0; right: 0; bottom: var(--tabbar-h, 62px); z-index: 29;
+    margin: 0 auto; padding: 6px 10px 8px; max-width: 620px;
+    /* Degradado y no un fondo plano: lo que pasa por debajo se desvanece en
+       vez de cortarse en una línea. */
+    background: linear-gradient(to top, var(--bg) 55%, transparent);
+  }
+  /* El hueco que deja: sin esto la última tarjeta queda debajo del botón. */
+  #tab-hoy.active { padding-bottom: 58px; }
+  #tab-hoy .acciones-fila .accion { padding: 10px 4px; }
 }
 
 /* El cronómetro del ayuno: es lo único que hay que ver al abrirlo. */
@@ -1507,7 +1530,10 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* El aviso de "estás sin cuenta". Al pie, sobre la barra de pestañas, y por
    encima del contenido: es lo único que puede costar meses de datos. */
 .barra-cuenta {
-  position: fixed; left: 8px; right: 8px; bottom: 68px; z-index: 40;
+  /* Por encima del botón de Foto, que se apoya sobre la barra de pestañas: los
+     dos son fijos y antes se pisaban. */
+  position: fixed; left: 8px; right: 8px; z-index: 40;
+  bottom: calc(var(--tabbar-h, 62px) + 74px);
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border-radius: 12px;
   background: var(--card2); border: 1px solid var(--line);
@@ -1595,8 +1621,15 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* Lo que queda del día, dentro del anillo. Vivía en una fila de tres números
    que repetía el objetivo y el consumido, los dos ya presentes en el anillo. */
-.ring-resta { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 650; color: var(--acc); }
-.ring-resta.pasado { color: var(--bad); }
+/* Con su propia chapita: los tres renglones tenían el mismo peso visual y el
+   que decide qué comer —lo que queda, o lo que te pasaste— se perdía entre los
+   otros dos. */
+.ring-resta {
+  display: block; margin-top: 5px; font-size: 11.5px; font-weight: 700;
+  padding: 2px 7px; border-radius: 8px; line-height: 1.35;
+  color: var(--acc); background: color-mix(in srgb, var(--acc) 14%, transparent);
+}
+.ring-resta.pasado { color: var(--bad); background: color-mix(in srgb, var(--bad) 15%, transparent); }
 .ring-resta:empty { display: none; }
 
 /* Fibra, azúcar y sodio a lo ancho de la pantalla, en tres columnas parejas.
@@ -1647,7 +1680,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .recuerdos::-webkit-scrollbar { display: none; }
 
 .recuerdo {
-  position: relative; flex: 0 0 auto; width: 102px; height: 102px;
+  position: relative; flex: 0 0 auto; width: 96px; height: 96px;
   border-radius: 16px; overflow: hidden; scroll-snap-align: start;
   background: var(--card2); border: 1px solid var(--line);
 }

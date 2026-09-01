@@ -131,7 +131,7 @@ function tiraDeComidas(grupo, niveles) {
 
   for (const c of grupo.comidas) {
     /* 24 h: "01:00 p. m." son cinco caracteres más que "13:00" y en una tarjeta
-       de 102 px eso es la diferencia entre que los macros entren o se corten. */
+       de 96 px eso es la diferencia entre que los macros entren o se corten. */
     const hora = new Date(c.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
     /* El mismo veredicto que decidió el color del momento: recalcularlo contra
        el total del día daría "no apto" para todo. */

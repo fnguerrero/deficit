@@ -68,8 +68,10 @@ function renderHoy() {
    */
   const quemadas = Math.round(Number(d.ejercicio) || 0);
   const base = calc ? calc.objetivo : 0;
+  /* "de 4.434 kcal" y no "/ 4.434": la barra debajo de un número grande se lee
+     como una fracción, y la unidad tenía que aparecer en algún lado. */
   $('ringGoal').textContent = !objetivo ? 'sin objetivo'
-    : (quemadas ? `/ ${fmtNum(base)} + ${fmtNum(quemadas)}` : `/ ${fmtKcal(objetivo)}`);
+    : (quemadas ? `de ${fmtNum(base)} + ${fmtNum(quemadas)} kcal` : `de ${fmtKcal(objetivo)}`);
   $('ringGoal').title = quemadas
     ? `${fmtNum(base)} kcal de objetivo más ${fmtNum(quemadas)} que quemaste hoy`
     : '';
@@ -105,8 +107,12 @@ function renderHoy() {
      gasto estimado se mira una vez cada tanto y vive en Progreso. */
   const resta = $('ringResta');
   resta.textContent = !objetivo ? ''
-    : (sobra >= 0 ? `quedan ${fmtNum(Math.round(sobra))}` : `+${fmtNum(Math.round(-sobra))} de más`);
+    : (sobra >= 0 ? `quedan ${fmtNum(Math.round(sobra))}` : `${fmtNum(Math.round(-sobra))} de más`);
   resta.classList.toggle('pasado', objetivo > 0 && sobra < 0);
+  resta.title = !objetivo ? ''
+    : (sobra >= 0
+      ? `Te quedan ${fmtNum(Math.round(sobra))} kcal para llegar al objetivo`
+      : `Comiste ${fmtNum(Math.round(-sobra))} kcal más que tu objetivo de hoy`);
 
   const m = calc ? calc.macros : { prot: 0, carb: 0, gras: 0 };
   /*

@@ -616,3 +616,21 @@ addEventListener('keydown', (e) => {
   e.preventDefault();
   deshacerUltimo();
 });
+
+/*
+ * El alto real de la barra de pestañas, en una variable de CSS.
+ *
+ * El botón de Foto se apoya justo encima de ella, y la barra no mide siempre
+ * lo mismo: el `safe-area-inset` de los celulares con gesto de navegación le
+ * suma unos píxeles que ningún número fijo acierta.
+ */
+function medirTabbar() {
+  const nav = document.querySelector('.tabbar');
+  if (!nav) return;
+  const h = Math.round(nav.getBoundingClientRect().height);
+  if (h > 0) document.documentElement.style.setProperty('--tabbar-h', h + 'px');
+}
+
+addEventListener('resize', medirTabbar);
+addEventListener('DOMContentLoaded', medirTabbar);
+medirTabbar();
