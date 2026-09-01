@@ -1,0 +1,102 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banco: el muñeco como tamagotchi</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { padding: 16px; background: var(--bg); color: var(--txt); }
+  h2 { font-size: 15px; margin: 22px 0 8px; }
+  .fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .caso { text-align: center; background: var(--card); border: 1px solid var(--line);
+          border-radius: 12px; padding: 8px 6px; min-width: 96px; }
+  .caso b { display: block; font-size: 11px; font-weight: 700; }
+  .caso small { display: block; font-size: 10px; color: var(--dim); }
+</style>
+
+<h1 style="font-size:17px">El muñeco, eje por eje</h1>
+<p class="hint">Cada fila mueve UNA sola cosa y deja el resto en el medio. Si dos
+  casos de la misma fila se ven iguales, ese eje no está llegando al dibujo.</p>
+
+<div id="salida"></div>
+
+<!-- Con un banco de pruebas la cache es puro estorbo: se recarga siempre lo
+     ultimo, que es justo lo que se esta por mirar. -->
+<script>
+  const V = '?v=' + performance.timeOrigin.toFixed(0);
+  for (const f of ['core', 'platos', 'mascota', 'habitos', 'cuerpo', 'juego',
+                   'transformacion', 'aura', 'cara', 'personaje', 'figura']) {
+    document.write('<scr' + 'ipt src="' + f + '.js' + V + '"></scr' + 'ipt>');
+  }
+</script>
+<script>
+/* Un día armado a mano, con solo lo que hace falta para el dibujo. */
+function dia({ agua = 4, vasos = 8, sueno = 7, animo = 'neutral', ejercicio = 0 } = {}) {
+  return { agua, comidas: [], ejercicio, animo, sueno: sueno == null ? null : { horas: sueno } };
+}
+
+/* Días hacia atrás con o sin entrenamiento, para mover la musculatura. */
+function historial(entrenados, peso) {
+  const dias = {};
+  for (let i = 0; i < 14; i++) {
+    const f = sumarDias(HOY, -i);
+    dias[f] = { comidas: [], peso: i === 0 ? peso : null, ejercicio: i < entrenados ? 400 : 0 };
+  }
+  return dias;
+}
+
+const HOY = hoyISO();
+const ALTURA = 178;
+
+function caso(titulo, detalle, { peso = 82, entrenados = 0, hoy = {} } = {}) {
+  const dias = historial(entrenados, peso);
+  dias[HOY] = { ...dias[HOY], ...dia(hoy), peso };
+
+  const perfil = { altura: ALTURA, peso, sexo: 'm', edad: 36 };
+  const cuerpo = typeof cuerpoDelDia === 'function'
+    ? cuerpoDelDia(perfil, dias, HOY)
+    : cuerpoDe(perfil, dias, HOY);
+
+  const el = document.createElement('div');
+  el.className = 'caso';
+  el.innerHTML = svgPersonaje(hoy.animo || 'neutral', 120, cuerpo) +
+    `<b>${titulo}</b><small>${detalle}</small>`;
+  return el;
+}
+
+function fila(titulo, casos) {
+  const h = document.createElement('h2'); h.textContent = titulo;
+  const f = document.createElement('div'); f.className = 'fila';
+  casos.forEach(c => f.appendChild(c));
+  salida.append(h, f);
+}
+
+/* --- peso: el rango entero que pidió el pedido --- */
+fila('Peso, de 40 a 200 kg', [40, 55, 70, 82, 100, 130, 160, 200].map(
+  p => caso(p + ' kg', 'IMC ' + (imcDe(p, ALTURA) || '—'), { peso: p })
+));
+
+/* --- ejercicio --- */
+fila('Ejercicio: días entrenados de los últimos 14', [0, 2, 4, 7, 10, 14].map(
+  n => caso(n + ' días', n === 0 ? 'sin marcar' : 'marcado', { entrenados: n })
+));
+
+/* --- agua --- */
+fila('Agua: vasos de 8', [0, 2, 4, 6, 8].map(
+  v => caso(v + ' de 8', v === 0 ? 'seco' : (v >= 8 ? 'hidratado' : ''), { hoy: { agua: v } })
+));
+
+/* --- sueño --- */
+fila('Sueño', [3, 5, 6, 7, 8, 9].map(
+  h => caso(h + ' h', h < 6 ? 'poco' : (h >= 7 ? 'descansado' : ''), { hoy: { sueno: h } })
+));
+
+/* --- ánimo --- */
+fila('Ánimo', ['pesimo', 'mal', 'neutral', 'bien', 'genial'].map(
+  a => caso(a, '', { hoy: { animo: a } })
+));
+
+/* --- el día en blanco y el día perfecto, para ver los dos extremos juntos --- */
+fila('Día en blanco vs día completo', [
+  caso('En blanco', 'nada cargado', { hoy: { agua: 0, sueno: null, animo: 'neutral' }, entrenados: 0 }),
+  caso('Completo', 'todo cumplido', { hoy: { agua: 8, sueno: 8, animo: 'genial' }, entrenados: 7 })
+]);
+</script>

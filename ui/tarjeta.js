@@ -25,16 +25,28 @@ function renderMascota() {
      hoy. Son dos fuentes distintas a proposito: ver arriba de personaje.js. */
   const perfectos = diasPerfectos(state.dias, { vasos: metaVasos() });
   const fase = faseDe(perfectos);
-  const cuerpo = cuerpoDe(state.perfil, state.dias, hoyISO(), { bonus: bonusDePerfectos(perfectos) });
+  /* cuerpoDelDia y no cuerpoDe: el primero suma el agua, el sueño y el ánimo
+     de hoy, que es lo que hace que el muñeco sea el de este día y no el de
+     esta balanza. */
+  const cuerpo = cuerpoDelDia(state.perfil, state.dias, hoyISO(), {
+    bonus: bonusDePerfectos(perfectos),
+    meta: metaVasos()
+  });
 
   /* 86 y no 70: el lienzo crecio para que entren las puntas del pelo y el aura,
      asi que a 70 la figura en si quedaba en 43 px de ancho. */
   /* El SVG son unos 8 kB de string armado a mano. Re-generarlo y volver a
      parsearlo cuando nada cambio es trabajo puro al pedo, y en el celular se
      nota al tocar un vaso. */
-  const firmaSvg = [est.animo, fase.n, cuerpo.efectiva, cuerpo.musculatura].join('|');
+  const firmaSvg = [
+    est.animo, fase.n, cuerpo.efectiva, cuerpo.musculatura,
+    cuerpo.hidratacion, cuerpo.descanso
+  ].join('|');
   if (cont.dataset.firma !== firmaSvg) {
-    cont.innerHTML = htmlPersonaje(est.animo, 76, cuerpo, fase);
+    /* El SVG dibujado y no el sprite de imágenes: es el único de los dos que
+       puede reaccionar a algo que no sea el peso. Un sprite tiene los cuerpos
+       que tiene, y el agua o el sueño no se pueden dibujar eligiendo archivo. */
+    cont.innerHTML = svgPersonaje(est.animo, 76, cuerpo, fase);
     cont.dataset.firma = firmaSvg;
   }
   /* El SVG solo dice el animo. Quien no ve el dibujo necesita lo mismo que el
@@ -44,7 +56,9 @@ function renderMascota() {
     est.titulo,
     est.texto,
     fase.n ? `Fase ${fase.n}: ${fase.nombre}, por ${perfectos} días perfectos seguidos.` : '',
-    cuerpo.hayDatos ? `Cuerpo dibujado con tu IMC de ${fmtNum(cuerpo.imc, 1)}.` : 'Sin peso cargado.'
+    cuerpo.hayDatos ? `Cuerpo dibujado con tu IMC de ${fmtNum(cuerpo.imc, 1)}.` : 'Sin peso cargado.',
+    cuerpo.hidratacion < 0.4 ? 'Se lo ve seco: falta agua.' : '',
+    cuerpo.descanso < 0.55 ? 'Se lo ve cansado: falta sueño.' : ''
   ].filter(Boolean).join(' '));
   /*
    * El personaje reacciona: salta cuando sube de fase, se sacude cuando entra

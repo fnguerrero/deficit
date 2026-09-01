@@ -1,74 +1,61 @@
-# Informe — Ciclo 14: diez bugs
+# Informe — Ciclo 15: el muñeco como tamagotchi
 
 ## Qué se hizo
 
-Diez bugs encontrados y arreglados, cada uno reproducido antes de tocar el
-código y con al menos un test que falla contra la versión vieja.
+Los cinco objetivos del día ahora se ven en el cuerpo del muñeco. Antes el
+dibujo solo reaccionaba al peso y todo lo demás vivía en un emoji al costado.
 
-**Los que perdían datos**
+- **El peso** mueve el cuerpo en todo el rango: 40 kg y 200 kg dan dibujos
+  claramente distintos, y los ocho pesos del banco de pruebas dan ocho cuerpos.
+- **El ejercicio** marca los músculos según los días entrenados de los últimos 14.
+- **El agua** apaga la piel y seca la boca. No juzga antes de las dos de la
+  tarde: no anotar el agua a las nueve no es lo mismo que no haber tomado.
+- **El sueño** dibuja ojeras y va cerrando los párpados, de tres horas a ocho.
+- **El ánimo** sigue eligiendo la cara, y el sueño y el agua la retocan sin
+  reemplazarla: se puede estar contento y con sueño a la vez.
 
-1. **El sueño y el ánimo no sincronizaban.** Dos de los cinco hábitos que la app
-   pide todos los días vivían solo en el dispositivo donde se cargaron: no había
-   columnas en la base ni los miraba la fusión, mientras la app decía que con
-   una cuenta los datos quedan a salvo.
-2. **`migrar()` borraba el ayuno del día.** Corre en cada arranque, así que
-   cortar un ayuno y volver a abrir la app lo perdía.
-3. **Fibra, azúcar y sodio no viajaban.** Son los tres números que se muestran
-   abajo del anillo; al abrir la app en otro dispositivo la fila salía vacía.
-4. **Borrar una comida no entraba en la pila de deshacer.** El toast trae su
-   propio "Deshacer" pero dura segundos: pasado eso, el botón Deshacer de la
-   pantalla no traía de vuelta la acción destructiva más común de la app.
-5. **Una fila sin fecha creaba `dias["undefined"]`**, que después aparecía en el
-   historial sin forma de borrarlo.
+Lo que faltaba de fondo: **la app dibujaba un sprite de imágenes**, que tiene
+los cuerpos que tiene. El personaje SVG paramétrico ya existía, completo y sin
+que lo usara nadie — `figura.js` y `cara.js` ni siquiera estaban cargados en
+`index.html`. Ahora la pantalla Hoy lo dibuja.
 
-**Los que mentían o no hacían nada**
+**Además, dos cosas que aparecieron en el camino:**
 
-6. **La porción se encadenaba.** Media de media daba un cuarto, tocar "1"
-   después de "½" no devolvía al valor original, el botón marcado era siempre
-   "1", y el título apilaba prefijos hasta quedar "½ 2 ½ Milanesa".
-7. **El onboarding borraba el modo** al guardar, igual que Perfil antes de
-   arreglarlo hoy.
-8. **Una actividad creada desde el modal de Ejercicio no aparecía**: se guardaba
-   en la lista general, pero en Hoy solo salen las tres favoritas.
-9. **Cortar el ayuno lo guardaba en el día que se estuviera mirando**, no en hoy.
-10. **El plan por etapas calculaba con 0,5 kg/semana** cuando el ritmo salía de
-    una fecha, porque el value del select es la palabra "fecha".
+- **La carga de ejercicio**, rehecha: cinco duraciones y tres intensidades con
+  su ejemplo al lado, el número calculado antes de tocar nada, y suma en vez de
+  reemplazar. Las actividades de siempre quedaron abajo como atajo.
+- **Las tarjetas de comida** miden exactamente lo mismo que los momentos.
 
 ## Cómo verificar
 
-Abrir `tests.html`: **954 tests, todo en verde**. Las herramientas de control:
-`guardas.py` (50 scripts, 688 globales, 399 ids), `tamanos.py` (todo dentro de
-límite), `version.py` al día.
+`_tamagotchi.html` es el banco: seis filas que mueven un eje cada una. Si dos
+casos de la misma fila se ven iguales, ese eje no está llegando al dibujo.
+Cuando empezó el ciclo daba 12 dibujos distintos de 32.
+
+`tests.html`: **985 tests, todo en verde**. `guardas.py` (53 scripts),
+`tamanos.py` y `version.py` OK.
 
 ## Decisiones tomadas por criterio propio
 
-- **El cliente aguanta una base sin migrar.** Las siete columnas nuevas se
-  mandan igual, y si el 400 se queja justo de ellas se reintenta sin ellas. Un
-  solo campo desconocido hace fallar el POST entero, así que sin esto el sync
-  quedaría roto para todo hasta correr el SQL.
-- **La porción se guarda como factor, no como valores base.** La base se
-  reconstruye dividiendo, que es una línea contra duplicar cada macro.
-- **La actividad nueva entra sola a favoritas solo si hay lugar.** Con los tres
-  ocupados no se saca ninguna sin permiso: se avisa dónde elegirla.
+- **SVG y no sprite.** Un sprite no puede reaccionar al agua o al sueño: son
+  archivos, no parámetros. El SVG ya aceptaba contextura y musculatura.
+- **Lo que no se cargó no se dibuja mal.** Sin dato, todo queda en 0,7 —ni bien
+  ni mal—. Un muñeco reseco por un dato que falta sería la app inventando.
+- **El sueño y el agua retocan la cara, no la reemplazan**, y no pisan una risa:
+  el ánimo se eligió a mano y no lo borra un dato automático.
+- **El límite de `habitos.js` subió de 300 a 350** en vez de partirlo por nueve
+  líneas de lógica que es exactamente lo que el archivo ya hacía.
 
 ## Desvíos de la SPEC
 
-- **Se hicieron dos cosas que no estaban en el alcance**, las dos pedidas
-  durante el ciclo: el anillo legible con números grandes (con el rojo más rojo
-  y las grasas en amarillo) y compartir la sugerencia de comida por WhatsApp,
-  que estrena `compartir.js` con 7 tests.
-- **El criterio 7 se cumple parcialmente.** Hoy entra sin scroll con el día
-  completo en 412×915, 375×812 y 375×740 (1 px), y quedan 23 px de resto en
-  360×640. Con avisos excepcionales activos —poca proteína varios días— crece y
-  scrollea, que es correcto: son bloques que aparecen porque hay algo que decir.
-
-## Pendiente de Nico
-
-**Correr `supabase-sueno-animo.sql`** en el SQL Editor. Sin eso, el sueño, el
-ánimo, los nutrientes y la porción siguen sin sincronizar (la app no se rompe:
-reintenta sin esos campos).
+- **La cintura quedó pendiente.** Se sumó al TODO durante el ciclo y no llegó a
+  entrar. Es lo primero de la próxima vuelta.
+- **Se hicieron dos cosas fuera del alcance**, las dos pedidas mientras corría:
+  la carga de ejercicio y el tamaño de las tarjetas de comida.
+- **Sacar el nombre del encabezado no hizo falta**: ya no estaba en el código.
+  Se ve en la app instalada porque está atrasada.
 
 ## Números
 
-10 bugs en 12 iteraciones (#105 a #116), sobre un presupuesto de 40.
-De 932 a 954 tests.
+9 iteraciones (#122 a #130) sobre un presupuesto de 40.
+De 968 a 985 tests.

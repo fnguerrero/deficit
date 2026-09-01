@@ -275,3 +275,34 @@ function vasosPorEjercicio(kcalEjercicio, mlVaso = ML_POR_VASO) {
   if (!(k > 0)) return 0;
   return Math.round((k / 100) * ML_POR_100_KCAL / mlVaso);
 }
+
+/*
+ * Moverse, sin tener que ponerle nombre.
+ *
+ * Para anotar que saliste a caminar había que elegir un rótulo de una lista de
+ * tres. Pero de un rato de movimiento uno se acuerda de dos cosas: cuánto duró
+ * y qué tan fuerte fue. Con eso alcanza para estimar, y no hace falta mantener
+ * una lista de actividades que nunca va a estar completa.
+ *
+ * Los MET son los de tabla: 3 es caminar tranquilo, 6 trotar o una clase, 9
+ * correr fuerte o un partido.
+ */
+const INTENSIDADES = [
+  { id: 'suave', nombre: 'Suave', met: 3, detalle: 'caminata, elongar' },
+  { id: 'medio', nombre: 'Moderado', met: 6, detalle: 'trote, clase, bici' },
+  { id: 'fuerte', nombre: 'Fuerte', met: 9, detalle: 'correr, partido, pesas' }
+];
+
+const MINUTOS_EJERCICIO = [15, 30, 45, 60, 90];
+
+function intensidadDe(id) {
+  return INTENSIDADES.find(i => i.id === id) || INTENSIDADES[1];
+}
+
+/** Las calorías de moverse tantos minutos a tal intensidad, para ese cuerpo. */
+function caloriasDeMovimiento(minutos, intensidadId, pesoKg) {
+  const m = Number(minutos) || 0;
+  const p = Number(pesoKg) || 0;
+  if (m <= 0 || p <= 0) return 0;
+  return Math.round(intensidadDe(intensidadId).met * p * (m / 60));
+}

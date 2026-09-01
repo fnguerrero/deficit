@@ -3442,3 +3442,93 @@ test('las sugerencias piden esfuerzo bajo en los modelos que lo aceptan', () => 
   esperarQue(aceptaEffort('claude-sonnet-5'), 'sonnet 5 lo acepta');
   esperarQue(!aceptaEffort('claude-haiku-4-5-20251001'), 'haiku 4.5 no, y da error si se manda');
 });
+
+/* ---------------- el dia en el cuerpo ---------------- */
+
+test('sin agua y con el dia avanzado, seco', () => {
+  esperarQue(hidratacionDe({ agua: 0 }, { hora: 20 }) < 0.2, 'a las ocho de la noche sin un vaso');
+});
+
+test('sin agua pero temprano no se juzga', () => {
+  // no anotar el agua a las nueve no es lo mismo que no haber tomado
+  esperar(hidratacionDe({ agua: 0 }, { hora: 9 }), 0.7);
+});
+
+test('el objetivo cumplido da hidratacion entera', () => {
+  esperar(hidratacionDe({ agua: 8 }, { hora: 20 }), 1);
+  esperar(hidratacionDe({ agua: 10 }, { hora: 20 }), 1);
+});
+
+test('la mitad del agua da la mitad', () => {
+  esperar(hidratacionDe({ agua: 4 }, { hora: 20 }), 0.5);
+});
+
+test('temprano un par de vasos ya alcanza', () => {
+  esperarQue(hidratacionDe({ agua: 2 }, { hora: 10 }) >= 0.7, 'a las diez, dos vasos van bien');
+});
+
+test('tres horas de sueno es el piso', () => {
+  esperar(descansoDe({ sueno: { horas: 3 } }), 0);
+  esperar(descansoDe({ sueno: { horas: 4 } }), 0);
+});
+
+test('ocho horas o mas es descanso entero', () => {
+  esperar(descansoDe({ sueno: { horas: 8 } }), 1);
+  esperar(descansoDe({ sueno: { horas: 10 } }), 1);
+});
+
+test('seis horas queda en el medio', () => {
+  esperar(descansoDe({ sueno: { horas: 6 } }), 0.5);
+});
+
+test('sin sueno cargado no se dibuja cansado', () => {
+  esperar(descansoDe({}), 0.7);
+  esperar(descansoDe({ sueno: null }), 0.7);
+});
+
+test('cuerpoDelDia junta todo sin perder lo que ya habia', () => {
+  const hoy = '2026-09-01';
+  const dias = { [hoy]: { comidas: [], peso: 82, agua: 8, sueno: { horas: 8 }, animo: 'bien', ejercicio: 400 } };
+  const c = cuerpoDelDia({ altura: 178, peso: 82 }, dias, hoy, { hora: 20 });
+  esperar(c.hidratacion, 1);
+  esperar(c.descanso, 1);
+  esperar(c.animo, 'bien');
+  esperarQue(c.efectiva != null, 'y la contextura del peso sigue estando');
+  esperarQue(c.imc > 25 && c.imc < 27, 'con el IMC calculado: ' + c.imc);
+});
+
+test('un dia en blanco no da un cuerpo castigado', () => {
+  const hoy = '2026-09-01';
+  const c = cuerpoDelDia({ altura: 178, peso: 82 }, { [hoy]: { comidas: [] } }, hoy, { hora: 9 });
+  esperar(c.hidratacion, 0.7);
+  esperar(c.descanso, 0.7);
+  esperar(c.animo, null);
+});
+
+/* ---------------- moverse por minutos e intensidad ---------------- */
+
+test('media hora moderada para 80 kg', () => {
+  // 6 MET x 80 kg x 0,5 h = 240
+  esperar(caloriasDeMovimiento(30, 'medio', 80), 240);
+});
+
+test('la intensidad cambia el resultado', () => {
+  esperar(caloriasDeMovimiento(60, 'suave', 80), 240);
+  esperar(caloriasDeMovimiento(60, 'medio', 80), 480);
+  esperar(caloriasDeMovimiento(60, 'fuerte', 80), 720);
+});
+
+test('el peso importa: el mismo rato gasta distinto', () => {
+  esperarQue(caloriasDeMovimiento(30, 'medio', 120) > caloriasDeMovimiento(30, 'medio', 60), 'mas cuerpo, mas gasto');
+});
+
+test('sin minutos o sin peso no se inventa un numero', () => {
+  esperar(caloriasDeMovimiento(0, 'medio', 80), 0);
+  esperar(caloriasDeMovimiento(30, 'medio', 0), 0);
+  esperar(caloriasDeMovimiento(30, 'medio', null), 0);
+});
+
+test('una intensidad que no existe cae en la del medio', () => {
+  esperar(intensidadDe('nada').id, 'medio');
+  esperar(intensidadDe('fuerte').met, 9);
+});
