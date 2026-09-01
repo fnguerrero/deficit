@@ -305,11 +305,9 @@ function renderActividades() {
 
 /* ---------------- más opciones ---------------- */
 
-function cerrarMas() { $('modalMas').classList.remove('open'); devolverFoco(); }
-
-$('btnMas').onclick = () => abrirCapa('modalMas');
-$('btnCerrarMas').onclick = cerrarMas;
-$('modalMas').onclick = (e) => { if (e.target.id === 'modalMas') cerrarMas(); };
+/* El modal de "Más opciones" se fue: sus cuatro formas de cargar una comida
+   viven ahora en el menú de la flechita del botón Foto, que ya tenía la foto,
+   la galería, el código y la etiqueta. Eran dos menús para lo mismo. */
 
 
 /* ---------------- ayuno ---------------- */

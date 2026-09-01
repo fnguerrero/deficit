@@ -213,7 +213,9 @@ function sumaRapida(kcal) {
   });
 }
 
-$('btnQuick').onclick = () => sumaRapida($('quickKcal').value);
+/* Cierra el menú al sumar: es la única opción del menú que no abre otra capa,
+   así que sin esto la suma se guardaba con el menú todavía en pantalla. */
+$('btnQuick').onclick = () => { sumaRapida($('quickKcal').value); cerrarOrigenFoto(); };
 $('quickKcal').onkeydown = (e) => { if (e.key === 'Enter') sumaRapida($('quickKcal').value); };
 
 /* ---------------- favoritos ---------------- */
