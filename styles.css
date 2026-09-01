@@ -1717,33 +1717,61 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 .momento {
   position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
-  border: 1px solid var(--line); background: var(--card2); color: var(--txt);
-  cursor: pointer; padding: 0; display: flex; align-items: flex-end;
+  border: 1.5px solid var(--line); background: var(--card2); color: var(--txt);
+  cursor: pointer; padding: 0;
+  /* El pie pegado abajo en las cinco, tengan foto o no: es lo que hace que los
+     nombres queden en una sola línea y no en cinco alturas distintas. */
+  display: flex; flex-direction: column; justify-content: flex-end;
 }
 .momento img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* El emoji, centrado en el hueco de arriba y fuera del pie, para no empujarlo. */
+.momento-emoji {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-style: normal; font-size: 19px; opacity: .5;
+}
 
 /* El degradado solo cuando hay foto: sobre la tarjeta vacía oscurecería de
    gratis un casillero que ya es tenue. */
 .momento:has(img)::after {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, .8) 0%, rgba(0, 0, 0, .25) 55%, transparent 80%);
+  background: linear-gradient(to top, rgba(0, 0, 0, .82) 0%, rgba(0, 0, 0, .25) 55%, transparent 80%);
 }
-.momento:has(img) .momento-cuerpo { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
+.momento:has(img) .momento-pie { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .75); }
 
-.momento-cuerpo {
-  position: relative; z-index: 2; width: 100%; padding: 4px 3px 5px;
-  display: flex; flex-direction: column; align-items: center; gap: 0;
+.momento-pie {
+  position: relative; z-index: 2; width: 100%; padding: 3px 3px 5px;
+  display: flex; flex-direction: column; align-items: center; gap: 0; line-height: 1.15;
 }
-.momento-cuerpo b { font-size: 14px; font-weight: 700; line-height: 1.1; }
-.momento-cuerpo i { font-style: normal; font-size: 17px; line-height: 1.1; opacity: .55; }
-.momento-cuerpo small {
+.momento-pie b { font-size: 14px; font-weight: 700; }
+.momento-pie small {
   font-size: 8.5px; font-weight: 600; opacity: .9; letter-spacing: .1px;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* El vacío se ve como un lugar donde falta algo, no como un error. */
-.momento.vacio { border-style: dashed; background: transparent; color: var(--txt2); }
-.momento.abierto { border-color: var(--acc); }
+/*
+ * El borde dice si lo del momento entra en el modo: verde entra, ámbar entra
+ * justo, rojo no entra. Es el mismo semáforo que ya usan los casilleros del
+ * día y las comidas, así que no hay una convención nueva que aprender.
+ */
+.momento.n-si { border-color: var(--acc); }
+.momento.n-justo { border-color: var(--warn); }
+.momento.n-no { border-color: var(--bad); }
+.momento.n-justo .momento-pie b { color: var(--warn); }
+.momento.n-no .momento-pie b { color: var(--bad); }
+/* Con foto, el número va en blanco: sobre la imagen el color se pierde y el
+   borde ya lo dice. */
+.momento:has(img) .momento-pie b { color: #fff; }
+
+/* El vacío se ve como un lugar donde falta algo, no como un error.
+
+   `sin-cargar` y no `vacio`: ya existe una clase `.vacio` genérica para los
+   mensajes de "todavía no hay nada", con su propio `margin: 14px 0 6px`. Las
+   tarjetas la heredaban por compartir el nombre y quedaban 14 px más abajo que
+   las llenas, con los cinco nombres a dos alturas distintas. */
+.momento.sin-cargar { border-style: dashed; border-color: var(--line); background: transparent; color: var(--txt2); }
+.momento.abierto { box-shadow: inset 0 0 0 2px var(--acc); }
 
 /* Cuántas hay, solo si es más de una: un "1" en cada tarjeta es ruido. */
 .momento-n {
@@ -1751,4 +1779,12 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   min-width: 15px; height: 15px; border-radius: 8px; padding: 0 3px;
   background: var(--acc); color: var(--sobre-acc);
   font-size: 9.5px; font-weight: 700; line-height: 15px; text-align: center;
+}
+
+/* El día que se está mirando, cuando no es hoy.
+   Reemplaza a un cartel de dos renglones con un botón que decía lo mismo que
+   esta palabra: si arriba dice "Ayer", estás en ayer. */
+.date-nav #dateLabel.otro-dia {
+  color: var(--warn); font-weight: 700; cursor: pointer;
+  text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
 }

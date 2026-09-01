@@ -26,16 +26,19 @@ let momentoAbierto = null;
 
 function pintarComidasDelDia(comidas, cont) {
   const grupos = agruparPorMomento(comidas, { todos: true });
+  /* Una sola pasada para todo el día: cada comida contra lo que había antes. */
+  const niveles = nivelesPorComida(comidas);
 
   const fila = document.createElement('li');
   fila.className = 'momentos';
 
   for (const g of grupos) {
+    const nivel = nivelDelMomento(g.comidas, niveles);
     const card = document.createElement('button');
-    card.className = 'momento' + (g.comidas.length ? '' : ' vacio') +
+    card.className = 'momento' + (g.comidas.length ? ' n-' + nivel : ' sin-cargar') +
       (momentoAbierto === g.id ? ' abierto' : '');
     card.title = g.comidas.length
-      ? `${g.nombre}: ${fmtKcal(g.kcal)}`
+      ? `${g.nombre}: ${fmtKcal(g.kcal)}${TITULO_NIVEL[nivel] || ''}`
       : `Todavía no cargaste ${g.nombre.toLowerCase()}`;
 
     /* La última QUE TENGA foto, no la última a secas: si la más reciente se
@@ -47,12 +50,25 @@ function pintarComidasDelDia(comidas, cont) {
       card.appendChild(img);
     }
 
-    const cuerpo = document.createElement('span');
-    cuerpo.className = 'momento-cuerpo';
-    cuerpo.innerHTML = g.comidas.length
-      ? `<b>${fmtNum(Math.round(g.kcal))}</b><small>${g.nombre}</small>`
-      : `<i>${g.icono}</i><small>${g.nombre}</small>`;
-    card.appendChild(cuerpo);
+    /*
+     * El emoji va suelto y centrado; el nombre y el número, siempre abajo.
+     *
+     * Antes los tres iban en la misma caja, así que en las tarjetas vacías el
+     * emoji empujaba al nombre y quedaba a distinta altura que el de las
+     * llenas: cinco tarjetas iguales con los textos en cinco alturas.
+     */
+    if (!ultima?.thumb) {
+      const emoji = document.createElement('i');
+      emoji.className = 'momento-emoji';
+      emoji.textContent = g.icono || '🍽️';
+      card.appendChild(emoji);
+    }
+
+    const pie = document.createElement('span');
+    pie.className = 'momento-pie';
+    pie.innerHTML = (g.comidas.length ? `<b>${fmtNum(Math.round(g.kcal))}</b>` : '') +
+      `<small>${g.nombre}</small>`;
+    card.appendChild(pie);
 
     // cuántas hay, solo cuando es más de una: un "1" en cada tarjeta es ruido
     if (g.comidas.length > 1) {
@@ -71,7 +87,7 @@ function pintarComidasDelDia(comidas, cont) {
   /* Lo de adentro del momento abierto, debajo de la fila. Solo si hay más de
      una: con una sola, tocar la tarjeta va derecho a editarla. */
   const abierto = grupos.find(g => g.id === momentoAbierto && g.comidas.length > 1);
-  if (abierto) cont.appendChild(tiraDeComidas(abierto));
+  if (abierto) cont.appendChild(tiraDeComidas(abierto, niveles));
 }
 
 function abrirMomento(g, e) {
@@ -107,7 +123,7 @@ function abrirMomento(g, e) {
  * Se despliega al tocar un momento que tiene más de una. La foto es la tarjeta
  * entera: en filas de texto quedaba en una miniatura de 40 px que no se miraba.
  */
-function tiraDeComidas(grupo) {
+function tiraDeComidas(grupo, niveles) {
   const li = document.createElement('li');
   const tira = document.createElement('div');
   tira.className = 'recuerdos';
@@ -115,7 +131,9 @@ function tiraDeComidas(grupo) {
 
   for (const c of grupo.comidas) {
     const hora = new Date(c.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-    const veredicto = comidaApta(c, state.perfil.modo, calcular(), totalesDia());
+    /* El mismo veredicto que decidió el color del momento: recalcularlo contra
+       el total del día daría "no entra" para todo. */
+    const veredicto = niveles[c.id] || { nivel: 'si', motivo: '' };
 
     const card = document.createElement('div');
     card.className = 'recuerdo' + (veredicto.nivel !== 'si' ? ' ' + veredicto.nivel : '');
@@ -179,4 +197,52 @@ function tiraDeComidas(grupo) {
 
   li.appendChild(tira);
   return li;
+}
+
+
+/*
+ * Cómo le fue a cada comida del día contra el modo.
+ *
+ * Se acumula EN ORDEN, y esto no es un detalle: una comida hay que juzgarla
+ * contra lo que ya habías comido cuando te la comiste, no contra el día
+ * entero. Comparándola con el total, el desayuno compite contra el almuerzo y
+ * la cena —que todavía no habían pasado— y en keto eso da "no entra" para
+ * todo, incluidos unos huevos con palta que entran de sobra. La pantalla se
+ * llenaba de rojo y el aviso dejaba de significar algo.
+ */
+function nivelesPorComida(comidas) {
+  const objetivo = calcular();
+  const orden = [...(comidas || [])].sort((a, b) => a.ts - b.ts);
+  const acumulado = { carb: 0, fibra: 0, kcal: 0 };
+  const niveles = {};
+
+  for (const c of orden) {
+    niveles[c.id] = comidaApta(c, state.perfil.modo, objetivo, { ...acumulado });
+    acumulado.carb += Number(c.carb) || 0;
+    acumulado.fibra += Number(c.fibra) || 0;
+    acumulado.kcal += Number(c.kcal) || 0;
+  }
+  return niveles;
+}
+
+/*
+ * Y cómo le fue al momento: manda la peor de sus comidas.
+ *
+ * Un almuerzo con una ensalada impecable y una porción de tarta que no entra
+ * es un almuerzo que no entra. Promediarlo escondería justo lo que hay que ver.
+ */
+const TITULO_NIVEL = {
+  si: ' · entra en el modo',
+  justo: ' · entra justo',
+  no: ' · no entra en el modo'
+};
+
+function nivelDelMomento(comidas, niveles) {
+  let peor = 'si';
+  for (const c of comidas || []) {
+    const n = niveles[c.id]?.nivel;
+    if (n === 'no') return 'no';
+    if (n === 'justo') peor = 'justo';
+  }
+  return peor;
 }
