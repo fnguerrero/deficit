@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=415">
+<link rel="stylesheet" href="styles.css?v=418">
 </head>
 <body>
 
@@ -83,15 +83,18 @@
           <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
           <circle id="ringFg" class="ring-fg" cx="60" cy="60" r="52"></circle>
         </svg>
+        <!-- Adentro del anillo va SOLO el número. Con el objetivo y el sobrante
+             ahí también, cinco cifras y "de 1.938 + 290 kcal" no entraban en
+             los 132 px de diámetro: el número tocaba el trazo y el texto se
+             cortaba. Los dos detalles pasan debajo, donde tienen el ancho de
+             la tarjeta entera. -->
         <div class="ring-center">
           <strong id="ringKcal">0</strong>
-          <span id="ringGoal">/ 0 kcal</span>
-          <!-- Lo que queda: es el único número con el que se decide qué comer.
-               Vivía en una fila aparte que repetía el objetivo y el consumido,
-               los dos ya presentes acá arriba. -->
-          <span class="ring-resta" id="ringResta"></span>
         </div>
       </div>
+      <span id="ringGoal">de 0 kcal</span>
+      <!-- Lo que queda: es el único número con el que se decide qué comer. -->
+      <span class="ring-resta" id="ringResta"></span>
       </div>
 
     <div class="card macros">
@@ -1003,54 +1006,54 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=415"></script>
-<script src="core.js?v=415"></script>
-<script src="platos.js?v=415"></script>
-<script src="animar.js?v=415"></script>
-<script src="fotos.js?v=415"></script>
-<script src="calibracion.js?v=415"></script>
-<script src="modos.js?v=415"></script>
-<script src="arreglos.js?v=415"></script>
-<script src="habitos.js?v=415"></script>
-<script src="mascota.js?v=415"></script>
-<script src="cuerpo.js?v=415"></script>
-<script src="personaje.js?v=415"></script>
-<script src="sprite-datos.js?v=415"></script>
-<script src="sprite.js?v=415"></script>
-<script src="transformacion.js?v=415"></script>
-<script src="aura.js?v=415"></script>
-<script src="juego.js?v=415"></script>
-<script src="sonidos.js?v=415"></script>
-<script src="voz.js?v=415"></script>
-<script src="graficos.js?v=415"></script>
-<script src="plazo.js?v=415"></script>
-<script src="analisis.js?v=415"></script>
-<script src="chequeos.js?v=415"></script>
-<script src="claude.js?v=415"></script>
-<script src="productos.js?v=415"></script>
-<script src="sync.js?v=415"></script>
-<script src="estado-sync.js?v=415"></script>
-<script src="auth.js?v=415"></script>
-<script src="app.js?v=415"></script>
-<script src="ui/general.js?v=415"></script>
-<script src="ui/hoy.js?v=415"></script>
-<script src="ui/dia.js?v=415"></script>
-<script src="ui/objetivos.js?v=415"></script>
-<script src="ui/tarjeta.js?v=415"></script>
-<script src="ui/logros.js?v=415"></script>
-<script src="ui/comidas.js?v=415"></script>
-<script src="ui/edicion.js?v=415"></script>
-<script src="ui/escaner.js?v=415"></script>
-<script src="ui/asistente.js?v=415"></script>
-<script src="ui/historial.js?v=415"></script>
-<script src="ui/progreso.js?v=415"></script>
-<script src="ui/perfil.js?v=415"></script>
-<script src="ui/sincronizacion.js?v=415"></script>
-<script src="ui/cuenta.js?v=415"></script>
-<script src="ui/calibracion.js?v=415"></script>
-<script src="ui/actividades.js?v=415"></script>
-<script src="ui/recordatorios.js?v=415"></script>
-<script src="ui/ajustes.js?v=415"></script>
-<script src="arranque.js?v=415"></script>
+<script src="config.js?v=418"></script>
+<script src="core.js?v=418"></script>
+<script src="platos.js?v=418"></script>
+<script src="animar.js?v=418"></script>
+<script src="fotos.js?v=418"></script>
+<script src="calibracion.js?v=418"></script>
+<script src="modos.js?v=418"></script>
+<script src="arreglos.js?v=418"></script>
+<script src="habitos.js?v=418"></script>
+<script src="mascota.js?v=418"></script>
+<script src="cuerpo.js?v=418"></script>
+<script src="personaje.js?v=418"></script>
+<script src="sprite-datos.js?v=418"></script>
+<script src="sprite.js?v=418"></script>
+<script src="transformacion.js?v=418"></script>
+<script src="aura.js?v=418"></script>
+<script src="juego.js?v=418"></script>
+<script src="sonidos.js?v=418"></script>
+<script src="voz.js?v=418"></script>
+<script src="graficos.js?v=418"></script>
+<script src="plazo.js?v=418"></script>
+<script src="analisis.js?v=418"></script>
+<script src="chequeos.js?v=418"></script>
+<script src="claude.js?v=418"></script>
+<script src="productos.js?v=418"></script>
+<script src="sync.js?v=418"></script>
+<script src="estado-sync.js?v=418"></script>
+<script src="auth.js?v=418"></script>
+<script src="app.js?v=418"></script>
+<script src="ui/general.js?v=418"></script>
+<script src="ui/hoy.js?v=418"></script>
+<script src="ui/dia.js?v=418"></script>
+<script src="ui/objetivos.js?v=418"></script>
+<script src="ui/tarjeta.js?v=418"></script>
+<script src="ui/logros.js?v=418"></script>
+<script src="ui/comidas.js?v=418"></script>
+<script src="ui/edicion.js?v=418"></script>
+<script src="ui/escaner.js?v=418"></script>
+<script src="ui/asistente.js?v=418"></script>
+<script src="ui/historial.js?v=418"></script>
+<script src="ui/progreso.js?v=418"></script>
+<script src="ui/perfil.js?v=418"></script>
+<script src="ui/sincronizacion.js?v=418"></script>
+<script src="ui/cuenta.js?v=418"></script>
+<script src="ui/calibracion.js?v=418"></script>
+<script src="ui/actividades.js?v=418"></script>
+<script src="ui/recordatorios.js?v=418"></script>
+<script src="ui/ajustes.js?v=418"></script>
+<script src="arranque.js?v=418"></script>
 </body>
 </html>

@@ -437,7 +437,3 @@ Nico sumo despues el veredicto honesto de si va bien.
 #103 — Los primeros pasos. El onboarding explica de que se trata y se cierra; despues queda una pantalla llena de guiones —sin peso no hay objetivo, sin objetivo el anillo no significa nada, sin comidas no hay de que hablar— y nada de eso esta roto pero tampoco dice que hacer. No es un tutorial: es la lista de lo que falta con el boton que lo resuelve, y desaparece sola cuando ya no falta nada, sin que haya que cerrarla. Los tests fallaron porque la funcion habia quedado en la capa de UI, que la suite no carga: es logica pura y se mudo a chequeos.js, que es donde vivian las otras preguntas incomodas. Verif: 911 en verde y por DOM el conteo yendo de 0 de 3 a la tarjeta desapareciendo sola
 
 #104 — Cierre del ciclo 13. core.js se paso del limite al sumarle leerMacro y resumenHabitos, y las dos se mudaron a chequeos.js, que es donde ya vivian las otras interpretaciones de datos; chequeos.js estrena limite propio. Verif final: 911 tests en verde, guardas OK (48 scripts, 666 globales, 397 ids), todo dentro de limite, las cinco pestanas y los trece render sin romper, cero errores de consola, y a 375 px scrollWidth igual al viewport con cero elementos fuera de pantalla
-
-## Ciclo 14 — Diez bugs
-
-#105 — Bootstrap del ciclo 14. SPEC y TODO nuevos: cazar diez bugs reales y arreglarlos, cada uno con reproduccion escrita y un test que falla antes del arreglo. Seis barridos por area. Ciclo 13 archivado en .nonstop/ciclo-13. Verif: .nonstop/ con SPEC, TODO y BITACORA nuevos

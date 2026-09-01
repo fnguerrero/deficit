@@ -95,8 +95,11 @@ function renderHoy() {
   ring.classList.toggle('near', objetivo > 0 && !pasado && t.kcal > objetivo * 0.85);
   ring.parentElement.classList.toggle('pasado', pasado);
 
-  /* Cinco cifras a 38 px se tocan con el borde del anillo. */
-  $('ringKcal').classList.toggle('largo', Math.round(t.kcal) >= 10000);
+  /* El número se achica según cuántas cifras tiene: a 38 px, cinco ya rozan el
+     trazo del anillo y seis se salen. */
+  const cifras = fmtNum(Math.round(t.kcal)).length;
+  $('ringKcal').classList.toggle('largo', cifras === 5);
+  $('ringKcal').classList.toggle('enorme', cifras > 5);
 
   /* Pasarse quedaba escondido: el anillo se llenaba y "restantes" mostraba 0,
      igual que si hubieras cerrado justo. Ahora el numero se pone en negativo y
