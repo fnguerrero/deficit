@@ -2800,3 +2800,220 @@ test('aprenderMomentos deja los horarios vigentes para momentoPorHora', () => {
   aprenderMomentos({});   // se deja como estaba para los demás tests
   esperar(momentoPorHora(11, 0), 'desayuno');
 });
+
+/* --- leer un macro, no solo mostrarlo (ciclo 13) --- */
+
+test('en un macro que hay que alcanzar, dice cuanto falta', () => {
+  esperar(leerMacro(64, 180).texto, 'Te faltan 116 g');
+  esperar(leerMacro(64, 180).nivel, 'falta');
+});
+
+test('llegando se dice que se cumplio', () => {
+  esperar(leerMacro(180, 180).nivel, 'bien');
+  esperar(leerMacro(200, 180).texto, 'Objetivo cumplido', 'de más no es un problema acá');
+});
+
+test('cerca del objetivo se marca distinto de lejos', () => {
+  esperar(leerMacro(170, 180).nivel, 'cerca');
+  esperar(leerMacro(90, 180).nivel, 'falta');
+});
+
+test('en un techo, lo que importa es pasarse', () => {
+  esperar(leerMacro(20, 30, { mas: false }).texto, 'Dentro del objetivo');
+  esperar(leerMacro(30, 30, { mas: false }).nivel, 'bien');
+});
+
+test('y por cuanto se paso: no es lo mismo un 10% que el septuple', () => {
+  esperar(leerMacro(35, 30, { mas: false }).nivel, 'cerca');
+  esperar(leerMacro(35, 30, { mas: false }).texto, '+5 g sobre el objetivo');
+  esperar(leerMacro(218, 30, { mas: false }).nivel, 'mal');
+  esperar(leerMacro(218, 30, { mas: false }).texto, '+188 g sobre el objetivo');
+});
+
+test('sin objetivo no se inventa una lectura', () => {
+  esperar(leerMacro(50, 0), { nivel: '', texto: '' });
+  esperar(leerMacro(50, null), { nivel: '', texto: '' });
+});
+
+test('la unidad se puede cambiar: el sodio va en mg', () => {
+  esperar(leerMacro(3600, 2000, { mas: false, unidad: 'mg' }).texto, '+1.600 mg sobre el objetivo');
+});
+
+/* --- el marcador de habitos (ciclo 13) --- */
+
+const OBJ_T = (listos) => ['Peso','Agua','Ejercicio','Sueño','Ánimo']
+  .map((nombre, i) => ({ id: nombre.toLowerCase(), nombre, listo: listos.includes(i) }));
+
+test('con todos hechos se dice que estan completos', () => {
+  const r = resumenHabitos(OBJ_T([0,1,2,3,4]));
+  esperar(r.completo, true);
+  esperarQue(/5 hábitos del día, completos/.test(r.texto), r.texto);
+});
+
+test('cuando falta uno solo, se lo nombra', () => {
+  esperar(resumenHabitos(OBJ_T([0,2,3,4])).texto, '4 de 5 hábitos · te falta agua');
+});
+
+test('con varios pendientes no se listan: seria una lista de tareas', () => {
+  esperar(resumenHabitos(OBJ_T([0,1])).texto, '2 de 5 hábitos');
+});
+
+test('sin objetivos no hay marcador', () => {
+  esperar(resumenHabitos([]).texto, '');
+  esperar(resumenHabitos(null).texto, '');
+});
+
+/* --- el peso de un vistazo (ciclo 13) --- */
+
+/* HOY_P ya existe más arriba, en los tests de proyección. */
+
+function diasConPeso(pesos) {
+  const dias = {};
+  const n = pesos.length;
+  for (let i = 0; i < n; i++) {
+    dias[sumarDias(HOY_P, -(n - 1 - i))] = { peso: pesos[i], agua: 0, ejercicio: 0, nota: '', comidas: [] };
+  }
+  return dias;
+}
+
+test('el peso que se muestra es la tendencia, no el del dia', () => {
+  // siete días bajando y hoy un pico de agua y sal
+  const r = resumenPeso(diasConPeso([84, 83.8, 83.6, 83.5, 83.4, 83.2, 84.5]), { pesoObj: 78 }, { hasta: HOY_P });
+  esperarQue(r.actual < 84.5, 'el pico no puede mandar: ' + r.actual);
+  esperar(r.actual, 83.7);
+});
+
+test('con una sola medicion, esa es la tendencia', () => {
+  esperar(resumenPeso(diasConPeso([90]), { pesoObj: 80 }, { hasta: HOY_P }).actual, 90);
+});
+
+test('el cambio compara tendencias, no puntas', () => {
+  const pesos = [];
+  for (let i = 0; i < 40; i++) pesos.push(+(88 - i * 0.1).toFixed(1));
+  const r = resumenPeso(diasConPeso(pesos), { pesoObj: 80 }, { hasta: HOY_P, rango: 30 });
+  esperarQue(r.cambio < 0, 'viene bajando: ' + r.cambio);
+  esperarQue(Math.abs(r.cambio) > 2, 'en 30 días bajó unos 3 kg: ' + r.cambio);
+});
+
+test('cuanto falta para el objetivo', () => {
+  const r = resumenPeso(diasConPeso([85, 85, 85]), { pesoObj: 78 }, { hasta: HOY_P });
+  esperar(r.faltan, 7);
+  esperar(r.mejora, -1, 'la meta está abajo: bajar es avanzar');
+});
+
+test('si la meta esta arriba, subir es avanzar', () => {
+  esperar(resumenPeso(diasConPeso([60, 60]), { pesoObj: 70 }, { hasta: HOY_P }).mejora, 1);
+});
+
+test('sin objetivo no se inventa un progreso', () => {
+  const r = resumenPeso(diasConPeso([85]), {}, { hasta: HOY_P });
+  esperar(r.pct, null);
+  esperar(r.faltan, null);
+});
+
+test('sin pesos cargados no hay nada que mostrar', () => {
+  esperar(resumenPeso({}, { pesoObj: 78 }), null);
+  esperar(resumenPeso({ '2026-09-01': { peso: null, comidas: [] } }, { pesoObj: 78 }), null);
+});
+
+/* --- el coaching nombra que esta flojo (ciclo 13) --- */
+
+test('con una dimension floja, el titulo la nombra', () => {
+  /* agua a la mitad al final del día: flojo, no mal */
+  const d = { peso: 80, agua: 4, ejercicio: 300, nota: '', sueno: { horas: 7.5 }, animo: 'bien',
+    comidas: [{ id: 'a', ts: Date.now(), kcal: 1800, prot: 100, carb: 100, gras: 60, momento: 'almuerzo' }] };
+  const e = estadoMascota(d, { objetivo: { objetivo: 2000 }, objetivoVasos: 8, hora: 20 });
+  esperarQue(e.titulo !== 'Vas tirando', 'tiene que decir qué está flojo, no "vas tirando": ' + e.titulo);
+  esperarQue(/agua/i.test(e.titulo), e.titulo);
+});
+
+test('los titulos de flojo son distintos de los de mal', () => {
+  for (const dim of ['sueno', 'agua', 'comida', 'movimiento']) {
+    esperarQue(TITULO_FLOJO[dim], 'falta el título flojo de ' + dim);
+    esperarQue(TITULO_FLOJO[dim] !== TITULO_POR_DIM[dim],
+      'flojo y mal no pueden decir lo mismo: ' + dim);
+  }
+});
+
+test('con el dia en blanco sigue diciendo que no hay nada', () => {
+  const e = estadoMascota({ comidas: [] }, { hora: 12 });
+  esperarQue(/en blanco/i.test(e.titulo), e.titulo);
+});
+
+/* --- cuando el modo no cuadra hace dias (ciclo 13) --- */
+
+/* Días con comidas de muchos carbohidratos: en keto no entra ninguna. */
+function diasFueraDeKeto(cuantos, hasta) {
+  const dias = {};
+  for (let i = 0; i < cuantos; i++) {
+    const f = sumarDias(hasta, -i);
+    dias[f] = { peso: null, agua: 0, ejercicio: 0, nota: '', comidas: [
+      { id: 'a' + i, ts: new Date(2026, 8, 1, 13).getTime(), titulo: 'Pasta', items: [],
+        kcal: 800, prot: 25, carb: 110, gras: 20, fibra: 6, azucar: 8, sodio: 700, momento: 'almuerzo', act: 1 }
+    ] };
+  }
+  return dias;
+}
+
+const HASTA_M = '2026-09-01';
+
+test('con cuatro dias fuera del modo, se avisa', () => {
+  const r = modoQueNoCuadra(diasFueraDeKeto(5, HASTA_M), 'keto', null, { hasta: HASTA_M });
+  esperarQue(r, 'tendría que avisar');
+  esperarQue(/Keto/.test(r.texto), r.texto);
+  esperar(r.dias, 5);
+});
+
+test('con dos dias no alcanza: es un desliz, no un patron', () => {
+  esperar(modoQueNoCuadra(diasFueraDeKeto(2, HASTA_M), 'keto', null, { hasta: HASTA_M }), null);
+});
+
+test('comiendo keto de verdad no molesta', () => {
+  const dias = {};
+  for (let i = 0; i < 7; i++) {
+    dias[sumarDias(HASTA_M, -i)] = { peso: null, agua: 0, ejercicio: 0, nota: '', comidas: [
+      { id: 'k' + i, ts: new Date(2026, 8, 1, 13).getTime(), titulo: 'Bife con ensalada', items: [],
+        kcal: 600, prot: 35, carb: 8, gras: 45, fibra: 4, azucar: 1, sodio: 500, momento: 'almuerzo', act: 1 }] };
+  }
+  esperar(modoQueNoCuadra(dias, 'keto', null, { hasta: HASTA_M }), null);
+});
+
+test('sin dias cargados no hay nada que decir', () => {
+  esperar(modoQueNoCuadra({}, 'keto', null, { hasta: HASTA_M }), null);
+});
+
+/* --- los primeros pasos (ciclo 13) --- */
+
+test('con la app vacia faltan los tres pasos', () => {
+  const pasos = pasosQueFaltan({ perfil: {}, dias: {} });
+  esperar(pasos.filter(p => p.hecho).length, 0);
+  esperar(pasos.length, 3);
+});
+
+test('con el perfil cargado, ese paso queda hecho', () => {
+  const pasos = pasosQueFaltan({ perfil: { peso: 85, altura: 178, edad: 40 }, dias: {} });
+  esperar(pasos.find(p => p.id === 'perfil').hecho, true);
+  esperar(pasos.find(p => p.id === 'objetivo').hecho, false);
+});
+
+test('un perfil a medias no cuenta como hecho', () => {
+  esperar(pasosQueFaltan({ perfil: { peso: 85 }, dias: {} }).find(p => p.id === 'perfil').hecho, false);
+});
+
+test('una comida cargada alcanza para el tercero', () => {
+  const dias = { '2026-09-01': { comidas: [{ id: 'a', kcal: 500 }] } };
+  esperar(pasosQueFaltan({ perfil: {}, dias }).find(p => p.id === 'comida').hecho, true);
+});
+
+test('un dia sin comidas no cuenta', () => {
+  const dias = { '2026-09-01': { comidas: [] }, '2026-08-31': { comidas: [] } };
+  esperar(pasosQueFaltan({ perfil: {}, dias }).find(p => p.id === 'comida').hecho, false);
+});
+
+test('con todo hecho no falta ninguno', () => {
+  const pasos = pasosQueFaltan({
+    perfil: { peso: 85, altura: 178, edad: 40, pesoObj: 78 },
+    dias: { '2026-09-01': { comidas: [{ id: 'a', kcal: 500 }] } }
+  });
+  esperar(pasos.filter(p => !p.hecho).length, 0);
+});

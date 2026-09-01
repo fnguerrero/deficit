@@ -166,3 +166,61 @@ function comoHacerlaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumi
 
   return { posible: true, texto: '' };
 }
+
+/* ---------------- cuando el modo no cuadra hace días ---------------- */
+
+/*
+ * Si casi nada entra en el modo, varios días seguidos.
+ *
+ * El aviso por comida hace su trabajo: te dice que ese plato te saca de
+ * cetosis. Pero repetido cinco días es un cartel siempre encendido, y un
+ * cartel siempre encendido deja de leerse.
+ *
+ * Lo que la app puede notar y no decía: que el patrón no es un desliz sino
+ * otra cosa. O el modo no es el que querés, o hace falta un plan distinto para
+ * llegar a él. Cualquiera de las dos es una conversación que conviene tener
+ * una vez, no en cada foto.
+ *
+ * No juzga si está bien o mal: solo dice lo que pasó y deja la decisión.
+ */
+const DIAS_PARA_DUDAR = 4;
+const PISO_ADHERENCIA = 0.34;   // menos de un tercio de las comidas entrando
+
+function modoQueNoCuadra(dias, idModo, objetivo, { hasta = hoyISO(), largo = 7 } = {}) {
+  const modo = modoDe(idModo);
+  if (!modo) return null;
+
+  let diasFuera = 0;
+  let diasConDatos = 0;
+
+  for (let i = 0; i < largo; i++) {
+    const f = sumarDias(hasta, -i);
+    const comidas = (dias?.[f]?.comidas) || [];
+    if (!comidas.length) continue;
+
+    diasConDatos++;
+
+    /* Cada comida contra lo que ya se había comido ese día, igual que en la
+       pantalla: contra el total del día no entraría nunca ninguna. */
+    const acumulado = { carb: 0, fibra: 0 };
+    let entran = 0;
+
+    for (const c of [...comidas].sort((a, b) => a.ts - b.ts)) {
+      if (comidaApta(c, idModo, objetivo, { ...acumulado }).nivel !== 'no') entran++;
+      acumulado.carb += Number(c.carb) || 0;
+      acumulado.fibra += Number(c.fibra) || 0;
+    }
+
+    if (entran / comidas.length < PISO_ADHERENCIA) diasFuera++;
+  }
+
+  /* Con pocos días registrados no hay patrón, hay poca información. */
+  if (diasConDatos < DIAS_PARA_DUDAR || diasFuera < DIAS_PARA_DUDAR) return null;
+
+  return {
+    dias: diasFuera,
+    modo: modo.nombre,
+    texto: `Hace ${diasFuera} días que casi nada entra en ${modo.nombre}. ` +
+      'Puede ser el plan, o puede ser que te sirva otro modo.'
+  };
+}

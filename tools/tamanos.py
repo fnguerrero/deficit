@@ -18,6 +18,7 @@ LIMITES = [
     ('config.js', 40),
     ('claude.js', 900),
     ('analisis.js', 900),
+    ('chequeos.js', 450),
     ('modos.js', 800),
     ('arreglos.js', 250),
     ('habitos.js', 300),

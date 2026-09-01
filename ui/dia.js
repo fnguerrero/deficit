@@ -130,7 +130,9 @@ function tiraDeComidas(grupo, niveles) {
   tira.setAttribute('role', 'list');
 
   for (const c of grupo.comidas) {
-    const hora = new Date(c.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    /* 24 h: "01:00 p. m." son cinco caracteres más que "13:00" y en una tarjeta
+       de 132 px eso es la diferencia entre que los macros entren o se corten. */
+    const hora = new Date(c.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
     /* El mismo veredicto que decidió el color del momento: recalcularlo contra
        el total del día daría "no entra" para todo. */
     const veredicto = niveles[c.id] || { nivel: 'si', motivo: '' };
@@ -157,7 +159,13 @@ function tiraDeComidas(grupo, niveles) {
     const pie = document.createElement('div');
     pie.className = 'recuerdo-pie';
     const b = document.createElement('b'); b.textContent = c.titulo || 'Comida';
-    const sm = document.createElement('small'); sm.textContent = hora;
+
+    /* Los macros del plato, en la misma línea que la hora.
+       Sin esto, la barra de macros del día es un total del que no se sabe de
+       dónde sale: con 218 g de carbohidratos arriba, lo que hace falta saber
+       es cuál de las cuatro comidas los trajo. */
+    const sm = document.createElement('small');
+    sm.textContent = `${hora} · P${fmtNum(Math.round(c.prot || 0))} C${fmtNum(Math.round(c.carb || 0))} G${fmtNum(Math.round(c.gras || 0))}`;
     pie.append(b, sm);
 
     if (veredicto.nivel !== 'si') {

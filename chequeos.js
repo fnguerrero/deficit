@@ -261,3 +261,113 @@ function referenciaDePeso(dias, hoy, ventana = 7) {
   if (!previos.length) return 0;
   return previos.reduce((a, p) => a + p, 0) / previos.length;
 }
+
+/* ---------------- qué le falta a la app para poder opinar ---------------- */
+
+/*
+ * Qué le falta a la app para poder decir algo útil.
+ *
+ * El onboarding explica de qué se trata y se cierra. Después queda una pantalla
+ * llena de guiones: sin peso no hay objetivo, sin objetivo el anillo no
+ * significa nada, y sin comidas no hay de qué hablar. Nada de eso está roto,
+ * pero tampoco dice qué hacer.
+ *
+ * No es un tutorial: es la lista de lo que falta, con el botón que lo resuelve,
+ * y desaparece sola cuando ya no falta nada.
+ */
+function pasosQueFaltan(estado) {
+  const p = estado.perfil || {};
+  const hayComidas = Object.values(estado.dias || {}).some(d => (d.comidas || []).length);
+
+  return [
+    {
+      id: 'perfil',
+      hecho: !!(p.peso && p.altura && p.edad),
+      texto: 'Cargá tu peso, altura y edad',
+      porque: 'Sin eso no se puede calcular cuántas calorías te tocan.',
+      boton: 'Ir a Perfil'
+    },
+    {
+      id: 'objetivo',
+      hecho: !!p.pesoObj,
+      texto: 'Poné a cuánto querés llegar',
+      porque: 'Es lo que convierte el peso de hoy en un progreso.',
+      boton: 'Ir a Perfil'
+    },
+    {
+      id: 'comida',
+      hecho: hayComidas,
+      texto: 'Sacale una foto a lo que estés por comer',
+      porque: 'Con una comida ya empieza a tener sentido el día.',
+      boton: 'Sacar la foto'
+    }
+  ];
+}
+
+/* ---------------- leer un macro, no solo mostrarlo ---------------- */
+
+/*
+ * Qué decir de un macro además del número.
+ *
+ * "64 / 180 g" obliga a hacer la resta y a acordarse de si en ese macro conviene
+ * llegar o no pasarse. La app tiene las dos cosas y puede decirlas: cuánto falta
+ * o cuánto sobra, y si eso está bien o mal.
+ *
+ * `mas` distingue los dos tipos de objetivo que hay: en proteína y fibra la meta
+ * es llegar, y quedarse corto es el problema; en carbohidratos bajo keto o en
+ * sodio la meta es un techo, y pasarse es el problema. El mismo número dice
+ * cosas opuestas según cuál sea.
+ */
+function leerMacro(valor, meta, { mas = true, unidad = 'g', cerca = 0.9 } = {}) {
+  const v = Number(valor) || 0;
+  const m = Number(meta) || 0;
+  if (!m) return { nivel: '', texto: '' };
+
+  const falta = m - v;
+
+  if (mas) {
+    if (v >= m) return { nivel: 'bien', texto: 'Objetivo cumplido' };
+    if (v >= m * cerca) return { nivel: 'cerca', texto: `Te faltan ${fmtNum(Math.round(falta))} ${unidad}` };
+    return { nivel: 'falta', texto: `Te faltan ${fmtNum(Math.round(falta))} ${unidad}` };
+  }
+
+  /* Techo: pasarse es lo que importa, y por cuánto. Un 5 % de más no es lo
+     mismo que el séptuple, y decir "te pasaste" en los dos casos iguala cosas
+     que no son iguales. */
+  if (v <= m) return { nivel: 'bien', texto: 'Dentro del objetivo' };
+  return {
+    nivel: v > m * 1.5 ? 'mal' : 'cerca',
+    texto: `+${fmtNum(Math.round(v - m))} ${unidad} sobre el objetivo`
+  };
+}
+
+/* ---------------- cómo va el día en hábitos ---------------- */
+
+/*
+ * Cuántos hábitos del día van, y cuál falta.
+ *
+ * Cinco casilleros sueltos son cinco botones. El mismo dato con un marcador
+ * —"4 de 5"— es un progreso, y un progreso que va por 4 de 5 pide el quinto.
+ *
+ * Cuando falta uno solo se lo nombra, que es cuando nombrarlo sirve: con tres
+ * pendientes, listarlos es una lista de tareas y no un empujón.
+ */
+function resumenHabitos(objetivos) {
+  const total = (objetivos || []).length;
+  const listos = (objetivos || []).filter(o => o.listo);
+  const faltan = (objetivos || []).filter(o => !o.listo);
+
+  if (!total) return { texto: '', completo: false };
+
+  if (!faltan.length) {
+    return { texto: `Los ${total} hábitos del día, completos`, completo: true, hechos: total, total };
+  }
+
+  const base = `${listos.length} de ${total} hábitos`;
+  return {
+    texto: faltan.length === 1 ? `${base} · te falta ${faltan[0].nombre.toLowerCase()}` : base,
+    completo: false,
+    hechos: listos.length,
+    total
+  };
+}

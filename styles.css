@@ -1830,3 +1830,65 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .mascota-linea { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; min-width: 0; }
 .mascota-linea .fase-chip { flex: 0 0 auto; }
 .mascota-linea b { min-width: 0; }
+
+/* La lectura del macro: cuánto falta o cuánto sobra. Es lo que evita tener que
+   hacer la resta de cabeza y acordarse de si en ese macro conviene llegar o no
+   pasarse. */
+.macro-lee { display: block; margin-top: 3px; font-size: 10.5px; font-weight: 600; color: var(--dim); }
+.macro-lee.bien { color: var(--acc); }
+.macro-lee.cerca { color: var(--warn); }
+.macro-lee.falta { color: var(--txt2); }
+.macro-lee.mal { color: var(--bad); }
+.macro-lee:empty { display: none; }
+
+/* El marcador de hábitos. Chiquito: acompaña a los casilleros, no compite. */
+.habitos-lee { margin: 0 0 5px; font-size: 11.5px; font-weight: 600; color: var(--txt2); }
+.habitos-lee.completo { color: var(--acc); }
+
+/* La tira del peso: el objetivo real de la app, en una línea.
+   Es un botón porque lleva al historial, que es donde se mira la curva. */
+.peso-tira {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 12px; margin-bottom: 8px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--card); color: var(--txt);
+  cursor: pointer; text-align: left;
+}
+.peso-tira-num { flex: 0 0 auto; display: flex; flex-direction: column; line-height: 1.1; }
+.peso-tira-num b { font-size: 17px; font-weight: 700; }
+.peso-tira-num small { font-size: 9.5px; color: var(--dim); }
+.peso-tira-barra { flex: 1 1 auto; height: 6px; border-radius: 4px; background: var(--card2); overflow: hidden; min-width: 0; }
+.peso-tira-barra i { display: block; height: 100%; background: var(--acc); border-radius: 4px; transition: width .5s ease; }
+.peso-tira-delta { flex: 0 0 auto; font-size: 12px; font-weight: 700; color: var(--dim); }
+.peso-tira-delta.bien { color: var(--acc); }
+.peso-tira-delta.mal { color: var(--bad); }
+
+/* Aclararle al análisis qué era el plato. Un renglón: es una corrección
+   ocasional, no un campo que haya que ver siempre. */
+.aclarar { display: flex; gap: 6px; margin-top: 10px; }
+.aclarar input {
+  flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--card2); color: var(--txt); font-size: 12.5px;
+}
+.aclarar button { flex: 0 0 auto; }
+
+/* El aviso de que el modo no cuadra hace días. Ámbar y no rojo: no es un
+   error, es una observación sobre un patrón. */
+.aviso-modo {
+  margin-bottom: 10px; padding: 10px 12px; border-radius: 12px;
+  border: 1px solid var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent);
+  font-size: 12.5px; line-height: 1.35;
+}
+.aviso-modo .actions-row { margin-top: 8px; }
+
+/* Los primeros pasos: lo que falta para que la app pueda decir algo.
+   Se va sola cuando ya no falta nada, así que no necesita un botón de cerrar. */
+.primeros .paso {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-top: 1px solid var(--line);
+}
+.primeros .paso:first-child { border-top: 0; }
+.primeros .paso > div { flex: 1; min-width: 0; }
+.primeros .paso b { display: block; font-size: 13px; font-weight: 600; }
+.primeros .paso small { display: block; font-size: 11.5px; color: var(--dim); margin-top: 1px; }
+.primeros .paso button { flex: 0 0 auto; }
+.primeros .paso.hecho b { color: var(--acc); font-weight: 550; }

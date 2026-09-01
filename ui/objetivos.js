@@ -156,6 +156,8 @@ function renderTiras() {
 }
 
 function renderObjetivos() {
+  renderPrimerosPasos();
+
   const cont = $('objetivosDia');
   if (!cont) return;
 
@@ -174,6 +176,15 @@ function renderObjetivos() {
   const yaEstaban = listosAhora;
   listosAhora = new Set(objetivosDelDia().filter(o => o.listo).map(o => o.id));
   const recien = [...listosAhora].filter(id => !yaEstaban.has(id));
+
+  /* El marcador arriba: cuántos van y, si falta uno solo, cuál. */
+  const lee = $('habitosLee');
+  if (lee) {
+    const r = resumenHabitos(objetivosDelDia());
+    lee.textContent = r.texto;
+    lee.className = 'habitos-lee' + (r.completo ? ' completo' : '');
+    lee.hidden = !r.texto;
+  }
 
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {
@@ -514,5 +525,49 @@ function renderSueno() {
       save(); renderSueno(); renderObjetivos(); renderMascota();
     };
     cal.appendChild(b);
+  }
+}
+
+
+/* ---------------- los primeros pasos ---------------- */
+
+function renderPrimerosPasos() {
+  const caja = $('primerosPasos');
+  if (!caja) return;
+
+  const pasos = pasosQueFaltan(state);
+  const faltan = pasos.filter(x => !x.hecho);
+
+  /* Con todo hecho desaparece para siempre, sin que haya que cerrarla. */
+  caja.hidden = !faltan.length;
+  if (!faltan.length) return;
+
+  $('pasosPill').textContent = `${pasos.length - faltan.length} de ${pasos.length}`;
+
+  const cont = $('listaPasos');
+  cont.innerHTML = '';
+
+  for (const paso of pasos) {
+    const fila = document.createElement('div');
+    fila.className = 'paso' + (paso.hecho ? ' hecho' : '');
+
+    const txt = document.createElement('div');
+    txt.innerHTML = `<b>${paso.hecho ? '✓ ' : ''}${paso.texto}</b>` +
+      (paso.hecho ? '' : `<small>${paso.porque}</small>`);
+    fila.appendChild(txt);
+
+    if (!paso.hecho) {
+      const b = document.createElement('button');
+      b.className = 'ghost small';
+      b.textContent = paso.boton;
+      b.onclick = (e) => {
+        if (e.detail > 0) e.currentTarget.blur();
+        if (paso.id === 'comida') $('btnFoto').click();
+        else irTab('perfil');
+      };
+      fila.appendChild(b);
+    }
+
+    cont.appendChild(fila);
   }
 }

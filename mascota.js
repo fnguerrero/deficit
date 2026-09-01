@@ -123,7 +123,15 @@ function estadoMascota(d, { objetivo = null, objetivoVasos = 8, racha = 0, hora 
 
   if (flojas.length) {
     const p = flojas[0];
-    return { animo: 'flojo', dim: p.dim, racha, titulo: 'Vas tirando', texto: p.texto };
+    /* El título nombra QUÉ está flojo.
+       "Vas tirando" describe cómo viene el día y no sirve para hacer nada: el
+       dato de qué falta existía —está en el renglón de abajo— pero el título,
+       que es lo que se lee de reojo, se lo callaba. */
+    return {
+      animo: 'flojo', dim: p.dim, racha,
+      titulo: TITULO_FLOJO[p.dim] || 'Vas tirando',
+      texto: p.texto
+    };
   }
 
   // todo lo que se midió está bien: cuánto se completó define el brillo
@@ -148,6 +156,21 @@ const TITULO_POR_DIM = {
   agua: 'Te falta agua',
   comida: 'Te pasaste de comida',
   movimiento: 'No te moviste'
+};
+
+/*
+ * Y los mismos, en tono de "todavía se arregla".
+ *
+ * Son distintos de los de arriba a propósito: "Dormiste poco" es un hecho
+ * cerrado, "Te faltó un poco de sueño" es lo mismo dicho sobre algo que
+ * todavía no terminó de pasar. La diferencia entre mal y flojo es justamente
+ * si queda margen.
+ */
+const TITULO_FLOJO = {
+  sueno: 'Te faltó dormir',
+  agua: 'Vas corto de agua',
+  comida: 'Vas justo con las calorías',
+  movimiento: 'Todavía no te moviste'
 };
 
 /* ---------------- la racha de registro ---------------- */
