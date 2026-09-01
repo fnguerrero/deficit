@@ -1,14 +1,18 @@
-# TODO — ciclo 13: diez mejoras
+# TODO — Ciclo 14
 
-Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
+## Caza
 
-- [x] 1. Los macros dicen cuánto falta o cuánto sobra · verif: test de los textos + por DOM
-- [x] 2. Hábitos: "4 de 5 · te falta agua" · verif: test del conteo + por DOM
-- [x] 3. El peso y su tendencia, arriba en Hoy · verif: test de la tendencia + por DOM a 375 px
-- [x] 4. El coaching nombra la dimensión floja · verif: test con cada dimensión
-- [x] 5. El anillo separa objetivo base de lo que sumó el ejercicio · verif: por DOM con ejercicio cargado
-- [x] 6. Aclarar qué era el plato desde el resumen · verif: por DOM, re-análisis con texto
-- [x] 7. Los macros de cada comida en su tarjeta · verif: por DOM
-- [x] 8. Aviso cuando hace días que casi nada entra en el modo · verif: test del detector
-- [x] 9. El primer día dice qué hacer · verif: por DOM con la app vacía
-- [x] 10. Nada de esto rompe lo que andaba · verif: suite, guardas, tamaños, consola y ancho a 375
+- [ ] Barrido 1: fechas y husos (hoyISO, sumarDias, cambio de día, medianoche) · verif: tests que provoquen el corrimiento
+- [ ] Barrido 2: números (NaN, división por cero, campos vacíos, negativos, redondeo) · verif: llamadas con los valores límite
+- [ ] Barrido 3: estado y ciclo de vida (borrar mientras se edita, doble toque, render tras cambiar de día) · verif: por DOM en el navegador
+- [ ] Barrido 4: sync y persistencia (fusión, cuota de localStorage, estado corrupto) · verif: tests con respuestas simuladas
+- [ ] Barrido 5: modos y macros (keto, techos, reparto, comida sin macros) · verif: tests con comidas límite
+- [ ] Barrido 6: las cinco pestañas con estado raro (día vacío, día futuro, perfil a medias) · verif: consola limpia en los trece render
+
+## Arreglos
+
+(se agregan a medida que la caza confirma cada bug)
+
+## Cierre
+
+- [ ] Verificación final contra los criterios de la SPEC

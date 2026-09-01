@@ -26,7 +26,7 @@
   --err: var(--bad);
   --prot: #60a5fa;
   --carb: #fbbf24;
-  --gras: #f472b6;
+  --gras: #facc15;
   --sombra: none;
   --r: 14px;
 }
@@ -46,10 +46,10 @@
     --acc2: #15803d;
     --sobre-acc: #ffffff;
     --warn: #a16207;
-    --bad: #c62828;
+    --bad: #d61f1f;
     --prot: #1d4ed8;
     --carb: #a16207;
-    --gras: #be185d;
+    --gras: #eab308;
     --sombra: 0 1px 2px rgba(20, 30, 45, .06);
   }
 }
@@ -68,10 +68,10 @@
   --acc2: #15803d;
   --sobre-acc: #ffffff;
   --warn: #a16207;
-  --bad: #c62828;
+  --bad: #d61f1f;
   --prot: #1d4ed8;
   --carb: #a16207;
-  --gras: #be185d;
+  --gras: #eab308;
   --sombra: 0 1px 2px rgba(20, 30, 45, .06);
 }
 
@@ -171,14 +171,16 @@ main { padding: 0 14px; max-width: 620px; margin: 0 auto; min-width: 0; width: 1
 .ring-fg.near { stroke: var(--warn); }
 
 /* La vuelta que ya se dio, cuando el trazo pasó a medir el excedente. */
-.ring.pasado .ring-bg { stroke: color-mix(in srgb, var(--bad) 30%, var(--card2)); }
+.ring.pasado .ring-bg { stroke: color-mix(in srgb, var(--bad) 55%, var(--card2)); }
 .ring-center {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 2px;
 }
-.ring-center strong { font-size: 38px; font-weight: 700; letter-spacing: -1.5px; }
-.ring-center strong.largo { font-size: 30px; letter-spacing: -1.2px; }
-.ring-center span { font-size: 12px; color: var(--dim); }
+.ring-center strong { font-size: 38px; font-weight: 700; letter-spacing: -1.5px; line-height: 1; }
+/* Cinco cifras a 38 px se comen el diámetro entero; seis directamente no entran. */
+.ring-center strong.largo { font-size: 31px; letter-spacing: -1.2px; }
+.ring-center strong.enorme { font-size: 25px; letter-spacing: -1px; }
+#ringGoal { display: block; font-size: 11.5px; color: var(--dim); text-align: center; margin-top: 6px; line-height: 1.25; }
 
 .ring-stats { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; margin-top: 14px; text-align: center; }
 .ring-stats div { display: flex; flex-direction: column; gap: 2px; }
@@ -1625,11 +1627,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    que decide qué comer —lo que queda, o lo que te pasaste— se perdía entre los
    otros dos. */
 .ring-resta {
-  display: block; margin-top: 5px; font-size: 11.5px; font-weight: 700;
+  display: block; margin-top: 4px; font-size: 11.5px; font-weight: 700; text-align: center;
   padding: 2px 7px; border-radius: 8px; line-height: 1.35;
   color: var(--acc); background: color-mix(in srgb, var(--acc) 14%, transparent);
 }
-.ring-resta.pasado { color: var(--bad); background: color-mix(in srgb, var(--bad) 15%, transparent); }
+.ring-resta.pasado { color: var(--bad); background: color-mix(in srgb, var(--bad) 18%, transparent); }
 .ring-resta:empty { display: none; }
 
 /* Fibra, azúcar y sodio a lo ancho de la pantalla, en tres columnas parejas.
