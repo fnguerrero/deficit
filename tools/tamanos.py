@@ -39,11 +39,13 @@ LIMITES = [
     ('tests2.js', 6000),  # se partio en el ciclo 6, al pasarse la primera
     ('sw.js', 150),
     ('ui/*.js', 700),
-    ('tools/*.py', 250),
+    # Lo especifico va ANTES del comodin: el primero que matchea manda, y si
+    # `tools/*.py` viniera primero se llevaria puesto este limite.
     # sprites.py se paso al sumarle la segunda pasada de fondo (los huecos que
     # no tocan el borde). Es un script de un solo uso y partirlo lo haria mas
     # dificil de seguir, no menos.
     ('tools/sprites.py', 300),
+    ('tools/*.py', 250),
     ('proxy/worker.js', 200),
     ('proxy/test.mjs', 250),
 ]
@@ -75,8 +77,13 @@ pasados, cerca = [], []
 print('%-24s %8s %8s   %s' % ('archivo', 'lineas', 'limite', 'estado'))
 print('-' * 60)
 
+ya_vistos = set()
+
 for patron, limite in LIMITES:
     for nombre, ruta in archivos(patron):
+        if nombre in ya_vistos:
+            continue          # ya lo midio una entrada mas especifica
+        ya_vistos.add(nombre)
         n = contar(ruta)
         if n > limite:
             estado = 'SE PASO por %d' % (n - limite)

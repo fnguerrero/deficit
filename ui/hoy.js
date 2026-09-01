@@ -96,62 +96,93 @@ function renderHoy() {
     cab.append(gn, gk);
     ul.appendChild(cab);
 
-    for (const c of grupo.comidas) {
-      const li = document.createElement('li');
-      const hora = new Date(c.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-      const detalle = (c.items || []).map(i => i.nombre).join(', ');
+    /*
+     * Las comidas del momento, en una tira horizontal.
+     *
+     * Cada una es una tarjeta con su foto y las calorías encima. En filas de
+     * texto, cinco comidas se comían la pantalla entera y la foto quedaba
+     * reducida a una miniatura de 40 px que no se veía; acá la foto ES la
+     * tarjeta, que es lo que hace que el día se lea de un vistazo y no
+     * leyéndolo. Se desliza con el dedo y cada tarjeta se acomoda sola.
+     */
+    const tira = document.createElement('div');
+    tira.className = 'recuerdos';
+    tira.setAttribute('role', 'list');
 
+    for (const c of grupo.comidas) {
+      const hora = new Date(c.ts).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      const veredicto = comidaApta(c, state.perfil.modo, calcular(), totalesDia());
+
+      const card = document.createElement('div');
+      card.className = 'recuerdo' + (veredicto.nivel !== 'si' ? ' ' + veredicto.nivel : '');
+      card.setAttribute('role', 'listitem');
+
+      /* La foto de fondo. Sin foto queda el color de la tarjeta con el emoji
+         del momento: una tarjeta vacía se vería rota y son la mayoría hasta
+         que alguien saca fotos de todo. */
+      const fondo = document.createElement('div');
+      fondo.className = 'recuerdo-foto';
       if (c.thumb) {
         const img = document.createElement('img');
-        img.className = 'thumb'; img.src = c.thumb;
-        img.alt = 'Ver la foto de ' + (c.titulo || 'la comida');
-        img.onclick = (e) => { e.stopPropagation(); abrirVisor(c); };
-        li.appendChild(img);
+        img.src = c.thumb;
+        img.alt = '';
+        fondo.appendChild(img);
+      } else {
+        fondo.classList.add('sin-foto');
+        fondo.textContent = grupo.icono || '🍽️';
       }
 
-      const info = document.createElement('div');
-      info.className = 'info';
-      const b = document.createElement('b'); b.textContent = c.titulo || 'Comida';
-      // La fila dice hora y macros; los alimentos se ven al tocar. En la lista
-      // eran tres renglones por comida para algo que casi nunca se relee.
-      const sm = document.createElement('small');
-      sm.textContent = `${hora} · P ${fmtNum(c.prot)}g · C ${fmtNum(c.carb)}g · G ${fmtNum(c.gras)}g`;
-      info.append(b, sm);
+      const kcal = document.createElement('span');
+      kcal.className = 'recuerdo-kcal';
+      kcal.innerHTML = `${fmtNum(Math.round(c.kcal))}<small>kcal</small>`;
 
-      // si la comida no entra en el modo, se marca acá mismo
-      const veredicto = comidaApta(c, state.perfil.modo, calcular(), totalesDia());
+      const pie = document.createElement('div');
+      pie.className = 'recuerdo-pie';
+      const b = document.createElement('b');
+      b.textContent = c.titulo || 'Comida';
+      const sm = document.createElement('small');
+      sm.textContent = hora;
+      pie.append(b, sm);
+
       if (veredicto.nivel !== 'si') {
         const marca = document.createElement('span');
         marca.className = 'marca-apta ' + veredicto.nivel;
         marca.textContent = veredicto.nivel === 'no' ? 'no entra' : 'justo';
         marca.title = veredicto.motivo;
-        /* Junto a los macros y NO dentro del título: el título tiene
-           `white-space: nowrap` y `overflow: hidden`, así que con un nombre
-           largo —"Plato de comida con embutidos, papas y verduras"— la marca
-           quedaba recortada e invisible. Es decir que el aviso desaparecía
-           justo en los platos más complicados, que son los que lo necesitan. */
-        sm.appendChild(document.createTextNode(' · '));
-        sm.appendChild(marca);
+        card.appendChild(marca);
       }
 
-      const kcal = document.createElement('span');
-      kcal.className = 'kcal'; kcal.textContent = fmtNum(Math.round(c.kcal));
-
       const del = document.createElement('button');
-      del.className = 'del'; del.textContent = '×';
-      del.title = 'Borrar'; del.setAttribute('aria-label', 'Borrar ' + (c.titulo || 'comida'));
+      del.className = 'recuerdo-del';
+      del.textContent = '×';
+      del.title = 'Borrar';
+      del.setAttribute('aria-label', 'Borrar ' + (c.titulo || 'comida'));
       del.onclick = (e) => { e.stopPropagation(); borrarComida(c.id); };
 
-      li.className = 'clicable';
-      li.tabIndex = 0;
-      li.setAttribute('role', 'button');
-      li.setAttribute('aria-label', 'Editar ' + (c.titulo || 'comida'));
-      li.onclick = () => editarComida(c.id);
-      li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); editarComida(c.id); } };
+      /* La tarjeta entera edita; la lupa abre la foto grande. Antes la foto se
+         tocaba directamente, pero acá la foto ocupa toda la tarjeta y los dos
+         gestos se pisarían. */
+      const abrir = document.createElement('button');
+      abrir.className = 'recuerdo-abrir';
+      abrir.setAttribute('aria-label', 'Editar ' + (c.titulo || 'comida'));
+      abrir.onclick = () => editarComida(c.id);
 
-      li.append(info, kcal, del);
-      ul.appendChild(li);
+      card.append(fondo, kcal, pie, del, abrir);
+
+      if (c.foto || c.thumb) {
+        const lupa = document.createElement('button');
+        lupa.className = 'recuerdo-lupa';
+        lupa.textContent = '🔍';
+        lupa.title = 'Ver la foto';
+        lupa.setAttribute('aria-label', 'Ver la foto de ' + (c.titulo || 'la comida'));
+        lupa.onclick = (e) => { e.stopPropagation(); abrirVisor(c); };
+        card.appendChild(lupa);
+      }
+
+      tira.appendChild(card);
     }
+
+    ul.appendChild(tira);
   }
 
   renderNutrientes(t, calc);
