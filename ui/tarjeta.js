@@ -76,7 +76,33 @@ function renderMascota() {
 
   avisarRachasEnPeligro();
 
-  $('mascotaCard').onclick = () => abrirObjetivo(est.dim === 'sueno' ? 'sueno' : (est.dim || 'animo'));
+  /*
+   * Tocar la tarjeta lleva a lo que la mascota está señalando.
+   *
+   * Las dimensiones que mira la mascota y los objetivos que se editan no se
+   * llaman igual: `movimiento` se edita en "ejercicio" y `comida` no es un
+   * objetivo, es la lista del día. Sin esta traducción, dos de los cuatro
+   * temas abrían el modal con el título genérico y el cuerpo vacío.
+   */
+  $('mascotaCard').onclick = () => irAlTemaDe(est.dim);
+}
+
+/** A dónde lleva cada tema del que habla la mascota. */
+const OBJETIVO_DE_DIM = {
+  sueno: 'sueno',
+  agua: 'agua',
+  movimiento: 'ejercicio',
+  animo: 'animo'
+};
+
+function irAlTemaDe(dim) {
+  /* De comida no se habla en un modal: lo que hay para mirar es la lista del
+     día, que ya está en la misma pantalla, un poco más abajo. */
+  if (dim === 'comida') {
+    $('cardComidas')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  abrirObjetivo(OBJETIVO_DE_DIM[dim] || 'animo');
 }
 
 /* ---------------- lo que dice la app ---------------- */

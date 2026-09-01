@@ -4465,7 +4465,12 @@ test('con pocos dias no inventa una tendencia', () => {
 
 test('cuenta cuantos dias faltan, no dice "pocos"', () => {
   const v = veredictoProgreso(serie({ dias: 6 }), OBJ_M, FIN_FIXTURE);
-  esperarQue(/4 dias de peso|4 días de peso/.test(v.detalle), 'faltan 4 para los 10: ' + v.detalle);
+  esperarQue(/1 dia de peso|1 día de peso/.test(v.detalle), 'falta 1 para los 7: ' + v.detalle);
+});
+
+test('mientras faltan datos, dice lo que ya hay', () => {
+  const v = veredictoProgreso(serie({ dias: 6 }), OBJ_M, FIN_FIXTURE);
+  esperarQue(/Llevás 6 de 7 pesadas/.test(v.detalle), 'tiene que mostrar el avance: ' + v.detalle);
 });
 
 test('sin objetivo no se pronuncia', () => {

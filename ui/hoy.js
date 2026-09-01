@@ -74,13 +74,27 @@ function renderHoy() {
     ? `${fmtNum(base)} kcal de objetivo más ${fmtNum(quemadas)} que quemaste hoy`
     : '';
 
+  /*
+   * Pasado el objetivo, el anillo empieza otra vuelta.
+   *
+   * Antes se llenaba y ahí se quedaba: pasarse por 200 kcal y pasarse por
+   * 3.000 dibujaban exactamente el mismo círculo rojo. Ahora el fondo marca la
+   * vuelta que ya diste y el trazo mide cuánto llevás de la segunda, así que
+   * por cuánto te pasaste se ve sin leer el número.
+   */
   const C = 2 * Math.PI * 52;
-  const pct = objetivo ? Math.min(t.kcal / objetivo, 1) : 0;
+  const pasado = objetivo > 0 && t.kcal > objetivo;
+  const pct = !objetivo ? 0
+    : Math.min((pasado ? t.kcal - objetivo : t.kcal) / objetivo, 1);
   const ring = $('ringFg');
   ring.style.strokeDasharray = C;
   ring.style.strokeDashoffset = C * (1 - pct);
-  ring.classList.toggle('over', objetivo > 0 && t.kcal > objetivo);
-  ring.classList.toggle('near', objetivo > 0 && t.kcal <= objetivo && t.kcal > objetivo * 0.85);
+  ring.classList.toggle('over', pasado);
+  ring.classList.toggle('near', objetivo > 0 && !pasado && t.kcal > objetivo * 0.85);
+  ring.parentElement.classList.toggle('pasado', pasado);
+
+  /* Cinco cifras a 38 px se tocan con el borde del anillo. */
+  $('ringKcal').classList.toggle('largo', Math.round(t.kcal) >= 10000);
 
   /* Pasarse quedaba escondido: el anillo se llenaba y "restantes" mostraba 0,
      igual que si hubieras cerrado justo. Ahora el numero se pone en negativo y

@@ -513,8 +513,12 @@ function recomendacionesDeModo(idModo = MODO_DEFECTO) {
 /* Antes de esto no hay tendencia que valga: hay ruido. El peso se mueve un kilo
    por agua, sal y horarios, así que con pocos días cualquier conclusión es una
    moneda al aire disfrazada de dato. */
-const DIAS_MINIMOS_PESO = 10;
-const DIAS_MINIMOS_REGISTRO = 7;
+/* Una semana entera de pesadas: adentro entran el asado del domingo y la
+   sal del sábado, que son justo los que mueven la aguja sin mover la grasa.
+   Con menos, la pendiente es ruido; con más, la app se calla tanto tiempo que
+   deja de servir para lo único que hace falta al principio, que es empezar. */
+const DIAS_MINIMOS_PESO = 7;
+const DIAS_MINIMOS_REGISTRO = 5;
 
 /**
  * Un veredicto que se banca ser desmentido.
@@ -547,10 +551,18 @@ function veredictoProgreso(dias, objetivo, hoy = hoyISO()) {
     if (faltanPeso) partes.push(`${faltanPeso} ${faltanPeso === 1 ? 'día' : 'días'} de peso`);
     if (faltanReg) partes.push(`${faltanReg} ${faltanReg === 1 ? 'día' : 'días'} de comidas`);
 
+    /* Lo que ya hay se muestra igual. Un cartel que solo dice lo que falta se
+       lee como que la app no registró nada, y desanima justo en los días en
+       que todavía no hay nada más que mirar. */
+    const hechas = [];
+    if (faltanPeso) hechas.push(`${pesos.length} de ${DIAS_MINIMOS_PESO} pesadas`);
+    if (faltanReg) hechas.push(`${registrados.length} de ${DIAS_MINIMOS_REGISTRO} días de comidas`);
+    const avance = hechas.length ? `Llevás ${hechas.join(' y ')}. ` : '';
+
     return {
       estado: 'sin-datos',
       titulo: 'Todavía no puedo decirte',
-      detalle: `Faltan ${partes.join(' y ')}. El peso se mueve un kilo por agua y sal, así que antes de eso cualquier conclusión sería inventada.`,
+      detalle: `${avance}Faltan ${partes.join(' y ')}. El peso se mueve un kilo por agua y sal, así que antes de eso cualquier conclusión sería inventada.`,
       datos: { diasPeso: pesos.length, diasRegistro: registrados.length }
     };
   }
