@@ -150,8 +150,11 @@ function renderChartKcal() {
   const conDatos = datos.filter(d => d.kcal != null);
 
   $('kcalVacio').hidden = conDatos.length > 0;
+  /* "2 días seguidos" al lado de un gráfico de calorías se lee como dos días
+     dentro del objetivo, y es otra cosa: son días seguidos cargando comidas. */
   const r = rachaDias(state.dias);
-  $('rachaPill').textContent = r ? `🔥 ${r} ${r === 1 ? 'día' : 'días'} seguidos` : '';
+  $('rachaPill').textContent = r ? `🔥 ${r} ${r === 1 ? 'día' : 'días'} cargando` : '';
+  $('rachaPill').title = r ? `Cargaste comidas ${r} ${r === 1 ? 'día' : 'días'} seguidos` : '';
 
   if (!conDatos.length) return;
 

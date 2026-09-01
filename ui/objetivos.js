@@ -136,16 +136,13 @@ function renderTiras() {
   }
 
   /*
-   * El ayuno solo cuando está pasando algo.
+   * El ayuno, siempre.
    *
-   * Ocupaba un lugar fijo en la pantalla que más se mira, para una función que
-   * se usa de vez en cuando y que además ya no es un objetivo diario. Si hoy
-   * hubo uno, se muestra cuánto duró; si no, se arranca desde Perfil.
+   * Estuvo un tiempo escondido hasta que hubiera uno corriendo, y así no había
+   * forma de arrancarlo desde Hoy: había que entrar a Perfil para algo que se
+   * decide justo cuando se está mirando la pantalla del día.
    */
-  /* Sin ayuno no queda ningún chip: la fila se esconde entera para no dejar un
-     margen flotando donde no hay nada. */
-  cont.hidden = !enCurso && !d.ayuno;
-  if (cont.hidden) return;
+  cont.hidden = false;
 
   const chipAyuno = document.createElement('button');
   chipAyuno.className = 'tira' + (enCurso ? ' corriendo' : '');
@@ -228,11 +225,14 @@ const TITULOS_OBJ = {
 };
 
 function abrirObjetivo(id) {
-  $('tituloObjetivo').textContent = TITULOS_OBJ[id] || 'Objetivo';
+  const secciones = [...document.querySelectorAll('#modalObjetivo [data-obj]')];
 
-  document.querySelectorAll('#modalObjetivo [data-obj]').forEach(s => {
-    s.hidden = s.dataset.obj !== id;
-  });
+  /* Sin sección no hay nada que editar, y abrir igual deja una hoja vacía con
+     un título genérico: desde afuera se ve como que la app se colgó. */
+  if (!secciones.some(s => s.dataset.obj === id)) return;
+
+  $('tituloObjetivo').textContent = TITULOS_OBJ[id] || 'Objetivo';
+  secciones.forEach(s => { s.hidden = s.dataset.obj !== id; });
 
   if (id === 'peso') renderPeso();
   if (id === 'agua') renderAgua();
