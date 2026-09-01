@@ -44,6 +44,8 @@ function renderHoy() {
   $('dateLabel').title = esOtroDia ? 'Lo que cargues se guarda en este día. Tocá para volver a hoy.' : '';
   $('dateLabel').onclick = esOtroDia ? () => { fecha = hoyISO(); renderAll(); } : null;
 
+  renderPesoTira();
+
   const calc = calcular();
   marcarAccionSugerida();
 
@@ -56,7 +58,21 @@ function renderHoy() {
      que cambio, pero 1.200 subiendo hasta 1.450 es algo que paso, y ademas se ve
      cuanto subio sin acordarse del anterior. Ver animar.js. */
   contarHasta($('ringKcal'), t.kcal, { formato: (v) => fmtNum(Math.round(v)) });
-  $('ringGoal').textContent = objetivo ? `/ ${fmtKcal(objetivo)}` : 'sin objetivo';
+  /*
+   * Cuando hay ejercicio, el objetivo se muestra sumado en vez de fundido.
+   *
+   * "/ 2.492 kcal" con 420 de ejercicio adentro es el número que hace pensar
+   * que la app cuenta las calorías quemadas como si fueran comida. Escrito
+   * "2.072 + 420" se ve de dónde sale cada parte y que lo segundo AMPLÍA el
+   * margen, que es justamente lo que hace.
+   */
+  const quemadas = Math.round(Number(d.ejercicio) || 0);
+  const base = calc ? calc.objetivo : 0;
+  $('ringGoal').textContent = !objetivo ? 'sin objetivo'
+    : (quemadas ? `/ ${fmtNum(base)} + ${fmtNum(quemadas)}` : `/ ${fmtKcal(objetivo)}`);
+  $('ringGoal').title = quemadas
+    ? `${fmtNum(base)} kcal de objetivo más ${fmtNum(quemadas)} que quemaste hoy`
+    : '';
 
   const C = 2 * Math.PI * 52;
   const pct = objetivo ? Math.min(t.kcal / objetivo, 1) : 0;
@@ -79,12 +95,27 @@ function renderHoy() {
   resta.classList.toggle('pasado', objetivo > 0 && sobra < 0);
 
   const m = calc ? calc.macros : { prot: 0, carb: 0, gras: 0 };
-  const setMacro = (k, val, meta) => {
+  /*
+   * `mas` dice si en ese macro la meta es llegar o no pasarse, y cambia todo lo
+   * que se lee debajo. En keto y low carb el carbohidrato es un techo —pasarse
+   * es EL problema—; en el resto de los modos es un reparto y quedarse corto
+   * tampoco está bien.
+   */
+  const carbEsTecho = !!modoDe(state.perfil.modo)?.carbosMaxDia;
+
+  const setMacro = (k, val, meta, mas = true) => {
     $(`m${k}Txt`).textContent = meta ? `${fmtNum(val)} / ${fmtNum(meta)} g` : `${fmtNum(val)} g`;
     crecerBarra($(`m${k}Bar`), meta ? Math.min((val / meta) * 100, 100) : 0);
+
+    /* Y la lectura del número, que es lo que evita hacer la resta de cabeza. */
+    const lee = $(`m${k}Lee`);
+    if (!lee) return;
+    const r = leerMacro(val, meta, { mas });
+    lee.textContent = r.texto;
+    lee.className = 'macro-lee' + (r.nivel ? ' ' + r.nivel : '');
   };
   setMacro('Prot', t.prot, m.prot);
-  setMacro('Carb', t.carb, m.carb);
+  setMacro('Carb', t.carb, m.carb, !carbEsTecho);
   setMacro('Gras', t.gras, m.gras);
 
   // comidas
@@ -99,6 +130,7 @@ function renderHoy() {
   renderNutrientes(t, calc);
   renderSinKey();
   renderAvisoProteina();
+  renderAvisoModo();
   renderNota();
   renderFavoritos();
   if (typeof pintarCola === 'function') pintarCola();
@@ -538,3 +570,84 @@ function renderFaltaSiempre() {
   el.hidden = !f;
   if (f) el.textContent = f.texto;
 }
+
+
+/*
+ * La tira del peso, arriba de todo.
+ *
+ * Muestra la tendencia y no el peso de hoy: entre dos días hay hasta un kilo de
+ * diferencia por sal y agua, y poner ese número arriba invita a mirarlo todas
+ * las mañanas y a sacar conclusiones del ruido.
+ *
+ * Sin peso cargado no aparece: una barra de progreso vacía sobre un objetivo
+ * que no existe no informa nada y ocupa lugar.
+ */
+function renderPesoTira() {
+  const el = $('pesoTira');
+  if (!el) return;
+
+  const r = resumenPeso(state.dias, state.perfil, { rango: rangoActual().dias || 30 });
+  el.hidden = !r;
+  if (!r) return;
+
+  $('pesoTiraKg').textContent = fmtNum(r.actual, 1) + ' kg';
+  $('pesoTiraMeta').textContent = r.meta ? `objetivo ${fmtNum(r.meta, 1)}` : 'sin objetivo';
+
+  const barra = $('pesoTiraBarra');
+  barra.style.width = (r.pct == null ? 0 : r.pct) + '%';
+  barra.parentElement.hidden = r.pct == null;
+
+  /* El signo del cambio no alcanza para saber si es bueno: bajar es avanzar
+     cuando la meta está debajo, y lo contrario cuando querés ganar masa. */
+  const d = $('pesoTiraDelta');
+  if (!r.cambio) {
+    d.textContent = 'estable';
+    d.className = 'peso-tira-delta';
+  } else {
+    const bueno = Math.sign(r.cambio) === r.mejora;
+    d.textContent = (r.cambio > 0 ? '+' : '') + fmtNum(r.cambio, 1) + ' kg';
+    d.className = 'peso-tira-delta ' + (r.mejora === 0 ? '' : (bueno ? 'bien' : 'mal'));
+  }
+
+  el.title = r.faltan != null
+    ? `Te faltan ${fmtNum(Math.abs(r.faltan), 1)} kg · ${r.mediciones} mediciones`
+    : 'Cargá un objetivo de peso en Perfil';
+  el.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); irTab('historial'); };
+}
+
+
+/*
+ * El aviso de que el modo no cuadra hace días.
+ *
+ * Aparece una vez y se puede callar por una semana. La app no puede saber si
+ * elegiste keto en serio y venís desviándote, o si lo pusiste para probar y el
+ * rojo de cada comida es ruido; lo único honesto es decir lo que ve y dejar la
+ * decisión, que es lo que hacen los dos botones.
+ */
+function renderAvisoModo() {
+  const caja = $('avisoModoDias');
+  if (!caja) return;
+
+  const calladoHasta = state.cfg.avisoModoHasta || '';
+  if (calladoHasta && hoyISO() < calladoHasta) { caja.hidden = true; return; }
+
+  const r = modoQueNoCuadra(state.dias, state.perfil.modo, calcular());
+  caja.hidden = !r;
+  if (!r) return;
+
+  $('avisoModoTxt').textContent = r.texto;
+}
+
+$('btnCambiarModo').onclick = (e) => {
+  if (e.detail > 0) e.currentTarget.blur();
+  irTab('perfil');
+};
+
+$('btnModoSigo').onclick = (e) => {
+  if (e.detail > 0) e.currentTarget.blur();
+  /* Una semana de silencio: si de verdad estás yendo hacia el modo, en una
+     semana el propio dato deja de disparar el aviso. */
+  state.cfg.avisoModoHasta = sumarDias(hoyISO(), 7);
+  save();
+  renderAvisoModo();
+};

@@ -148,7 +148,17 @@ async function reanalizarConCorreccion(texto) {
     });
     frenar();
     registrarUso(r, 'correccion');
-    pendiente = { ...r, thumb, foto, momento: pendiente.momento, kcalIA: sumarItems(r.items).calorias };
+    /* `editandoId` y `fechaOriginal` sobreviven al re-análisis: sin ellos, una
+       corrección sobre una comida YA GUARDADA se guardaba como una comida
+       nueva y la vieja quedaba al lado, duplicada. */
+    pendiente = {
+      ...r, thumb, foto,
+      momento: pendiente.momento,
+      editandoId: pendiente.editandoId,
+      fechaOriginal: pendiente.fechaOriginal,
+      fechaDestino: pendiente.fechaDestino,
+      kcalIA: sumarItems(r.items).calorias
+    };
     $('modalTitle').textContent = 'Revisá y guardá';
     mostrarResultado(pendiente);
     mostrarEstado('result');

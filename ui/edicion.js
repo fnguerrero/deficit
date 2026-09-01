@@ -509,6 +509,16 @@ function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
    */
   pintarDuda(veredicto.comida, id);
 
+  /* El campo para aclararle qué era: solo si la foto sigue en memoria. Sin la
+     imagen no hay nada que volver a analizar, y ofrecerlo sería una promesa
+     que la app no puede cumplir. */
+  const aclarar = $('resumenAclarar');
+  if (aclarar) {
+    aclarar.hidden = !(typeof ultimaImagen !== 'undefined' && ultimaImagen);
+    $('aclaraTxt').value = '';
+    comidaAAclarar = id;
+  }
+
   const consejo = $('resumenConsejo');
   if (veredicto.nivel === 'no' && veredicto.comida) {
     const c = comoHacerlaApta(veredicto.comida, state.perfil.modo, calcular(), veredicto.previo);
@@ -612,3 +622,42 @@ $('btnBorrarComida').onclick = () => {
   cerrarModal(true);
   borrarComida(id);
 };
+
+
+/* ---------------- aclararle al análisis qué era ---------------- */
+
+/*
+ * "La milanesa es de soja", "las empanadas son de humita".
+ *
+ * Hay cosas que ninguna foto muestra, y cuando el modelo le erra al plato —no a
+ * la porción— corregir seis números a mano es peor que decirlo en tres
+ * palabras y que rehaga la cuenta.
+ *
+ * Cuesta un análisis, por eso es un campo y un botón y no algo automático.
+ */
+let comidaAAclarar = null;
+
+$('btnAclarar').onclick = async () => {
+  const txt = $('aclaraTxt').value.trim();
+  if (!txt || !comidaAAclarar) return;
+
+  /* La comida ya está guardada: se la vuelve a poner como `pendiente` en modo
+     edición, así el re-análisis actualiza esa misma en vez de crear otra. */
+  const c = dia().comidas.find(x => x.id === comidaAAclarar);
+  if (!c) return;
+
+  pendiente = {
+    ...c,
+    editandoId: c.id,
+    fechaOriginal: fecha,
+    confianza: 'alta',
+    items: (c.items || []).map(i => ({ ...i })),
+    kcalIA: c.kcal
+  };
+
+  cerrarResumen();
+  abrirModal();
+  await reanalizarConCorreccion(txt);
+};
+
+$('aclaraTxt').onkeydown = (e) => { if (e.key === 'Enter') $('btnAclarar').click(); };

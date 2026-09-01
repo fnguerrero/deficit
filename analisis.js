@@ -840,3 +840,55 @@ function resumenPeriodo(dias, { hasta = hoyISO(), largo = 7, objetivo = null } =
     proteina: Math.round(puntos.reduce((a, p) => a + p.prot, 0) / puntos.length)
   };
 }
+
+/* ---------------- el peso, de un vistazo ---------------- */
+
+/*
+ * Lo que hay que saber del peso sin entrar a ningún gráfico.
+ *
+ * Es el objetivo real de la app y hasta acá vivía en Historial: la pantalla que
+ * se abre quince veces por día mostraba las calorías del día y no si estabas
+ * bajando.
+ *
+ * Se usa la TENDENCIA y no el peso de hoy, y esto es lo importante: entre dos
+ * días hay hasta un kilo de diferencia por sal, agua y digestión. Mostrar el
+ * número del día invita a mirarlo todas las mañanas y a sacar conclusiones de
+ * ruido, que es exactamente el hábito que hace abandonar.
+ */
+const DIAS_TENDENCIA = 7;
+
+function resumenPeso(dias, perfil, { rango = 30, hasta = hoyISO() } = {}) {
+  const serie = Object.keys(dias || {})
+    .filter(f => f <= hasta && Number(dias[f].peso) > 0)
+    .sort()
+    .map(f => ({ f, kg: Number(dias[f].peso) }));
+
+  if (!serie.length) return null;
+
+  /* La tendencia de ahora: la media de los últimos días con peso. Con una sola
+     medición es esa misma, que es lo mejor disponible. */
+  const ultimos = serie.slice(-DIAS_TENDENCIA);
+  const actual = +(ultimos.reduce((a, p) => a + p.kg, 0) / ultimos.length).toFixed(1);
+
+  /* Y contra qué compararla: la tendencia de hace `rango` días. Comparar el
+     último peso contra el primero mezcla ruido con progreso. */
+  const desde = sumarDias(hasta, -rango);
+  const previos = serie.filter(p => p.f < desde);
+  const antes = previos.length
+    ? +(previos.slice(-DIAS_TENDENCIA).reduce((a, p) => a + p.kg, 0) / Math.min(previos.length, DIAS_TENDENCIA)).toFixed(1)
+    : serie[0].kg;
+
+  const meta = Number(perfil?.pesoObj) || null;
+
+  return {
+    actual,
+    meta,
+    cambio: +(actual - antes).toFixed(1),
+    faltan: meta ? +(actual - meta).toFixed(1) : null,
+    pct: meta ? progresoPeso(serie[0].kg, actual, meta) : null,
+    /* Si el objetivo está por debajo, bajar es avanzar; si está por encima,
+       al revés. Sin esto, ganar masa se leería como un retroceso. */
+    mejora: meta ? (meta < actual ? -1 : 1) : 0,
+    mediciones: serie.length
+  };
+}

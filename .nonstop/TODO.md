@@ -1,12 +1,14 @@
-# TODO — ciclo 12: que no se pierdan datos
+# TODO — ciclo 13: diez mejoras
 
 Estados: `[ ]` pendiente · `[~]` en curso · `[x]` hecho y verificado · `[!]` bloqueado
 
-- [x] 1. Andamiaje: un doble del servidor con la forma de `clienteSupabase`, para probar la coreografía completa sin red · verif: un sync entero contra el doble, con filas que suben y bajan
-- [x] 2. El sync automático deja de comerse lo que se cargó mientras corría · verif: test que carga una comida en medio del sync y la busca al final
-- [x] 3. Quedarse sin señal no desloguea: la sesión solo se borra si el servidor la rechaza · verif: test con fetch que explota vs. fetch que devuelve 401
-- [x] 4. Con sesión y sin token vivo, el sync no sigue como anónimo · verif: test de que no llama a guardar, y el mensaje que queda
-- [x] 5. El día se fusiona campo por campo: el agua de un dispositivo no borra el peso del otro · verif: test con los dos lados tocando el mismo día
-- [x] 6. Un respaldo que sobrevive a la primera fusión, con botón para volver atrás · verif: test del guardado + por DOM el botón aparece y restaura
-- [x] 7. Si el sync viene fallando hace días, se ve · verif: test del cálculo + por DOM el aviso
-- [x] 8. Nada de esto rompe lo que ya andaba · verif: suite completa, guardas, tamaños y las cinco pestañas en consola
+- [x] 1. Los macros dicen cuánto falta o cuánto sobra · verif: test de los textos + por DOM
+- [x] 2. Hábitos: "4 de 5 · te falta agua" · verif: test del conteo + por DOM
+- [x] 3. El peso y su tendencia, arriba en Hoy · verif: test de la tendencia + por DOM a 375 px
+- [x] 4. El coaching nombra la dimensión floja · verif: test con cada dimensión
+- [x] 5. El anillo separa objetivo base de lo que sumó el ejercicio · verif: por DOM con ejercicio cargado
+- [x] 6. Aclarar qué era el plato desde el resumen · verif: por DOM, re-análisis con texto
+- [x] 7. Los macros de cada comida en su tarjeta · verif: por DOM
+- [x] 8. Aviso cuando hace días que casi nada entra en el modo · verif: test del detector
+- [x] 9. El primer día dice qué hacer · verif: por DOM con la app vacía
+- [x] 10. Nada de esto rompe lo que andaba · verif: suite, guardas, tamaños, consola y ancho a 375

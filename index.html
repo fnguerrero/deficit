@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=378">
+<link rel="stylesheet" href="styles.css?v=390">
 </head>
 <body>
 
@@ -43,6 +43,23 @@
 
     <!-- Modo activo y ayuno: lo que define el día, antes que los números. -->
     <div class="tiras" id="tirasHoy"></div>
+
+    <!-- Los primeros pasos. Aparece solo mientras falte algo esencial y se va
+         solo cuando ya no: no es un tutorial, es la lista de lo que la app
+         necesita para poder decir algo. -->
+    <div class="card primeros" id="primerosPasos" hidden>
+      <div class="card-head"><h2>Para empezar</h2><span class="pill" id="pasosPill"></span></div>
+      <div id="listaPasos"></div>
+    </div>
+
+    <!-- El peso y su tendencia: es el objetivo real de la app y vivía en
+         Historial, mientras la pantalla que se abre quince veces por día
+         mostraba solo las calorías. Una fila, no una tarjeta. -->
+    <button class="peso-tira" id="pesoTira" hidden>
+      <span class="peso-tira-num"><b id="pesoTiraKg">—</b><small id="pesoTiraMeta"></small></span>
+      <span class="peso-tira-barra"><i id="pesoTiraBarra"></i></span>
+      <span class="peso-tira-delta" id="pesoTiraDelta"></span>
+    </button>
 
     <!-- El personaje: el resumen del día en una cara, antes que cualquier número. -->
     <button class="mascota" id="mascotaCard" aria-label="Cómo venís hoy">
@@ -81,14 +98,17 @@
       <div class="macro">
         <div class="macro-head"><span>Proteínas</span><b id="mProtTxt">0 g</b></div>
         <div class="bar"><i id="mProtBar" class="prot"></i></div>
+        <small class="macro-lee" id="mProtLee"></small>
       </div>
       <div class="macro">
         <div class="macro-head"><span>Carbohidratos</span><b id="mCarbTxt">0 g</b></div>
         <div class="bar"><i id="mCarbBar" class="carb"></i></div>
+        <small class="macro-lee" id="mCarbLee"></small>
       </div>
       <div class="macro">
         <div class="macro-head"><span>Grasas</span><b id="mGrasTxt">0 g</b></div>
         <div class="bar"><i id="mGrasBar" class="gras"></i></div>
+        <small class="macro-lee" id="mGrasLee"></small>
       </div>
     </div>
     </div>
@@ -108,6 +128,16 @@
 
     <div class="aviso-proteina" id="avisoProteina" hidden>
       <span id="avisoProteinaTxt"></span>
+    </div>
+
+    <!-- Cuando hace días que casi nada entra en el modo. Se puede cerrar y no
+         vuelve por una semana: un cartel siempre encendido deja de leerse. -->
+    <div class="aviso-modo" id="avisoModoDias" hidden>
+      <span id="avisoModoTxt"></span>
+      <div class="actions-row">
+        <button id="btnCambiarModo" class="ghost small">Cambiar de modo</button>
+        <button id="btnModoSigo" class="ghost small">Sigo así</button>
+      </div>
     </div>
 
     <div class="card" id="cardFavoritos" hidden>
@@ -132,6 +162,9 @@
 
     <!-- Los objetivos del día: se completan y se apagan. Lo que ya cargaste deja
          de pedirte atención, que es lo único que hace que se sostenga. -->
+    <!-- Cuántos hábitos van y cuál falta. Cinco casilleros sin marcador son
+         cinco botones; con el marcador son un progreso que se completa. -->
+    <p class="habitos-lee" id="habitosLee" hidden></p>
     <div class="objetivos" id="objetivosDia"></div>
 
     <div class="card" id="cardComidas">
@@ -444,6 +477,13 @@
         <!-- Lo que la foto no puede mostrar: el relleno de una empanada, si la
              milanesa es de soja. Las opciones vienen con los números ya
              calculados, así que elegir no cuesta ni una llamada más. -->
+        <!-- Aclararle qué era. El campo existía pero vivía en la pantalla de
+             revisión, que ya casi no aparece desde que la foto se guarda sola:
+             quedó sin querer fuera de alcance. -->
+        <div class="aclarar" id="resumenAclarar" hidden>
+          <input type="text" id="aclaraTxt" placeholder="¿Le erró? Contale qué era" aria-label="Aclarar qué era el plato">
+          <button id="btnAclarar" class="ghost small">Rehacer</button>
+        </div>
         <div class="duda" id="resumenDuda" hidden>
           <p id="resumenDudaTxt"></p>
           <div class="duda-opciones" id="resumenDudaOpciones" role="group"></div>
@@ -952,53 +992,53 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=378"></script>
-<script src="core.js?v=378"></script>
-<script src="platos.js?v=378"></script>
-<script src="animar.js?v=378"></script>
-<script src="fotos.js?v=378"></script>
-<script src="calibracion.js?v=378"></script>
-<script src="modos.js?v=378"></script>
-<script src="arreglos.js?v=378"></script>
-<script src="habitos.js?v=378"></script>
-<script src="mascota.js?v=378"></script>
-<script src="cuerpo.js?v=378"></script>
-<script src="personaje.js?v=378"></script>
-<script src="sprite-datos.js?v=378"></script>
-<script src="sprite.js?v=378"></script>
-<script src="transformacion.js?v=378"></script>
-<script src="aura.js?v=378"></script>
-<script src="juego.js?v=378"></script>
-<script src="sonidos.js?v=378"></script>
-<script src="voz.js?v=378"></script>
-<script src="graficos.js?v=378"></script>
-<script src="analisis.js?v=378"></script>
-<script src="chequeos.js?v=378"></script>
-<script src="claude.js?v=378"></script>
-<script src="productos.js?v=378"></script>
-<script src="sync.js?v=378"></script>
-<script src="estado-sync.js?v=378"></script>
-<script src="auth.js?v=378"></script>
-<script src="app.js?v=378"></script>
-<script src="ui/general.js?v=378"></script>
-<script src="ui/hoy.js?v=378"></script>
-<script src="ui/dia.js?v=378"></script>
-<script src="ui/objetivos.js?v=378"></script>
-<script src="ui/tarjeta.js?v=378"></script>
-<script src="ui/logros.js?v=378"></script>
-<script src="ui/comidas.js?v=378"></script>
-<script src="ui/edicion.js?v=378"></script>
-<script src="ui/escaner.js?v=378"></script>
-<script src="ui/asistente.js?v=378"></script>
-<script src="ui/historial.js?v=378"></script>
-<script src="ui/progreso.js?v=378"></script>
-<script src="ui/perfil.js?v=378"></script>
-<script src="ui/sincronizacion.js?v=378"></script>
-<script src="ui/cuenta.js?v=378"></script>
-<script src="ui/calibracion.js?v=378"></script>
-<script src="ui/actividades.js?v=378"></script>
-<script src="ui/recordatorios.js?v=378"></script>
-<script src="ui/ajustes.js?v=378"></script>
-<script src="arranque.js?v=378"></script>
+<script src="config.js?v=390"></script>
+<script src="core.js?v=390"></script>
+<script src="platos.js?v=390"></script>
+<script src="animar.js?v=390"></script>
+<script src="fotos.js?v=390"></script>
+<script src="calibracion.js?v=390"></script>
+<script src="modos.js?v=390"></script>
+<script src="arreglos.js?v=390"></script>
+<script src="habitos.js?v=390"></script>
+<script src="mascota.js?v=390"></script>
+<script src="cuerpo.js?v=390"></script>
+<script src="personaje.js?v=390"></script>
+<script src="sprite-datos.js?v=390"></script>
+<script src="sprite.js?v=390"></script>
+<script src="transformacion.js?v=390"></script>
+<script src="aura.js?v=390"></script>
+<script src="juego.js?v=390"></script>
+<script src="sonidos.js?v=390"></script>
+<script src="voz.js?v=390"></script>
+<script src="graficos.js?v=390"></script>
+<script src="analisis.js?v=390"></script>
+<script src="chequeos.js?v=390"></script>
+<script src="claude.js?v=390"></script>
+<script src="productos.js?v=390"></script>
+<script src="sync.js?v=390"></script>
+<script src="estado-sync.js?v=390"></script>
+<script src="auth.js?v=390"></script>
+<script src="app.js?v=390"></script>
+<script src="ui/general.js?v=390"></script>
+<script src="ui/hoy.js?v=390"></script>
+<script src="ui/dia.js?v=390"></script>
+<script src="ui/objetivos.js?v=390"></script>
+<script src="ui/tarjeta.js?v=390"></script>
+<script src="ui/logros.js?v=390"></script>
+<script src="ui/comidas.js?v=390"></script>
+<script src="ui/edicion.js?v=390"></script>
+<script src="ui/escaner.js?v=390"></script>
+<script src="ui/asistente.js?v=390"></script>
+<script src="ui/historial.js?v=390"></script>
+<script src="ui/progreso.js?v=390"></script>
+<script src="ui/perfil.js?v=390"></script>
+<script src="ui/sincronizacion.js?v=390"></script>
+<script src="ui/cuenta.js?v=390"></script>
+<script src="ui/calibracion.js?v=390"></script>
+<script src="ui/actividades.js?v=390"></script>
+<script src="ui/recordatorios.js?v=390"></script>
+<script src="ui/ajustes.js?v=390"></script>
+<script src="arranque.js?v=390"></script>
 </body>
 </html>
