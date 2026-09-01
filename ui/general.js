@@ -72,6 +72,87 @@ document.addEventListener('keydown', (e) => {
   atajo.accion();
 });
 
+/* ---------------- el botón atrás del celular ---------------- */
+
+/*
+ * Atrás cierra lo que esté abierto, no la app.
+ *
+ * En una PWA instalada el botón atrás de Android sale directo, sin preguntar.
+ * Con un modal en pantalla eso es peor que perder la navegación: se sale de la
+ * app en el gesto que uno usa justamente para volver, y lo que estabas
+ * cargando se pierde.
+ *
+ * La técnica es empujar una entrada al historial cuando hay algo abierto y
+ * consumirla en `popstate`. Se usa UNA sola entrada por vez y se repone
+ * después de cerrar: así una pila de capas se va destapando de a una, sin
+ * tener que llevar la cuenta de cuántas entradas se metieron.
+ *
+ * Si no hay nada abierto no se empuja nada, y ahí atrás sale como siempre: un
+ * "atrás" que no hace nada es peor que salir.
+ */
+let anclaAtras = false;
+let volviendoSolo = false;
+let procesandoAtras = false;
+
+function tabActiva() {
+  const el = document.querySelector('.tab.active');
+  return el ? el.id.replace('tab-', '') : 'hoy';
+}
+
+function hayAlgoQueCerrar() {
+  return hayModalAbierto() || tabActiva() !== 'hoy';
+}
+
+/** Cierra la capa de más arriba. Devuelve false si no había nada. */
+function cerrarLoDeArriba() {
+  /* En orden de "qué está más arriba": el visor tapa al resumen, el resumen al
+     modal de análisis, y las pestañas están abajo de todo. */
+  if (!$('visorFoto').hidden) { cerrarVisor(); return true; }
+  if ($('modalResumen').classList.contains('open')) { cerrarResumen(); return true; }
+  if ($('modalOrigenFoto').classList.contains('open')) { cerrarOrigenFoto(); return true; }
+  if ($('modalObjetivo').classList.contains('open')) { cerrarObjetivo(); return true; }
+
+  /* Sin forzar: si hay una comida a medio cargar, pregunta antes de tirarla.
+     Perder eso por un gesto de navegación sería exactamente lo que este
+     arreglo viene a evitar. */
+  if ($('modal').classList.contains('open')) { cerrarModal(); return true; }
+
+  // el onboarding se termina, no se esquiva
+  if (!$('onboarding').hidden) return false;
+
+  if (tabActiva() !== 'hoy') { irTab('hoy'); return true; }
+  return false;
+}
+
+/** Pone o saca la entrada del historial según si hay algo abierto. */
+function marcarAtras() {
+  if (procesandoAtras) return;
+
+  const hay = hayAlgoQueCerrar();
+  if (hay && !anclaAtras) {
+    history.pushState({ deficit: 1 }, '');
+    anclaAtras = true;
+  } else if (!hay && anclaAtras) {
+    /* Se cerró a mano, con la ✕ o con Escape: la entrada que habíamos metido
+       sobra, y hay que sacarla o el próximo atrás no haría nada. */
+    volviendoSolo = true;
+    anclaAtras = false;
+    history.back();
+  }
+}
+
+addEventListener('popstate', () => {
+  if (volviendoSolo) { volviendoSolo = false; return; }
+
+  anclaAtras = false;
+  procesandoAtras = true;
+  const cerro = cerrarLoDeArriba();
+  procesandoAtras = false;
+
+  // si quedó otra capa abajo, se repone la entrada para el próximo atrás
+  if (cerro) marcarAtras();
+});
+
 /* ---------------- cambio de día ---------------- */
 
 let timerMedianoche = null;
@@ -170,6 +251,7 @@ function irTab(name) {
   }
   if (name === 'ajustes') renderAjustes();
   window.scrollTo(0, 0);
+  marcarAtras();
 }
 
 document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => irTab(b.dataset.tab));
@@ -463,6 +545,7 @@ function abrirCapa(id) {
   capa.classList.add('open');
   tomarFoco(capa);
   anunciar(capa.querySelector('h2')?.textContent || '');
+  marcarAtras();
   return true;
 }
 

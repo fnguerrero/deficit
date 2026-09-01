@@ -580,6 +580,7 @@ function comidaPorId(id) {
 function cerrarResumen() {
   $('modalResumen').classList.remove('open');
   devolverFoco();
+  marcarAtras();
 }
 
 $('btnResumenListo').onclick = cerrarResumen;

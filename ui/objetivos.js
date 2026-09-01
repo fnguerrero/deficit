@@ -119,15 +119,21 @@ function renderTiras() {
 
   cont.innerHTML = '';
 
-  const chipModo = document.createElement('button');
-  chipModo.className = 'tira activa';
-  /* El nombre del modo solo no dice nada operativo. El numero que importa es
-     cuantas calorias te deja hoy, y estaba tres pantallas mas adentro. */
-  const obj = calcular();
-  chipModo.innerHTML = `<i>${m?.emoji || '🎯'}</i>${m?.nombre || 'Sin modo'}` +
-    (obj ? `<small>${fmtNum(obj.objetivo)} kcal</small>` : '');
-  chipModo.onclick = () => irTab('perfil');
-  cont.appendChild(chipModo);
+  /*
+   * El modo se lee arriba de todo, donde antes decia "Deficit".
+   *
+   * El nombre de la app no aporta nada: quien la abre ya sabe cual es. En que
+   * modo estas, en cambio, decide el objetivo del dia y si una comida entra o
+   * no, y estaba en un chip que competia con el ayuno por el mismo renglon.
+   */
+  const titulo = $('tituloModo');
+  if (titulo) {
+    titulo.textContent = m?.nombre || 'Déficit';
+    titulo.title = m?.detalle || m?.resumen || 'Tocá para cambiar de modo';
+    // el chip llevaba a Perfil; el título hereda eso, que es de donde se cambia
+    titulo.onclick = () => irTab('perfil');
+    titulo.style.cursor = 'pointer';
+  }
 
   /*
    * El ayuno solo cuando está pasando algo.
@@ -136,7 +142,10 @@ function renderTiras() {
    * se usa de vez en cuando y que además ya no es un objetivo diario. Si hoy
    * hubo uno, se muestra cuánto duró; si no, se arranca desde Perfil.
    */
-  if (!enCurso && !d.ayuno) return;
+  /* Sin ayuno no queda ningún chip: la fila se esconde entera para no dejar un
+     margen flotando donde no hay nada. */
+  cont.hidden = !enCurso && !d.ayuno;
+  if (cont.hidden) return;
 
   const chipAyuno = document.createElement('button');
   chipAyuno.className = 'tira' + (enCurso ? ' corriendo' : '');
@@ -230,6 +239,7 @@ function cerrarObjetivo() {
   devolverFoco();
   renderObjetivos();
   renderMascota();
+  marcarAtras();
 }
 
 $('btnCerrarObjetivo').onclick = cerrarObjetivo;

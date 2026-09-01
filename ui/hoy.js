@@ -213,6 +213,7 @@ function abrirVisor(comida) {
 function cerrarVisor() {
   $('visorFoto').hidden = true;
   $('visorImg').src = '';
+  marcarAtras();
 }
 
 $('visorCerrar').onclick = cerrarVisor;

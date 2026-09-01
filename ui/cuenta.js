@@ -269,9 +269,13 @@ function renderQuienSoy() {
   /* `nombre` no existe en las sesiones que se guardaron antes de que se
      empezara a pedir: para esas se deriva del mail, así no hace falta volver a
      entrar para que el encabezado deje de mostrar la dirección entera. */
+  /* Solo el nombre de pila: el apellido no distingue nada —hay una sola
+     persona usando esto— y en un renglón de 11 px ocupa el doble de lugar. El
+     nombre completo y el mail quedan en el título, al alcance del dedo. */
   const u = s.usuario || {};
-  el.textContent = u.nombre || nombreDeUsuario({ email: u.email }) || 'tu cuenta';
-  el.title = u.email ? `Entraste como ${u.email}` : 'Tocá para ver tu cuenta';
+  const completo = u.nombre || nombreDeUsuario({ email: u.email }) || 'tu cuenta';
+  el.textContent = completo.split(/\s+/)[0];
+  el.title = u.email ? `${completo} · ${u.email}` : 'Tocá para ver tu cuenta';
 }
 
 $('quienSoy').onclick = () => {
