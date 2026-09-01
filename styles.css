@@ -821,9 +821,13 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   #tab-hoy.active {
     display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; height: auto;
   }
-  /* Los seis objetivos entran en una sola fila. En dos filas se comian 80 px
-     que salian de la lista de comidas, que quedaba en una fila y media. */
-  #tab-hoy .objetivos { grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  /* Los cinco objetivos entran en una sola fila. En dos filas se comian 80 px
+     de alto para lo mismo.
+
+     Eran SEIS cuando esta regla se escribio. Al quedar cinco, la grilla siguio
+     con seis columnas y la ultima quedaba vacia: los casilleros terminaban
+     antes del borde y sobraba un hueco a la derecha que no era de nadie. */
+  #tab-hoy .objetivos { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
   #tab-hoy .objetivo { padding: 7px 2px; }
   #tab-hoy .objetivo b { font-size: 10px; }
   #tab-hoy .objetivo small { font-size: 8.5px; }
