@@ -96,11 +96,36 @@ for f in archivos:
         problemas.append('%s esta en index.html pero no en el shell de sw.js: '
                          'la app no arranca offline' % f)
 
+# ---- 5. que cada archivo parsee ----
+#
+# Un parentesis de mas en un archivo no rompe ese archivo: rompe TODO lo que
+# declara, porque el navegador descarta el script entero y sus funciones dejan
+# de existir. La suite lo muestra como una caida en bloque —de 968 a 874 de
+# golpe— y desde ahi hay que adivinar cual de los cincuenta archivos fue.
+# Preguntarselo a node cuesta un segundo y lo dice con nombre y linea.
+import subprocess
+
+def node_disponible():
+    try:
+        subprocess.run(['node', '--version'], capture_output=True, timeout=10)
+        return True
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+if node_disponible():
+    for f in sorted(archivos):
+        r = subprocess.run(['node', '--check', f], capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            primera = [l for l in (r.stderr or '').splitlines() if 'Error' in l]
+            problemas.append('%s no parsea: %s' % (f, primera[0] if primera else 'error de sintaxis'))
+else:
+    print('(sin node: no se pudo chequear la sintaxis)')
+
 if problemas:
     print('%d problemas:' % len(problemas))
     for p in problemas:
         print('  - ' + p)
     sys.exit(1)
 
-print('Guardas OK: %d scripts, %d globales, %d ids'
+print('Guardas OK: %d scripts (sintaxis, globales, ids, shell), %d globales, %d ids'
       % (len(archivos), len(declara), len(ids_html)))
