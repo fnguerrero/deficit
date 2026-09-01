@@ -183,6 +183,13 @@ function comoHacerlaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumi
  *
  * No juzga si está bien o mal: solo dice lo que pasó y deja la decisión.
  */
+/** "pan, fideos y alfajor": una coma entre todos menos el último. */
+function listaEnTexto(items) {
+  const l = (items || []).filter(Boolean);
+  if (l.length <= 1) return l[0] || '';
+  return l.slice(0, -1).join(', ') + ' y ' + l[l.length - 1];
+}
+
 const DIAS_PARA_DUDAR = 4;
 const PISO_ADHERENCIA = 0.34;   // menos de un tercio de las comidas entrando
 
@@ -217,10 +224,24 @@ function modoQueNoCuadra(dias, idModo, objetivo, { hasta = hoyISO(), largo = 7 }
   /* Con pocos días registrados no hay patrón, hay poca información. */
   if (diasConDatos < DIAS_PARA_DUDAR || diasFuera < DIAS_PARA_DUDAR) return null;
 
+  /*
+   * El aviso empuja hacia el modo, no hacia afuera.
+   *
+   * Antes decía "puede ser que te sirva otro modo", y eso es ofrecer bajar la
+   * vara justo cuando cuesta: si elegiste keto, lo que hace falta saber es por
+   * cuánto te estás pasando y qué lo trae, que es sobre lo que se puede hacer
+   * algo mañana. Cambiar de modo sigue estando, pero como la segunda opción.
+   */
+  const fuente = loQueTeSaca(dias, modo.carbosMaxDia, { hasta, largo });
+  const detalle = fuente && fuente.porDia > fuente.techo
+    ? ` Venís en ${fmtNum(fuente.porDia)} g de carbos por día y el techo son ${fmtNum(fuente.techo)}.` +
+      (fuente.culpables.length ? ` Lo que más te saca: ${listaEnTexto(fuente.culpables)}.` : '')
+    : '';
+
   return {
     dias: diasFuera,
     modo: modo.nombre,
-    texto: `Hace ${diasFuera} días que casi nada entra en ${modo.nombre}. ` +
-      'Puede ser el plan, o puede ser que te sirva otro modo.'
+    fuente,
+    texto: `Hace ${diasFuera} días que casi nada entra en ${modo.nombre}.${detalle}`
   };
 }

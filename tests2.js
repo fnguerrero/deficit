@@ -3312,3 +3312,65 @@ test('un titulo que arranca con un numero no pierde el numero', () => {
   // nombre queda igual, asi que esto documenta el limite conocido
   esperar(escalarComida({ titulo: 'Milanesa napolitana', kcal: 100 }, 1).titulo, 'Milanesa napolitana');
 });
+
+/* ---------------- el aviso empuja hacia el modo ---------------- */
+
+function diasFueraDeKeto(n = 5) {
+  const dias = {};
+  for (let i = 0; i < n; i++) {
+    dias[sumarDias('2026-09-01', -i)] = {
+      comidas: [
+        { id: 'a' + i, ts: 1 + i, titulo: 'Fideos con salsa', kcal: 700, prot: 20, carb: 110, gras: 15, fibra: 5 },
+        { id: 'b' + i, ts: 2 + i, titulo: 'Alfajor', kcal: 230, prot: 3, carb: 34, gras: 9 }
+      ]
+    };
+  }
+  return dias;
+}
+
+test('el aviso dice por cuanto te pasas, no solo que te pasas', () => {
+  const r = modoQueNoCuadra(diasFueraDeKeto(), 'keto', { kcal: 1900 }, { hasta: '2026-09-01' });
+  esperarQue(r, 'con cinco dias afuera tiene que avisar');
+  esperarQue(/carbos por día/.test(r.texto), 'el numero de carbos: ' + r.texto);
+  esperarQue(/techo/.test(r.texto), 'y contra que techo');
+});
+
+test('y dice que alimento lo trae', () => {
+  const r = modoQueNoCuadra(diasFueraDeKeto(), 'keto', { kcal: 1900 }, { hasta: '2026-09-01' });
+  esperarQue(/fideos|alfajor/i.test(r.texto), 'los platos que mas carbos aportan: ' + r.texto);
+});
+
+test('el aviso ya no ofrece cambiar de modo en el texto', () => {
+  // cambiar sigue estando como boton, pero el texto no empuja para ese lado
+  const r = modoQueNoCuadra(diasFueraDeKeto(), 'keto', { kcal: 1900 }, { hasta: '2026-09-01' });
+  esperarQue(!/otro modo|te sirva/.test(r.texto), 'sin la salida facil: ' + r.texto);
+});
+
+test('loQueTeSaca ordena por cuanto aporta cada uno', () => {
+  const r = loQueTeSaca(diasFueraDeKeto(3), 30, { hasta: '2026-09-01' });
+  esperar(r.culpables[0], 'fideos con salsa');
+  esperar(r.techo, 30);
+  esperarQue(r.porDia > 100, 'el promedio diario de carbos netos: ' + r.porDia);
+});
+
+test('loQueTeSaca prefiere el ingrediente al plato cuando lo hay', () => {
+  const dias = {
+    '2026-09-01': {
+      comidas: [{
+        id: 'a', ts: 1, titulo: 'Sándwich de milanesa', kcal: 800, carb: 80,
+        items: [{ nombre: 'Pan', carbohidratos: 60 }, { nombre: 'Milanesa', carbohidratos: 20 }]
+      }]
+    }
+  };
+  esperar(loQueTeSaca(dias, 30, { hasta: '2026-09-01' }).culpables[0], 'pan');
+});
+
+test('sin techo de carbos no hay nada que contar', () => {
+  esperar(loQueTeSaca(diasFueraDeKeto(), 0, { hasta: '2026-09-01' }), null);
+});
+
+test('la lista se lee como se habla', () => {
+  esperar(listaEnTexto(['pan']), 'pan');
+  esperar(listaEnTexto(['pan', 'fideos']), 'pan y fideos');
+  esperar(listaEnTexto(['pan', 'fideos', 'alfajor']), 'pan, fideos y alfajor');
+});

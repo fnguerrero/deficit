@@ -21,7 +21,14 @@ function margenDelDia() {
   };
 }
 
-$('btnSugerir').onclick = async () => {
+/* Para qué comida se está pidiendo. Arranca en la que toca por hora y cambia
+   cuando se toca otro chip: a las cinco de la tarde uno ya piensa la cena. */
+let momentoSugerido = null;
+
+$('btnSugerir').onclick = () => pedirSugerencias(momentoDe(Date.now()));
+
+async function pedirSugerencias(momentoId) {
+  momentoSugerido = momentoId;
   if (topeAlcanzado()) return;
   if (!hayAcceso(state.cfg)) {
     toast(SIN_ACCESO, { texto: 'Cargarla', accion: () => irTab('ajustes') });
@@ -37,7 +44,7 @@ $('btnSugerir').onclick = async () => {
   $('preview').src = '';
   abrirModal();
   const frenar = animarEspera('plato');
-  $('loadingTxt').textContent = `Buscando algo de ${fmtKcal(margen.kcal)}…`;
+  $('loadingTxt').textContent = `Buscando ${nombreMomento(momentoId).toLowerCase()} de ${fmtKcal(margen.kcal)}…`;
 
   analisisEnCurso = new AbortController();
 
@@ -47,7 +54,7 @@ $('btnSugerir').onclick = async () => {
       ...accesoApi(state.cfg),
       modelo: resolverPrecision(state.cfg.precision || 'normal', state.cfg.modelo || MODELO_DEFAULT).modelo,
       margen,
-      momento: nombreMomento(momentoDe(Date.now())).toLowerCase(),
+      momento: nombreMomento(momentoId).toLowerCase(),
       // la proteína es lo que más se descuida en déficit
       faltaProteina: margen.prot > (calcular()?.macros.prot || 0) * 0.35,
       frecuentes: (state.frecuentes || []).slice(0, 12).map(f => f.nombre),
@@ -66,10 +73,31 @@ $('btnSugerir').onclick = async () => {
   } finally {
     analisisEnCurso = null;
   }
-};
+}
+
+/* Los cinco momentos, para pedir otra cosa sin salir del panel. */
+function pintarMomentosSugeridos() {
+  const cont = $('momentoSugerencia');
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  for (const m of MOMENTOS) {
+    const b = document.createElement('button');
+    b.className = 'chip' + (m.id === momentoSugerido ? ' activo' : '');
+    b.textContent = m.nombre;
+    b.setAttribute('aria-pressed', String(m.id === momentoSugerido));
+    b.onclick = (e) => {
+      if (e.detail > 0) e.currentTarget.blur();
+      if (m.id === momentoSugerido) return;   // ya es esa: no gastar otra consulta
+      pedirSugerencias(m.id);
+    };
+    cont.appendChild(b);
+  }
+}
 
 function mostrarSugerencias(r, margen) {
-  $('modalTitle').textContent = 'Opciones para hoy';
+  $('modalTitle').textContent = 'Opciones para ' + nombreMomento(momentoSugerido).toLowerCase();
+  pintarMomentosSugeridos();
   $('sugerenciasMargen').textContent =
     `Te quedan ${fmtKcal(margen.kcal)} · ${fmtNum(margen.prot)} g de proteína`;
 
@@ -99,7 +127,7 @@ function mostrarSugerencias(r, margen) {
     const elegir = () => {
       pendiente = {
         titulo: o.titulo,
-        momento: fecha === hoyISO() ? momentoDe(Date.now()) : 'almuerzo',
+        momento: momentoSugerido || (fecha === hoyISO() ? momentoDe(Date.now()) : 'almuerzo'),
         confianza: 'alta',
         notas: o.porque,
         thumb: null,
