@@ -56,6 +56,9 @@ LIMITES = [
     # no tocan el borde). Es un script de un solo uso y partirlo lo haria mas
     # dificil de seguir, no menos.
     ('tools/sprites.py', 300),
+    # la mitad de datos_prueba.py son las tablas de platos, animos y ejercicios:
+    # partirlas a un archivo aparte seria mover una lista para dejarla sola
+    ('tools/datos_prueba.py', 350),
     ('tools/*.py', 250),
     ('proxy/worker.js', 200),
     ('proxy/test.mjs', 250),
