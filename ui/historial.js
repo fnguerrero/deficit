@@ -226,6 +226,44 @@ function renderProyeccion() {
   if (meta && p.kgPorSemana < 0 && p.proyectado <= meta) {
     caja.append(' Llegás a tu meta antes de eso.');
   }
+
+  pintarPlazo(caja, p);
+}
+
+/*
+ * Si vas a tiempo, en fechas.
+ *
+ * "Vas lento" es abstracto y no dice cuánto. Contra la fecha que prometía tu
+ * plan, el mismo dato se vuelve una cuenta que se entiende sola.
+ */
+function pintarPlazo(caja, proy) {
+  const perfil = state.perfil;
+  const prometida = perfil.plazo || fechaDeLlegada(perfil.peso, perfil.pesoObj, perfil.ritmo);
+  if (!prometida) return;
+
+  /* El ritmo real, con el signo dado vuelta: proyectarPeso() cuenta bajar como
+     negativo y fechaDeLlegada() espera cuánto se baja por semana. */
+  const real = fechaDeLlegada(perfil.peso, perfil.pesoObj, -proy.kgPorSemana);
+  const v = veredictoDePlazo(prometida, real);
+  if (!v) return;
+
+  const li = document.createElement('p');
+  li.className = 'plazo-veredicto ' + v.estado;
+
+  if (v.estado === 'sin-datos') {
+    /* Sin fecha real no es que vayas mal: es que a este ritmo no llegás nunca,
+       y eso hay que decirlo así y no con un número inventado. */
+    li.textContent = `Tu plan llegaba el ${fechaLarga(prometida)}. A este ritmo no llegás.`;
+  } else if (v.estado === 'en-fecha') {
+    li.textContent = `Vas en fecha: tu plan llegaba el ${fechaLarga(prometida)} y a este ritmo llegás el ${fechaLarga(v.proyectada)}.`;
+  } else {
+    const cuanto = v.semanas === 1 ? 'una semana' : `${v.semanas} semanas`;
+    li.textContent = v.estado === 'tarde'
+      ? `Ibas a llegar el ${fechaLarga(prometida)}. A este ritmo llegás el ${fechaLarga(v.proyectada)}: ${cuanto} tarde.`
+      : `Ibas a llegar el ${fechaLarga(prometida)} y vas más rápido: a este ritmo llegás el ${fechaLarga(v.proyectada)}, ${cuanto} antes.`;
+  }
+
+  caja.appendChild(li);
 }
 
 function renderComoVenis() {

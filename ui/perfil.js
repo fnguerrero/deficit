@@ -14,8 +14,12 @@ function renderPerfil() {
   $('pPeso').value = p.peso ?? '';
   $('pPesoObj').value = p.pesoObj ?? '';
   $('pActividad').value = p.actividad;
-  $('pRitmo').value = p.ritmo;
+  /* Con un plazo puesto, el ritmo salió de la fecha y no de la lista: mostrar
+     "0,5 kg/semana" ahí sería mentir sobre de dónde vino el número. */
+  $('pRitmo').value = p.plazo ? 'fecha' : p.ritmo;
+  $('pFecha').value = p.plazo || '';
   $('pManual').value = p.manual ?? '';
+  renderPlazo();
 
   const calc = calcular();
   const ul = $('calcLista');
@@ -90,7 +94,9 @@ $('btnGuardarPerfil').onclick = () => {
     peso: num('pPeso'),
     pesoObj: num('pPesoObj'),
     actividad: parseFloat($('pActividad').value),
-    ritmo: parseFloat($('pRitmo').value),
+    /* "fecha" no es un ritmo: el que vale es el que despejó el plazo, que ya
+       quedó guardado al elegir la fecha. */
+    ritmo: $('pRitmo').value === 'fecha' ? state.perfil.ritmo : parseFloat($('pRitmo').value),
     manual: num('pManual')
   };
 
@@ -104,9 +110,88 @@ $('btnGuardarPerfil').onclick = () => {
     return;
   }
 
-  state.perfil = propuesto;
+  /* Se fusiona en vez de reemplazar: el formulario no trae el modo ni el
+     plazo, y asignar el objeto entero los borraba. */
+  state.perfil = { ...state.perfil, ...propuesto };
   save(); renderAll();
   toast('Perfil guardado');
+};
+
+/* ---------------- el plazo ---------------- */
+
+/**
+ * Cuándo llegás, debajo del objetivo, y el camino inverso.
+ *
+ * El plazo siempre estuvo: elegir 0,5 kg/semana para bajar 7,4 kg ES elegir
+ * quince semanas. Lo que no estaba era decirlo, ni poder entrar por ahí.
+ */
+function renderPlazo() {
+  const p = state.perfil;
+  const porFecha = $('pRitmo').value === 'fecha';
+  $('labelFecha').hidden = !porFecha;
+
+  const hint = $('plazoHint');
+  const ritmo = porFecha ? p.ritmo : parseFloat($('pRitmo').value);
+  const llegada = fechaDeLlegada(p.peso, p.pesoObj, ritmo);
+
+  hint.hidden = !llegada;
+  if (llegada) {
+    hint.textContent = `A ${fmtNum(ritmo, 2)} kg/semana llegás a ${fmtNum(p.pesoObj, 1)} kg el ${fechaLarga(llegada)}.`;
+  }
+
+  const aviso = $('plazoAviso');
+  if (!porFecha || !p.plazo) { aviso.hidden = true; return; }
+
+  const plan = planParaFecha(p, p.plazo);
+  aviso.hidden = !plan;
+  if (!plan) return;
+
+  aviso.classList.toggle('no-entra', !plan.alcanzable);
+  aviso.textContent = plan.alcanzable
+    ? `Hacen falta ${fmtNum(Math.abs(plan.ritmo), 2)} kg/semana: ${fmtKcal(plan.kcal)} por día.`
+    : `Hacen falta ${fmtNum(Math.abs(plan.ritmo), 2)} kg/semana y eso da menos de lo que podés comer sin pasar el piso. `
+      + `Lo más rápido sostenible es ${fmtNum(plan.ritmoMaximo, 2)} kg/semana: llegás el ${fechaLarga(plan.fechaMinima)}.`;
+}
+
+/** Una fecha ISO como se lee en voz alta. */
+function fechaLarga(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+$('pRitmo').onchange = () => {
+  if ($('pRitmo').value !== 'fecha') {
+    /* Se vuelve a elegir por ritmo: el plazo deja de mandar. */
+    state.perfil.plazo = null;
+    state.perfil.ritmo = parseFloat($('pRitmo').value);
+    save();
+  }
+  renderPlazo();
+};
+
+$('pFecha').onchange = () => {
+  const fecha = $('pFecha').value;
+  const plan = fecha ? planParaFecha(state.perfil, fecha) : null;
+
+  if (!plan) {
+    toast('Poné antes tu peso y tu objetivo');
+    renderPlazo();
+    return;
+  }
+
+  /* Una fecha que no se puede cumplir no se guarda como si se pudiera: se
+     guarda el ritmo máximo sostenible y la fecha que sale de ese ritmo. */
+  state.perfil.ritmo = plan.alcanzable ? Math.abs(plan.ritmo) : plan.ritmoMaximo;
+  state.perfil.plazo = plan.alcanzable ? fecha : plan.fechaMinima;
+  save();
+  renderPerfil();
+
+  /* Y se avisa que se movió. Corregir la fecha en silencio deja a la persona
+     creyendo que la app le aceptó un plazo que no le aceptó. */
+  if (!plan.alcanzable) {
+    toast(`Esa fecha pedía comer de menos: la moví al ${fechaLarga(plan.fechaMinima)}`);
+  }
 };
 
 /* ---------------- el modo ---------------- */

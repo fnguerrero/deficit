@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=411">
+<link rel="stylesheet" href="styles.css?v=415">
 </head>
 <body>
 
@@ -361,6 +361,9 @@
         <label>Peso objetivo (kg)
           <input type="number" id="pPesoObj" step="0.1" inputmode="decimal" placeholder="kg">
         </label>
+        <!-- Cuándo llegás, acá y no al final de la pantalla: la fecha es la
+             mitad del objetivo y estaba enterrada en la lista del cálculo. -->
+        <p class="hint plazo-hint" id="plazoHint" hidden></p>
         <!-- Una baja grande no se reta: se parte en etapas. Ver planPorEtapas(). -->
         <div class="plan-etapas" id="planEtapas" hidden></div>
         <label>Actividad
@@ -378,8 +381,15 @@
             <option value="0.5">Estándar — 0,5 kg/semana</option>
             <option value="0.75">Agresivo — 0,75 kg/semana</option>
             <option value="1">Muy agresivo — 1 kg/semana</option>
+            <option value="fecha">Por fecha — elegí cuándo llegar</option>
           </select>
         </label>
+        <!-- La otra punta del mismo dato: en vez del ritmo, la fecha, y el
+             ritmo se despeja. Ver planParaFecha() en plazo.js. -->
+        <label id="labelFecha" hidden>Llegar para
+          <input type="date" id="pFecha">
+        </label>
+        <p class="hint plazo-aviso" id="plazoAviso" hidden></p>
         <label>Objetivo manual (kcal)
           <input type="number" id="pManual" inputmode="numeric" placeholder="vacío = calculado">
         </label>
@@ -993,53 +1003,54 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=411"></script>
-<script src="core.js?v=411"></script>
-<script src="platos.js?v=411"></script>
-<script src="animar.js?v=411"></script>
-<script src="fotos.js?v=411"></script>
-<script src="calibracion.js?v=411"></script>
-<script src="modos.js?v=411"></script>
-<script src="arreglos.js?v=411"></script>
-<script src="habitos.js?v=411"></script>
-<script src="mascota.js?v=411"></script>
-<script src="cuerpo.js?v=411"></script>
-<script src="personaje.js?v=411"></script>
-<script src="sprite-datos.js?v=411"></script>
-<script src="sprite.js?v=411"></script>
-<script src="transformacion.js?v=411"></script>
-<script src="aura.js?v=411"></script>
-<script src="juego.js?v=411"></script>
-<script src="sonidos.js?v=411"></script>
-<script src="voz.js?v=411"></script>
-<script src="graficos.js?v=411"></script>
-<script src="analisis.js?v=411"></script>
-<script src="chequeos.js?v=411"></script>
-<script src="claude.js?v=411"></script>
-<script src="productos.js?v=411"></script>
-<script src="sync.js?v=411"></script>
-<script src="estado-sync.js?v=411"></script>
-<script src="auth.js?v=411"></script>
-<script src="app.js?v=411"></script>
-<script src="ui/general.js?v=411"></script>
-<script src="ui/hoy.js?v=411"></script>
-<script src="ui/dia.js?v=411"></script>
-<script src="ui/objetivos.js?v=411"></script>
-<script src="ui/tarjeta.js?v=411"></script>
-<script src="ui/logros.js?v=411"></script>
-<script src="ui/comidas.js?v=411"></script>
-<script src="ui/edicion.js?v=411"></script>
-<script src="ui/escaner.js?v=411"></script>
-<script src="ui/asistente.js?v=411"></script>
-<script src="ui/historial.js?v=411"></script>
-<script src="ui/progreso.js?v=411"></script>
-<script src="ui/perfil.js?v=411"></script>
-<script src="ui/sincronizacion.js?v=411"></script>
-<script src="ui/cuenta.js?v=411"></script>
-<script src="ui/calibracion.js?v=411"></script>
-<script src="ui/actividades.js?v=411"></script>
-<script src="ui/recordatorios.js?v=411"></script>
-<script src="ui/ajustes.js?v=411"></script>
-<script src="arranque.js?v=411"></script>
+<script src="config.js?v=415"></script>
+<script src="core.js?v=415"></script>
+<script src="platos.js?v=415"></script>
+<script src="animar.js?v=415"></script>
+<script src="fotos.js?v=415"></script>
+<script src="calibracion.js?v=415"></script>
+<script src="modos.js?v=415"></script>
+<script src="arreglos.js?v=415"></script>
+<script src="habitos.js?v=415"></script>
+<script src="mascota.js?v=415"></script>
+<script src="cuerpo.js?v=415"></script>
+<script src="personaje.js?v=415"></script>
+<script src="sprite-datos.js?v=415"></script>
+<script src="sprite.js?v=415"></script>
+<script src="transformacion.js?v=415"></script>
+<script src="aura.js?v=415"></script>
+<script src="juego.js?v=415"></script>
+<script src="sonidos.js?v=415"></script>
+<script src="voz.js?v=415"></script>
+<script src="graficos.js?v=415"></script>
+<script src="plazo.js?v=415"></script>
+<script src="analisis.js?v=415"></script>
+<script src="chequeos.js?v=415"></script>
+<script src="claude.js?v=415"></script>
+<script src="productos.js?v=415"></script>
+<script src="sync.js?v=415"></script>
+<script src="estado-sync.js?v=415"></script>
+<script src="auth.js?v=415"></script>
+<script src="app.js?v=415"></script>
+<script src="ui/general.js?v=415"></script>
+<script src="ui/hoy.js?v=415"></script>
+<script src="ui/dia.js?v=415"></script>
+<script src="ui/objetivos.js?v=415"></script>
+<script src="ui/tarjeta.js?v=415"></script>
+<script src="ui/logros.js?v=415"></script>
+<script src="ui/comidas.js?v=415"></script>
+<script src="ui/edicion.js?v=415"></script>
+<script src="ui/escaner.js?v=415"></script>
+<script src="ui/asistente.js?v=415"></script>
+<script src="ui/historial.js?v=415"></script>
+<script src="ui/progreso.js?v=415"></script>
+<script src="ui/perfil.js?v=415"></script>
+<script src="ui/sincronizacion.js?v=415"></script>
+<script src="ui/cuenta.js?v=415"></script>
+<script src="ui/calibracion.js?v=415"></script>
+<script src="ui/actividades.js?v=415"></script>
+<script src="ui/recordatorios.js?v=415"></script>
+<script src="ui/ajustes.js?v=415"></script>
+<script src="arranque.js?v=415"></script>
 </body>
 </html>
