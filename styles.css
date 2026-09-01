@@ -1770,7 +1770,19 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    mensajes de "todavía no hay nada", con su propio `margin: 14px 0 6px`. Las
    tarjetas la heredaban por compartir el nombre y quedaban 14 px más abajo que
    las llenas, con los cinco nombres a dos alturas distintas. */
-.momento.sin-cargar { border-style: dashed; border-color: var(--line); background: transparent; color: var(--txt2); }
+/*
+ * Los cinco pesan lo mismo, aunque solo cuatro tengan foto.
+ *
+ * Miden exactamente igual —61 px de lado— pero el vacío se veía más chico:
+ * sin fondo ni imagen, un cuadrado con borde punteado ocupa el mismo lugar y
+ * no lo parece. Conserva el punteado, que es lo que dice "acá falta algo",
+ * pero con el mismo fondo que los demás y el emoji más grande para llenarlo.
+ */
+.momento.sin-cargar {
+  border-style: dashed; border-color: var(--line);
+  background: var(--card2); color: var(--txt2);
+}
+.momento.sin-cargar .momento-emoji { font-size: 24px; opacity: .42; }
 .momento.abierto { box-shadow: inset 0 0 0 2px var(--acc); }
 
 /* Cuántas hay, solo si es más de una: un "1" en cada tarjeta es ruido. */
