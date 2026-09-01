@@ -38,7 +38,11 @@ function renderHistorial() {
 
 function renderChartPeso() {
   const todos = seriePesos();
-  const pesos = recortarSerie(todos, 120);
+  /* También mira el rango de arriba. "Todo" sigue con el tope de 120 puntos,
+     que es lo que entra sin que la curva se vuelva un borrón. */
+  const dias = rangoActual().dias;
+  const desde = dias ? sumarDias(hoyISO(), -(dias - 1)) : null;
+  const pesos = recortarSerie(desde ? todos.filter(p => p.f >= desde) : todos, 120);
   const svg = $('chartPeso');
   svg.innerHTML = '';
   $('chartVacio').hidden = pesos.length >= 2;
@@ -133,7 +137,7 @@ function renderProgresoMeta() {
     : `Llegaste a la meta: ${fmtPeso(actual)}.`;
 }
 
-/* --- barras de calorías de los últimos 14 días --- */
+/* --- barras de calorías del rango elegido --- */
 
 function renderChartKcal() {
   const svg = $('chartKcal');
@@ -142,7 +146,10 @@ function renderChartKcal() {
   const calc = calcular();
   const objetivo = calc ? calc.objetivo : 0;
 
-  const fechas = Array.from({ length: 14 }, (_, i) => sumarDias(hoyISO(), -(13 - i)));
+  /* Obedece al selector de arriba, con tope en 30 barras: más no entran
+     legibles en 320 px de ancho, y el rango largo se mira en Progreso. */
+  const N = Math.min(rangoActual().dias || 30, 30);
+  const fechas = Array.from({ length: N }, (_, i) => sumarDias(hoyISO(), -(N - 1 - i)));
   const datos = fechas.map(f => ({
     f,
     kcal: (state.dias[f]?.comidas || []).length ? sumarComidas(state.dias[f].comidas).kcal : null
@@ -160,7 +167,9 @@ function renderChartKcal() {
 
   const W = 320, H = 140, padX = 6, padTop = 14, padBottom = 20;
   const tope = Math.max(objetivo || 0, ...conDatos.map(d => d.kcal)) * 1.1 || 1;
-  const ancho = (W - padX * 2) / 14;
+  const ancho = (W - padX * 2) / N;
+  /* Con treinta barras las iniciales de los días se pisan: se saltean. */
+  const cadaEtiqueta = Math.ceil(N / 14);
   const alto = v => (v / tope) * (H - padTop - padBottom);
 
   datos.forEach((d, i) => {
@@ -175,9 +184,11 @@ function renderChartKcal() {
         x: bx + 2, y: H - padBottom - h, width: ancho - 4, height: h, rx: 2
       }));
     }
-    const [yy, mm, dd] = d.f.split('-').map(Number);
-    const letra = new Date(yy, mm - 1, dd).toLocaleDateString('es-AR', { weekday: 'narrow' });
-    svg.appendChild(svgEl('text', { x: bx + ancho / 2, y: H - 6, 'text-anchor': 'middle' }, letra));
+    if (i % cadaEtiqueta === 0) {
+      const [yy, mm, dd] = d.f.split('-').map(Number);
+      const letra = new Date(yy, mm - 1, dd).toLocaleDateString('es-AR', { weekday: 'narrow' });
+      svg.appendChild(svgEl('text', { x: bx + ancho / 2, y: H - 6, 'text-anchor': 'middle' }, letra));
+    }
   });
 
   if (objetivo) {
@@ -418,7 +429,9 @@ function fechasDelRango() {
 }
 
 function renderListaDias() {
-  pintarSelRango($('selRangoHist'), () => { renderListaDias(); renderResumen(); });
+  /* Arriba de la pestaña manda sobre la pestaña entera: el gráfico de calorías
+     y el de peso también miran el rango, así que se repinta todo. */
+  pintarSelRango($('selRangoHist'), renderHistorial);
 
   const calc = calcular();
   const objetivo = calc ? calc.objetivo : 0;
