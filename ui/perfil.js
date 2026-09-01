@@ -121,6 +121,16 @@ $('btnGuardarPerfil').onclick = () => {
     return;
   }
 
+  /* Una cintura NUEVA queda anotada en el dia, no solo en el perfil.
+     Sin esto el campo pisa el valor anterior y no queda rastro de nada: el
+     perfil guarda cuanto medis HOY y el dia guarda cuando lo mediste, que es
+     lo unico que despues permite dibujar una curva. Solo cuando cambia, asi
+     que volver a guardar el perfil por otra cosa no inventa una medicion. */
+  const cinturaPrevia = ultimaCinturaConocida(state.perfil, state.dias);
+  if (propuesto.cintura != null && propuesto.cintura !== cinturaPrevia) {
+    dia(hoyISO()).cintura = propuesto.cintura;
+  }
+
   /* Se fusiona en vez de reemplazar: el formulario no trae el modo ni el
      plazo, y asignar el objeto entero los borraba. */
   state.perfil = { ...state.perfil, ...propuesto };

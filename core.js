@@ -150,6 +150,11 @@ function migrar(guardado) {
        usuario— pero no puede contar como registrado ni cortar una racha. */
     s.dias[f] = {
       peso: typeof d.peso === 'number' ? d.peso : null,
+      /* La cintura del dia en que se midio. No es un dato diario —se anota una
+         vez cada tanto— pero necesita fecha igual: sin ella no hay curva, y
+         esta lista descarta lo que no nombra, asi que faltando aca la medicion
+         se perdia en el primer arranque. */
+      cintura: typeof d.cintura === 'number' ? d.cintura : null,
       agua: Number(d.agua) || 0,
       ejercicio: Number(d.ejercicio) || 0,
       nota: String(d.nota || ''),

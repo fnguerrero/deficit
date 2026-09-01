@@ -102,6 +102,31 @@ function grasaDe(ica) {
 }
 
 /**
+ * Las mediciones en orden, para dibujarlas.
+ *
+ * Salen de los días y no del perfil: el perfil guarda CUÁNTO medís hoy y no
+ * cuándo lo mediste, y sin fecha un punto no se puede ubicar en un eje.
+ */
+function serieCinturas(dias) {
+  return Object.entries(dias || {})
+    .filter(([, d]) => Number(d?.cintura) >= CINTURA_MIN && Number(d?.cintura) <= CINTURA_MAX)
+    .map(([f, d]) => ({ f, cm: Number(d.cintura) }))
+    .sort((a, b) => a.f.localeCompare(b.f));
+}
+
+/**
+ * La cintura a la que apunta el umbral de 0,5: la mitad de tu altura.
+ *
+ * Es la única meta honesta que se puede dibujar, porque no se la inventa la
+ * app ni la eligió nadie a ojo — sale del mismo índice que ya se muestra.
+ */
+function cinturaObjetivo(alturaCm) {
+  const a = Number(alturaCm);
+  if (!isFinite(a) || a < ALTURA_MIN || a > ALTURA_MAX) return null;
+  return +(a * ICA_UMBRAL).toFixed(0);
+}
+
+/**
  * La última cintura conocida.
  *
  * Al revés que el peso, acá manda el perfil: no se guarda por día porque no es
