@@ -140,6 +140,7 @@ function cerrarModal(forzar = false) {
   // los dos, o repetir la misma foto no vuelve a disparar el onchange
   $('fileInput').value = '';
   $('camaraInput').value = '';
+  marcarAtras();
 }
 
 function mostrarEstado(cual) {
@@ -212,7 +213,7 @@ function esTactil() {
   return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 }
 
-function cerrarOrigenFoto() { $('modalOrigenFoto').classList.remove('open'); devolverFoco(); }
+function cerrarOrigenFoto() { $('modalOrigenFoto').classList.remove('open'); devolverFoco(); marcarAtras(); }
 
 $('btnCerrarOrigenFoto').onclick = cerrarOrigenFoto;
 $('modalOrigenFoto').onclick = (e) => { if (e.target.id === 'modalOrigenFoto') cerrarOrigenFoto(); };
