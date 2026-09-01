@@ -58,6 +58,7 @@ async function pedirSugerencias(momentoId) {
       // la proteína es lo que más se descuida en déficit
       faltaProteina: margen.prot > (calcular()?.macros.prot || 0) * 0.35,
       frecuentes: (state.frecuentes || []).slice(0, 12).map(f => f.nombre),
+      modo: modoDe(state.perfil.modo),
       señal: analisisEnCurso.signal
     });
 
@@ -98,13 +99,33 @@ function pintarMomentosSugeridos() {
 function mostrarSugerencias(r, margen) {
   $('modalTitle').textContent = 'Opciones para ' + nombreMomento(momentoSugerido).toLowerCase();
   pintarMomentosSugeridos();
-  $('sugerenciasMargen').textContent =
-    `Te quedan ${fmtKcal(margen.kcal)} · ${fmtNum(margen.prot)} g de proteína`;
+
+  /* Filtradas contra el modo antes de mostrarlas: ver sugerenciasQueEntran().
+     Se juzga el plato solo, no contra lo que ya se comió hoy: si te pasaste de
+     carbos al mediodía, ninguna cena entraría nunca y el panel quedaría siempre
+     vacío. Una cena keto sigue siendo una cena keto aunque el día venga mal. */
+  const filtro = sugerenciasQueEntran(r.opciones, state.perfil.modo, calcular());
+  const modo = modoDe(state.perfil.modo);
+
+  const queda = `Te quedan ${fmtKcal(margen.kcal)} · ${fmtNum(margen.prot)} g de proteína`;
+  $('sugerenciasMargen').textContent = filtro.descartadas
+    ? `${queda}. Descarté ${filtro.descartadas} que no entraban en ${modo?.nombre || 'tu modo'}.`
+    : queda;
 
   const ul = $('listaSugerencias');
   ul.innerHTML = '';
 
-  for (const o of r.opciones) {
+  if (!filtro.opciones.length) {
+    const li = document.createElement('li');
+    li.className = 'vacio';
+    li.textContent = `Las tres que vinieron no entran en ${modo?.nombre || 'tu modo'}. Probá de nuevo.`;
+    ul.appendChild(li);
+    $('sugerenciasCosto').textContent = r.costo ? `${formatearCosto(r.costo)} esta consulta` : '';
+    mostrarEstado('sugerencias');
+    return;
+  }
+
+  for (const o of filtro.opciones) {
     const kcal = o.items.reduce((acc, i) => acc + (Number(i.calorias) || 0), 0);
 
     const li = document.createElement('li');

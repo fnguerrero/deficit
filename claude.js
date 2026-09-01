@@ -344,18 +344,66 @@ const SCHEMA_SUGERENCIAS = {
 };
 
 /** Prompt para pedir qué comer con lo que queda del día. */
-function promptSugerencias({ margen, momento, faltaProteina, frecuentes = [], conSchema = true }) {
+/*
+ * Las reglas del modo, en palabras y arriba de todo.
+ *
+ * El prompt no sabía en qué modo estaba la persona: pedía "3 opciones que
+ * entren en las calorías" y listo, así que a alguien en keto le proponía
+ * empanadas de jamón y queso. Las calorías son la mitad del problema; la otra
+ * mitad es qué se puede comer.
+ */
+function reglasDelModo(modo) {
+  if (!modo) return '';
+
+  const lineas = [`La persona está haciendo ${modo.nombre}: ${modo.resumen.toLowerCase()}.`];
+
+  if (modo.carbosMaxDia) {
+    lineas.push(
+      `REGLA QUE NO SE NEGOCIA: como máximo ${modo.carbosMaxDia} g de carbohidratos netos POR DÍA, contando todo lo que ya comió.`,
+      'Queda afuera todo lo que tenga harina, masa, pan, fideos, arroz, papa, batata, choclo, legumbres, azúcar, miel o fruta dulce.',
+      'Nada de empanadas, tartas, sándwiches, milanesas empanadas, pizza ni postres.',
+      'Sí entran: carne, pollo, pescado, huevo, quesos, fiambres sin azúcar, verduras de hoja, palta, aceitunas, frutos secos, aceite y manteca.'
+    );
+  }
+
+  /* Lo que cada patrón deja afuera, dicho como lo diría una persona. Son las
+     mismas reglas que después aplica comidaApta() para juzgar el plato. */
+  const DURAS = {
+    vegetariana: 'REGLA QUE NO SE NEGOCIA: nada de carne, pollo ni pescado.',
+    singluten: 'REGLA QUE NO SE NEGOCIA: nada con gluten (trigo, avena, cebada, centeno).',
+    sinlactosa: 'REGLA QUE NO SE NEGOCIA: nada de lácteos.',
+    paleo: 'REGLA QUE NO SE NEGOCIA: nada de cereales, legumbres, lácteos ni azúcar.',
+    mediterranea: 'Nada de ultraprocesados ni azúcar agregada. La carne roja, poca y de vez en cuando.',
+    antiinflamatoria: 'Nada de ultraprocesados ni azúcar agregada.',
+    dash: 'Poco sodio: nada de fiambres, embutidos, enlatados ni snacks salados.',
+    flexi: 'Mayormente vegetal: la carne aparece poco.',
+    proteina: 'La proteína manda: que cada opción la traiga de verdad.'
+  };
+  if (DURAS[modo.regla]) lineas.push(DURAS[modo.regla]);
+  if (modo.detalle) lineas.push(modo.detalle);
+
+  return lineas.join('\n') + '\n\n';
+}
+
+function promptSugerencias({ margen, momento, faltaProteina, frecuentes = [], modo = null, conSchema = true }) {
+  const techo = modo?.carbosMaxDia;
+
   let txt = `Sos un nutricionista que arma opciones de comida concretas.
 
-A esta persona le quedan ${margen.kcal} kcal para cerrar el día y está por comer ${momento}.
-Le faltan todavía ${margen.prot} g de proteína, ${margen.carb} g de carbohidratos y ${margen.gras} g de grasa.
+${reglasDelModo(modo)}A esta persona le quedan ${margen.kcal} kcal para cerrar el día y está por comer ${momento}.
+Le faltan todavía ${margen.prot} g de proteína y ${margen.gras} g de grasa.
+${techo
+    ? `De carbohidratos le quedan ${margen.carb} g y eso es un TECHO: cada opción tiene que quedar por debajo, no acercarse.`
+    : `De carbohidratos le faltan ${margen.carb} g.`}
 
 Proponé 3 opciones distintas que entren en esas calorías, con alimentos reales y porciones concretas.
 
 Pautas:
 - Comida argentina, de las que se consiguen en cualquier kiosco, verdulería o casa.
 - Cada opción tiene que sumar cerca de las calorías que quedan, nunca pasarse.
-- Que sean cosas distintas entre sí: no tres versiones de lo mismo.`;
+- Que sean cosas distintas entre sí: no tres versiones de lo mismo.
+- Si una opción no cumple las reglas del modo, no la propongas: es preferible
+  una sola opción buena que tres que la persona no puede comer.`;
 
   if (faltaProteina) {
     txt += '\n- Priorizá proteína: es lo que más le está faltando hoy.';
@@ -378,7 +426,7 @@ Pautas:
 /** Pide 3 opciones de comida que entren en las calorías que quedan. */
 async function sugerirComida({
   fetchFn, apiKey, proxyUrl = '', modelo = MODELO_DEFAULT, margen, momento = 'la próxima comida',
-  faltaProteina = false, frecuentes = [], señal, dormir
+  faltaProteina = false, frecuentes = [], modo = null, señal, dormir
 }) {
   if (!apiKey && !proxyUrl) throw new Error(SIN_ACCESO);
   if (!margen || margen.kcal < 100) throw new Error('Te quedan muy pocas calorías para sugerirte algo.');
@@ -386,7 +434,7 @@ async function sugerirComida({
   const body = {
     model: modelo,
     max_tokens: 2000,
-    messages: [{ role: 'user', content: [{ type: 'text', text: promptSugerencias({ margen, momento, faltaProteina, frecuentes }) }] }],
+    messages: [{ role: 'user', content: [{ type: 'text', text: promptSugerencias({ margen, momento, faltaProteina, frecuentes, modo }) }] }],
     output_config: { format: { type: 'json_schema', schema: SCHEMA_SUGERENCIAS } }
   };
 

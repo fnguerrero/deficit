@@ -3374,3 +3374,66 @@ test('la lista se lee como se habla', () => {
   esperar(listaEnTexto(['pan', 'fideos']), 'pan y fideos');
   esperar(listaEnTexto(['pan', 'fideos', 'alfajor']), 'pan, fideos y alfajor');
 });
+
+/* ---------------- las sugerencias respetan el modo ---------------- */
+
+const EMPANADAS = {
+  titulo: 'Empanadas de jamón y queso',
+  items: [{ nombre: 'Empanadas', porcion: '2', calorias: 500, proteinas: 20, carbohidratos: 45, grasas: 25 }]
+};
+const BIFE = {
+  titulo: 'Bife con ensalada',
+  items: [{ nombre: 'Bife', porcion: '200 g', calorias: 400, proteinas: 45, carbohidratos: 0, grasas: 22 },
+          { nombre: 'Ensalada', porcion: '1 plato', calorias: 60, proteinas: 2, carbohidratos: 5, grasas: 3 }]
+};
+
+test('en keto las empanadas no se sugieren', () => {
+  const r = sugerenciasQueEntran([EMPANADAS, BIFE], 'keto', { kcal: 1900 });
+  esperar(r.opciones.length, 1);
+  esperar(r.opciones[0].titulo, 'Bife con ensalada');
+  esperar(r.descartadas, 1);
+});
+
+test('sin techo de carbos las dos entran', () => {
+  const r = sugerenciasQueEntran([EMPANADAS, BIFE], 'moderado', { kcal: 1900 });
+  esperar(r.opciones.length, 2);
+  esperar(r.descartadas, 0);
+});
+
+test('el plato se juzga solo, no contra el dia arruinado', () => {
+  // si te pasaste de carbos al mediodia, ninguna cena entraria nunca y el
+  // panel quedaria siempre vacio: una cena keto sigue siendo una cena keto
+  const r = sugerenciasQueEntran([BIFE], 'keto', { kcal: 1900 });
+  esperar(r.opciones.length, 1);
+  esperar(r.descartadas, 0);
+});
+
+test('sin opciones no explota', () => {
+  esperar(sugerenciasQueEntran(null, 'keto', null).opciones.length, 0);
+  esperar(sugerenciasQueEntran([], 'keto', null).descartadas, 0);
+});
+
+test('el prompt lleva las reglas del modo', () => {
+  const p = promptSugerencias({
+    margen: { kcal: 800, prot: 40, carb: 10, gras: 30 },
+    momento: 'cena', faltaProteina: false, modo: modoDe('keto')
+  });
+  esperarQue(/Keto/.test(p), 'dice en que modo esta: ' + p.slice(0, 120));
+  esperarQue(/30 g de carbohidratos netos/.test(p), 'y el techo del modo');
+  esperarQue(/empanadas/i.test(p), 'con los ejemplos de lo que queda afuera');
+  esperarQue(/TECHO/.test(p), 'y que los carbos que quedan son un techo, no una meta');
+});
+
+test('sin modo el prompt sigue funcionando', () => {
+  const p = promptSugerencias({ margen: { kcal: 800, prot: 40, carb: 60, gras: 30 }, momento: 'cena', faltaProteina: false });
+  esperarQue(/800 kcal/.test(p), 'las calorias siguen estando');
+  esperarQue(!/NO SE NEGOCIA/.test(p), 'y no inventa reglas que no hay');
+});
+
+test('la vegetariana no propone carne', () => {
+  const p = promptSugerencias({
+    margen: { kcal: 800, prot: 40, carb: 60, gras: 30 },
+    momento: 'cena', faltaProteina: false, modo: modoDe('vegetariana')
+  });
+  esperarQue(/nada de carne/i.test(p), 'la regla dura del patron: ' + p.slice(0, 200));
+});
