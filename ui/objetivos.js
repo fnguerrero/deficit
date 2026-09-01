@@ -281,26 +281,116 @@ function renderActividades() {
   const peso = state.perfil.peso;
   cont.innerHTML = '';
 
-  for (const a of actividadesFavoritas(state)) {
-    const kcal = caloriasActividad(a, peso);
-    const b = document.createElement('button');
-    b.className = 'chip';
-    b.innerHTML = `${a.emoji} ${a.nombre} <small>${a.minutos}′ · ${fmtNum(kcal)} kcal</small>`;
-    b.onclick = () => {
-      const d = dia();
-      d.ejercicio = (d.ejercicio || 0) + kcal;
-      d.act = Date.now();
-      save();
-      renderEjercicio();
-      renderHoy();
-      toast(`${a.nombre}: +${fmtNum(kcal)} kcal`);
-    };
-    cont.appendChild(b);
-  }
-
   if (!peso) {
     cont.innerHTML = '<p class="hint">Cargá tu peso en Perfil para que pueda estimar las calorías.</p>';
+    return;
   }
+
+  for (const a of actividadesFavoritas(state)) {
+    cont.appendChild(chipActividad(a, peso));
+  }
+
+  /* Agregar uno nuevo sin salir del modal.
+     Antes había que ir a Ajustes, buscar la sección de actividades, cargarlo,
+     volver a Hoy y recién ahí tocarlo: cinco pasos para anotar que saliste a
+     andar en bici. */
+  const nuevo = document.createElement('button');
+  nuevo.className = 'chip chip-nuevo';
+  nuevo.innerHTML = '＋ Otro ejercicio';
+  nuevo.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); abrirAltaActividad(); };
+  cont.appendChild(nuevo);
+}
+
+/**
+ * Un ejercicio, con sus minutos editables ahí mismo.
+ *
+ * Los minutos son lo que más cambia de un día para el otro —hoy corriste 30 y
+ * ayer 50— y eran justo lo único que había que ir a cambiar a Ajustes. Con el
+ * − y el + al lado, las calorías se recalculan solas y el chip queda listo
+ * para tocarlo.
+ */
+function chipActividad(a, peso) {
+  const caja = document.createElement('div');
+  caja.className = 'act-chip';
+
+  const kcal = caloriasActividad(a, peso);
+  const b = document.createElement('button');
+  b.className = 'chip';
+  b.innerHTML = `${a.emoji} ${a.nombre} <small>${a.minutos}′ · ${fmtNum(kcal)} kcal</small>`;
+  b.onclick = () => {
+    const d = dia();
+    d.ejercicio = (d.ejercicio || 0) + kcal;
+    d.act = Date.now();
+    save();
+    renderEjercicio();
+    renderHoy();
+    toast(`${a.nombre}: +${fmtNum(kcal)} kcal`);
+  };
+
+  const menos = document.createElement('button');
+  menos.className = 'act-mas';
+  menos.textContent = '−';
+  menos.title = 'Cinco minutos menos';
+  menos.setAttribute('aria-label', `Cinco minutos menos de ${a.nombre}`);
+  menos.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); cambiarMinutos(a, -5); };
+
+  const mas = document.createElement('button');
+  mas.className = 'act-mas';
+  mas.textContent = '+';
+  mas.title = 'Cinco minutos más';
+  mas.setAttribute('aria-label', `Cinco minutos más de ${a.nombre}`);
+  mas.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); cambiarMinutos(a, 5); };
+
+  caja.append(menos, b, mas);
+  return caja;
+}
+
+/** Cambia los minutos de una actividad y los deja guardados para la próxima. */
+function cambiarMinutos(a, delta) {
+  const min = Math.max(5, Math.min(600, (Number(a.minutos) || 30) + delta));
+
+  const propias = [...(state.cfg.actividades || [])];
+  const i = propias.findIndex(x => x.id === a.id);
+  if (i >= 0) propias[i] = { ...propias[i], minutos: min };
+  else propias.push({ id: a.id, nombre: a.nombre, minutos: min, met: a.met, emoji: a.emoji });
+
+  state.cfg.actividades = propias;
+  save();
+  renderActividades();
+}
+
+/*
+ * El alta de un ejercicio nuevo, dentro del mismo modal.
+ *
+ * Se usa `prompt` a propósito y no un formulario más: son dos datos, se usa
+ * una vez cada tanto, y armar un tercer modal encima de este —con su foco, su
+ * Escape y su botón atrás— cuesta más de lo que resuelve.
+ */
+function abrirAltaActividad() {
+  const nombre = (prompt('¿Qué ejercicio?') || '').trim();
+  if (!nombre) return;
+
+  const minutos = Math.max(5, Math.min(600, parseInt(prompt('¿Cuántos minutos?', '45'), 10) || 45));
+
+  /* El id sale del nombre, sin acentos ni espacios y sin pisar uno existente. */
+  const base = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '') || 'act';
+  const usados = actividadesDe(state).map(x => x.id);
+  let id = base;
+  let n = 2;
+  while (usados.includes(id)) id = base + n++;
+
+  state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, minutos, met: 6, emoji: '⭐' }];
+
+  /* Y queda listo en Hoy: agregarlo sin que aparezca sería agregarlo a un
+     cajón. Si ya hay tres, entra sacando el más viejo. */
+  const favs = [...(state.cfg.favoritasActividad || FAVORITAS_DEFECTO)];
+  favs.push(id);
+  state.cfg.favoritasActividad = favs.slice(-MAX_FAVORITAS);
+
+  save();
+  renderActividades();
+  if (typeof renderActividadesEditar === 'function') renderActividadesEditar();
+  toast(`${nombre} agregado`);
 }
 
 /* ---------------- más opciones ---------------- */

@@ -1788,3 +1788,27 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   color: var(--warn); font-weight: 700; cursor: pointer;
   text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px;
 }
+
+/* Un ejercicio con sus minutos al lado. El − y el + son lo que evita ir a
+   Ajustes por el número que más cambia de un día a otro. */
+.act-chip { display: flex; align-items: stretch; gap: 4px; }
+.act-chip .chip { flex: 1; min-width: 0; text-align: left; }
+.act-mas {
+  flex: 0 0 auto; width: 30px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--card2); color: var(--txt2);
+  font-size: 16px; font-weight: 700; cursor: pointer; line-height: 1;
+}
+.act-mas:hover { color: var(--txt); border-color: var(--acc); }
+.chip-nuevo { border-style: dashed; color: var(--txt2); }
+
+/* Las seis formas ocasionales de cargar, de a dos. Apiladas eran seis filas
+   iguales para cosas que no se usan igual, y el menú no entraba en pantalla. */
+.origen-grilla { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.origen-grilla button {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 4px; border-radius: 12px; font-size: 19px; min-width: 0;
+}
+.origen-grilla span {
+  font-size: 10.5px; font-weight: 600; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
