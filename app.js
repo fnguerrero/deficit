@@ -102,6 +102,10 @@ function guardarYa() {
     }
   }
 
+  /* Los horarios de las comidas se re-aprenden con cada guardado: es donde
+     puede haber una comida nueva que corra los cortes. */
+  if (typeof aprenderMomentos === 'function') aprenderMomentos(state.dias);
+
   // Un solo enganche para todo: cargar una comida, editarla, borrarla, anotar el
   // peso. Engancharlo en cada pantalla habría dejado agujeros.
   if (typeof sincronizarTrasCambio === 'function') sincronizarTrasCambio();
