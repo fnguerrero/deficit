@@ -297,12 +297,16 @@ function armarBody({ modelo = MODELO_DEFAULT, imagen, imagenes, prompt, conSchem
 
   if (conSchema) body.output_config = { format: { type: 'json_schema', schema: SCHEMA_COMIDA } };
 
-  // effort existe de la generación 4.6 en adelante; en Haiku 4.5 da error
-  if (effort && /opus-5|sonnet-5|opus-4-[678]|sonnet-4-6|fable-5/.test(modelo)) {
+  if (effort && aceptaEffort(modelo)) {
     body.output_config = { ...(body.output_config || {}), effort };
   }
 
   return body;
+}
+
+// effort existe de la generación 4.6 en adelante; en Haiku 4.5 da error
+function aceptaEffort(modelo) {
+  return /opus-5|sonnet-5|opus-4-[678]|sonnet-4-6|fable-5/.test(modelo);
 }
 
 /* ---------------- sugerencias ---------------- */
@@ -433,10 +437,18 @@ async function sugerirComida({
 
   const body = {
     model: modelo,
-    max_tokens: 2000,
+    /* 2000 no alcanzaba: los modelos que razonan se gastaban el presupuesto
+       entero pensando —1.999 de 2.000 en tokens de thinking— y cortaban por
+       max_tokens sin llegar a escribir una sola opción. */
+    max_tokens: 6000,
     messages: [{ role: 'user', content: [{ type: 'text', text: promptSugerencias({ margen, momento, faltaProteina, frecuentes, modo }) }] }],
     output_config: { format: { type: 'json_schema', schema: SCHEMA_SUGERENCIAS } }
   };
+
+  /* Y esfuerzo bajo: proponer tres comidas con las reglas escritas al lado no
+     es un problema que mejore pensándolo más, y pensarlo más era justamente lo
+     que se comía el presupuesto antes de escribir nada. */
+  if (aceptaEffort(modelo)) body.output_config.effort = 'low';
 
   const res = await pedirAClaude({ fetchFn, apiKey, proxyUrl, body, señal, dormir });
 
@@ -448,6 +460,12 @@ async function sugerirComida({
 
   const data = await res.json();
   const texto = (data?.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+
+  /* Cortó por presupuesto: el error tiene que decir eso y no "no pude leer",
+     que manda a buscar el problema en el lugar equivocado. */
+  if (!texto && data?.stop_reason === 'max_tokens') {
+    throw new Error('Se cortó pensando la respuesta. Probá de nuevo.');
+  }
 
   let parsed;
   try {

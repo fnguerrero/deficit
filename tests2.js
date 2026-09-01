@@ -3437,3 +3437,8 @@ test('la vegetariana no propone carne', () => {
   });
   esperarQue(/nada de carne/i.test(p), 'la regla dura del patron: ' + p.slice(0, 200));
 });
+
+test('las sugerencias piden esfuerzo bajo en los modelos que lo aceptan', () => {
+  esperarQue(aceptaEffort('claude-sonnet-5'), 'sonnet 5 lo acepta');
+  esperarQue(!aceptaEffort('claude-haiku-4-5-20251001'), 'haiku 4.5 no, y da error si se manda');
+});
