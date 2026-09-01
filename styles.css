@@ -1687,3 +1687,58 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .recuerdo-del { bottom: 8px; right: 8px; font-size: 17px; }
 .recuerdo-lupa { bottom: 8px; right: 40px; font-size: 11px; }
 .recuerdo:hover .recuerdo-del, .recuerdo:hover .recuerdo-lupa { background: rgba(0, 0, 0, .72); }
+
+/* ---------- los cinco momentos del día ---------- */
+
+/*
+ * Cinco tarjetas fijas, una por momento. La sección mide lo mismo con tres
+ * comidas que con doce, y se ve de un vistazo lo que falta.
+ */
+/* `.lista li` le gana en especificidad a `.momentos` a secas, así que el grid
+   no se aplicaba y los cinco quedaban como flex items dimensionados por su
+   texto: "Desayuno" salía más ancho que "Cena". */
+.lista li.momentos {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
+  padding: 2px 0 4px; list-style: none; border-top: 0;
+  /* `start` y no `stretch`: estirado, la altura la manda la fila y el
+     `aspect-ratio` recalcula el ancho, con lo que las tarjetas dejaban de
+     medir lo que dice su columna y quedaban desparejas. */
+  align-items: start;
+}
+.momento {
+  position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--line); background: var(--card2); color: var(--txt);
+  cursor: pointer; padding: 0; display: flex; align-items: flex-end;
+}
+.momento img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* El degradado solo cuando hay foto: sobre la tarjeta vacía oscurecería de
+   gratis un casillero que ya es tenue. */
+.momento:has(img)::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, .8) 0%, rgba(0, 0, 0, .25) 55%, transparent 80%);
+}
+.momento:has(img) .momento-cuerpo { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
+
+.momento-cuerpo {
+  position: relative; z-index: 2; width: 100%; padding: 4px 3px 5px;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+}
+.momento-cuerpo b { font-size: 14px; font-weight: 700; line-height: 1.1; }
+.momento-cuerpo i { font-style: normal; font-size: 17px; line-height: 1.1; opacity: .55; }
+.momento-cuerpo small {
+  font-size: 8.5px; font-weight: 600; opacity: .9; letter-spacing: .1px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* El vacío se ve como un lugar donde falta algo, no como un error. */
+.momento.vacio { border-style: dashed; background: transparent; color: var(--txt2); }
+.momento.abierto { border-color: var(--acc); }
+
+/* Cuántas hay, solo si es más de una: un "1" en cada tarjeta es ruido. */
+.momento-n {
+  position: absolute; top: 4px; right: 4px; z-index: 3;
+  min-width: 15px; height: 15px; border-radius: 8px; padding: 0 3px;
+  background: var(--acc); color: var(--sobre-acc);
+  font-size: 9.5px; font-weight: 700; line-height: 15px; text-align: center;
+}

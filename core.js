@@ -943,13 +943,21 @@ function tsParaFecha(iso, momento, ahora = new Date()) {
 }
 
 /** Agrupa comidas por momento, en el orden natural del día. */
-function agruparPorMomento(comidas) {
+/**
+ * Los cinco momentos del día, SIEMPRE los cinco.
+ *
+ * `todos: true` devuelve también los vacíos. Es lo que permite que la pantalla
+ * de Hoy tenga una fila de altura fija: cinco casilleros que no se mueven de
+ * lugar, cargues tres comidas o doce. Los vacíos no son un hueco, son la
+ * información de qué te falta.
+ */
+function agruparPorMomento(comidas, { todos = false } = {}) {
   const orden = ['desayuno', 'almuerzo', 'merienda', 'cena', 'snack'];
   const grupos = [];
 
   for (const id of orden) {
     const delGrupo = (comidas || []).filter(c => (c.momento || momentoDe(c.ts)) === id);
-    if (delGrupo.length) {
+    if (delGrupo.length || todos) {
       grupos.push({
         id,
         nombre: nombreMomento(id),
