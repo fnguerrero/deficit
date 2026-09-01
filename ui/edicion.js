@@ -31,6 +31,11 @@ function mostrarResultado(r) {
 
   // mover de día solo tiene sentido sobre una comida ya guardada
   const editando = !!r.editandoId;
+
+  /* Borrar desde acá. Antes había que cerrar el editor, encontrar la comida en
+     la lista y tocar su ✕: tres pasos para deshacer lo que estabas mirando. */
+  const borrar = $('btnBorrarComida');
+  if (borrar) borrar.hidden = !editando;
   $('cajaFecha').hidden = !editando;
   if (editando) {
     $('fechaComida').value = r.fechaDestino || fecha;
@@ -585,3 +590,25 @@ function cerrarResumen() {
 
 $('btnResumenListo').onclick = cerrarResumen;
 $('modalResumen').onclick = (e) => { if (e.target.id === 'modalResumen') cerrarResumen(); };
+
+
+/*
+ * Borrar la comida que se está editando.
+ *
+ * Sin diálogo de confirmación: `borrarComida()` deja el "Deshacer" al lado
+ * durante unos segundos, que resuelve el mismo problema sin un paso extra.
+ * Ver la nota de preferir deshacer sobre confirmar.
+ */
+$('btnBorrarComida').onclick = () => {
+  const id = pendiente?.editandoId;
+  if (!id) return;
+
+  /* La fecha primero: si la comida es de otro día, hay que pararse ahí para
+     que `borrarComida` la encuentre y para que el deshacer la devuelva a su
+     lugar. */
+  const origen = pendiente.fechaOriginal || fecha;
+  if (origen !== fecha) { fecha = origen; }
+
+  cerrarModal(true);
+  borrarComida(id);
+};
