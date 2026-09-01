@@ -516,6 +516,12 @@ function borrarComida(id) {
   const pos = d.comidas.findIndex(x => x.id === id);
   if (pos < 0) return;
 
+  /* También va a la pila global.
+     El toast trae su propio "Deshacer", pero dura unos segundos: pasado eso, el
+     botón Deshacer de la pantalla —el que existe justo para esto— no traía de
+     vuelta la comida, que es la acción destructiva más común de la app. */
+  recordarCambio('la comida');
+
   const [borrada] = d.comidas.splice(pos, 1);
   const fechaBorrado = fecha;
   save(); renderHoy();

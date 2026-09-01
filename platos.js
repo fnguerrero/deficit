@@ -154,12 +154,30 @@ const PORCIONES = [
   { f: 1, txt: '1' }, { f: 1.5, txt: '1½' }, { f: 2, txt: '2' }
 ];
 
+/*
+ * El prefijo de porción que ya tenga el título.
+ *
+ * Escalar dos veces encadenaba las etiquetas: "½ Milanesa" reescalada al doble
+ * salía "2 ½ Milanesa", y de ahí a la mitad "½ 2 ½ Milanesa". El nombre del
+ * plato es uno solo; la porción es un prefijo que se reemplaza, no que se
+ * apila.
+ */
+const PREFIJO_PORCION = /^(?:¼|½|¾|1½|1|2|[\d.,]+×)\s+/;
+
+function sinPrefijoDePorcion(titulo) {
+  let t = String(titulo || '');
+  /* En bucle: un título ya ensuciado por el bug puede traer varios pegados. */
+  while (PREFIJO_PORCION.test(t)) t = t.replace(PREFIJO_PORCION, '');
+  return t;
+}
+
 function escalarComida(comida, factor) {
   const f = Number(factor);
   if (!comida || !(f > 0)) return comida;
 
   const num = (v) => Math.round((Number(v) || 0) * f * 10) / 10;
   const etiqueta = (PORCIONES.find(p => p.f === f) || {}).txt;
+  const nombre = sinPrefijoDePorcion(comida.titulo);
 
   return {
     ...comida,
@@ -168,7 +186,7 @@ function escalarComida(comida, factor) {
     carb: num(comida.carb),
     gras: num(comida.gras),
     porcionFactor: f,
-    titulo: f === 1 ? comida.titulo : `${etiqueta || f + '×'} ${comida.titulo || ''}`.trim(),
+    titulo: f === 1 ? nombre : `${etiqueta || f + '×'} ${nombre}`.trim(),
     items: (comida.items || []).map(it => ({
       ...it,
       calorias: Math.round((Number(it.calorias) || 0) * f),

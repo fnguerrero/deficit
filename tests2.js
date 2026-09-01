@@ -3144,3 +3144,171 @@ testAsync('cancelar el selector no cae al portapapeles', async () => {
   esperar(await compartirTexto('hola', { navegador: nav }), 'cancelado');
   esperarQue(!copiado, 'cerrar el dialogo es una decision, no un error que compensar');
 });
+
+/* ---------------- bugs del ciclo 14 ---------------- */
+
+test('borrar una comida entra en la pila de deshacer', () => {
+  // el toast dura unos segundos; el boton Deshacer de la pantalla, no
+  const pila = apilarCambio([], '2026-09-01', { comidas: [{ id: 'a', kcal: 100 }] }, 'la comida');
+  const { cambio } = desapilarCambio(pila);
+  esperar(cambio.que, 'la comida');
+  esperar(cambio.dia.comidas.length, 1);
+});
+
+test('el sueno viaja en el sync', () => {
+  const f = __sync.diaAFila({ sueno: { horas: 7, calidad: 'buena' }, animo: 'bien' }, '2026-09-01', 'k');
+  esperar(f.sueno_horas, 7);
+  esperar(f.sueno_calidad, 'buena');
+  esperar(f.animo, 'bien');
+});
+
+test('un dia sin sueno no manda basura', () => {
+  const f = __sync.diaAFila({}, '2026-09-01', 'k');
+  esperar(f.sueno_horas, null);
+  esperar(f.sueno_calidad, null);
+  esperar(f.animo, null);
+});
+
+test('fusionar trae el sueno que falta de un lado', () => {
+  const f = __sync.fusionarDia({ agua: 2 }, { sueno_horas: 6, sueno_calidad: 'mala', act: 5 });
+  esperar(f.sueno.horas, 6);
+  esperar(f.sueno.calidad, 'mala');
+  esperarQue(f.cambio, 'y avisa que hubo cambio, si no no se aplica');
+});
+
+test('con sueno de los dos lados gana el mas nuevo', () => {
+  const viejo = { sueno: { horas: 8 }, act: 10 };
+  const nuevo = { sueno_horas: 5, act: 20 };
+  esperar(__sync.fusionarDia(viejo, nuevo).sueno.horas, 5);
+  esperar(__sync.fusionarDia({ sueno: { horas: 8 }, act: 30 }, nuevo).sueno.horas, 8);
+});
+
+test('el animo no se pierde al fusionar', () => {
+  esperar(__sync.fusionarDia({ animo: 'bien' }, { act: 5 }).animo, 'bien');
+  esperar(__sync.fusionarDia({}, { animo: 'mal', act: 5 }).animo, 'mal');
+});
+
+test('una base sin migrar se detecta por el mensaje', () => {
+  esperarQue(__sync.faltaMigracion("Could not find the 'sueno_horas' column of 'dias' in the schema cache"), 'columna nueva');
+  esperarQue(!__sync.faltaMigracion('invalid input syntax for type integer'), 'y no cualquier 400');
+});
+
+testAsync('si la base esta sin migrar, se reintenta sin los campos nuevos', async () => {
+  const intentos = [];
+  const cliente = {
+    guardar: async (tabla, filas) => {
+      intentos.push(filas.map(f => Object.keys(f).join(',')));
+      if (intentos.length === 1) throw new Error("Could not find the 'animo' column of 'dias' in the schema cache");
+    }
+  };
+  await __sync.guardarDias(cliente, [__sync.diaAFila({ sueno: { horas: 7 }, animo: 'bien' }, '2026-09-01', 'k')]);
+  esperar(intentos.length, 2);
+  esperarQue(/animo/.test(intentos[0][0]), 'el primer intento los manda');
+  esperarQue(!/animo/.test(intentos[1][0]), 'el segundo no');
+});
+
+testAsync('un 400 que no es de migracion no se traga', async () => {
+  const cliente = { guardar: async () => { throw new Error('invalid input syntax for type integer: "28.6"'); } };
+  let cayo = false;
+  try { await __sync.guardarDias(cliente, [__sync.diaAFila({}, '2026-09-01', 'k')]); }
+  catch { cayo = true; }
+  esperarQue(cayo, 'ese error tiene que seguir subiendo');
+});
+
+test('el ayuno del dia sobrevive al arranque', () => {
+  // migrar() corre en cada load: lo que no esta en su lista se borra
+  const hoy = hoyISO();
+  const s = migrar({ perfil: {}, cfg: {}, dias: { [hoy]: { comidas: [], ayuno: { horas: 16.5, objetivo: 16, cumplido: true } } } });
+  esperar(s.dias[hoy].ayuno.horas, 16.5);
+  esperar(s.dias[hoy].ayuno.cumplido, true);
+});
+
+test('la porcion elegida sobrevive al arranque', () => {
+  const hoy = hoyISO();
+  const s = migrar({ perfil: {}, cfg: {}, dias: { [hoy]: { comidas: [{ id: 'a', ts: 1, kcal: 400, porcionFactor: 0.5 }] } } });
+  esperar(s.dias[hoy].comidas[0].porcionFactor, 0.5);
+});
+
+test('una comida sin porcion guardada vale por entera', () => {
+  const hoy = hoyISO();
+  const s = migrar({ perfil: {}, cfg: {}, dias: { [hoy]: { comidas: [{ id: 'a', ts: 1, kcal: 400 }] } } });
+  esperar(s.dias[hoy].comidas[0].porcionFactor, 1);
+});
+
+test('la porcion vuelve a la entera sin encadenarse', () => {
+  // media de media daba un cuarto: la base tiene que ser siempre la entera
+  const guardada = { titulo: 'Milanesa', kcal: 400, prot: 20, carb: 30, gras: 20, porcionFactor: 0.5 };
+  const base = escalarComida(guardada, 1 / guardada.porcionFactor);
+  esperar(base.kcal, 800);
+  esperar(escalarComida(base, 0.5).kcal, 400);
+  esperar(escalarComida(base, 1).kcal, 800);
+});
+
+test('los nutrientes viajan en el sync', () => {
+  const f = __sync.comidaAFila({ id: 'a', ts: 1, kcal: 100, fibra: 5, azucar: 8, sodio: 900, porcionFactor: 0.5 }, '2026-09-01', 'k');
+  esperar(f.fibra, 5);
+  esperar(f.azucar, 8);
+  esperar(f.sodio, 900);
+  esperar(f.porcion_factor, 0.5);
+  const v = __sync.filaAComida(f);
+  esperar(v.sodio, 900);
+  esperar(v.porcionFactor, 0.5);
+});
+
+test('una base sin las columnas nuevas no rompe la bajada', () => {
+  const v = __sync.filaAComida({ id: 'a', ts: 1, kcal: 100 });
+  esperar(v.fibra, 0);
+  esperar(v.porcionFactor, 1);
+});
+
+test('una comida sin fecha no crea el dia "undefined"', () => {
+  const estado = { perfil: {}, cfg: {}, borradas: [], dias: {} };
+  const r = __sync.aplicarRemoto(estado, { comidas: [{ id: 'c', ts: 1, titulo: 'Sin fecha', kcal: 50, act: 1 }] });
+  esperar(Object.keys(r.estado.dias).length, 0);
+  esperar(r.resumen.ignoradas, 1);
+});
+
+test('un dia con fecha rota se descarta', () => {
+  const estado = { perfil: {}, cfg: {}, borradas: [], dias: {} };
+  const r = __sync.aplicarRemoto(estado, { dias: [{ fecha: 'NaN-aN-aN', agua: 3, act: 9 }] });
+  esperar(Object.keys(r.estado.dias).length, 0);
+});
+
+test('el onboarding no borra el modo', () => {
+  const perfil = { modo: 'keto', plazo: '2026-12-14', peso: 90 };
+  const propuesto = { sexo: 'm', edad: 36, altura: 178, peso: 82, pesoObj: 75, actividad: 1.375, ritmo: 0.5, manual: null };
+  const fusionado = { ...perfil, ...propuesto };
+  esperar(fusionado.modo, 'keto');
+  esperar(fusionado.plazo, '2026-12-14');
+  esperar(fusionado.peso, 82);
+});
+
+test('una actividad nueva entra en favoritas si hay lugar', () => {
+  const favs = ['funcional', 'running'];
+  esperarQue(favs.length < 3, 'con dos hay lugar para la tercera');
+  favs.push('bici');
+  esperar(actividadesFavoritas({ cfg: { favoritasActividad: favs, actividades: [{ id: 'bici', nombre: 'Bici', met: 6, minutos: 30 }] } }).length, 3);
+});
+
+test('la porcion no apila prefijos en el titulo', () => {
+  // "½ Milanesa" al doble daba "2 ½ Milanesa", y de ahi "½ 2 ½ Milanesa".
+  // El prefijo se REEMPLAZA: escalar al doble sigue diciendo "2", que es
+  // correcto, pero el nombre del plato aparece una sola vez.
+  const media = escalarComida({ titulo: 'Milanesa', kcal: 800 }, 0.5);
+  esperar(media.titulo, '½ Milanesa');
+  const base = escalarComida(media, 2);
+  esperar(base.titulo, '2 Milanesa');
+  esperar(escalarComida(base, 0.5).titulo, '½ Milanesa');
+  // y el camino que hace de verdad el editor: reconstruir la base y volver
+  esperar(escalarComida(base, 1).titulo, 'Milanesa');
+});
+
+test('volver a la porcion entera devuelve el nombre limpio', () => {
+  esperar(escalarComida({ titulo: '¾ Tarta', kcal: 300 }, 1).titulo, 'Tarta');
+});
+
+test('un titulo que arranca con un numero no pierde el numero', () => {
+  // "2 huevos" no es una porcion: el prefijo es "2 " seguido de espacio y el
+  // nombre queda igual, asi que esto documenta el limite conocido
+  esperar(escalarComida({ titulo: 'Milanesa napolitana', kcal: 100 }, 1).titulo, 'Milanesa napolitana');
+});
