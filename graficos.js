@@ -10,10 +10,56 @@
    ahí aparece la tendencia.
    ============================================================ */
 
-/* `dias` es el lapso que cubre cada período, y existe para que los números que
-   acompañan a los gráficos hablen del mismo tramo que ellos: con "Semanas"
-   elegido, el resumen de arriba tiene que ser el de las ocho semanas, no el de
-   los últimos siete días. */
+/*
+ * Cuánto se mira hacia atrás. Uno solo para Historial y para Progreso.
+ *
+ * Antes cada pantalla preguntaba otra cosa: Progreso ofrecía "Días / Semanas /
+ * Meses" —que es cómo se agrupan los puntos— e Historial "7 / 30 / 90 / todo"
+ * —que es cuánto se mira—. Dos preguntas parecidas con respuestas distintas,
+ * y ninguna era la que uno se hace, que es simplemente cuánto tiempo mirar.
+ *
+ * La agrupación deja de preguntarse y se deduce: en tres meses no entran
+ * noventa puntos legibles, así que se agrupa por semana; en "todo", por mes.
+ */
+const RANGOS = [
+  { id: 7, nombre: '7 días', dias: 7, periodo: 'dia', detalle: 'Últimos 7 días' },
+  { id: 30, nombre: '1 mes', dias: 30, periodo: 'dia', detalle: 'Último mes' },
+  { id: 90, nombre: '3 meses', dias: 90, periodo: 'semana', detalle: 'Últimos 3 meses' },
+  { id: 0, nombre: 'Todo', dias: 0, periodo: 'mes', detalle: 'Todo el historial' }
+];
+
+/** El rango elegido, compartido por las dos pantallas. */
+function rangoActual() {
+  const g = Number(state.cfg.rango);
+  return RANGOS.find(r => r.id === g) || RANGOS[1];
+}
+
+/*
+ * El selector, igual en las dos pantallas.
+ *
+ * `alCambiar` corre después de guardar: cada pantalla redibuja lo suyo.
+ */
+function pintarSelRango(cont, alCambiar) {
+  if (!cont) return;
+
+  const actual = rangoActual();
+  cont.innerHTML = '';
+
+  for (const r of RANGOS) {
+    const b = document.createElement('button');
+    b.className = 'periodo' + (r.id === actual.id ? ' activo' : '');
+    b.textContent = r.nombre;
+    b.setAttribute('aria-pressed', String(r.id === actual.id));
+    b.onclick = (e) => {
+      if (e.detail > 0) e.currentTarget.blur();
+      state.cfg.rango = r.id;
+      save();
+      alCambiar();
+    };
+    cont.appendChild(b);
+  }
+}
+
 const PERIODOS = [
   { id: 'dia', nombre: 'Días', puntos: 14, dias: 14, detalle: 'Últimos 14 días' },
   { id: 'semana', nombre: 'Semanas', puntos: 8, dias: 56, detalle: 'Últimas 8 semanas' },
@@ -56,12 +102,14 @@ function etiquetaDePeriodo(clave, periodo) {
  * línea ahí, que es lo honesto — dibujar una recta entre dos pesos con una
  * semana de hueco es inventar una tendencia que nadie midió.
  */
-function seriesDe(dias, { periodo = 'dia', objetivo = null, hasta = hoyISO() } = {}) {
+function seriesDe(dias, { periodo = 'dia', objetivo = null, hasta = hoyISO(), lapso = 0 } = {}) {
   const p = periodoDe(periodo);
   const grupos = new Map();
 
-  // se recorre hacia atrás desde hoy para no depender de qué hay cargado
-  const diasHaciaAtras = periodo === 'dia' ? p.puntos : (periodo === 'semana' ? p.puntos * 7 : p.puntos * 31);
+  /* Se recorre hacia atrás desde hoy para no depender de qué hay cargado.
+     `lapso` lo fija el rango elegido; sin él se usa el largo propio del
+     período, que es como venía funcionando. */
+  const diasHaciaAtras = lapso || (periodo === 'dia' ? p.puntos : (periodo === 'semana' ? p.puntos * 7 : p.puntos * 31));
 
   for (let i = diasHaciaAtras - 1; i >= 0; i--) {
     const f = sumarDias(hasta, -i);
