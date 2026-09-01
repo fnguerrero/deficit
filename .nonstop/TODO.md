@@ -19,3 +19,14 @@
 
 - [x] Carga de ejercicio por minutos e intensidad · verif: 30 min moderado = 248 kcal, 60 fuerte = 743, y suma en vez de reemplazar
 - [x] Tarjetas de comida al tamaño de los momentos · verif: 61x61 las dos
+
+## Ciclo 16 — el tamagotchi en serio
+
+- [x] Eje demacrado bajo IMC 17: costillas, clavículas, mejillas hundidas · verif: tests + banco 10/10
+- [x] Extremo gordo cuadrático: 200 kg se ve de 200 · verif: banco 100/130/160/200 en grande
+- [x] Músculo dibujado (pecho + abs) solo sin panza · verif: 3 tests
+- [x] Pose del día: sed y cansancio encorvan · verif: test de poseDelDia
+- [x] Alias mal/normal para las caritas · verif: banco ánimo 5/5
+- [x] Movimiento: respiración con ritmo del día, parpadeo, cabeceo, zzz · verif: getComputedStyle en la app
+- [~] Revisión adversarial (workflow wq3ox92yv) y commit · verif: hallazgos confirmados arreglados, suite en verde
+- [x] Cintura: campo opcional al lado del peso y silueta · verif: 1005 tests en verde, banco 5/5, app en vivo a 375 px

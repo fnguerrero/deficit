@@ -23,7 +23,8 @@
 <script>
   const V = '?v=' + performance.timeOrigin.toFixed(0);
   for (const f of ['core', 'platos', 'mascota', 'habitos', 'cuerpo', 'juego',
-                   'transformacion', 'aura', 'cara', 'personaje', 'figura']) {
+                   'transformacion', 'aura', 'cara', 'personaje', 'relieve', 'figura',
+                   'cintura']) {
     document.write('<scr' + 'ipt src="' + f + '.js' + V + '"></scr' + 'ipt>');
   }
 </script>
@@ -46,14 +47,14 @@ function historial(entrenados, peso) {
 const HOY = hoyISO();
 const ALTURA = 178;
 
-function caso(titulo, detalle, { peso = 82, entrenados = 0, hoy = {} } = {}) {
+function caso(titulo, detalle, { peso = 82, entrenados = 0, hoy = {}, cintura = null } = {}) {
   const dias = historial(entrenados, peso);
   dias[HOY] = { ...dias[HOY], ...dia(hoy), peso };
 
-  const perfil = { altura: ALTURA, peso, sexo: 'm', edad: 36 };
-  const cuerpo = typeof cuerpoDelDia === 'function'
-    ? cuerpoDelDia(perfil, dias, HOY)
-    : cuerpoDe(perfil, dias, HOY);
+  const perfil = { altura: ALTURA, peso, sexo: 'm', edad: 36, cintura };
+  /* Hora fija a la tarde: el agua no se juzga antes de las 14, y el banco
+     tiene que dar lo mismo a la mañana que a la noche. */
+  const cuerpo = cuerpoDelDia(perfil, dias, HOY, { hora: 20 });
 
   const el = document.createElement('div');
   el.className = 'caso';
@@ -70,9 +71,25 @@ function fila(titulo, casos) {
 }
 
 /* --- peso: el rango entero que pidió el pedido --- */
-fila('Peso, de 40 a 200 kg', [40, 55, 70, 82, 100, 130, 160, 200].map(
+fila('Peso, de 40 a 200 kg', [40, 45, 50, 55, 70, 82, 100, 130, 160, 200].map(
   p => caso(p + ' kg', 'IMC ' + (imcDe(p, ALTURA) || '—'), { peso: p })
 ));
+
+/* --- los dos ejes de forma juntos: fibra vs fuerza --- */
+fila('Mismo peso, distinto entrenamiento', [
+  caso('82 kg quieto', '0 días', { peso: 82, entrenados: 0 }),
+  caso('82 kg entrenando', '10 días', { peso: 82, entrenados: 10 }),
+  caso('70 kg quieto', '0 días', { peso: 70, entrenados: 0 }),
+  caso('70 kg entrenando', '12 días', { peso: 70, entrenados: 12 })
+]);
+
+/* --- la cintura: el mismo peso repartido de otra forma ---
+     Es la fila que hay que mirar para saber si el dato sirve de algo: si los
+     cinco muñecos se ven iguales, la cinta métrica no llegó al dibujo. */
+fila('Cintura, todos con 82 kg', [
+  caso('Sin cargar', 'el dibujo de siempre', { peso: 82 }),
+  ...[74, 84, 94, 106].map(c => caso(c + ' cm', 'ICA ' + icaDe(c, ALTURA), { peso: 82, cintura: c }))
+]);
 
 /* --- ejercicio --- */
 fila('Ejercicio: días entrenados de los últimos 14', [0, 2, 4, 7, 10, 14].map(
@@ -90,7 +107,7 @@ fila('Sueño', [3, 5, 6, 7, 8, 9].map(
 ));
 
 /* --- ánimo --- */
-fila('Ánimo', ['pesimo', 'mal', 'neutral', 'bien', 'genial'].map(
+fila('Ánimo', ['mal', 'flojo', 'normal', 'bien', 'genial'].map(
   a => caso(a, '', { hoy: { animo: a } })
 ));
 

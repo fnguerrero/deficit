@@ -40,7 +40,7 @@ function renderMascota() {
      nota al tocar un vaso. */
   const firmaSvg = [
     est.animo, fase.n, cuerpo.efectiva, cuerpo.musculatura,
-    cuerpo.hidratacion, cuerpo.descanso
+    cuerpo.hidratacion, cuerpo.descanso, cuerpo.forma, cuerpo.grasa
   ].join('|');
   if (cont.dataset.firma !== firmaSvg) {
     /* El SVG dibujado y no el sprite de imágenes: es el único de los dos que
@@ -58,6 +58,7 @@ function renderMascota() {
     fase.n ? `Fase ${fase.n}: ${fase.nombre}, por ${perfectos} días perfectos seguidos.` : '',
     cuerpo.hayDatos ? `Cuerpo dibujado con tu IMC de ${fmtNum(cuerpo.imc, 1)}.` : 'Sin peso cargado.',
     cuerpo.hidratacion < 0.4 ? 'Se lo ve seco: falta agua.' : '',
+    cuerpo.ica != null ? `Cintura de ${fmtNum(cuerpo.cintura)} cm: ${cuerpo.bandaCintura.nombre.toLowerCase()}.` : '',
     cuerpo.descanso < 0.55 ? 'Se lo ve cansado: falta sueño.' : ''
   ].filter(Boolean).join(' '));
   /*

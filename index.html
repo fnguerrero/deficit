@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=448">
+<link rel="stylesheet" href="styles.css?v=454">
 </head>
 <body>
 
@@ -365,6 +365,15 @@
         </label>
         <label>Peso objetivo (kg)
           <input type="number" id="pPesoObj" step="0.1" inputmode="decimal" placeholder="kg">
+        </label>
+        <!-- Opcional y sin frecuencia: no es un dato del dia. La cinta metrica
+             no se saca todos los dias y un centimetro son semanas. -->
+        <label class="campo-opcional">
+          <!-- El rotulo y su etiqueta van en el mismo span: el label es flex en
+               columna, asi que dos hijos sueltos se apilan en dos renglones. -->
+          <span>Cintura (cm) <span class="opcional">opcional</span></span>
+          <input type="number" id="pCintura" step="0.5" inputmode="decimal" placeholder="cm">
+          <span class="hint" id="cinturaHint">A la altura del ombligo, sin contraer. Cargala cuando quieras: el último valor queda.</span>
         </label>
         <!-- Cuándo llegás, acá y no al final de la pantalla: la fecha es la
              mitad del objetivo y estaba enterrada en la lista del cálculo. -->
@@ -1022,58 +1031,60 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=448"></script>
-<script src="core.js?v=448"></script>
-<script src="platos.js?v=448"></script>
-<script src="animar.js?v=448"></script>
-<script src="fotos.js?v=448"></script>
-<script src="calibracion.js?v=448"></script>
-<script src="modos.js?v=448"></script>
-<script src="arreglos.js?v=448"></script>
-<script src="habitos.js?v=448"></script>
-<script src="mascota.js?v=448"></script>
-<script src="cuerpo.js?v=448"></script>
-<script src="figura.js?v=448"></script>
-<script src="cara.js?v=448"></script>
-<script src="personaje.js?v=448"></script>
-<script src="sprite-datos.js?v=448"></script>
-<script src="sprite.js?v=448"></script>
-<script src="transformacion.js?v=448"></script>
-<script src="aura.js?v=448"></script>
-<script src="juego.js?v=448"></script>
-<script src="sonidos.js?v=448"></script>
-<script src="voz.js?v=448"></script>
-<script src="graficos.js?v=448"></script>
-<script src="plazo.js?v=448"></script>
-<script src="compartir.js?v=448"></script>
-<script src="sugerencias.js?v=448"></script>
-<script src="analisis.js?v=448"></script>
-<script src="chequeos.js?v=448"></script>
-<script src="claude.js?v=448"></script>
-<script src="productos.js?v=448"></script>
-<script src="sync.js?v=448"></script>
-<script src="estado-sync.js?v=448"></script>
-<script src="auth.js?v=448"></script>
-<script src="app.js?v=448"></script>
-<script src="ui/general.js?v=448"></script>
-<script src="ui/hoy.js?v=448"></script>
-<script src="ui/dia.js?v=448"></script>
-<script src="ui/objetivos.js?v=448"></script>
-<script src="ui/tarjeta.js?v=448"></script>
-<script src="ui/logros.js?v=448"></script>
-<script src="ui/comidas.js?v=448"></script>
-<script src="ui/edicion.js?v=448"></script>
-<script src="ui/escaner.js?v=448"></script>
-<script src="ui/asistente.js?v=448"></script>
-<script src="ui/historial.js?v=448"></script>
-<script src="ui/progreso.js?v=448"></script>
-<script src="ui/perfil.js?v=448"></script>
-<script src="ui/sincronizacion.js?v=448"></script>
-<script src="ui/cuenta.js?v=448"></script>
-<script src="ui/calibracion.js?v=448"></script>
-<script src="ui/actividades.js?v=448"></script>
-<script src="ui/recordatorios.js?v=448"></script>
-<script src="ui/ajustes.js?v=448"></script>
-<script src="arranque.js?v=448"></script>
+<script src="config.js?v=454"></script>
+<script src="core.js?v=454"></script>
+<script src="platos.js?v=454"></script>
+<script src="animar.js?v=454"></script>
+<script src="fotos.js?v=454"></script>
+<script src="calibracion.js?v=454"></script>
+<script src="modos.js?v=454"></script>
+<script src="arreglos.js?v=454"></script>
+<script src="habitos.js?v=454"></script>
+<script src="mascota.js?v=454"></script>
+<script src="cuerpo.js?v=454"></script>
+<script src="cintura.js?v=454"></script>
+<script src="figura.js?v=454"></script>
+<script src="cara.js?v=454"></script>
+<script src="personaje.js?v=454"></script>
+<script src="relieve.js?v=454"></script>
+<script src="sprite-datos.js?v=454"></script>
+<script src="sprite.js?v=454"></script>
+<script src="transformacion.js?v=454"></script>
+<script src="aura.js?v=454"></script>
+<script src="juego.js?v=454"></script>
+<script src="sonidos.js?v=454"></script>
+<script src="voz.js?v=454"></script>
+<script src="graficos.js?v=454"></script>
+<script src="plazo.js?v=454"></script>
+<script src="compartir.js?v=454"></script>
+<script src="sugerencias.js?v=454"></script>
+<script src="analisis.js?v=454"></script>
+<script src="chequeos.js?v=454"></script>
+<script src="claude.js?v=454"></script>
+<script src="productos.js?v=454"></script>
+<script src="sync.js?v=454"></script>
+<script src="estado-sync.js?v=454"></script>
+<script src="auth.js?v=454"></script>
+<script src="app.js?v=454"></script>
+<script src="ui/general.js?v=454"></script>
+<script src="ui/hoy.js?v=454"></script>
+<script src="ui/dia.js?v=454"></script>
+<script src="ui/objetivos.js?v=454"></script>
+<script src="ui/tarjeta.js?v=454"></script>
+<script src="ui/logros.js?v=454"></script>
+<script src="ui/comidas.js?v=454"></script>
+<script src="ui/edicion.js?v=454"></script>
+<script src="ui/escaner.js?v=454"></script>
+<script src="ui/asistente.js?v=454"></script>
+<script src="ui/historial.js?v=454"></script>
+<script src="ui/progreso.js?v=454"></script>
+<script src="ui/perfil.js?v=454"></script>
+<script src="ui/sincronizacion.js?v=454"></script>
+<script src="ui/cuenta.js?v=454"></script>
+<script src="ui/calibracion.js?v=454"></script>
+<script src="ui/actividades.js?v=454"></script>
+<script src="ui/recordatorios.js?v=454"></script>
+<script src="ui/ajustes.js?v=454"></script>
+<script src="arranque.js?v=454"></script>
 </body>
 </html>

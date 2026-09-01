@@ -13,6 +13,7 @@ function renderPerfil() {
   $('pAltura').value = p.altura ?? '';
   $('pPeso').value = p.peso ?? '';
   $('pPesoObj').value = p.pesoObj ?? '';
+  $('pCintura').value = p.cintura ?? '';
   $('pActividad').value = p.actividad;
   /* Con un plazo puesto, el ritmo salió de la fecha y no de la lista: mostrar
      "0,5 kg/semana" ahí sería mentir sobre de dónde vino el número. */
@@ -38,6 +39,15 @@ function renderPerfil() {
     ['Pérdida estimada', `${fmtNum(calc.kgSemana, 2)} kg/semana`],
     ['Proteínas / Carbos / Grasas', `${fmtNum(calc.macros.prot)} / ${fmtNum(calc.macros.carb)} / ${fmtNum(calc.macros.gras)} g`]
   ];
+  /* El indice cintura-altura, solo si cargaste la cintura. Es la lectura seria
+     del dato: predice riesgo metabolico mejor que el IMC porque mira DONDE esta
+     la grasa, y el umbral —0,5— es el mismo para cualquier contextura. */
+  const ica = icaDe(p.cintura, p.altura);
+  if (ica != null) {
+    const b = bandaICA(ica);
+    filas.push(['Cintura sobre altura', `${fmtNum(ica, 2)} — ${b.nombre}`]);
+  }
+
   if (calc.semanas) {
     const meta = new Date(Date.now() + calc.semanas * 7 * 86400000)
       .toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -60,7 +70,7 @@ function renderPerfil() {
 
 /* ---------------- perfil ---------------- */
 
-const CAMPOS_PERFIL = { edad: 'pEdad', altura: 'pAltura', peso: 'pPeso', pesoObj: 'pPesoObj', manual: 'pManual' };
+const CAMPOS_PERFIL = { edad: 'pEdad', altura: 'pAltura', peso: 'pPeso', pesoObj: 'pPesoObj', cintura: 'pCintura', manual: 'pManual' };
 
 function mostrarErroresPerfil(errores) {
   for (const [campo, id] of Object.entries(CAMPOS_PERFIL)) {
@@ -93,6 +103,7 @@ $('btnGuardarPerfil').onclick = () => {
     altura: num('pAltura'),
     peso: num('pPeso'),
     pesoObj: num('pPesoObj'),
+    cintura: num('pCintura'),
     actividad: parseFloat($('pActividad').value),
     /* "fecha" no es un ritmo: el que vale es el que despejó el plazo, que ya
        quedó guardado al elegir la fecha. */

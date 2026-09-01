@@ -253,7 +253,8 @@ test('cada animo tiene cara y pose, y la de furia no es un animo', () => {
 });
 
 test('cada animo tiene su pose', () => {
-  esperar(Object.keys(POSES).length, 8);
+  // 8 de siempre + los alias "mal" y "normal" de las caritas del selector
+  esperar(Object.keys(POSES).length, 10);
   esperarQue(POSES.cansado.hombros > POSES.neutral.hombros, 'cansado se hunde');
   esperarQue(POSES.genial.hombros < POSES.neutral.hombros, 'genial se estira');
 });
@@ -299,7 +300,8 @@ test('ningun path sale con doble signo', () => {
   for (const a of Object.keys(CARAS)) {
     for (const c of [null, 0, .5, 1]) {
       const svg = svgPersonaje(a, 96, c == null ? null : { efectiva: c, musculatura: c });
-      esperarQue(!svg.includes('--'), a + ' con ' + c + ': doble signo en un path');
+      // --resp es una variable CSS del tag svg, no un path: se descuenta
+      esperarQue(!svg.replace(/--resp/g, '').includes('--'), a + ' con ' + c + ': doble signo en un path');
       esperarQue(!/[\d.]-\d/.test(svg.replace(/e-\d/g, '')), a + ' con ' + c + ': numeros pegados');
     }
   }
@@ -972,7 +974,7 @@ test('ninguna fase genera NaN ni doble signo', () => {
     for (const c of [null, 0, 1]) {
       const svg = svgPersonaje('genial', 96, c == null ? null : { efectiva: c, musculatura: c }, f);
       esperarQue(!/NaN|undefined/.test(svg), 'fase ' + f.n + ' con ' + c);
-      esperarQue(!svg.includes('--'), 'fase ' + f.n + ' con ' + c + ': doble signo');
+      esperarQue(!svg.replace(/--resp/g, '').includes('--'), 'fase ' + f.n + ' con ' + c + ': doble signo');
     }
   }
 });
@@ -3531,4 +3533,188 @@ test('sin minutos o sin peso no se inventa un numero', () => {
 test('una intensidad que no existe cae en la del medio', () => {
   esperar(intensidadDe('nada').id, 'medio');
   esperar(intensidadDe('fuerte').met, 9);
+});
+
+/* ---------------- el tamagotchi, segunda pasada ---------------- */
+
+test('por debajo de IMC 17 arranca el demacrado', () => {
+  esperar(demacradoDe(22), 0);
+  esperar(demacradoDe(17), 0);
+  esperar(demacradoDe(15), 0.5);
+  esperar(demacradoDe(13), 1);
+  esperar(demacradoDe(10), 1);
+  esperar(demacradoDe(null), 0);
+});
+
+test('el demacrado achica el cuerpo mas alla del clamp', () => {
+  const normal = medidasDe(0, 0, 0, 0);
+  const hueso = medidasDe(0, 0, 0, 1);
+  esperarQue(hueso.brazo < normal.brazo, 'brazos de palo');
+  esperarQue(hueso.pierna < normal.pierna, 'piernas de palo');
+  esperarQue(hueso.caraRx < normal.caraRx, 'cara chupada');
+});
+
+test('el extremo gordo crece mas que lineal', () => {
+  const medio = medidasDe(0.5, 0);
+  const tope = medidasDe(1, 0);
+  // si fuera lineal, doblar c doblaria el delta; el cuadratico lo pasa
+  esperarQue((tope.cintura - 11.5) > 2 * (medio.cintura - 11.5), 'la segunda mitad pega el doble');
+});
+
+test('cuerpoDelDia trae el demacrado', () => {
+  const hoy = '2026-09-01';
+  const c = cuerpoDelDia({ altura: 178, peso: 40 }, { [hoy]: { comidas: [], peso: 40 } }, hoy, { hora: 20 });
+  esperarQue(c.demacrado > 0.9, '40 kg en 1,78 m es esqueletico: ' + c.demacrado);
+});
+
+test('el svg dibuja costillas al esqueletico y no al normal', () => {
+  const flaco = svgPersonaje('neutral', 96, { efectiva: 0, musculatura: 0, demacrado: 1 });
+  const normal = svgPersonaje('neutral', 96, { efectiva: 0.4, musculatura: 0 });
+  esperarQue(/class="costillas"/.test(flaco), 'con costillas');
+  esperarQue(/class="chupada"/.test(flaco), 'y mejillas hundidas');
+  esperarQue(!/class="costillas"/.test(normal), 'el normal no');
+});
+
+test('el svg marca musculo al entrenado y no al quieto', () => {
+  const fuerte = svgPersonaje('neutral', 96, { efectiva: 0.3, musculatura: 0.9 });
+  const quieto = svgPersonaje('neutral', 96, { efectiva: 0.3, musculatura: 0 });
+  esperarQue(/class="musculo"/.test(fuerte), 'abs y pecho marcados');
+  esperarQue(!/class="musculo"/.test(quieto), 'el quieto no');
+});
+
+test('la panza grande tapa los abs aunque haya fuerza', () => {
+  const gordo = svgPersonaje('neutral', 96, { efectiva: 0.8, musculatura: 0.9 });
+  esperarQue(!/class="musculo"/.test(gordo), 'unos abs sobre la panza serian mentira');
+});
+
+test('el muneco respira siempre y parpadea', () => {
+  const svg = svgPersonaje('neutral', 96, { efectiva: 0.4 });
+  esperarQue(/anim-respira/.test(svg), 'respira');
+  esperarQue(/anim-parpado/.test(svg), 'parpadea');
+  esperarQue(/--resp:/.test(svg), 'con su ritmo');
+});
+
+test('hecho polvo respira lento y cabecea', () => {
+  const roto = svgPersonaje('neutral', 96, { efectiva: 0.4, descanso: 0.1 });
+  const pleno = svgPersonaje('neutral', 96, { efectiva: 0.4, descanso: 1 });
+  esperarQue(/anim-cabecea/.test(roto) && /--resp:5/.test(roto), 'cabecea y respira largo: ' + roto.match(/--resp:[^"]+/));
+  esperarQue(!/class="anim-cabecea"/.test(pleno) && /--resp:3\.0s/.test(pleno), 'descansado respira corto');
+});
+
+test('el cansancio serio pone las zzz', () => {
+  const roto = svgPersonaje('bien', 96, { efectiva: 0.4, descanso: 0.2 });
+  esperarQue(/anim-zzz/.test(roto), 'las z flotando');
+});
+
+test('la sed y el cansancio encorvan la pose', () => {
+  const base = POSES.neutral;
+  const seco = poseDelDia(base, { hidratacion: 0.1, descanso: 0.7 });
+  const cansado = poseDelDia(base, { hidratacion: 0.7, descanso: 0.1 });
+  const pleno = poseDelDia(base, { hidratacion: 1, descanso: 1 });
+  esperarQue(seco.inclina > base.inclina, 'la sed inclina');
+  esperarQue(cansado.hombros > base.hombros, 'el cansancio baja los hombros');
+  esperar(pleno, base);
+});
+
+test('los animos de las caritas tienen cara propia', () => {
+  esperarQue(CARAS.mal && CARAS.mal.boca === 'triste', '"mal" no cae a neutral');
+  esperarQue(CARAS.normal && POSES.normal, '"normal" existe');
+});
+
+/* ---------------- la cintura ---------------- */
+
+test('el indice cintura-altura y sus bandas', () => {
+  esperar(icaDe(89, 178), 0.5);
+  esperar(icaDe(80, 178), 0.449);
+  esperar(bandaICA(icaDe(80, 178)).id, 'sano');
+  esperar(bandaICA(icaDe(95, 178)).id, 'riesgo');
+  esperar(bandaICA(icaDe(110, 178)).id, 'alto');
+  /* Sin dato no hay indice, y una cinta de 300 cm es un error de tipeo. */
+  esperar(icaDe(null, 178), null);
+  esperar(icaDe(300, 178), null);
+  esperar(icaDe(89, null), null);
+});
+
+test('la forma sale de apartarse de la cintura esperada, no de la cintura sola', () => {
+  /* 82,5 kg en 1,78 m son IMC 26: se espera una cintura de unos 91 cm. */
+  const imc = imcDe(82.5, 178);
+  const espera = +(icaEsperado(imc) * 178).toFixed(0);
+  esperarQue(Math.abs(espera - 91) <= 2, 'la esperada para IMC 26: ' + espera);
+
+  esperarQue(Math.abs(formaDe(espera, 178, imc)) < 0.05, 'en la esperada, la forma es cero');
+  esperarQue(formaDe(espera + 12, 178, imc) > 0.7, 'doce centimetros de mas es panza');
+  esperarQue(formaDe(espera - 12, 178, imc) < -0.7, 'doce de menos, el peso esta en otro lado');
+  /* Y el mismo numero de cintura significa cosas distintas segun el peso: 91 cm
+     en alguien de 62 kg es mucho, y en alguien de 105 kg es poco. */
+  esperarQue(formaDe(91, 178, imcDe(62, 178)) > 0.5, '91 cm siendo flaco es panza');
+  esperarQue(formaDe(91, 178, imcDe(105, 178)) < -0.5, '91 cm siendo grande es estar compacto');
+});
+
+test('sin cintura cargada el dibujo no cambia en nada', () => {
+  const perfil = { altura: 178, peso: 82.5 };
+  const cuerpo = cuerpoDe(perfil, diasCuerpo(), HOY_CUERPO);
+  esperar(cuerpo.cintura, null);
+  esperar(cuerpo.ica, null);
+  esperar(cuerpo.forma, 0);
+  esperar(medidasDe(cuerpo.efectiva, 0, 0, 0, cuerpo.forma), medidasDe(cuerpo.efectiva, 0, 0, 0));
+});
+
+test('la cintura afina o ensancha la silueta con el mismo peso', () => {
+  const base = { altura: 178, peso: 82.5 };
+  const sin = cuerpoDe(base, diasCuerpo(), HOY_CUERPO);
+  const panzon = cuerpoDe({ ...base, cintura: 105 }, diasCuerpo(), HOY_CUERPO);
+  const compacto = cuerpoDe({ ...base, cintura: 78 }, diasCuerpo(), HOY_CUERPO);
+
+  /* El peso es el mismo en los tres: lo unico que cambia es donde esta. */
+  esperar(panzon.imc, compacto.imc);
+  esperar(panzon.efectiva, compacto.efectiva);
+
+  const ancho = (c) => medidasDe(c.efectiva, 0, 0, c.demacrado, c.forma).cintura;
+  esperarQue(ancho(panzon) > ancho(sin) + 4, 'el panzon tiene que verse mas ancho');
+  esperarQue(ancho(compacto) < ancho(sin) - 4, 'el compacto, mas fino');
+});
+
+test('la panza real tapa los abs, y la cintura fina los deja ver', () => {
+  /* Con IMC 29 y musculatura llena, la contextura sola dejaba los abs al borde:
+     lo que decide es la cintura medida. */
+  const cuerpo = (cintura) => cuerpoDe(
+    { altura: 178, peso: 92, cintura }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO
+  );
+  const svg = (c) => svgPersonaje('neutral', 96, c);
+
+  esperarQue(!/class="musculo"/.test(svg(cuerpo(110))), 'con panza no se dibujan abs');
+  esperarQue(/class="musculo"/.test(svg(cuerpo(82))), 'con cintura fina, si');
+});
+
+test('la cintura del perfil manda sobre la de los dias', () => {
+  const dias = diasCuerpo();
+  dias[HOY_CUERPO] = { ...(dias[HOY_CUERPO] || {}), cintura: 99 };
+  esperar(ultimaCinturaConocida({ altura: 178, cintura: 84 }, dias, HOY_CUERPO), 84);
+  esperar(ultimaCinturaConocida({ altura: 178 }, dias, HOY_CUERPO), 99);
+  esperar(ultimaCinturaConocida({ altura: 178 }, {}, HOY_CUERPO), null);
+});
+
+test('una cintura fuera de rango se descarta en vez de deformar el muneco', () => {
+  const roto = cuerpoDe({ altura: 178, peso: 82.5, cintura: 12 }, diasCuerpo(), HOY_CUERPO);
+  esperar(roto.cintura, null);
+  esperar(roto.forma, 0);
+  esperar(validarPerfil({ edad: 40, altura: 178, peso: 82.5, cintura: 12 }).ok, false);
+  esperar(validarPerfil({ edad: 40, altura: 178, peso: 82.5, cintura: 89 }).ok, true);
+  /* Vacia no es un error: el campo es opcional. */
+  esperar(validarPerfil({ edad: 40, altura: 178, peso: 82.5, cintura: null }).ok, true);
+});
+
+test('la cintura medida le gana al IMC estimado', () => {
+  /* IMC 29 entrenando todos los dias: el descuento por musculo deja la
+     contextura en 0,28 y el muneco sale con abdominales marcados. Una cintura
+     de 110 cm dice que ahi hay panza, y una medida le gana a una estimacion. */
+  const con = cuerpoDe({ altura: 178, peso: 92, cintura: 110 }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO);
+  esperarQue(con.efectiva < 0.35, 'el IMC corregido decia poco: ' + con.efectiva);
+  esperarQue(con.grasa > 0.6, 'la cinta dice mucho: ' + con.grasa);
+  esperar(medidasDe(con.efectiva, 1, 0, 0, con.forma, con.grasa).cGrasa, con.grasa);
+
+  /* Y sin cintura, el IMC sigue siendo el sustituto. */
+  const sin = cuerpoDe({ altura: 178, peso: 92 }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO);
+  esperar(sin.grasa, null);
+  esperar(medidasDe(sin.efectiva, 1, 0, 0, sin.forma, sin.grasa).cGrasa, sin.efectiva);
 });

@@ -109,3 +109,95 @@ $('btnAgregarAct').onclick = () => {
     ? `${nombre} agregada`
     : `${nombre} agregada. Elegila en Ajustes para tenerla a mano`);
 };
+
+/* ============================================================
+   La carga del ejercicio del dia.
+
+   Vivia en ui/hoy.js y se mudo entera cuando ese archivo se paso de su
+   limite: esto es interaccion con actividades, que es lo que este archivo ya
+   hacia.
+   ============================================================ */
+
+
+/* Lo elegido en el modal, hasta que se toca Sumar. */
+let ejMinutos = 30;
+let ejIntensidad = 'medio';
+
+function renderEjercicio() {
+  const kcal = dia().ejercicio || 0;
+  $('ejercicioHoy').value = kcal || '';
+  $('ejercicioInfo').textContent = kcal
+    ? `Tu objetivo de hoy sube a ${fmtKcal(objetivoEfectivo(calcular()?.objetivo || 0, kcal))}.`
+    : 'Lo que quemes se suma al objetivo del día.';
+
+  pintarChips($('minutosEjercicio'), MINUTOS_EJERCICIO.map(m => ({
+    id: m, texto: m + ' min'
+  })), ejMinutos, (id) => { ejMinutos = id; renderEjercicio(); });
+
+  pintarChips($('intensidadEjercicio'), INTENSIDADES.map(i => ({
+    id: i.id, texto: i.nombre, detalle: i.detalle
+  })), ejIntensidad, (id) => { ejIntensidad = id; renderEjercicio(); });
+
+  /* El número antes de tocar nada: es lo que convierte "media hora moderada" en
+     algo que se puede comparar con lo que comiste. */
+  const peso = state.perfil.peso;
+  const suma = caloriasDeMovimiento(ejMinutos, ejIntensidad, peso);
+  const calc = $('ejercicioCalculo');
+  if (calc) {
+    calc.textContent = peso
+      ? `${fmtNum(suma)} kcal para tus ${fmtPeso(peso)}`
+      : 'Cargá tu peso en Perfil para estimar las calorías.';
+  }
+  const btn = $('btnSumarEjercicio');
+  if (btn) btn.disabled = !peso;
+}
+
+/* Una fila de chips con uno elegido. Se repite en minutos y en intensidad. */
+function pintarChips(cont, opciones, elegido, alTocar) {
+  if (!cont) return;
+  cont.innerHTML = '';
+  for (const o of opciones) {
+    const b = document.createElement('button');
+    b.className = 'chip' + (o.id === elegido ? ' activo' : '');
+    b.innerHTML = o.detalle
+      ? `${o.texto} <small>${o.detalle}</small>`
+      : o.texto;
+    b.setAttribute('aria-pressed', String(o.id === elegido));
+    b.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); alTocar(o.id); };
+    cont.appendChild(b);
+  }
+}
+
+/*
+ * Sumar, no reemplazar: si saliste a caminar a la mañana y a la tarde hiciste
+ * pesas, son dos ratos de movimiento y no uno que pisa al otro.
+ */
+$('btnSumarEjercicio').onclick = () => {
+  const peso = state.perfil.peso;
+  const suma = caloriasDeMovimiento(ejMinutos, ejIntensidad, peso);
+  if (!suma) { toast('Cargá tu peso en Perfil'); return; }
+
+  recordarCambio('el ejercicio');
+  const d = dia();
+  d.ejercicio = (d.ejercicio || 0) + suma;
+  d.act = Date.now();
+  save(); renderHoy();
+  toast(`+${fmtNum(suma)} kcal · ${ejMinutos} min ${intensidadDe(ejIntensidad).nombre.toLowerCase()}`);
+  cerrarObjetivo();
+};
+
+/*
+ * Guardar cierra el modal. El boton es el final del tramite: quien lo toca ya
+ * dijo todo lo que tenia que decir, y quedarse mirando la misma ventana con el
+ * dato adentro obliga a un segundo toque en la X para volver a ver el dia.
+ * El toast queda igual, asi que la confirmacion no se pierde al cerrar.
+ */
+$('btnEjercicio').onclick = () => {
+  const v = parseInt($('ejercicioHoy').value, 10);
+  if (isNaN(v) || v < 0 || v > 5000) { toast('Valor inválido'); return; }
+  recordarCambio('el ejercicio');
+  dia().ejercicio = v;
+  save(); renderHoy();
+  toast('Ejercicio guardado');
+  cerrarObjetivo();
+};

@@ -25,10 +25,18 @@ LIMITES = [
     # como el resto del archivo: partirlo por nueve lineas seria peor.
     ('habitos.js', 350),
     ('mascota.js', 400),
-    ('cuerpo.js', 250),
+    # +30 por el eje demacrado y el dia en el cuerpo: es la misma familia de
+    # traducciones dato->dibujo que ya vivia aca.
+    ('cuerpo.js', 300),
+    # la cintura salio de cuerpo.js: es el unico dato del cuerpo que hay que ir
+    # a medir a mano, y todo el resto se recalcula solo
+    ('cintura.js', 200),
     # el cuerpo entero: la cara y la transformacion ya salieron a sus propios
     # archivos, y partirlo mas dispersaria el dibujo en tres lugares
-    ('personaje.js', 580),
+    # +70 por musculo dibujado, costillas, postura del dia y animacion.
+    # -100 al salir el relieve del torso a relieve.js
+    ('personaje.js', 560),
+    ('relieve.js', 250),
     ('cara.js', 300),
     ('transformacion.js', 350),
     ('juego.js', 500),
