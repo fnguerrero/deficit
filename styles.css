@@ -119,9 +119,19 @@ body {
 main { padding: 0 14px; max-width: 620px; margin: 0 auto; min-width: 0; width: 100%; }
 
 /* ---------- tabs ---------- */
-.tab { display: none; animation: fade .18s ease; }
+/*
+ * UNA sola animación de entrada.
+ *
+ * `.tab` tenía `animation: fade` y encima el JS le agrega `tab-entrando` con
+ * otra casi igual. Como `repetirClase()` quita la clase y la vuelve a poner,
+ * se disparaban las dos en fila: dos fundidos desde opacidad 0, uno atrás del
+ * otro. Eso es el parpadeo al entrar a una pestaña y al volver.
+ *
+ * Queda `tab-entrando`, que es la que el JS controla y la que respeta el
+ * pedido de menos movimiento.
+ */
+.tab { display: none; }
 .tab.active { display: block; }
-@keyframes fade { from { opacity: 0; transform: translateY(4px); } }
 
 .tabbar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
