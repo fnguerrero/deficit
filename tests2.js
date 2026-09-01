@@ -3017,3 +3017,77 @@ test('con todo hecho no falta ninguno', () => {
   });
   esperar(pasos.filter(p => !p.hecho).length, 0);
 });
+
+/* ---------------- el plazo del objetivo ---------------- */
+
+const PERFIL_PLAZO = {
+  sexo: 'm', edad: 36, altura: 178, peso: 82.4,
+  actividad: 1.375, ritmo: 0.5, pesoObj: 75
+};
+const DESDE = '2026-09-01';
+
+test('la fecha de llegada sale del peso que falta y el ritmo', () => {
+  // 7,4 kg a 0,5 por semana son 14,8 semanas: 104 días
+  esperar(fechaDeLlegada(82.4, 75, 0.5, DESDE), '2026-12-14');
+});
+
+test('sin objetivo o ya cumplido no hay fecha', () => {
+  esperar(fechaDeLlegada(75, 75, 0.5, DESDE), null);
+  esperar(fechaDeLlegada(82.4, null, 0.5, DESDE), null);
+});
+
+test('un ritmo que va para el otro lado no da fecha', () => {
+  // querés bajar pero el ritmo es de subida: la cuenta daría una fecha pasada
+  esperar(fechaDeLlegada(82.4, 75, -0.5, DESDE), null);
+});
+
+test('un ritmo casi cero no da una fecha a diez años', () => {
+  esperar(fechaDeLlegada(82.4, 75, 0.01, DESDE), null);
+});
+
+test('el ritmo se despeja de la fecha', () => {
+  esperar(ritmoParaLlegar(82.4, 75, '2026-12-14', DESDE), 0.5);
+});
+
+test('menos de una semana no es un plazo', () => {
+  esperar(ritmoParaLlegar(82.4, 75, '2026-09-04', DESDE), null);
+});
+
+test('el ritmo maximo sale del margen hasta el piso', () => {
+  // tdee 2423, piso 1762 (el basal): 661 kcal de margen son 0,60 kg/semana
+  esperar(ritmoMaximoSeguro(PERFIL_PLAZO), 0.6);
+});
+
+test('una fecha holgada es alcanzable', () => {
+  const p = planParaFecha(PERFIL_PLAZO, '2026-12-14', DESDE);
+  esperar(p.alcanzable, true);
+  esperar(p.ritmo, 0.5);
+});
+
+test('una fecha apurada avisa y ofrece la mas cercana que si', () => {
+  const p = planParaFecha(PERFIL_PLAZO, '2026-10-20', DESDE);
+  esperar(p.alcanzable, false);
+  esperarQue(p.ritmo > p.ritmoMaximo, 'el ritmo pedido supera al maximo');
+  esperarQue(p.fechaMinima > '2026-10-20', 'la fecha posible es mas tarde: ' + p.fechaMinima);
+  esperarQue(p.kcalMinimo >= 1500, 'y no baja del piso: ' + p.kcalMinimo);
+});
+
+test('llegar tarde se cuenta en semanas', () => {
+  const v = veredictoDePlazo('2026-12-14', '2027-03-03');
+  esperar(v.estado, 'tarde');
+  esperar(v.semanas, 11);
+});
+
+test('adelantarse tambien se dice', () => {
+  const v = veredictoDePlazo('2026-12-14', '2026-10-15');
+  esperar(v.estado, 'adelantado');
+});
+
+test('una semana de diferencia es estar en fecha', () => {
+  // es la precision que da una balanza: no vale llamarlo atraso
+  esperar(veredictoDePlazo('2026-12-14', '2026-12-18').estado, 'en-fecha');
+});
+
+test('sin proyeccion no se inventa un veredicto', () => {
+  esperar(veredictoDePlazo('2026-12-14', null).estado, 'sin-datos');
+});
