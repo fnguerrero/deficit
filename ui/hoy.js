@@ -31,10 +31,18 @@ function renderHoy() {
   $('dateLabel').textContent = etiquetaFecha(fecha);
   $('nextDay').disabled = fecha >= hoyISO();
 
-  // al estar parado en otro día, que quede claro que lo que cargues va ahí
+  /*
+   * Estar parado en otro día se dice en la fecha misma, no en un cartel.
+   *
+   * El cartel ocupaba dos renglones y un botón para repetir lo que la fecha ya
+   * decía: si arriba dice "Ayer", estás en ayer. Ahora esa palabra se pone
+   * ámbar y se puede tocar para volver, que es todo lo que el cartel hacía.
+   */
   const esOtroDia = fecha !== hoyISO();
-  $('avisoDia').hidden = !esOtroDia;
-  if (esOtroDia) $('avisoDiaTxt').textContent = `Estás editando ${etiquetaFecha(fecha)}. Lo que cargues se guarda en ese día.`;
+  $('avisoDia').hidden = true;
+  $('dateLabel').classList.toggle('otro-dia', esOtroDia);
+  $('dateLabel').title = esOtroDia ? 'Lo que cargues se guarda en este día. Tocá para volver a hoy.' : '';
+  $('dateLabel').onclick = esOtroDia ? () => { fecha = hoyISO(); renderAll(); } : null;
 
   const calc = calcular();
   marcarAccionSugerida();
