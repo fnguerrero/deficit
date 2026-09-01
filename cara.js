@@ -34,6 +34,12 @@ function ojo(cx, cy, cara, r = 5.4) {
         fill="${PALETA.piel}" transform="translate(0 ${(-alto * 2 + cara.parpado * alto * 4).toFixed(1)})"/>`
     : '';
 
+  /* El parpadeo. Una elipse color piel que vive en escala 0 y aparece un
+     instante cada tantos segundos, por CSS: ver `anim-parpado` en styles.css.
+     Es lo que hace que el muñeco esté vivo aunque no pase nada. */
+  const parpadeo = `<ellipse class="anim-parpado" cx="${cx.toFixed(1)}" cy="${(cy - alto * 0.2).toFixed(1)}"
+      rx="${(ancho + 1).toFixed(1)}" ry="${(alto + 1.5).toFixed(1)}" fill="${PALETA.piel}"/>`;
+
   return `
     <path d="M${(cx - ancho).toFixed(1)} ${cy}
              q${ancho.toFixed(1)} ${(-alto * 1.6).toFixed(1)} ${(ancho * 2).toFixed(1)} 0
@@ -48,6 +54,7 @@ function ojo(cx, cy, cara, r = 5.4) {
       stroke="${PALETA.linea}" stroke-width="1.9" fill="none" stroke-linecap="round"/>
     ${cara.ojeras ? `<path d="M${(cx - r).toFixed(1)} ${(cy + alto * 1.9).toFixed(1)} q${r.toFixed(1)} ${(alto * 0.6).toFixed(1)} ${(r * 2).toFixed(1)} 0"
       stroke="${PALETA.pielSombra}" stroke-width="1.3" fill="none" stroke-linecap="round"/>` : ''}
+    ${parpadeo}
     ${parpado}`;
 }
 
@@ -116,6 +123,16 @@ function cabeza(med, cara, col, fase) {
         stroke="${PALETA.pielSombra}" stroke-width="2.1" fill="none" opacity=".85" stroke-linecap="round"/>`
     : '';
 
+  /* Las mejillas hundidas del cuerpo demacrado: dos sombras verticales que
+     hacen que la cara se lea chupada, no solo más angosta. */
+  const chupada = (med.d || 0) > 0.3
+    ? `<g class="chupada" stroke="${PALETA.pielSombra}" stroke-width="1.7" fill="none"
+        stroke-linecap="round" opacity="${(0.35 + med.d * 0.4).toFixed(2)}">
+        <path d="M${(60 - rx * 0.62).toFixed(1)} ${(cy + ry * 0.18).toFixed(1)} q${(rx * 0.16).toFixed(1)} ${(ry * 0.3).toFixed(1)} ${(rx * 0.3).toFixed(1)} ${(ry * 0.42).toFixed(1)}"/>
+        <path d="M${(60 + rx * 0.62).toFixed(1)} ${(cy + ry * 0.18).toFixed(1)} q${(-rx * 0.16).toFixed(1)} ${(ry * 0.3).toFixed(1)} ${(-rx * 0.3).toFixed(1)} ${(ry * 0.42).toFixed(1)}"/>
+      </g>`
+    : '';
+
   return `
     <path d="M${(60 - rx * 0.96).toFixed(1)} ${cy - 2} a4.4 4.4 0 0 0 0 9z" fill="${col.piel}"
       stroke="${PALETA.linea}" stroke-width="1.8"/>
@@ -125,6 +142,7 @@ function cabeza(med, cara, col, fase) {
     <path d="${perfil}" fill="${col.piel}" stroke="${PALETA.linea}" stroke-width="${LINEA}" stroke-linejoin="round"/>
     <path d="${sombraCara}" fill="${col.pielSombra}" opacity=".7"/>
     ${papada}
+    ${chupada}
 
     ${pelo(cy, rx, ry, fase)}
 
@@ -175,7 +193,7 @@ function anteojos(sep, ojoY, rx) {
 function adornos(cara) {
   let out = '';
   if (cara.zzz) {
-    out += `<g fill="${PALETA.linea}" opacity=".55" font-family="system-ui" font-weight="800">
+    out += `<g class="anim-zzz" fill="${PALETA.linea}" opacity=".55" font-family="system-ui" font-weight="800">
       <text x="90" y="30" font-size="13">z</text><text x="101" y="18" font-size="9">z</text></g>`;
   }
   if (cara.gota) {

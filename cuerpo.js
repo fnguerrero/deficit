@@ -90,6 +90,22 @@ function fueraDeEscala(imc) {
   return imc != null && imc > IMC_MAX;
 }
 
+/*
+ * Cuánto por DEBAJO del rango está el IMC, de 0 a 1.
+ *
+ * La contextura clampea en IMC 17: de ahí para abajo todos los cuerpos daban
+ * el mismo dibujo, y 40 kg en 1,78 m son IMC 12,6 — un cuerpo que tiene que
+ * verse esquelético, no "flaco como cualquiera". Es un eje aparte y aditivo
+ * a propósito: nadie con IMC 17 o más cambia un píxel por esto.
+ */
+const IMC_DEMACRADO = 13;
+
+function demacradoDe(imc) {
+  if (imc == null || imc >= IMC_MIN) return 0;
+  const t = (IMC_MIN - imc) / (IMC_MIN - IMC_DEMACRADO);
+  return +Math.min(1, Math.max(0, t)).toFixed(3);
+}
+
 /**
  * El último peso que se sabe de verdad.
  *
@@ -142,6 +158,8 @@ function cuerpoDe(perfil, dias, hasta = hoyISO(), { bonus = 0 } = {}) {
   const peso = ultimoPesoConocido(perfil, dias, hasta);
   const imc = imcDe(peso, perfil?.altura);
   const entrenados = diasEntrenados(dias, hasta);
+  const cintura = ultimaCinturaConocida(perfil, dias, hasta);
+  const ica = icaDe(cintura, perfil?.altura);
 
   /* El plus por días perfectos seguidos. Es chico y se va solo al cortar la
      racha: motiva sin mentir que cumplir un día ya te puso en forma. */
@@ -154,8 +172,15 @@ function cuerpoDe(perfil, dias, hasta = hoyISO(), { bonus = 0 } = {}) {
 
   return {
     peso, imc, entrenados, musculatura, contextura,
+    demacrado: demacradoDe(imc),
     /* La que usa el dibujo: la del IMC ya corregida por lo que entrenaste. */
     efectiva,
+    cintura, ica,
+    bandaCintura: bandaICA(ica),
+    /* Cuánta panza, medida. Manda sobre la contextura del IMC cuando existe. */
+    grasa: grasaDe(ica),
+    /* Dónde tenés el peso. 0 sin cintura cargada: el dibujo queda igual. */
+    forma: formaDe(cintura, perfil?.altura, imc),
     banda: bandaIMC(imc),
     hayDatos: contextura != null,
     aviso: avisoDeIMC(imc, musculatura, entrenados)

@@ -448,6 +448,8 @@ const LIMITES = {
   altura: { min: 100, max: 250, unidad: 'cm' },
   peso: { min: 30, max: 400, unidad: 'kg' },
   pesoObj: { min: 30, max: 400, unidad: 'kg' },
+  /* Opcional y sin fecha: no es un dato del día. Ver cinturaDe() en cuerpo.js. */
+  cintura: { min: 40, max: 200, unidad: 'cm' },
   manual: { min: 800, max: 6000, unidad: 'kcal' }
 };
 

@@ -261,6 +261,17 @@ input, select {
 }
 input:focus, select:focus { outline: none; border-color: var(--acc2); }
 .form-grid + button { margin-top: 14px; }
+
+/* La cintura ocupa las dos columnas: su ayuda es una linea entera y en media
+   grilla se partia en cuatro renglones. Lleva su rotulo de "opcional" porque un
+   campo vacio al lado de tres obligatorios se lee como algo que falta. */
+.campo-opcional { grid-column: 1 / -1; }
+.campo-opcional .opcional {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--dim); border: 1px solid var(--line); border-radius: 6px;
+  padding: 1px 5px; margin-left: 5px; vertical-align: 1px;
+}
+.campo-opcional .hint { margin: 0; }
 .peso-row { display: flex; gap: 8px; }
 .peso-row input { flex: 1; }
 
@@ -2025,3 +2036,40 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* El cálculo del rato de movimiento, antes de sumarlo. */
 .calculo-ej { margin: 10px 0 0; font-size: 13px; font-weight: 700; color: var(--txt); }
+
+/* ---------- el muñeco respira ----------
+   La respiración mueve torso, brazos y cabeza —las piernas quedan plantadas—
+   y su ritmo lo pone el día vía --resp: descansado 3 s, hecho polvo 5 s.
+   El parpadeo es una elipse color piel que vive en escala 0 y aparece un
+   instante: es lo que hace que el muñeco esté vivo aunque no pase nada. */
+.mascota-svg .anim-respira { animation: mascota-respira var(--resp, 3.4s) ease-in-out infinite; }
+@keyframes mascota-respira { 50% { transform: translateY(-1.2px); } }
+
+.mascota-svg .anim-parpado {
+  transform-box: fill-box; transform-origin: center;
+  transform: scaleY(0);
+  animation: mascota-parpadea 4.7s linear infinite;
+}
+@keyframes mascota-parpadea {
+  0%, 91%, 97%, 100% { transform: scaleY(0); }
+  93%, 95% { transform: scaleY(1); }
+}
+
+/* El cabeceo del que se está quedando dormido: asiente despacio y se endereza. */
+.mascota-svg .anim-cabecea {
+  transform-box: fill-box; transform-origin: 50% 88%;
+  animation: mascota-cabecea 5.2s ease-in-out infinite;
+}
+@keyframes mascota-cabecea {
+  0%, 100% { transform: rotate(0deg); }
+  35% { transform: rotate(3deg); }
+  55% { transform: rotate(-1.2deg); }
+}
+
+.mascota-svg .anim-zzz { animation: mascota-flota 2.6s ease-in-out infinite; }
+@keyframes mascota-flota { 50% { transform: translateY(-3px); opacity: .35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mascota-svg .anim-respira, .mascota-svg .anim-parpado,
+  .mascota-svg .anim-cabecea, .mascota-svg .anim-zzz { animation: none; }
+}

@@ -78,23 +78,44 @@ const LINEA = 2.4;
  * nada de lo que afina: una racha de días perfectos puede ponerte más grande,
  * nunca más flaco. Afinar la cintura por cumplir sería decirte que ya bajaste
  * de peso sin que la balanza haya dicho nada.
+ *
+ * `forma` sí puede afinar, y es la excepción que confirma la regla: no viene de
+ * haber cumplido nada sino de una cinta métrica. Va de -1 (cintura más chica
+ * que la que ese IMC hace esperar: el peso está en otro lado) a +1 (panza).
+ * En 0 —que es lo que da sin el dato— el dibujo queda exactamente como antes.
  */
-function medidasDe(contextura, musculatura, poder = 0) {
+function medidasDe(contextura, musculatura, poder = 0, demacrado = 0, forma = 0, grasa = null) {
   const c = contextura == null ? 0.42 : Math.min(1, Math.max(0, contextura));
   const m = Math.min(1, Math.max(0, musculatura || 0));
   const p = Math.min(1, Math.max(0, poder || 0));
+  /* Por debajo de IMC 17 la contextura ya clampeó en 0: este eje sigue
+     restando. A demacrado 1 (IMC 13, unos 40 kg) el cuerpo es un esqueleto:
+     brazos y piernas de palo, cuello fino, cara chupada. */
+  const d = Math.min(1, Math.max(0, demacrado || 0));
+  const fo = Math.min(1, Math.max(-1, Number(forma) || 0));
+
+  /* La contextura para lo que es GRASA, que gobierna la panza, los rollos y si
+     los abs se ven. El IMC dice cuánto pesás y la cintura dice cuánto de eso es
+     panza: con la misma balanza, uno lleva la remera tirante y el otro no.
+     Medida la cintura, manda la cintura; sin ella, el IMC hace de sustituto. */
+  const cGrasa = grasa == null
+    ? c
+    : Math.min(1, Math.max(0, Number(grasa)));
 
   return {
-    c, m, p,
+    c, m, p, d, fo, cGrasa,
     fuerza: Math.min(1, m + p),
-    hombro: 17 + c * 4 + m * 8 + p * 8,
-    pecho: 15.5 + c * 16 + m * 4 + p * 4,
-    cintura: 11.5 + c * 30 - m * 2,
-    cadera: 13.5 + c * 21,
-    brazo: 3.6 + c * 3.6 + (m + p) * 3.6,
-    pierna: 5.4 + c * 7 + (m + p) * 1.8,
-    cuello: 6 + c * 3 + (m + p) * 2.4,
-    caraRx: 15 + c * 7,
+    /* La segunda mitad del recorrido pega el doble: entre IMC 17 y 45 la
+       curva de siempre, y de ahí a 90 el cuerpo se va de verdad. Sin el
+       término cuadrático, 200 kg se veía "gordo como cualquiera". */
+    hombro: 17 + c * 4 + m * 8 + p * 8 - d * 3.5,
+    pecho: 15.5 + c * 16 + c * c * 5 + m * 4 + p * 4 - d * 4,
+    cintura: 11.5 + c * 30 + c * c * 8 - m * 2 - d * 3.2 + fo * 6,
+    cadera: 13.5 + c * 21 + c * c * 6 - d * 3,
+    brazo: 3.6 + c * 3.6 + c * c * 1.4 + (m + p) * 3.6 - d * 1.5,
+    pierna: 5.4 + c * 7 + c * c * 2.5 + (m + p) * 1.8 - d * 2.2,
+    cuello: 6 + c * 3 + c * c * 1.5 + (m + p) * 2.4 - d * 1.8,
+    caraRx: 15 + c * 7 + c * c * 2.5 - d * 2.4,
     caraRy: 18.6
   };
 }
@@ -105,7 +126,7 @@ function anchoEn(y, med) {
      Con la silueta interpolando derecho de la cintura a la cadera, el panzon
      tenia el perfil de un barril recto y la barriga era una mancha clara
      dibujada sobre una prenda que no se enteraba. */
-  const panza = med.cintura * (1 + Math.max(0, med.c - 0.45) * 0.4);
+  const panza = med.cintura * (1 + Math.max(0, med.cGrasa - 0.45) * 0.4);
   const puntos = [
     [Y.hombro, med.hombro], [Y.pecho, med.pecho],
     [Y.cintura, med.cintura], [Y.cintura + 6, panza], [Y.cadera, med.cadera]
@@ -175,7 +196,9 @@ const POSES = {
   cansado: { hombros: 4, cabeza: 4, inclina: 8, brazos: 5, piernas: 0 },
   seco: { hombros: 2, cabeza: 2, inclina: 4, brazos: 3, piernas: .1 },
   pesado: { hombros: 4, cabeza: 3, inclina: 5, brazos: 6, piernas: 0 },
-  triste: { hombros: 5, cabeza: 4, inclina: -4, brazos: 6, piernas: 0 }
+  triste: { hombros: 5, cabeza: 4, inclina: -4, brazos: 6, piernas: 0 },
+  mal: { hombros: 5, cabeza: 4, inclina: -4, brazos: 6, piernas: 0 },
+  normal: { hombros: 0, cabeza: 0, inclina: 0, brazos: -6, piernas: .25 }
 };
 
 /*
@@ -191,6 +214,11 @@ const CARAS = {
   seco: { ceja: 14, cejaY: 1, parpado: .15, boca: 'seca', mirada: [1, 0], gota: true },
   pesado: { ceja: 17, cejaY: 1.6, parpado: .3, boca: 'triste', mirada: [0, 1.8], ojeras: true },
   triste: { ceja: -20, cejaY: -.5, parpado: .15, boca: 'triste', mirada: [0, .5], lagrima: true },
+
+  /* Los ids de las caritas del selector de ánimo. Sin estos alias, "mal" y
+     "normal" caían a neutral y elegir el ánimo no cambiaba la cara. */
+  mal: { ceja: -18, cejaY: -.5, parpado: .2, boca: 'triste', mirada: [0, .6], lagrima: true },
+  normal: { ceja: 0, cejaY: 0, parpado: 0, boca: 'recta', mirada: [0, 0] },
 
   /* De la fase 2 para arriba la cara la manda la fase: cejas hacia adentro,
      ojos apretados y la boca gritando. */
@@ -229,6 +257,8 @@ function caraDelDia(base, cuerpo) {
     cara.ojeras = true;
     cara.parpado = Math.max(cara.parpado || 0, +(cansancio * 0.6).toFixed(2));
     cara.cejaY = (cara.cejaY || 0) + cansancio * 0.8;
+    /* Con el cansancio serio, las z flotando: son la señal universal. */
+    if (descanso < 0.35) cara.zzz = true;
   }
 
   if (agua < UMBRAL_SED) {
@@ -283,98 +313,6 @@ function posturaDePoder(base, fase) {
  * banda fina corrida hacia la derecha que hace de sombra dura. Es todo el cel
  * shading de brazos y piernas, sin una sola máscara.
  */
-/*
- * El relieve del torso.
- *
- * La grasa se dibuja como VOLUMEN que cuelga: una panza redonda por debajo de
- * la cintura, con su pliegue y sus rollos al costado. El musculo se dibuja como
- * SEPARACION entre piezas: pectorales, trapecios y la linea del abdomen.
- * Volumen abajo contra piezas arriba. Sin esa separacion los dos ejes hacen lo
- * mismo —ensanchar— y el torso del que entrena se ve igual de blando.
- */
-function volumen(med, col) {
-  let out = '';
-
-  /* ---- grasa ---- */
-  if (med.c > 0.42) {
-    const g = (med.c - 0.42) / 0.58;
-    const cy = Y.cintura + 1;
-    const rx = med.cintura * (0.68 + g * 0.16);
-    const ry = Math.min(Y.cintura + 8 - Y.pecho, 9 + g * 11);
-
-    /* Dos tonos, como el resto: la panza recibe luz arriba a la izquierda y
-       sombra abajo a la derecha. Con un solo tono era una mancha plana que se
-       leía como un cinturón, no como volumen. */
-    out += `<ellipse cx="${(60 - rx * 0.12).toFixed(1)}" cy="${(cy - 1).toFixed(1)}"
-        rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}"
-        fill="${mezclar(col.remera, '#ffffff', 0.18)}" opacity="${(0.55 + g * 0.3).toFixed(2)}"/>
-      <path d="M${(60 - rx * 0.1).toFixed(1)} ${(cy + ry * 0.92).toFixed(1)}
-        a${rx.toFixed(1)} ${ry.toFixed(1)} 0 0 0 ${(rx * 0.98).toFixed(1)} ${(-ry * 1.5).toFixed(1)}
-        a${(rx * 0.75).toFixed(1)} ${(ry * 0.9).toFixed(1)} 0 0 1 ${(-rx * 0.98).toFixed(1)} ${(ry * 1.5).toFixed(1)} z"
-        fill="${col.remeraOsc}" opacity="${(0.5 + g * 0.3).toFixed(2)}"/>`;
-
-    /* El pliegue de abajo: es lo que hace que la panza cuelgue en vez de ser
-       una pelota pintada sobre la remera. */
-    out += `<path d="M${(60 - rx * 0.82).toFixed(1)} ${(cy + ry * 0.5).toFixed(1)}
-        q${(rx * 0.82).toFixed(1)} ${(5 + g * 6).toFixed(1)} ${(rx * 1.64).toFixed(1)} 0"
-      stroke="${PALETA.linea}" stroke-width="1.7" fill="none" opacity="${(0.35 + g * 0.35).toFixed(2)}"
-      stroke-linecap="round"/>`;
-
-    /* Los rollos del costado, a partir de bastante grande. */
-    if (g > 0.45) {
-      out += [-1, 1].map(sg => `<path d="M${(60 + sg * med.cintura * 0.96).toFixed(1)} ${(Y.cintura - 8).toFixed(1)}
-          q${(sg * -3.5).toFixed(1)} 5 0 10"
-        stroke="${PALETA.linea}" stroke-width="1.5" fill="none" opacity=".4" stroke-linecap="round"/>`).join('');
-    }
-  }
-
-  /* ---- músculo ---- */
-  if (med.fuerza > 0.35) {
-    const f = (med.fuerza - 0.35) / 0.65;
-    /* Las líneas de músculo van en el color del contorno y no en el de la ropa:
-       con el tono de la remera se perdían contra la propia remera y el torso de
-       alguien que entrena se veía igual de liso que el de alguien que no. */
-    const l = `stroke="${PALETA.linea}" fill="none" stroke-linecap="round" opacity=".72"`;
-
-    /*
-     * Los pectorales: un arco por lado que sale del esternon y sube hacia la
-     * axila, mas el surco del medio. El arco tiene que empezar POR DEBAJO del
-     * escote (Y.hombro + 12): dibujado a la altura del pecho anatomico caia
-     * justo sobre el borde de la prenda y se leia como una arruga de la tela.
-     */
-    const yP = Y.pecho + 2;
-    out += [-1, 1].map(sg => `<path d="M60 ${(yP + 5).toFixed(1)}
-        Q${(60 + sg * med.pecho * 0.52).toFixed(1)} ${(yP + 8 + f * 3).toFixed(1)} ${(60 + sg * med.pecho * 0.88).toFixed(1)} ${(yP - 1).toFixed(1)}"
-      ${l} stroke-width="${(2.1 + f * 1.3).toFixed(1)}"/>`).join('');
-
-    out += `<path d="M60 ${(yP - 4).toFixed(1)} v${(9 + f * 4).toFixed(1)}"
-      ${l} stroke-width="${(2.2 + f * 1.4).toFixed(1)}"/>`;
-
-    /* Trapecios: las dos diagonales del cuello al hombro. Es el detalle que más
-       rápido lee como "entrena", incluso más que el ancho. */
-    out += [-1, 1].map(sg => `<path d="M${(60 + sg * med.cuello * 0.9).toFixed(1)} ${Y.hombro - 4}
-        L${(60 + sg * med.hombro * 0.82).toFixed(1)} ${(Y.hombro + 4 + f * 2).toFixed(1)}"
-      ${l} stroke-width="${(2 + f * 1.2).toFixed(1)}"/>`).join('');
-
-    /*
-     * El abdomen: la linea media y dos pares de transversales. Solo sin panza
-     * encima, porque un abdominal marcado debajo de una panza es mentira.
-     */
-    if (med.c < 0.6) {
-      const yA = yP + 12;
-      out += `<path d="M60 ${yA.toFixed(1)} v${(13 + f * 6).toFixed(1)}"
-        ${l} stroke-width="${(1.8 + f).toFixed(1)}"/>`;
-
-      out += [0, 1].map(k => [-1, 1].map(sg => `<path d="M${(60 + sg * 1.5).toFixed(1)} ${(yA + 5 + k * 7).toFixed(1)}
-          l${(sg * med.cintura * (0.46 - k * 0.06)).toFixed(1)} ${(-1 - k).toFixed(1)}"
-        ${l} stroke-width="${(1.5 + f * 0.8).toFixed(1)}"/>`).join('')).join('');
-    }
-  }
-
-  return out;
-}
-
-
 /*
  * La musculosa, en UNA sola pieza.
  *
@@ -502,6 +440,32 @@ function torso(med, col) {
  * mezclar, que son de donde salen el aura y el pelo de las fases.
  */
 
+/*
+ * La postura del día: el cansancio y la sed encorvan.
+ *
+ * La cara ya lo decía, pero de lejos lo que se lee primero es el cuerpo: los
+ * hombros caídos y la cabeza gacha se ven a cualquier tamaño. Retoca la pose
+ * del ánimo en vez de reemplazarla, igual que la cara.
+ */
+function poseDelDia(base, cuerpo) {
+  const descanso = cuerpo?.descanso ?? 0.7;
+  const agua = cuerpo?.hidratacion ?? 0.7;
+
+  const cansancio = Math.max(0, (0.5 - descanso) / 0.5);
+  const sed = Math.max(0, (0.4 - agua) / 0.4);
+  const caida = Math.max(cansancio, sed * 0.7);
+  if (!caida) return base;
+
+  return {
+    ...base,
+    hombros: base.hombros + caida * 4,
+    cabeza: base.cabeza + caida * 3,
+    inclina: base.inclina + caida * 6,
+    brazos: base.brazos + caida * 5,
+    piernas: Math.max(0, base.piernas - caida * 0.15)
+  };
+}
+
 function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const base = POSES[animo] || POSES.neutral;
   const f = fase && fase.n ? fase : null;
@@ -514,18 +478,21 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const med = medidasDe(
     cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
     cuerpo?.musculatura ?? 0,
-    f ? f.musculo : 0
+    f ? f.musculo : 0,
+    cuerpo?.demacrado ?? 0,
+    cuerpo?.forma ?? 0,
+    cuerpo?.grasa ?? null
   );
 
-  const pose = f ? posturaDePoder(base, f) : base;
+  const pose = f ? posturaDePoder(base, f) : poseDelDia(base, cuerpo);
 
   const apagado = APAGADOS[animo] || 0;
   /* La piel pierde color cuando falta agua: es lo que se ve de lejos, antes
      que la boca o cualquier detalle de la cara. */
-  const seco = Math.max(0, 0.75 - (cuerpo?.hidratacion ?? 0.7)) / 0.75;
+  const seco = Math.max(0, 0.72 - (cuerpo?.hidratacion ?? 0.7)) / 0.72;
   const col = {
-    piel: mezclar(PALETA.piel, PIEL_SECA, seco * 0.55),
-    pielSombra: mezclar(PALETA.pielSombra, PIEL_SECA_SOMBRA, seco * 0.55),
+    piel: mezclar(PALETA.piel, PIEL_SECA, seco * 0.8),
+    pielSombra: mezclar(PALETA.pielSombra, PIEL_SECA_SOMBRA, seco * 0.8),
     short: PALETA.short,
     shortOsc: PALETA.shortOsc,
     remera: mezclar(PALETA.remera, '#7d8a80', apagado),
@@ -535,8 +502,15 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const alto = Math.round(tam);
   const ancho = Math.round(tam * VB.w / VB.h);
 
+  /* El ritmo de la respiración lo pone el día: descansado respira tranquilo,
+     hecho polvo respira largo y pesado. Va como variable de CSS para que la
+     animación viva en styles.css, donde ya viven las del aura. */
+  const descansoAnim = cuerpo?.descanso ?? 0.7;
+  const resp = (3 + (1 - descansoAnim) * 2.2).toFixed(1);
+  const cabecea = !f && descansoAnim < 0.35;
+
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VB.x} ${VB.y} ${VB.w} ${VB.h}" width="${ancho}" height="${alto}"
-    class="mascota-svg${f ? ' fase-' + f.n : ''}" role="img"
+    class="mascota-svg${f ? ' fase-' + f.n : ''}" role="img" style="--resp:${resp}s"
     aria-label="Cómo venís: ${animo}${f ? ', en fase ' + f.n : ''}">
 
     ${aura(med, fase)}
@@ -546,13 +520,15 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
 
     ${piernas(med, col, pose)}
 
+    <g class="anim-respira">
     <g transform="translate(0 ${pose.hombros})">
       ${torso(med, col)}
       ${brazos(med, pose, col)}
       ${hombros(med, col)}
       <g transform="translate(0 ${pose.cabeza}) rotate(${pose.inclina} 60 ${Y.hombro - 4})">
-        ${cabeza(med, cara, col, fase)}
+        <g class="${cabecea ? 'anim-cabecea' : ''}">${cabeza(med, cara, col, fase)}</g>
       </g>
+    </g>
     </g>
 
     ${adornos(cara)}
