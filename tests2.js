@@ -3718,3 +3718,37 @@ test('la cintura medida le gana al IMC estimado', () => {
   esperar(sin.grasa, null);
   esperar(medidasDe(sin.efectiva, 1, 0, 0, sin.forma, sin.grasa).cGrasa, sin.efectiva);
 });
+
+test('la serie de cinturas sale de los dias, en orden y sin basura', () => {
+  const dias = {
+    '2026-05-01': { cintura: 100 },
+    '2026-03-06': { cintura: 104 },
+    '2026-04-01': { cintura: 102 },
+    '2026-04-15': { cintura: 12 },      // error de tipeo: no entra
+    '2026-04-20': { cintura: null },    // no medido
+    '2026-04-25': {},
+  };
+  const s = serieCinturas(dias);
+  esperar(s.length, 3);
+  esperar(s.map(p => p.f).join(','), '2026-03-06,2026-04-01,2026-05-01');
+  esperar(s.map(p => p.cm).join(','), '104,102,100');
+  esperar(serieCinturas({}).length, 0);
+  esperar(serieCinturas(null).length, 0);
+});
+
+test('la meta de cintura es la mitad de tu altura, no un numero inventado', () => {
+  esperar(cinturaObjetivo(178), 89);
+  esperar(cinturaObjetivo(160), 80);
+  esperar(cinturaObjetivo(null), null);
+  esperar(cinturaObjetivo(20), null);
+  /* Y es exactamente donde el indice cruza el umbral. */
+  esperar(icaDe(cinturaObjetivo(178), 178), 0.5);
+});
+
+test('migrar preserva la cintura del dia', () => {
+  /* Estaba fuera de la lista de campos, y como migrar corre en CADA arranque
+     la medicion se perdia al recargar: el grafico nunca llegaba a tener dos. */
+  const s = migrar({ dias: { '2026-03-06': { cintura: 104, comidas: [] } } });
+  esperar(s.dias['2026-03-06'].cintura, 104);
+  esperar(migrar({ dias: { '2026-03-06': { comidas: [] } } }).dias['2026-03-06'].cintura, null);
+});

@@ -26,6 +26,7 @@ function renderHistorial() {
   renderRecomendaciones();
   renderBusqueda();
   renderChartPeso();
+  renderChartCintura();
   renderProyeccion();
   renderComoVenis();
   renderProgresoMeta();
@@ -111,6 +112,75 @@ function renderChartPeso() {
   $('chartLeyenda').lastChild.textContent = todos.length > pesos.length
     ? ` tendencia (7 días) · ${fmtNum(todos.length)} registros`
     : ' tendencia (7 días)';
+}
+
+/* --- la cintura, cuando hay con qué dibujarla --- */
+
+/*
+ * La curva de la cinta métrica.
+ *
+ * Se parece a la del peso pero no es la misma: acá hay siete puntos en medio
+ * año y no ciento cincuenta, así que no lleva media móvil —promediar siete
+ * días cuando medís una vez por mes no promedia nada— y la línea une puntos
+ * separados por semanas, que en la cintura es exactamente lo que corresponde.
+ */
+function renderChartCintura() {
+  const todas = serieCinturas(state.dias);
+  const dias = rangoActual().dias;
+  const desde = dias ? sumarDias(hoyISO(), -(dias - 1)) : null;
+  const enRango = desde ? todas.filter(p => p.f >= desde) : todas;
+
+  /* El selector de rango está pensado para datos DIARIOS. La cintura se mide
+     una vez por mes, así que "7 días" o "1 mes" casi nunca tienen dos puntos y
+     la tarjeta desaparecía justo cuando había medio año de mediciones. Si el
+     rango elegido no alcanza, se muestran todas y la leyenda lo aclara. */
+  const recortada = enRango.length >= 2;
+  const serie = recortarSerie(recortada ? enRango : todas, 60);
+  const card = $('cardCintura');
+
+  /* Con menos de dos mediciones no hay curva y la tarjeta no aparece. Un dato
+     opcional no se pide con un cartel vacío ocupando pantalla. */
+  card.hidden = serie.length < 2;
+  if (serie.length < 2) return;
+
+  const svg = $('chartCintura');
+  svg.innerHTML = '';
+
+  const W = 320, H = 120, pad = 22;
+  const meta = cinturaObjetivo(state.perfil.altura);
+  const valores = serie.map(p => p.cm).concat(meta ? [meta] : []);
+  const min = Math.min(...valores), max = Math.max(...valores);
+  const span = (max - min) || 1;
+
+  const t0 = Date.parse(serie[0].f + 'T00:00:00');
+  const tramo = (Date.parse(serie.at(-1).f + 'T00:00:00') - t0) || 1;
+  const x = p => pad + ((Date.parse(p.f + 'T00:00:00') - t0) / tramo) * (W - pad * 2);
+  const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
+  const pts = serie.map(p => `${x(p).toFixed(1)},${y(p.cm).toFixed(1)}`).join(' ');
+
+  svg.appendChild(svgEl('polygon', { class: 'area', points: `${pad},${H - pad} ${pts} ${x(serie.at(-1))},${H - pad}` }));
+  svg.appendChild(svgEl('polyline', { class: 'line media', points: pts }));
+
+  /* La meta no la elige nadie a ojo: es la mitad de tu altura, que es el
+     umbral 0,5 del mismo índice que la app ya muestra en el perfil. */
+  if (meta) {
+    svg.appendChild(svgEl('line', { class: 'goal', x1: pad, x2: W - pad, y1: y(meta), y2: y(meta) }));
+    svg.appendChild(svgEl('text', { x: W - pad, y: y(meta) - 4, 'text-anchor': 'end' }, `${meta} cm · 0,5`));
+  }
+
+  serie.forEach(p => svg.appendChild(svgEl('circle', { class: 'dot', cx: x(p), cy: y(p.cm), r: 2.8 })));
+  svg.appendChild(svgEl('text', { x: pad, y: 12 }, `${fmtNum(serie[0].cm)} cm`));
+  svg.appendChild(svgEl('text', { x: W - pad, y: 12, 'text-anchor': 'end' }, `${fmtNum(serie.at(-1).cm)} cm`));
+
+  $('cinturaDelta').textContent = fmtDelta(+(serie.at(-1).cm - serie[0].cm).toFixed(1), 1, 'cm');
+
+  const ica = icaDe(serie.at(-1).cm, state.perfil.altura);
+  const cuantas = recortada
+    ? `${serie.length} mediciones`
+    : `${serie.length} mediciones, todas las que hay`;
+  $('cinturaLeyenda').textContent = ica == null
+    ? cuantas
+    : `${cuantas} · hoy ${fmtNum(ica, 2)} sobre tu altura — ${bandaICA(ica).nombre.toLowerCase()}`;
 }
 
 /* --- progreso hacia la meta --- */
