@@ -142,7 +142,6 @@ function renderHoy() {
   const ul = $('listaComidas');
   const comidas = dia().comidas;
   ul.innerHTML = '';
-  $('comidasCount').textContent = comidas.length;
   $('comidasVacio').hidden = comidas.length > 0;
 
   pintarComidasDelDia(comidas, ul);
@@ -611,7 +610,14 @@ function renderPesoTira() {
   if (!r) return;
 
   $('pesoTiraKg').textContent = fmtNum(r.actual, 1) + ' kg';
-  $('pesoTiraMeta').textContent = r.meta ? `objetivo ${fmtNum(r.meta, 1)}` : 'sin objetivo';
+  /* Y el IMC al lado, que es el número que le da sentido a los kilos: 90 kg
+     no dicen nada sin la altura. Sale del peso de hoy, no de la tendencia. */
+  const imc = imcDe(r.actual, state.perfil?.altura);
+  const banda = bandaIMC(imc);
+  const meta = r.meta ? `objetivo ${fmtNum(r.meta, 1)}` : 'sin objetivo';
+  const el2 = $('pesoTiraMeta');
+  el2.textContent = imc == null ? meta : `${meta} · IMC ${fmtNum(imc, 1)}`;
+  el2.title = imc == null ? '' : `IMC ${fmtNum(imc, 1)} — ${banda ? banda.nombre : ''}`;
 
   const barra = $('pesoTiraBarra');
   barra.style.width = (r.pct == null ? 0 : r.pct) + '%';

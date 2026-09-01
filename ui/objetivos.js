@@ -174,14 +174,11 @@ function renderObjetivos() {
   listosAhora = new Set(objetivosDelDia().filter(o => o.listo).map(o => o.id));
   const recien = [...listosAhora].filter(id => !yaEstaban.has(id));
 
-  /* El marcador arriba: cuántos van y, si falta uno solo, cuál. */
-  const lee = $('habitosLee');
-  if (lee) {
-    const r = resumenHabitos(objetivosDelDia());
-    lee.textContent = r.texto;
-    lee.className = 'habitos-lee' + (r.completo ? ' completo' : '');
-    lee.hidden = !r.texto;
-  }
+  /* Cuántos hábitos van, ahora en el título de la fila y no en un renglón
+     propio: los cinco casilleros ya dicen cuáles están y cuáles no, así que
+     era una segunda copia de lo mismo ocupando alto en la pantalla que tiene
+     que entrar entera. */
+  cont.title = resumenHabitos(objetivosDelDia()).texto || '';
 
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {

@@ -783,11 +783,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    un celular, o sea media pantalla para dos cosas que se leen de un vistazo. */
 .resumen { display: grid; grid-template-columns: minmax(0, 148px) 1fr; gap: 8px; align-items: stretch; }
 .resumen > .card { margin: 0; }
-.resumen .ring-card { display: flex; flex-direction: column; justify-content: center; padding: 6px; }
+.resumen .ring-card { display: flex; flex-direction: column; justify-content: center; padding: 10px 6px; }
 .resumen .ring-stats { display: flex; flex-direction: column; gap: 1px; margin-top: 6px; font-size: 10.5px; }
 .resumen .ring-stats > div { display: flex; justify-content: space-between; gap: 6px; }
 .resumen .ring-stats small { font-size: 9.5px; }
-.resumen .macros { padding: 8px 12px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.resumen .macros { padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 .resumen .macro-head { font-size: 11.5px; }
 
 /* Los tres números del día en una franja, a todo el ancho: en columna dentro de
@@ -806,11 +806,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    estructura de arriba queda siempre a la vista. */
 @media (max-width: 480px) {
   main { padding: 8px 10px 74px; }
-  #tab-hoy .card { margin-bottom: 5px; padding: 9px 12px; }
-  #tab-hoy .card-head { padding: 0 0 4px; }
+  #tab-hoy .card { margin-bottom: 8px; padding: 10px 12px; }
+  #tab-hoy .card-head { padding: 0 0 6px; }
   #tab-hoy .card-head h2 { font-size: 14px; }
   .acciones-fila { margin: 8px 0; }
-  .objetivos { margin-bottom: 4px; }
+  .objetivos { margin-bottom: 8px; }
   #listaComidas { max-height: 30vh; overflow-y: auto; }
   #cardComidas { margin-bottom: 6px; }
   .mas-opciones { padding: 8px; }
@@ -1881,8 +1881,6 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .macro-lee:empty { display: none; }
 
 /* El marcador de hábitos. Chiquito: acompaña a los casilleros, no compite. */
-.habitos-lee { margin: 0 0 5px; font-size: 11.5px; font-weight: 600; color: var(--txt2); }
-.habitos-lee.completo { color: var(--acc); }
 
 /* La tira del peso: el objetivo real de la app, en una línea.
    Es un botón porque lleva al historial, que es donde se mira la curva. */
