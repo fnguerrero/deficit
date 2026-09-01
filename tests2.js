@@ -1308,7 +1308,7 @@ test('proximaComida dice cual viene y cuanto falta', () => {
 
   esperar(a(8).id, 'almuerzo');
   esperar(a(8).dentroDe, 'desayuno');
-  esperar(a(10, 30).minutos, 30);
+  esperar(a(10, 30).minutos, 60);   // el almuerzo arranca 11:30
   esperar(a(13).id, 'merienda');
   esperar(a(17).id, 'cena');
 
@@ -2733,4 +2733,70 @@ test('el consejo saca por netos, no por totales', () => {
 test('con un macro sin cargar, el reparto no se juzga', () => {
   // sin grasa declarada la cuenta dice que falta grasa, pero es el dato el que falta
   esperar(repartoKeto({ kcal: 600, carb: 6, prot: 40 }, MODOS.keto), null);
+});
+
+/* --- los horarios se aprenden de las comidas cargadas (ciclo 12) --- */
+
+/* Un día con comidas a las horas que se le pidan. */
+function diaConHoras(fecha, horas) {
+  return { peso: null, agua: 0, ejercicio: 0, nota: '', comidas: horas.map(([momento, h, m], i) => {
+    const d = new Date(2026, 7, 20, h, m || 0);
+    return { id: fecha + i, ts: d.getTime(), momento, titulo: 'x', items: [],
+      kcal: 400, prot: 20, carb: 30, gras: 15, fibra: 3, azucar: 2, sodio: 300, notas: '', act: 1 };
+  }) };
+}
+
+test('la mediana ignora un valor suelto y raro', () => {
+  esperar(medianaDe([700, 720, 730, 740, 60]), 720, 'la comida de las 1 AM no arrastra el horario');
+  esperar(medianaDe([10, 20]), 15);
+});
+
+test('sin suficientes comidas, los horarios quedan como la tabla', () => {
+  const dias = { a: diaConHoras('a', [['almuerzo', 14], ['cena', 22]]) };
+  esperar(momentosSegun(dias), [...MOMENTOS].map(m => ({ ...m })).sort((a, b) => a.desde - b.desde));
+});
+
+test('con comidas suficientes, el corte se mueve a mitad de camino', () => {
+  const dias = {};
+  // desayuno 9:00 y almuerzo 14:00, cinco veces cada uno
+  for (let i = 0; i < 5; i++) dias['d' + i] = diaConHoras('d' + i, [['desayuno', 9], ['almuerzo', 14]]);
+
+  const m = momentosSegun(dias);
+  const desayuno = m.find(x => x.id === 'desayuno');
+  const almuerzo = m.find(x => x.id === 'almuerzo');
+
+  // el punto medio entre las 9 y las 14 son las 11:30
+  esperar(almuerzo.desde, 11 * 60 + 30);
+  esperar(desayuno.hasta, 11 * 60 + 29);
+});
+
+test('el corte sigue a horarios tardios', () => {
+  const dias = {};
+  // acá se almuerza a las 15 y se cena a las 23
+  for (let i = 0; i < 6; i++) dias['d' + i] = diaConHoras('d' + i, [['merienda', 18], ['cena', 23]]);
+
+  const m = momentosSegun(dias);
+  esperar(m.find(x => x.id === 'cena').desde, 20 * 60 + 30, 'sin merienda ni cena suficientes no se mueve');
+});
+
+test('con horas cruzadas no se mueve nada', () => {
+  const dias = {};
+  // una cena "a las 7 de la mañana" y un desayuno a las 10: los datos no sirven
+  for (let i = 0; i < 6; i++) dias['d' + i] = diaConHoras('d' + i, [['desayuno', 10], ['almuerzo', 7]]);
+  const m = momentosSegun(dias);
+  esperar(m.find(x => x.id === 'almuerzo').desde, 11 * 60 + 30, 'queda la tabla');
+});
+
+test('aprenderMomentos deja los horarios vigentes para momentoPorHora', () => {
+  const antes = momentoPorHora(11, 0);
+  const dias = {};
+  for (let i = 0; i < 5; i++) dias['d' + i] = diaConHoras('d' + i, [['desayuno', 7], ['almuerzo', 12]]);
+
+  aprenderMomentos(dias);
+  // el corte queda a las 9:30, así que las 11 ya son almuerzo
+  esperar(momentoPorHora(11, 0), 'almuerzo');
+  esperar(antes, 'desayuno', 'con la tabla, las 11 eran desayuno');
+
+  aprenderMomentos({});   // se deja como estaba para los demás tests
+  esperar(momentoPorHora(11, 0), 'desayuno');
 });

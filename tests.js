@@ -2020,15 +2020,17 @@ test('momentoPorHora cubre los cinco rangos', () => {
   esperar(momentoPorHora(2), 'snack');
 });
 
+/* Los horarios se corrigieron a los de acá: se almuerza 12:30-14 y se cena a
+   las 21, no a las 19:30. Ver MOMENTOS en platos.js. */
 test('momentoPorHora respeta los bordes', () => {
-  esperar(momentoPorHora(4, 59), 'snack');
-  esperar(momentoPorHora(5, 0), 'desayuno');
-  esperar(momentoPorHora(10, 59), 'desayuno');
-  esperar(momentoPorHora(11, 0), 'almuerzo');
-  esperar(momentoPorHora(15, 29), 'almuerzo');
-  esperar(momentoPorHora(15, 30), 'merienda');
-  esperar(momentoPorHora(19, 29), 'merienda');
-  esperar(momentoPorHora(19, 30), 'cena');
+  esperar(momentoPorHora(5, 59), 'snack');
+  esperar(momentoPorHora(6, 0), 'desayuno');
+  esperar(momentoPorHora(11, 29), 'desayuno');
+  esperar(momentoPorHora(11, 30), 'almuerzo');
+  esperar(momentoPorHora(16, 29), 'almuerzo');
+  esperar(momentoPorHora(16, 30), 'merienda');
+  esperar(momentoPorHora(20, 29), 'merienda');
+  esperar(momentoPorHora(20, 30), 'cena');
   esperar(momentoPorHora(23, 59), 'cena');
 });
 

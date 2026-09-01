@@ -4,6 +4,8 @@
    ============================================================ */
 
 aplicarTema();
+// los cortes entre desayuno, almuerzo y cena salen de tus horarios reales
+aprenderMomentos(state.dias);
 renderAll();
 programarRecordatorios();
 programarCambioDeDia();

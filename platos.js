@@ -6,18 +6,98 @@
  * cuánto de lo estimado se comió de verdad.
  */
 
+/*
+ * Los horarios de arranque, con criterio argentino.
+ *
+ * Acá se almuerza entre las 12:30 y las 14, y se cena a las 21 o más tarde.
+ * Los cortes anteriores —almuerzo a las 11, cena a las 19:30— venían de un
+ * horario que no es el de nadie de por acá: lo que comías a las 20 se guardaba
+ * como cena cuando casi siempre era otra cosa.
+ *
+ * Igual son solo el punto de partida. Apenas hay comidas cargadas, los cortes
+ * se recalculan con las horas de verdad: ver `momentosSegun()`.
+ */
 const MOMENTOS = [
-  { id: 'desayuno', nombre: 'Desayuno', articulo: 'el', icono: '☕', desde: 5 * 60, hasta: 10 * 60 + 59 },
-  { id: 'almuerzo', nombre: 'Almuerzo', articulo: 'el', icono: '🍽️', desde: 11 * 60, hasta: 15 * 60 + 29 },
-  { id: 'merienda', nombre: 'Merienda', articulo: 'la', icono: '🥐', desde: 15 * 60 + 30, hasta: 19 * 60 + 29 },
-  { id: 'cena', nombre: 'Cena', articulo: 'la', icono: '🌙', desde: 19 * 60 + 30, hasta: 23 * 60 + 59 },
-  { id: 'snack', nombre: 'Snack', articulo: 'el', icono: '🍎', desde: 0, hasta: 4 * 60 + 59 }
+  { id: 'desayuno', nombre: 'Desayuno', articulo: 'el', icono: '☕', desde: 6 * 60, hasta: 11 * 60 + 29 },
+  { id: 'almuerzo', nombre: 'Almuerzo', articulo: 'el', icono: '🍽️', desde: 11 * 60 + 30, hasta: 16 * 60 + 29 },
+  { id: 'merienda', nombre: 'Merienda', articulo: 'la', icono: '🥐', desde: 16 * 60 + 30, hasta: 20 * 60 + 29 },
+  { id: 'cena', nombre: 'Cena', articulo: 'la', icono: '🌙', desde: 20 * 60 + 30, hasta: 23 * 60 + 59 },
+  { id: 'snack', nombre: 'Snack', articulo: 'el', icono: '🍎', desde: 0, hasta: 5 * 60 + 59 }
 ];
 
+/*
+ * Los horarios que rigen ahora: los de la tabla, o los tuyos si ya se
+ * aprendieron. Se recalculan al arrancar y cada vez que se guarda una comida.
+ */
+let MOMENTOS_VIGENTES = MOMENTOS;
+
+/* Cinco comidas de un mismo momento alcanzan para saber a qué hora lo hacés.
+   Con menos, una cena tardía suelta correría el corte para todo el mes. */
+const MINIMO_PARA_APRENDER = 5;
+
+/** El valor del medio. Se usa la mediana y no el promedio justamente para que
+    una comida a las 3 de la mañana no arrastre el horario de la cena. */
+function medianaDe(lista) {
+  const orden = [...lista].sort((a, b) => a - b);
+  const m = Math.floor(orden.length / 2);
+  return orden.length % 2 ? orden[m] : Math.round((orden[m - 1] + orden[m]) / 2);
+}
+
+/**
+ * Los momentos con los cortes movidos a los horarios de la persona.
+ *
+ * De cada momento se toma la hora típica —la mediana de sus comidas— y el
+ * corte entre dos momentos queda a mitad de camino entre sus horas típicas.
+ * Si alguno todavía no tiene suficientes comidas, ese corte se deja como está:
+ * mejor un horario de tabla que uno inventado con tres datos.
+ */
+function momentosSegun(dias, base = MOMENTOS) {
+  const horas = {};
+
+  for (const d of Object.values(dias || {})) {
+    for (const c of d.comidas || []) {
+      if (!c.momento || !c.ts) continue;
+      const f = new Date(c.ts);
+      (horas[c.momento] = horas[c.momento] || []).push(f.getHours() * 60 + f.getMinutes());
+    }
+  }
+
+  const tipica = {};
+  for (const [id, lista] of Object.entries(horas)) {
+    if (lista.length >= MINIMO_PARA_APRENDER) tipica[id] = medianaDe(lista);
+  }
+
+  // en orden cronológico, que es como se suceden los cortes
+  const salida = [...base].map(m => ({ ...m })).sort((a, b) => a.desde - b.desde);
+
+  for (let i = 0; i < salida.length - 1; i++) {
+    const a = salida[i];
+    const b = salida[i + 1];
+    if (tipica[a.id] == null || tipica[b.id] == null) continue;
+
+    // si las horas típicas vienen cruzadas, los datos no sirven para mover nada
+    if (tipica[a.id] >= tipica[b.id]) continue;
+
+    const corte = Math.round((tipica[a.id] + tipica[b.id]) / 2);
+    if (corte <= a.desde || corte >= b.hasta) continue;
+
+    a.hasta = corte - 1;
+    b.desde = corte;
+  }
+
+  return salida;
+}
+
+/** Recalcula los horarios vigentes. Se llama al arrancar y al guardar. */
+function aprenderMomentos(dias) {
+  MOMENTOS_VIGENTES = momentosSegun(dias);
+  return MOMENTOS_VIGENTES;
+}
+
 /** Momento probable según la hora del día (0-23 y minutos). */
-function momentoPorHora(hora, minutos = 0) {
+function momentoPorHora(hora, minutos = 0, momentos = null) {
   const t = hora * 60 + minutos;
-  const m = MOMENTOS.find(x => t >= x.desde && t <= x.hasta);
+  const m = (momentos || MOMENTOS_VIGENTES).find(x => t >= x.desde && t <= x.hasta);
   return m ? m.id : 'snack';
 }
 
@@ -42,7 +122,9 @@ function proximaComida(ts = Date.now()) {
   const ahora = d.getHours() * 60 + d.getMinutes();
   const actual = momentoPorHora(d.getHours(), d.getMinutes());
 
-  const siguiente = MOMENTOS
+  /* Los vigentes, no la tabla: si tus horarios ya se aprendieron, "falta para
+     la cena" tiene que contar hasta TU hora de cenar. */
+  const siguiente = MOMENTOS_VIGENTES
     .filter(m => m.desde > ahora && m.id !== 'snack')
     .sort((a, b) => a.desde - b.desde)[0];
 
@@ -155,7 +237,7 @@ function faltaLaDeSiempre(dias, ahora = Date.now(), { minimoDias = 8, ratio = 0.
      con "d.getTime is not a function" en la primera llamada real. */
   const hoy = hoyISO(d);
   const momento = momentoPorHora(d.getHours(), d.getMinutes());
-  const m = MOMENTOS.find(x => x.id === momento);
+  const m = MOMENTOS_VIGENTES.find(x => x.id === momento);
 
   /* Recién cuando la franja va por la mitad: a las 11:05 todavía no se hace
      tarde para almorzar. */
