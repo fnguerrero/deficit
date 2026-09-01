@@ -1251,7 +1251,9 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* ---------- progreso ---------- */
 
-.periodos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+/* Los cuatro rangos en una fila. Con tres columnas, "Todo" caía solo a un
+   renglón aparte y se leía como si fuera otra cosa. */
+.periodos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
 .periodo {
   padding: 8px 4px; border-radius: 11px; border: 1px solid var(--line);
   background: var(--card); color: var(--txt2); font-size: 12.5px; font-weight: 600; cursor: pointer;
