@@ -8,6 +8,8 @@
    ============================================================ */
 
 function mostrarResultado(r) {
+  // La foto de como se abrio: es contra esto que se compara al salir.
+  if (typeof fijarHuella === 'function') fijarHuella();
   const desc = $('resDescripcion');
   desc.innerHTML = '';
   const inp = document.createElement('input');

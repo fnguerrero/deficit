@@ -118,12 +118,52 @@ function abrirModal() {
   abrirCapa('modal');
 }
 
-/** Hay algo cargado que se perdería al cerrar sin guardar. */
+/* Cómo estaba el editor cuando se abrió.
+
+   Antes se preguntaba si HABÍA datos, no si se habían CAMBIADO: al abrir una
+   comida existente para editarla los items ya vienen cargados, así que salir
+   sin tocar nada mostraba igual el cartel de descartar. Ahora se guarda una
+   huella al abrir y se compara. */
+let huellaAlAbrir = { de: null, txt: '' };
+
+function huellaDe(p) {
+  if (!p) return '';
+  const items = (p.items || []).map(i => [
+    String(i.nombre || '').trim(),
+    String(i.porcion || '').trim(),
+    Number(i.calorias) || 0,
+    Number(i.proteinas) || 0,
+    Number(i.carbohidratos) || 0,
+    Number(i.grasas) || 0
+  ].join('|'));
+  return [
+    String(p.titulo || '').trim(),
+    String(p.momento || ''),
+    String(p.notas || '').trim(),
+    String(p.fechaDestino || ''),
+    items.join('~')
+  ].join('§');
+}
+
+/* Se fija una sola vez por comida abierta: si el objeto es el mismo, la huella
+   no se toca aunque el editor se vuelva a dibujar, porque editar muta ese
+   mismo objeto y refijarla borraría justamente lo que se quiere detectar. */
+function fijarHuella() {
+  if (pendiente !== huellaAlAbrir.de) {
+    huellaAlAbrir = { de: pendiente, txt: huellaDe(pendiente) };
+  }
+}
+
+/** Se cambió algo que se perdería al cerrar sin guardar. */
 function hayDatosSinGuardar() {
   if (!pendiente || !pendiente.items) return false;
   if ($('analisisResult').hidden) return false;   // solo cuenta el editor abierto
 
-  return pendiente.items.some(i => String(i.nombre || '').trim() || Number(i.calorias) > 0);
+  // Comida nueva: cuenta como cambio en cuanto haya algo cargado.
+  if (huellaAlAbrir.de !== pendiente) {
+    return pendiente.items.some(i => String(i.nombre || '').trim() || Number(i.calorias) > 0);
+  }
+  return huellaDe(pendiente) !== huellaAlAbrir.txt;
 }
 
 /** `forzar` salta la confirmación: lo usa el guardado, que ya persistió todo. */
@@ -137,6 +177,7 @@ function cerrarModal(forzar = false) {
   cancelarAnalisis();
   $('modal').classList.remove('open');
   pendiente = null;
+  huellaAlAbrir = { de: null, txt: '' };
   // los dos, o repetir la misma foto no vuelve a disparar el onchange
   $('fileInput').value = '';
   $('camaraInput').value = '';
