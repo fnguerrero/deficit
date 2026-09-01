@@ -183,3 +183,62 @@ function avisoDeIMC(imc, musculatura, entrenados) {
   return `Entrenaste ${entrenados} de los últimos 14 días. El IMC no distingue músculo de ` +
     'grasa, así que en tu caso el número exagera: tomalo como referencia, no como diagnóstico.';
 }
+
+/* ============================================================
+   El día entero, en el cuerpo.
+
+   El dibujo ya reaccionaba al peso y al ejercicio. Lo que faltaba era el resto
+   de lo que la app pide todos los días: el agua, el sueño y el ánimo vivían en
+   un emoji al costado, que es la forma más rápida de que nadie los mire.
+
+   Todo lo de acá son números de 0 a 1 que el dibujo consume. La regla es una
+   sola: lo que no se cargó no se dibuja mal. No anotar el agua no es lo mismo
+   que no haber tomado agua, y un muñeco reseco por un dato que falta sería la
+   app inventando.
+   ============================================================ */
+
+/* Ni bien ni mal: lo que se dibuja cuando no hay dato. */
+const NEUTRO = 0.7;
+
+/* Antes de esta hora nadie cumplió su día todavía. Es la misma que usa la
+   mascota para no reprochar el agua a las nueve de la mañana. */
+const HORA_JUZGAR = 14;
+
+const SUENO_POCO = 4;
+const SUENO_BIEN = 8;
+
+/** Qué tan hidratado se ve, de 0 (seco) a 1. */
+function hidratacionDe(dia, { meta = 8, hora = 14 } = {}) {
+  const vasos = Number(dia?.agua) || 0;
+  if (!vasos) return hora < HORA_JUZGAR ? NEUTRO : 0.15;
+
+  const pct = Math.min(1, vasos / (meta || 8));
+  /* Temprano el vaso vale más: a las diez de la mañana dos vasos van bien. */
+  return hora < HORA_JUZGAR ? Math.max(NEUTRO, pct) : pct;
+}
+
+/** Qué tan descansado, de 0 (tres horas) a 1 (ocho o más). */
+function descansoDe(dia) {
+  const h = Number(dia?.sueno?.horas);
+  if (!isFinite(h) || h <= 0) return NEUTRO;
+  if (h >= SUENO_BIEN) return 1;
+  if (h <= SUENO_POCO) return 0;
+  return +((h - SUENO_POCO) / (SUENO_BIEN - SUENO_POCO)).toFixed(3);
+}
+
+/**
+ * El cuerpo que se dibuja hoy: lo del peso y el ejercicio, más el resto del día.
+ */
+function cuerpoDelDia(perfil, dias, hasta = hoyISO(), { bonus = 0, meta = 8, hora = null } = {}) {
+  const base = cuerpoDe(perfil, dias, hasta, { bonus });
+  const d = dias?.[hasta] || null;
+  const h = hora == null ? new Date().getHours() : hora;
+
+  return {
+    ...base,
+    hidratacion: hidratacionDe(d, { meta, hora: h }),
+    descanso: descansoDe(d),
+    /* El ánimo se elige a mano y ya viene con nombre: se pasa tal cual. */
+    animo: d?.animo || null
+  };
+}

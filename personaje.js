@@ -197,6 +197,50 @@ const CARAS = {
   furioso: { ceja: 26, cejaY: -1, parpado: 0, boca: 'grito', mirada: [0, -.4], intenso: true }
 };
 
+/* La piel sin agua: no gris de enfermo, apagada y sin sangre. */
+const PIEL_SECA = '#d9bfa4';
+const PIEL_SECA_SOMBRA = '#b99a7c';
+
+/* Debajo de esto se nota; arriba, no. Dormir siete horas no tiene por qué
+   dibujar ojeras, y tomar seis vasos no tiene por qué dibujar sed. */
+const UMBRAL_CANSANCIO = 0.55;
+const UMBRAL_SED = 0.4;
+
+/*
+ * El ánimo elige la cara; el sueño y el agua la retocan.
+ *
+ * No la reemplazan: alguien puede estar contento y con sueño, y el dibujo tiene
+ * que poder decir las dos cosas. Antes el ánimo era lo único que llegaba a la
+ * cara y las caras `cansado` y `seco` estaban escritas sin que nada las usara.
+ */
+function caraDelDia(base, cuerpo) {
+  if (!cuerpo) return base;
+
+  const descanso = cuerpo.descanso ?? 0.7;
+  const agua = cuerpo.hidratacion ?? 0.7;
+  if (descanso >= UMBRAL_CANSANCIO && agua >= UMBRAL_SED) return base;
+
+  const cara = { ...base };
+
+  if (descanso < UMBRAL_CANSANCIO) {
+    /* Cuanto menos durmió, más se le cierran los ojos. El párpado de la cara
+       manda si ya era más bajo: una risa no se apaga por dormir poco. */
+    const cansancio = (UMBRAL_CANSANCIO - descanso) / UMBRAL_CANSANCIO;
+    cara.ojeras = true;
+    cara.parpado = Math.max(cara.parpado || 0, +(cansancio * 0.6).toFixed(2));
+    cara.cejaY = (cara.cejaY || 0) + cansancio * 0.8;
+  }
+
+  if (agua < UMBRAL_SED) {
+    /* La boca seca solo si la cara no estaba diciendo algo más fuerte: pisar
+       una risa con una boca de sed sería perder el ánimo, que se eligió a mano. */
+    if (cara.boca === 'recta' || cara.boca === 'chica') cara.boca = 'seca';
+    cara.gota = true;
+  }
+
+  return cara;
+}
+
 /* Un color mezclado con otro, para apagar la ropa cuando el día viene mal. */
 function mezclar(hexA, hexB, t) {
   const a = parseInt(hexA.slice(1), 16);
@@ -464,7 +508,8 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
 
   /* De la fase 2 para arriba la cara la manda la fase, no el ánimo: un día que
      llegó a fase 2 ya cumplió todo dos veces seguidas. */
-  const cara = (f && f.n >= 2) ? CARAS.furioso : (CARAS[animo] || CARAS.neutral);
+  const caraBase = (f && f.n >= 2) ? CARAS.furioso : (CARAS[animo] || CARAS.neutral);
+  const cara = f ? caraBase : caraDelDia(caraBase, cuerpo);
 
   const med = medidasDe(
     cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
@@ -475,9 +520,12 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const pose = f ? posturaDePoder(base, f) : base;
 
   const apagado = APAGADOS[animo] || 0;
+  /* La piel pierde color cuando falta agua: es lo que se ve de lejos, antes
+     que la boca o cualquier detalle de la cara. */
+  const seco = Math.max(0, 0.75 - (cuerpo?.hidratacion ?? 0.7)) / 0.75;
   const col = {
-    piel: PALETA.piel,
-    pielSombra: PALETA.pielSombra,
+    piel: mezclar(PALETA.piel, PIEL_SECA, seco * 0.55),
+    pielSombra: mezclar(PALETA.pielSombra, PIEL_SECA_SOMBRA, seco * 0.55),
     short: PALETA.short,
     shortOsc: PALETA.shortOsc,
     remera: mezclar(PALETA.remera, '#7d8a80', apagado),

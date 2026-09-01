@@ -1673,8 +1673,17 @@ textarea:focus { outline: none; border-color: var(--acc2); }
  * quedaba en una miniatura de 40 px que no se miraba nunca. Acá la foto ES la
  * tarjeta: el día se lee de un vistazo en vez de leerse.
  */
+/* La fila que contiene la tira ocupa el ancho entero. */
+.lista li.tira-fila { display: block; width: 100%; padding: 0; border-top: 0; }
+
 .recuerdos {
-  display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 4px;
+  /* Grid y no flex, con las mismas columnas que la fila de momentos: así una
+     tarjeta mide exactamente lo que mide un momento. Con flex el porcentaje se
+     resolvía contra un contenedor sin ancho propio y daban 2 px. */
+  width: 100%;
+  display: grid; grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 4 * 6px) / 5);
+  gap: 6px; overflow-x: auto; padding: 2px 0 4px;
   scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
   /* la barra molesta más de lo que ayuda en una tira de tres tarjetas */
   scrollbar-width: none;
@@ -1682,7 +1691,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .recuerdos::-webkit-scrollbar { display: none; }
 
 .recuerdo {
-  position: relative; flex: 0 0 auto; width: 96px; height: 96px;
+  /* El mismo lado que un momento de la fila de arriba: son la misma cosa vista
+     con más detalle, y con dos tamaños distintos parecían dos secciones. La
+     cuenta es la de la grilla de momentos —cinco columnas y cuatro gaps— para
+     que sigan midiendo igual si el ancho de la pantalla cambia. */
+  position: relative; aspect-ratio: 1; height: auto; width: auto;
   border-radius: 16px; overflow: hidden; scroll-snap-align: start;
   background: var(--card2); border: 1px solid var(--line);
 }
@@ -1704,25 +1717,26 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 
 .recuerdo-kcal {
-  position: absolute; top: 6px; left: 8px; z-index: 2;
-  font-size: 17px; font-weight: 700; color: #fff; line-height: 1;
+  position: absolute; top: 4px; left: 5px; z-index: 2;
+  font-size: 14px; font-weight: 700; color: #fff; line-height: 1;
   text-shadow: 0 1px 4px rgba(0, 0, 0, .6);
 }
-.recuerdo-kcal small { font-size: 8.5px; font-weight: 600; margin-left: 2px; opacity: .85; }
+.recuerdo-kcal small { font-size: 7px; font-weight: 600; margin-left: 2px; opacity: .85; }
 
-.recuerdo-pie { position: absolute; left: 8px; right: 8px; bottom: 6px; z-index: 2; color: #fff; }
+.recuerdo-pie { position: absolute; left: 4px; right: 4px; bottom: 4px; z-index: 2; color: #fff; }
 .recuerdo-pie b {
-  display: block; font-size: 10.5px; line-height: 1.2; font-weight: 650;
+  display: block; font-size: 8.5px; line-height: 1.15; font-weight: 650;
   /* dos renglones y corta: un título largo taparía media tarjeta */
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
-.recuerdo-pie small { font-size: 9px; opacity: .8; }
+/* A este tamaño la hora y los macros no entran: viven en el title. */
+.recuerdo-pie small { display: none; }
 
 /* Sobre una foto, el fondo translúcido de la marca no se lee: acá va sólida.
    Es el único aviso de la tarjeta y compite con lo que haya en la imagen. */
 .recuerdo .marca-apta {
-  position: absolute; top: 6px; right: 6px; z-index: 3;
-  font-size: 8.5px; padding: 1px 5px; letter-spacing: .1px;
+  position: absolute; top: 3px; right: 3px; z-index: 3;
+  font-size: 7px; padding: 0 3px; letter-spacing: 0;
 }
 .recuerdo .marca-apta.no { background: var(--bad); color: #1a0000; }
 .recuerdo .marca-apta.justo { background: var(--warn); color: #241a00; }
@@ -1731,12 +1745,12 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    de la ✕ y la lupa, así que el área de toque es la tarjeta completa. */
 .recuerdo-abrir { position: absolute; inset: 0; z-index: 2; background: none; border: 0; cursor: pointer; }
 .recuerdo-del, .recuerdo-lupa {
-  position: absolute; z-index: 4; width: 23px; height: 23px; border-radius: 50%;
+  position: absolute; z-index: 4; width: 18px; height: 18px; border-radius: 50%;
   border: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
   background: rgba(0, 0, 0, .5); color: #fff; font-size: 13px; line-height: 1;
 }
-.recuerdo-del { bottom: 6px; right: 6px; font-size: 15px; }
-.recuerdo-lupa { bottom: 6px; right: 33px; font-size: 10px; }
+.recuerdo-del { bottom: 3px; right: 3px; font-size: 12px; }
+.recuerdo-lupa { bottom: 3px; right: 24px; font-size: 8px; }
 .recuerdo:hover .recuerdo-del, .recuerdo:hover .recuerdo-lupa { background: rgba(0, 0, 0, .72); }
 
 /* ---------- los cinco momentos del día ---------- */
@@ -2008,3 +2022,6 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    Los cinco en una fila: en dos se leen como dos grupos de cosas distintas. */
 .momento-sug { margin-bottom: 10px; gap: 4px; flex-wrap: nowrap; }
 .momento-sug .chip { font-size: 11.5px; padding: 5px 7px; white-space: nowrap; }
+
+/* El cálculo del rato de movimiento, antes de sumarlo. */
+.calculo-ej { margin: 10px 0 0; font-size: 13px; font-weight: 700; color: var(--txt); }

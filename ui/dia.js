@@ -125,6 +125,9 @@ function abrirMomento(g, e) {
  */
 function tiraDeComidas(grupo, niveles) {
   const li = document.createElement('li');
+  /* Con clase propia: sin ella el <li> se encogía al contenido y la tira, que
+     mide sus columnas en porcentaje, calculaba el 20 % de 10 px. */
+  li.className = 'tira-fila';
   const tira = document.createElement('div');
   tira.className = 'recuerdos';
   tira.setAttribute('role', 'list');

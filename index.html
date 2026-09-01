@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=439">
+<link rel="stylesheet" href="styles.css?v=448">
 </head>
 <body>
 
@@ -442,11 +442,22 @@
         </section>
 
         <section data-obj="ejercicio" hidden>
-          <p class="hint">Elegí qué hiciste y la app calcula las calorías con tu peso.</p>
+          <!-- Cuánto y qué tan fuerte, que es como uno se acuerda de lo que
+               hizo. La lista de actividades quedó abajo como atajo: sirve
+               cuando siempre hacés lo mismo, pero obligaba a elegir un nombre
+               de una lista de tres para anotar que saliste a caminar. -->
+          <p class="hint">¿Cuánto te moviste?</p>
+          <div class="chips" id="minutosEjercicio"></div>
+          <p class="hint" style="margin-top:10px">¿Qué tan fuerte?</p>
+          <div class="chips" id="intensidadEjercicio"></div>
+          <p id="ejercicioCalculo" class="hint calculo-ej"></p>
+          <button id="btnSumarEjercicio" class="primary big" style="margin-top:6px">Sumar</button>
+
+          <h3 class="sub">Tus de siempre</h3>
           <div class="chips" id="listaActividades"></div>
           <div class="peso-row" style="margin-top:12px">
             <input type="number" id="ejercicioHoy" inputmode="numeric" placeholder="o poné las kcal a mano" aria-label="Calorías quemadas">
-            <button id="btnEjercicio" class="primary">Guardar</button>
+            <button id="btnEjercicio" class="ghost">Guardar</button>
           </div>
           <p id="ejercicioInfo" class="hint">Lo que quemes se suma al objetivo del día.</p>
         </section>
@@ -1011,56 +1022,58 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=439"></script>
-<script src="core.js?v=439"></script>
-<script src="platos.js?v=439"></script>
-<script src="animar.js?v=439"></script>
-<script src="fotos.js?v=439"></script>
-<script src="calibracion.js?v=439"></script>
-<script src="modos.js?v=439"></script>
-<script src="arreglos.js?v=439"></script>
-<script src="habitos.js?v=439"></script>
-<script src="mascota.js?v=439"></script>
-<script src="cuerpo.js?v=439"></script>
-<script src="personaje.js?v=439"></script>
-<script src="sprite-datos.js?v=439"></script>
-<script src="sprite.js?v=439"></script>
-<script src="transformacion.js?v=439"></script>
-<script src="aura.js?v=439"></script>
-<script src="juego.js?v=439"></script>
-<script src="sonidos.js?v=439"></script>
-<script src="voz.js?v=439"></script>
-<script src="graficos.js?v=439"></script>
-<script src="plazo.js?v=439"></script>
-<script src="compartir.js?v=439"></script>
-<script src="sugerencias.js?v=439"></script>
-<script src="analisis.js?v=439"></script>
-<script src="chequeos.js?v=439"></script>
-<script src="claude.js?v=439"></script>
-<script src="productos.js?v=439"></script>
-<script src="sync.js?v=439"></script>
-<script src="estado-sync.js?v=439"></script>
-<script src="auth.js?v=439"></script>
-<script src="app.js?v=439"></script>
-<script src="ui/general.js?v=439"></script>
-<script src="ui/hoy.js?v=439"></script>
-<script src="ui/dia.js?v=439"></script>
-<script src="ui/objetivos.js?v=439"></script>
-<script src="ui/tarjeta.js?v=439"></script>
-<script src="ui/logros.js?v=439"></script>
-<script src="ui/comidas.js?v=439"></script>
-<script src="ui/edicion.js?v=439"></script>
-<script src="ui/escaner.js?v=439"></script>
-<script src="ui/asistente.js?v=439"></script>
-<script src="ui/historial.js?v=439"></script>
-<script src="ui/progreso.js?v=439"></script>
-<script src="ui/perfil.js?v=439"></script>
-<script src="ui/sincronizacion.js?v=439"></script>
-<script src="ui/cuenta.js?v=439"></script>
-<script src="ui/calibracion.js?v=439"></script>
-<script src="ui/actividades.js?v=439"></script>
-<script src="ui/recordatorios.js?v=439"></script>
-<script src="ui/ajustes.js?v=439"></script>
-<script src="arranque.js?v=439"></script>
+<script src="config.js?v=448"></script>
+<script src="core.js?v=448"></script>
+<script src="platos.js?v=448"></script>
+<script src="animar.js?v=448"></script>
+<script src="fotos.js?v=448"></script>
+<script src="calibracion.js?v=448"></script>
+<script src="modos.js?v=448"></script>
+<script src="arreglos.js?v=448"></script>
+<script src="habitos.js?v=448"></script>
+<script src="mascota.js?v=448"></script>
+<script src="cuerpo.js?v=448"></script>
+<script src="figura.js?v=448"></script>
+<script src="cara.js?v=448"></script>
+<script src="personaje.js?v=448"></script>
+<script src="sprite-datos.js?v=448"></script>
+<script src="sprite.js?v=448"></script>
+<script src="transformacion.js?v=448"></script>
+<script src="aura.js?v=448"></script>
+<script src="juego.js?v=448"></script>
+<script src="sonidos.js?v=448"></script>
+<script src="voz.js?v=448"></script>
+<script src="graficos.js?v=448"></script>
+<script src="plazo.js?v=448"></script>
+<script src="compartir.js?v=448"></script>
+<script src="sugerencias.js?v=448"></script>
+<script src="analisis.js?v=448"></script>
+<script src="chequeos.js?v=448"></script>
+<script src="claude.js?v=448"></script>
+<script src="productos.js?v=448"></script>
+<script src="sync.js?v=448"></script>
+<script src="estado-sync.js?v=448"></script>
+<script src="auth.js?v=448"></script>
+<script src="app.js?v=448"></script>
+<script src="ui/general.js?v=448"></script>
+<script src="ui/hoy.js?v=448"></script>
+<script src="ui/dia.js?v=448"></script>
+<script src="ui/objetivos.js?v=448"></script>
+<script src="ui/tarjeta.js?v=448"></script>
+<script src="ui/logros.js?v=448"></script>
+<script src="ui/comidas.js?v=448"></script>
+<script src="ui/edicion.js?v=448"></script>
+<script src="ui/escaner.js?v=448"></script>
+<script src="ui/asistente.js?v=448"></script>
+<script src="ui/historial.js?v=448"></script>
+<script src="ui/progreso.js?v=448"></script>
+<script src="ui/perfil.js?v=448"></script>
+<script src="ui/sincronizacion.js?v=448"></script>
+<script src="ui/cuenta.js?v=448"></script>
+<script src="ui/calibracion.js?v=448"></script>
+<script src="ui/actividades.js?v=448"></script>
+<script src="ui/recordatorios.js?v=448"></script>
+<script src="ui/ajustes.js?v=448"></script>
+<script src="arranque.js?v=448"></script>
 </body>
 </html>
