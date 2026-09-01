@@ -10,10 +10,14 @@
    ahí aparece la tendencia.
    ============================================================ */
 
+/* `dias` es el lapso que cubre cada período, y existe para que los números que
+   acompañan a los gráficos hablen del mismo tramo que ellos: con "Semanas"
+   elegido, el resumen de arriba tiene que ser el de las ocho semanas, no el de
+   los últimos siete días. */
 const PERIODOS = [
-  { id: 'dia', nombre: 'Días', puntos: 14, detalle: 'Últimos 14 días' },
-  { id: 'semana', nombre: 'Semanas', puntos: 8, detalle: 'Últimas 8 semanas' },
-  { id: 'mes', nombre: 'Meses', puntos: 6, detalle: 'Últimos 6 meses' }
+  { id: 'dia', nombre: 'Días', puntos: 14, dias: 14, detalle: 'Últimos 14 días' },
+  { id: 'semana', nombre: 'Semanas', puntos: 8, dias: 56, detalle: 'Últimas 8 semanas' },
+  { id: 'mes', nombre: 'Meses', puntos: 6, dias: 180, detalle: 'Últimos 6 meses' }
 ];
 
 function periodoDe(id) {

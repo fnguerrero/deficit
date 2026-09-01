@@ -10,12 +10,16 @@
    primero del documento —el de Historial— y esta tarjeta mostraba el número de
    la otra pestaña, o ninguno. */
 function renderProgreso() {
+  const actual = state.cfg.periodo || 'dia';
+
+  /* El período se resuelve PRIMERO y se le pasa a todo: el selector está
+     arriba de la pestaña y tiene que mandar sobre lo que hay debajo, no solo
+     sobre los gráficos del final. */
   renderBrecha();
-  renderSemana();
+  renderSemana(actual);
+
   const cont = $('selPeriodo');
   if (!cont) return;
-
-  const actual = state.cfg.periodo || 'dia';
 
   cont.innerHTML = '';
   for (const p of PERIODOS) {
@@ -159,17 +163,23 @@ function renderBrecha() {
  * cómo viniste hay que leerlos, y nadie lee un gráfico de reojo. Cuatro números
  * grandes sí se leen.
  */
-function renderSemana() {
+function renderSemana(idPeriodo = 'dia') {
   const caja = $('cardSemana');
   if (!caja) return;
 
+  /* El resumen sigue al período elegido. Antes eran siete días fijos, así que
+     con "Meses" arriba la tarjeta seguía hablando de la última semana y los
+     números de la pantalla contaban dos historias distintas. */
+  const p = periodoDe(idPeriodo);
   const calc = calcular();
-  const r = resumenPeriodo(state.dias, { largo: 7, objetivo: calc?.objetivo || null });
+  const r = resumenPeriodo(state.dias, { largo: p.dias, objetivo: calc?.objetivo || null });
 
   caja.hidden = !r.hay;
   if (!r.hay) return;
 
-  $('semanaPill').textContent = `${r.dias} de 7 días`;
+  const titulo = caja.querySelector('h2');
+  if (titulo) titulo.textContent = p.detalle;
+  $('semanaPill').textContent = `${r.dias} de ${p.dias} días`;
 
   const nums = [
     { n: fmtNum(r.promedio), t: 'kcal por día' },

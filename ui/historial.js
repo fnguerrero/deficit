@@ -399,11 +399,71 @@ function pintarVerMas(total) {
   btn.textContent = `Ver ${plural(Math.min(faltan, DIAS_POR_PAGINA), 'día más', 'días más')}`;
 }
 
+/*
+ * Cuánto se mira hacia atrás.
+ *
+ * El "ver más" de a diez servía para no dibujar cien filas de una, pero no
+ * respondía la pregunta que uno se hace acá, que es "cómo vengo este mes".
+ * Con el rango elegido, la lista y el resumen de abajo hablan del mismo tramo.
+ */
+const RANGOS_HIST = [
+  { id: 7, nombre: '7 días' },
+  { id: 30, nombre: '30 días' },
+  { id: 90, nombre: '90 días' },
+  { id: 0, nombre: 'Todo' }
+];
+
+function rangoHist() {
+  const g = Number(state.cfg.rangoHist);
+  return RANGOS_HIST.some(r => r.id === g) ? g : 30;
+}
+
+function pintarSelRango() {
+  const cont = $('selRangoHist');
+  if (!cont) return;
+
+  const actual = rangoHist();
+  cont.innerHTML = '';
+  for (const r of RANGOS_HIST) {
+    const b = document.createElement('button');
+    b.className = 'periodo' + (r.id === actual ? ' activo' : '');
+    b.textContent = r.nombre;
+    b.setAttribute('aria-pressed', String(r.id === actual));
+    b.onclick = (e) => {
+      if (e.detail > 0) e.currentTarget.blur();
+      state.cfg.rangoHist = r.id;
+      save();
+      renderListaDias();
+      renderResumen();
+    };
+    cont.appendChild(b);
+  }
+}
+
+/** Las fechas con comidas que entran en el rango elegido, de la más nueva a la más vieja. */
+function fechasDelRango() {
+  const todas = Object.keys(state.dias)
+    .filter(f => (state.dias[f].comidas || []).length)
+    .sort().reverse();
+
+  const g = rangoHist();
+  if (!g) return todas;
+
+  const desde = sumarDias(hoyISO(), -(g - 1));
+  return todas.filter(f => f >= desde);
+}
+
 function renderListaDias() {
+  pintarSelRango();
+
   const calc = calcular();
   const objetivo = calc ? calc.objetivo : 0;
-  const todas = Object.keys(state.dias).filter(f => (state.dias[f].comidas || []).length).sort().reverse();
+  const g = rangoHist();
+  const todas = fechasDelRango();
   const fechas = todas.slice(0, diasVisibles);
+
+  const titulo = $('tituloUltimosDias');
+  if (titulo) titulo.textContent = g ? `Últimos ${g} días` : 'Todo el historial';
   const ul = $('listaDias');
   ul.innerHTML = '';
   $('diasVacio').hidden = fechas.length > 0;
@@ -452,14 +512,21 @@ function renderResumen() {
   const res = $('resumenSemana');
   res.innerHTML = '';
 
-  const bal = balanceSemanal(state.dias, calc ? calc.tdee : 0);
+  /* El resumen sigue al rango de arriba: con "30 días" elegido, decir "días
+     registrados (7d)" es hablar de otra cosa que la lista que está al lado. */
+  const g = rangoHist();
+  const dias = g || Math.max(1, fechasDelRango().length);
+  const bal = balanceSemanal(state.dias, calc ? calc.tdee : 0, hoyISO(), dias);
   const adaptativo = tdeeAdaptativo(state.dias);
 
+  const tit = $('tituloResumen');
+  if (tit) tit.textContent = g ? `Resumen de ${g} días` : 'Resumen de todo';
+
   const filas = [
-    ['Días registrados (7d)', `${bal.dias} / 7`],
+    ['Días registrados', `${bal.dias} / ${dias}`],
     ['Promedio diario', bal.promedio ? fmtKcal(bal.promedio) : '—'],
     ['Objetivo', calc ? fmtKcal(calc.objetivo) : '—'],
-    ['Balance de la semana', bal.dias
+    ['Balance del período', bal.dias
       ? `${fmtDelta(bal.balance)} kcal (${fmtDelta(bal.kg, 2, 'kg')})`
       : '—'],
     ['Gasto estimado (fórmula)', calc ? fmtKcal(calc.tdee) : '—'],
