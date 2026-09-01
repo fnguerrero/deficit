@@ -264,6 +264,16 @@ function animarEspera(modo) {
  */
 let ultimoIntento = null;
 
+/*
+ * A qué momento va la comida que se está por sacar.
+ *
+ * Normalmente lo decide el reloj, y está bien: se saca la foto del plato que
+ * tenés adelante. Pero al tocar un momento vacío de la fila de Hoy se está
+ * diciendo explícitamente cuál es, y eso manda sobre la hora: cargar la cena a
+ * la mañana siguiente es de lo más común.
+ */
+let momentoPedido = null;
+
 async function correrAnalisis(intento) {
   ultimoIntento = intento;
   const { imagenes, modo, foto, thumb, preview, varias } = intento;
@@ -284,7 +294,8 @@ async function correrAnalisis(intento) {
     frenar();
     registrarUso(r, modo === 'etiqueta' ? 'etiqueta' : 'foto');
     if (r.deCache) toast('Esta foto ya la habías analizado: no gastaste API');
-    pendiente = { ...r, thumb, foto, momento: momentoDe(Date.now()), kcalIA: sumarItems(r.items).calorias };
+    pendiente = { ...r, thumb, foto, momento: momentoPedido || momentoDe(Date.now()), kcalIA: sumarItems(r.items).calorias };
+    momentoPedido = null;
 
     /*
      * Guardado directo. Confirmar cada foto era el peaje que hacia abandonar:
