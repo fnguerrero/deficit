@@ -1929,3 +1929,44 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .primeros .paso small { display: block; font-size: 11.5px; color: var(--dim); margin-top: 1px; }
 .primeros .paso button { flex: 0 0 auto; }
 .primeros .paso.hecho b { color: var(--acc); font-weight: 550; }
+
+/*
+ * Pantallas bajas.
+ *
+ * "Que entre todo en una pantalla" no es una medida fija: 812 px de alto y 640
+ * no son la misma pantalla, y todo el compactado de arriba miraba solo el
+ * ancho. Estos dos tramos aprietan de a poco según el alto que haya, en vez de
+ * elegir un número y que ande en un teléfono y en otro no.
+ */
+@media (max-width: 480px) and (max-height: 800px) {
+  #tab-hoy .card { margin-bottom: 6px; }
+  .resumen .macros { padding: 8px 10px; gap: 5px; }
+  .resumen .ring-card { padding: 6px; }
+  .macro-lee { font-size: 10.5px; }
+  #tab-hoy .objetivos { gap: 3px; }
+  #tab-hoy .objetivo { padding: 6px 2px; }
+  .mascota-dibujo > * { zoom: .84; }
+  #tab-hoy .momento { aspect-ratio: 1.12; }
+}
+
+@media (max-width: 480px) and (max-height: 700px) {
+  /* Acá ya no alcanza con apretar: el muñeco se achica y la lectura de cada
+     macro se va. El número y la barra siguen estando, que es lo que se mira. */
+  #tab-hoy .card { margin-bottom: 5px; padding: 8px 10px; }
+  .macro-lee { display: none; }
+  .resumen .ring-wrap { max-width: 112px; }
+  /* El muñeco es un sprite en un div, así que no alcanza con topearle el alto:
+     `zoom` lo achica de verdad y arrastra la caja, que es lo que ocupa. */
+  .mascota-dibujo > * { zoom: .72; }
+  /* Los momentos, un poco más chatos: el nombre y el número siguen entrando. */
+  #tab-hoy .momento { aspect-ratio: 1.25; }
+  #tab-hoy .acciones-fila .accion { padding: 8px 4px; }
+  #tab-hoy.active { padding-bottom: 50px; }
+  .mascota { padding: 6px 10px; }
+  .peso-tira { padding: 7px 10px; }
+  #tab-hoy .card-head { padding: 0 0 3px; }
+  .momento-pie b { font-size: 12.5px; }
+  .tira, .tiras-hoy .tira { padding: 5px 9px; }
+  .momento-emoji { font-size: 16px; }
+  #tab-hoy .objetivo { padding: 5px 2px; }
+}
