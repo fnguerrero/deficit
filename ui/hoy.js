@@ -101,9 +101,7 @@ function renderHoy() {
   renderAvisoProteina();
   renderNota();
   renderFavoritos();
-  renderProximaComida();
   if (typeof pintarCola === 'function') pintarCola();
-  renderSugeridas();
   renderFaltaSiempre();
   renderAgua();
   renderEjercicio();
@@ -493,55 +491,17 @@ $('btnPeso').onclick = () => {
   cerrarObjetivo();
 };
 
-/** El aviso de la próxima comida esperada. Ver proximaComida() en core.js. */
-function renderProximaComida() {
-  const el = $('proximaComida');
-  if (!el) return;
-
-  const p = fecha === hoyISO() ? proximaComida() : null;
-  el.hidden = !p;
-  if (!p) return;
-
-  const h = Math.floor(p.minutos / 60);
-  const m = p.minutos % 60;
-  const falta = h ? `${h} h ${m ? m + ' min' : ''}`.trim() : `${m} min`;
-  el.textContent = `${nombreMomento(p.dentroDe)} ahora · ${p.nombre} en ${falta}`;
-}
-
 /*
- * Lo que solés comer a esta hora, a un toque.
+ * El aviso de "próxima comida" y las sugerencias de "lo de siempre a esta
+ * hora" se sacaron de Hoy.
  *
- * Cargar el café de todas las mañanas cuesta hoy lo mismo que cargar algo que
- * nunca comiste: foto, espera y pago del análisis. Y el desayuno es la comida
- * más repetida que hay.
- *
- * Solo en el día de hoy: en un día pasado no se está cargando lo que se comió
- * recién, se está corrigiendo, y ahí una sugerencia por hora estorba.
+ * Eran dos renglones seguidos de texto informativo arriba de los casilleros y
+ * ninguno pedía una acción: el primero decía con qué etiqueta se iba a guardar
+ * lo que cargaras —algo que ya se ve en la lista y que se corrige editando— y
+ * el segundo declaraba "de siempre" con dos apariciones, que no es una
+ * costumbre. Repetir una comida sigue estando, en el menú de Cargar comida.
  */
-function renderSugeridas() {
-  const cont = $('sugeridasHora');
-  if (!cont) return;
 
-  const propias = fecha === hoyISO()
-    ? sugerenciasPorMomento(state.dias, momentoDe(Date.now()), { limite: 3 })
-    : [];
-
-  cont.hidden = !propias.length;
-  cont.innerHTML = '';
-  if (!propias.length) return;
-
-  const tit = document.createElement('small');
-  tit.textContent = 'De siempre a esta hora:';
-  cont.appendChild(tit);
-
-  for (const s of propias) {
-    const b = document.createElement('button');
-    b.className = 'chip';
-    b.innerHTML = `${s.titulo} <small>${fmtNum(s.kcal)} kcal</small>`;
-    b.onclick = () => { repetirPorTitulo(s.titulo); pop(b); };
-    cont.appendChild(b);
-  }
-}
 
 /** Vuelve a cargar la última vez que se comió eso, tal cual estaba. */
 function repetirPorTitulo(titulo) {
