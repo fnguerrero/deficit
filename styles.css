@@ -917,10 +917,13 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    veces. La flechita es la salida para la galería, sin robarle lugar. */
 .accion-doble { position: relative; display: flex; }
 .accion-doble .accion { flex: 1; padding-right: 16px; }
+/* 22 px era menos que la yema de un dedo: se erraba tanto que en la práctica
+   la galería quedaba escondida. 46 px es el mínimo cómodo para tocar, y el
+   triángulo más grande la hace visible como botón y no como adorno. */
 .accion-doble .flechita {
-  position: absolute; top: 0; right: 0; width: 22px; height: 100%;
+  position: absolute; top: 0; right: 0; width: 46px; height: 100%;
   border: 0; border-radius: 0 14px 14px 0; cursor: pointer;
-  background: rgba(0, 0, 0, .16); color: inherit; font-size: 11px;
+  background: rgba(0, 0, 0, .16); color: inherit; font-size: 16px;
   display: flex; align-items: center; justify-content: center;
 }
 .accion-doble .flechita:active { background: rgba(0, 0, 0, .28); }

@@ -5,7 +5,7 @@ const SPRITES = {
     {
       "archivo": "cuerpo-0.webp",
       "ancho": 81,
-      "bytes": 10704,
+      "bytes": 12580,
       "pelo": {
         "cx": 0.5,
         "arriba": 0.0133,
@@ -16,7 +16,7 @@ const SPRITES = {
     {
       "archivo": "cuerpo-1.webp",
       "ancho": 92,
-      "bytes": 11286,
+      "bytes": 13136,
       "pelo": {
         "cx": 0.5054,
         "arriba": 0.0133,
@@ -27,7 +27,7 @@ const SPRITES = {
     {
       "archivo": "cuerpo-2.webp",
       "ancho": 130,
-      "bytes": 12796,
+      "bytes": 13970,
       "pelo": {
         "cx": 0.5038,
         "arriba": 0.01,
@@ -38,7 +38,7 @@ const SPRITES = {
     {
       "archivo": "cuerpo-3.webp",
       "ancho": 146,
-      "bytes": 13258,
+      "bytes": 14356,
       "pelo": {
         "cx": 0.5,
         "arriba": 0.01,
@@ -49,7 +49,7 @@ const SPRITES = {
     {
       "archivo": "cuerpo-4.webp",
       "ancho": 104,
-      "bytes": 12730,
+      "bytes": 14308,
       "pelo": {
         "cx": 0.5048,
         "arriba": 0.0133,
@@ -60,7 +60,7 @@ const SPRITES = {
     {
       "archivo": "cuerpo-5.webp",
       "ancho": 119,
-      "bytes": 14374,
+      "bytes": 15614,
       "pelo": {
         "cx": 0.5,
         "arriba": 0.01,
@@ -71,7 +71,7 @@ const SPRITES = {
     {
       "archivo": "cuerpo-6.webp",
       "ancho": 121,
-      "bytes": 14868,
+      "bytes": 16106,
       "pelo": {
         "cx": 0.5,
         "arriba": 0.0033,
