@@ -113,7 +113,21 @@ function mostrarSugerencias(r, margen) {
     li.onclick = elegir;
     li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(); } };
 
-    li.append(cab, porque, items);
+    /* Mandársela a quien cocina. Va aparte del resto de la tarjeta, que carga
+       la comida: son dos intenciones distintas sobre la misma sugerencia. */
+    const enviar = document.createElement('button');
+    enviar.className = 'sugerencia-enviar';
+    enviar.type = 'button';
+    enviar.textContent = 'Compartir';
+    enviar.setAttribute('aria-label', 'Compartir ' + o.titulo);
+    enviar.onclick = async (e) => {
+      e.stopPropagation();
+      const via = await compartirTexto(textoDeSugerencia(o), { titulo: o.titulo });
+      if (via === 'copiado') toast('Copiado: pegalo donde quieras');
+      else if (via === 'sin-via') toast('No pude compartirlo desde acá');
+    };
+
+    li.append(cab, porque, items, enviar);
     ul.appendChild(li);
   }
 
