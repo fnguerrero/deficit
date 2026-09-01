@@ -459,7 +459,10 @@ function renderAyuno() {
 $('btnAyuno').onclick = () => {
   if (enCursoAyuno()) {
     const cerrado = cerrarAyuno(state.cfg.ayunoInicio, Date.now(), horasAyuno());
-    const d = dia();
+    /* En HOY, no en el día que se esté mirando: el ayuno se corta cuando se
+       corta, y desde el historial de la semana pasada el registro iba a parar
+       a ese día. */
+    const d = dia(hoyISO());
     d.ayuno = cerrado;
     d.act = Date.now();
     state.cfg.ayunoInicio = null;

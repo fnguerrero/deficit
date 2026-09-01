@@ -252,7 +252,12 @@ function renderPlanEtapas() {
 
   const peso = parseFloat($('pPeso').value);
   const obj = parseFloat($('pPesoObj').value);
-  const ritmo = parseFloat($('pRitmo')?.value) || 0.5;
+  /* Con "Por fecha" elegido, el value del select es la palabra "fecha" y
+     parseFloat daba NaN: el plan se dibujaba con 0,5 en vez del ritmo que
+     despejó el plazo. */
+  const ritmo = $('pRitmo')?.value === 'fecha'
+    ? (Number(state.perfil.ritmo) || 0.5)
+    : (parseFloat($('pRitmo')?.value) || 0.5);
   const plan = planPorEtapas(peso, obj, ritmo);
 
   caja.hidden = !plan;

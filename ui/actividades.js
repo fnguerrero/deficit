@@ -87,10 +87,25 @@ $('btnAgregarAct').onclick = () => {
   while (usados.includes(id)) id = base + n++;
 
   state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, minutos, met, emoji: '⭐' }];
+
+  /* Y va a los favoritos si hay lugar.
+     Se agregaba a la lista general y nada más: desde el modal de Ejercicio
+     decía "agregada" y no aparecía por ningún lado, porque en Hoy solo salen
+     las tres favoritas. Había que ir a Ajustes a marcarla, y eso no lo dice
+     ningún cartel. */
+  const favs = [...(state.cfg.favoritasActividad || FAVORITAS_DEFECTO)];
+  const entraSola = favs.length < MAX_FAVORITAS;
+  if (entraSola) {
+    favs.push(id);
+    state.cfg.favoritasActividad = favs;
+  }
   save();
 
   $('actNombre').value = '';
   $('actMinutos').value = '';
   renderActividadesEditar();
-  toast(`${nombre} agregada`);
+  if (typeof renderActividades === 'function') renderActividades();
+  toast(entraSola
+    ? `${nombre} agregada`
+    : `${nombre} agregada. Elegila en Ajustes para tenerla a mano`);
 };

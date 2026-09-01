@@ -158,6 +158,10 @@ function migrar(guardado) {
       /* Horas dormidas y que tal se durmio. Auto-reportado: medirlo de verdad
          necesita una app nativa o un reloj, y esto se sostiene sin comprar nada. */
       sueno: d.sueno || null,
+      /* El ayuno cerrado del dia. Faltaba en esta lista, y como migrar() corre
+         en CADA arranque, cortar un ayuno y volver a abrir la app lo borraba:
+         la pantalla volvia a decir "arranca cuando termines de comer". */
+      ayuno: d.ayuno || null,
       act: Number(d.act) || 0,
       comidas: (d.comidas || []).map(c => ({
         id: c.id || (f + '-' + Math.random().toString(36).slice(2, 8)),
@@ -177,7 +181,14 @@ function migrar(guardado) {
         act: Number(c.act) || Number(c.ts) || 0,
         thumb: c.thumb || null,
         foto: c.foto || null,
-        notas: c.notas || ''
+        notas: c.notas || '',
+        /* Que fraccion de lo estimado se comio. Sin esto guardado no hay como
+           volver a la porcion entera: cada toque escalaba sobre lo ya escalado
+           y media porcion de media porcion daba un cuarto. */
+        porcionFactor: Number(c.porcionFactor) > 0 ? Number(c.porcionFactor) : 1,
+        /* De donde salio el dato. Lo trae el escaner y se perdia al arrancar. */
+        codigo: c.codigo || null,
+        marca: c.marca || null
       }))
     };
   }

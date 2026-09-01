@@ -199,6 +199,13 @@ function comidaAFila(comida, fecha, llave, subido = Date.now(), userId = null) {
     gras: comida.gras,
     momento: comida.momento,
     notas: comida.notas || '',
+    /* Los tres nutrientes que la pantalla del día muestra abajo del anillo.
+       Los traen el código de barras y algunos análisis, se guardaban local y no
+       subían: al abrir la app en otro dispositivo la fila aparecía vacía. */
+    fibra: Number(comida.fibra) || 0,
+    azucar: Number(comida.azucar) || 0,
+    sodio: Number(comida.sodio) || 0,
+    porcion_factor: Number(comida.porcionFactor) > 0 ? Number(comida.porcionFactor) : 1,
     borrada: false,
     act: comida.act || comida.ts || 0
   };
@@ -217,6 +224,12 @@ function filaAComida(fila, comidaLocal = null) {
     gras: Number(fila.gras) || 0,
     momento: fila.momento || 'almuerzo',
     notas: String(fila.notas || ''),
+    /* Si la base todavía no tiene estas columnas, lo que llega es undefined y
+       queda en 0 o en 1, que es exactamente lo que había antes. */
+    fibra: Number(fila.fibra) || 0,
+    azucar: Number(fila.azucar) || 0,
+    sodio: Number(fila.sodio) || 0,
+    porcionFactor: Number(fila.porcion_factor) > 0 ? Number(fila.porcion_factor) : 1,
     // la foto vive solo en el dispositivo donde se sacó
     thumb: comidaLocal?.thumb || null,
     foto: comidaLocal?.foto || null,
@@ -234,8 +247,33 @@ function diaAFila(dia, fecha, llave, subido = Date.now(), userId = null) {
     agua: dia.agua || 0,
     ejercicio: dia.ejercicio || 0,
     nota: dia.nota || '',
+    /* Dos de los cinco hábitos del día viajaban sin subir: el sueño y el ánimo
+       vivían solo en el dispositivo donde se cargaron, mientras la app decía
+       que con una cuenta los datos quedaban a salvo. Se guardan planos porque
+       Postgres no tiene por qué saber la forma del objeto del cliente. */
+    sueno_horas: dia.sueno?.horas ?? null,
+    sueno_calidad: dia.sueno?.calidad || null,
+    animo: dia.animo || null,
     act: dia.act || 0
   };
+}
+
+/** Los campos que la base puede no tener todavía, si falta correr la migración. */
+const CAMPOS_NUEVOS_DIA = ['sueno_horas', 'sueno_calidad', 'animo'];
+const CAMPOS_NUEVOS_COMIDA = ['fibra', 'azucar', 'sodio', 'porcion_factor'];
+
+/** La misma fila sin los campos nuevos, para reintentar contra una base vieja. */
+function filaSinCamposNuevos(fila, campos = CAMPOS_NUEVOS_DIA) {
+  const copia = { ...fila };
+  for (const c of campos) delete copia[c];
+  return copia;
+}
+
+/** Si el 400 se queja de una columna que no existe, la base está sin migrar. */
+function faltaMigracion(mensaje) {
+  const m = String(mensaje || '');
+  return [...CAMPOS_NUEVOS_DIA, ...CAMPOS_NUEVOS_COMIDA].some(c => m.includes(c)) &&
+    /column|columna|schema cache/i.test(m);
 }
 
 /* ---------------- qué hay para subir ---------------- */
@@ -305,12 +343,36 @@ function fusionarDia(local, remoto) {
   const notaR = String(remoto?.nota || '');
   const nota = !notaR ? notaL : (!notaL ? notaR : (ganaR ? notaR : notaL));
 
+  /* El sueño y el ánimo son "lo tiene el que lo tiene": ninguno de los dos se
+     acumula como el agua ni se puede promediar, así que si de un lado hay dato
+     y del otro no, gana el que hay, y si hay de los dos gana el más nuevo. */
+  const suenoR = remotoSueno(remoto);
+  const suenoL = local?.sueno || null;
+  const sueno = !suenoR ? suenoL : (!suenoL ? suenoR : (ganaR ? suenoR : suenoL));
+
+  const animoL = local?.animo || null;
+  const animoR = remoto?.animo || null;
+  const animo = !animoR ? animoL : (!animoL ? animoR : (ganaR ? animoR : animoL));
+
   const cambio = peso !== (pesoL == null ? null : pesoL) ||
     agua !== (Number(local?.agua) || 0) ||
     ejercicio !== (Number(local?.ejercicio) || 0) ||
-    nota !== notaL;
+    nota !== notaL ||
+    JSON.stringify(sueno) !== JSON.stringify(suenoL) ||
+    animo !== animoL;
 
-  return { peso, agua, ejercicio, nota, act: Math.max(actL, actR), cambio };
+  return { peso, agua, ejercicio, nota, sueno, animo, act: Math.max(actL, actR), cambio };
+}
+
+/** El sueño que viene del servidor, que llega en dos columnas planas. */
+function remotoSueno(remoto) {
+  if (!remoto) return null;
+  /* Puede venir ya armado (de otro cliente en memoria) o en columnas. */
+  if (remoto.sueno) return remoto.sueno;
+  const horas = remoto.sueno_horas;
+  const calidad = remoto.sueno_calidad;
+  if (horas == null && !calidad) return null;
+  return { ...(horas == null ? {} : { horas: Number(horas) }), ...(calidad ? { calidad } : {}) };
 }
 
 /**
@@ -327,6 +389,10 @@ function aplicarRemoto(estado, { comidas = [], dias = [] }) {
 
   for (const fila of comidas) {
     const fecha = fila.fecha;
+    /* Una fila sin fecha válida creaba `dias["undefined"]`, que después salía
+       en el historial y no se podía borrar desde ninguna pantalla. Se descarta:
+       una comida sin día no se puede colocar en ningún lado. */
+    if (!esFechaISO(fecha)) { resumen.ignoradas++; continue; }
     if (!salida.dias[fecha]) salida.dias[fecha] = { peso: null, agua: 0, ejercicio: 0, nota: '', comidas: [] };
 
     const lista = salida.dias[fecha].comidas;
@@ -374,6 +440,7 @@ function aplicarRemoto(estado, { comidas = [], dias = [] }) {
 
   for (const fila of dias) {
     const fecha = fila.fecha;
+    if (!esFechaISO(fecha)) continue;
     if (!salida.dias[fecha]) salida.dias[fecha] = { peso: null, agua: 0, ejercicio: 0, nota: '', comidas: [] };
 
     const d = salida.dias[fecha];
@@ -383,6 +450,8 @@ function aplicarRemoto(estado, { comidas = [], dias = [] }) {
       d.agua = f.agua;
       d.ejercicio = f.ejercicio;
       d.nota = f.nota;
+      d.sueno = f.sueno;
+      d.animo = f.animo;
       d.act = f.act;
       resumen.diasTocados++;
     }
@@ -430,8 +499,8 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
   }));
   const filasDias = cambios.dias.map(({ dia, fecha }) => diaAFila(dia, fecha, llave, ahora, userId));
 
-  await cliente.guardar(TABLA_COMIDAS, [...filasComidas, ...filasBorradas]);
-  await cliente.guardar(TABLA_DIAS, filasDias);
+  await guardarComidas(cliente, [...filasComidas, ...filasBorradas]);
+  await guardarDias(cliente, filasDias);
 
   return {
     estado: fusionado,
@@ -448,6 +517,33 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
     },
     ultimoSync: ahora
   };
+}
+
+/**
+ * Guardar los días, aguantando que la base esté sin migrar.
+ *
+ * El sueño y el ánimo son columnas nuevas. Una base creada antes no las tiene,
+ * y un solo campo desconocido hace fallar el POST entero: el sync quedaría
+ * roto para todo, no solo para lo nuevo. Si el 400 se queja justo de esas
+ * columnas, se reintenta sin ellas y el resto sigue subiendo igual.
+ */
+async function guardarDias(cliente, filas) {
+  return guardarTolerante(cliente, TABLA_DIAS, filas, CAMPOS_NUEVOS_DIA);
+}
+
+/** Lo mismo para las comidas, que también estrenan columnas. */
+async function guardarComidas(cliente, filas) {
+  return guardarTolerante(cliente, TABLA_COMIDAS, filas, CAMPOS_NUEVOS_COMIDA);
+}
+
+async function guardarTolerante(cliente, tabla, filas, campos) {
+  if (!filas.length) return;
+  try {
+    await cliente.guardar(tabla, filas);
+  } catch (e) {
+    if (!faltaMigracion(e?.message)) throw e;
+    await cliente.guardar(tabla, filas.map(f => filaSinCamposNuevos(f, campos)));
+  }
 }
 
 /**
@@ -485,7 +581,7 @@ if (typeof window !== 'undefined') {
   window.__sync = {
     TABLA_DIAS, TABLA_COMIDAS, LARGO_LLAVE,
     generarLlave, llaveValida, llaveLegible, clienteSupabase,
-    comidaAFila, filaAComida, diaAFila,
+    comidaAFila, filaAComida, diaAFila, filaSinCamposNuevos, faltaMigracion, guardarDias, guardarComidas,
     cambiosLocales, aplicarRemoto, fusionarDia, sincronizar, fusionarAlFinal
   };
 }

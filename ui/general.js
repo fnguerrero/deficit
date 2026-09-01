@@ -374,7 +374,10 @@ $('onbSiguiente').onclick = () => {
       return;
     }
 
-    state.perfil = propuesto;
+    /* Se fusiona, como en Perfil: el formulario del onboarding no trae el modo
+       ni el plazo, y asignar el objeto entero los borraba a quien lo volviera
+       a correr desde Ajustes. */
+    state.perfil = { ...state.perfil, ...propuesto };
     if (propuesto.peso) dia(hoyISO()).peso = propuesto.peso;
     save();
   }

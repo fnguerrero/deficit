@@ -562,13 +562,25 @@ function pintarPorciones(id, kcalOriginal) {
 
   const original = comidaPorId(id);
   if (!original) { cont.hidden = true; return; }
-  const base = clonar(original);
+
+  /*
+   * La base es SIEMPRE la porción entera, reconstruida desde el factor guardado.
+   *
+   * Antes la base era lo que estuviera guardado, así que los factores se
+   * encadenaban: media porción de media porción daba un cuarto, y tocar "1"
+   * después de haber puesto "½" no devolvía a las 800 kcal originales sino a
+   * las 400. La porción tiene que ser una elección reversible, no un descuento
+   * que se aplica de nuevo cada vez.
+   */
+  const factorActual = Number(original.porcionFactor) > 0 ? Number(original.porcionFactor) : 1;
+  const base = factorActual === 1 ? clonar(original) : escalarComida(clonar(original), 1 / factorActual);
 
   for (const p of PORCIONES) {
     const b = document.createElement('button');
     b.textContent = p.txt;
     b.setAttribute('aria-label', `Comí ${p.txt} de lo estimado`);
-    b.className = p.f === 1 ? 'elegida' : '';
+    /* Y queda marcada la que está puesta, no siempre la entera. */
+    b.className = p.f === factorActual ? 'elegida' : '';
 
     b.onclick = () => {
       const d = dia();
@@ -576,7 +588,7 @@ function pintarPorciones(id, kcalOriginal) {
       if (pos < 0) return;
 
       const escalada = escalarComida(base, p.f);
-      d.comidas[pos] = { ...escalada, id, ts: d.comidas[pos].ts, act: Date.now() };
+      d.comidas[pos] = { ...escalada, id, ts: d.comidas[pos].ts, porcionFactor: p.f, act: Date.now() };
       save(); renderHoy(); renderHistorial();
 
       contarHasta($('resumenKcal'), escalada.kcal, { formato: (v) => fmtNum(Math.round(v)) });
