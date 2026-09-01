@@ -75,15 +75,30 @@ def rango_vertical(im):
     return arriba, abajo
 
 
+# Una region blanca por encima de esta altura relativa no puede ser calzado.
+PISO_CALZADO = 0.86
+# Y por debajo de este tamano es un detalle del dibujo (los ojos), no fondo.
+MINIMO_HUECO = 40
+
+
 def sin_fondo(im):
     """
-    El fondo pasa a transparente, pero SOLO el que toca el borde.
+    El fondo pasa a transparente, en dos pasadas.
 
-    Borrar todo lo que sea casi blanco deja las zapatillas huecas: son blancas y
-    quedan del color del fondo. Lo que separa al fondo del calzado no es el
-    color sino estar conectado con el exterior, asi que se rellena desde las
-    cuatro esquinas y se borra unicamente lo que el relleno alcanza. Todo lo que
-    esta rodeado por el contorno negro del dibujo queda intacto.
+    **La de afuera.** Borrar todo lo que sea casi blanco dejaria las zapatillas
+    huecas: son blancas y quedan del color del fondo. Lo que separa al fondo del
+    calzado no es el color sino estar conectado con el exterior, asi que se
+    rellena desde las cuatro esquinas y se borra solo lo que el relleno alcanza.
+
+    **La de adentro.** Eso deja afuera los huecos CERRADOS, y el mas visible es
+    el de entre las piernas: lo tapa el short por arriba y las zapatillas por
+    abajo, asi que ningun relleno que venga del borde llega. Quedaba un parche
+    blanco en medio del muneco, bien a la vista sobre el fondo oscuro.
+
+    Para esos se buscan las regiones blancas que quedaron y se borran las que
+    no puedan ser parte del dibujo: las que estan por encima de los pies y son
+    mas grandes que un detalle. El tamano minimo protege los ojos, que tambien
+    son blancos y tambien estan encerrados.
     """
     im = im.convert('RGB')
     ancho, alto = im.size
@@ -97,7 +112,44 @@ def sin_fondo(im):
         for x in range(ancho):
             if px[x, y][:3] == marca:
                 px[x, y] = (255, 255, 255, 0)
+
+    for region in huecos_blancos(px, ancho, alto):
+        arriba = min(y for _, y in region)
+        if len(region) < MINIMO_HUECO or arriba > alto * PISO_CALZADO:
+            continue
+        for x, y in region:
+            px[x, y] = (255, 255, 255, 0)
+
     return im
+
+
+def huecos_blancos(px, ancho, alto):
+    """Las regiones conectadas de pixeles opacos casi blancos que quedaron."""
+    visto = [[False] * alto for _ in range(ancho)]
+    regiones = []
+
+    def es_blanco(x, y):
+        r, g, b, a = px[x, y]
+        return a > 200 and r > UMBRAL_BLANCO - 10 and g > UMBRAL_BLANCO - 10 and b > UMBRAL_BLANCO - 10
+
+    for x0 in range(ancho):
+        for y0 in range(alto):
+            if visto[x0][y0] or not es_blanco(x0, y0):
+                continue
+            pila = [(x0, y0)]
+            visto[x0][y0] = True
+            region = []
+            while pila:
+                x, y = pila.pop()
+                region.append((x, y))
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < ancho and 0 <= ny < alto and not visto[nx][ny] and es_blanco(nx, ny):
+                        visto[nx][ny] = True
+                        pila.append((nx, ny))
+            regiones.append(region)
+
+    return regiones
 
 
 
