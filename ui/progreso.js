@@ -10,35 +10,29 @@
    primero del documento —el de Historial— y esta tarjeta mostraba el número de
    la otra pestaña, o ninguno. */
 function renderProgreso() {
-  const actual = state.cfg.periodo || 'dia';
+  /* El mismo rango que Historial: 7 días, 1 mes, 3 meses o todo. Cuánto se
+     mira es la pregunta; cómo se agrupan los puntos lo decide el rango. */
+  const r = rangoActual();
 
-  /* El período se resuelve PRIMERO y se le pasa a todo: el selector está
-     arriba de la pestaña y tiene que mandar sobre lo que hay debajo, no solo
-     sobre los gráficos del final. */
   renderBrecha();
-  renderSemana(actual);
-
-  const cont = $('selPeriodo');
-  if (!cont) return;
-
-  cont.innerHTML = '';
-  for (const p of PERIODOS) {
-    const b = document.createElement('button');
-    b.className = 'periodo' + (p.id === actual ? ' activo' : '');
-    b.textContent = p.nombre;
-    b.setAttribute('aria-pressed', String(p.id === actual));
-    b.onclick = () => { state.cfg.periodo = p.id; save(); renderProgreso(); };
-    cont.appendChild(b);
-  }
+  renderSemana(r);
+  pintarSelRango($('selPeriodo'), renderProgreso);
 
   const objetivo = calcular();
-  const s = seriesDe(state.dias, { periodo: actual, objetivo });
+  const s = seriesDe(state.dias, { periodo: r.periodo, objetivo, lapso: r.dias || diasDeHistorial() });
 
-  pintarPeso(s, actual);
+  pintarPeso(s, r.periodo);
   pintarKcal(s, objetivo);
   pintarAdherencia(s);
   pintarDelModo(s);
   pintarSueno(objetivo);
+}
+
+/** Cuántos días abarca todo el historial, para el rango "Todo". */
+function diasDeHistorial() {
+  const fechas = Object.keys(state.dias || {}).filter(f => (state.dias[f].comidas || []).length).sort();
+  if (!fechas.length) return 30;
+  return Math.max(7, diasEntre(fechas[0], hoyISO()) + 1);
 }
 
 /**
@@ -163,23 +157,24 @@ function renderBrecha() {
  * cómo viniste hay que leerlos, y nadie lee un gráfico de reojo. Cuatro números
  * grandes sí se leen.
  */
-function renderSemana(idPeriodo = 'dia') {
+function renderSemana(rango = null) {
   const caja = $('cardSemana');
   if (!caja) return;
 
-  /* El resumen sigue al período elegido. Antes eran siete días fijos, así que
-     con "Meses" arriba la tarjeta seguía hablando de la última semana y los
+  /* El resumen sigue al rango elegido. Antes eran siete días fijos, así que
+     con "3 meses" arriba la tarjeta seguía hablando de la última semana y los
      números de la pantalla contaban dos historias distintas. */
-  const p = periodoDe(idPeriodo);
+  const p = rango || rangoActual();
+  const largo = p.dias || diasDeHistorial();
   const calc = calcular();
-  const r = resumenPeriodo(state.dias, { largo: p.dias, objetivo: calc?.objetivo || null });
+  const r = resumenPeriodo(state.dias, { largo, objetivo: calc?.objetivo || null });
 
   caja.hidden = !r.hay;
   if (!r.hay) return;
 
   const titulo = caja.querySelector('h2');
   if (titulo) titulo.textContent = p.detalle;
-  $('semanaPill').textContent = `${r.dias} de ${p.dias} días`;
+  $('semanaPill').textContent = `${r.dias} de ${largo} días`;
 
   const nums = [
     { n: fmtNum(r.promedio), t: 'kcal por día' },

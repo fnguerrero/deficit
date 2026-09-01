@@ -121,6 +121,14 @@ function migrar(guardado) {
 
   s.perfil = { ...s.perfil, ...(guardado.perfil || {}) };
   s.cfg = { ...s.cfg, ...(guardado.cfg || {}) };
+
+  /* Historial y Progreso tenían cada uno su selector, con opciones distintas.
+     Ahora comparten `rango`; lo que había guardado se traduce en vez de
+     perderse. */
+  if (s.cfg.rango == null) {
+    if (s.cfg.rangoHist != null) s.cfg.rango = Number(s.cfg.rangoHist);
+    else if (s.cfg.periodo) s.cfg.rango = { dia: 30, semana: 90, mes: 0 }[s.cfg.periodo] ?? 30;
+  }
   /* Un estado del ciclo 5 no trae `juego`: se completa con los valores vacíos y
      el primer recálculo lo llena contra el historial que ya existe. */
   s.juego = { ...s.juego, ...(guardado.juego || {}) };
