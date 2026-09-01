@@ -1980,3 +1980,12 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .plazo-veredicto { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12.5px; }
 .plazo-veredicto.tarde, .plazo-veredicto.sin-datos { color: var(--bad); }
 .plazo-veredicto.adelantado, .plazo-veredicto.en-fecha { color: var(--acc); }
+
+/* Compartir la sugerencia con quien cocina. */
+.sugerencia { position: relative; }
+.sugerencia-enviar {
+  margin-top: 8px; padding: 5px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card2); color: var(--txt);
+  font-size: 12px; font-weight: 650;
+}
+.sugerencia-enviar:active { transform: scale(.97); }

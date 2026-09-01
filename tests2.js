@@ -3091,3 +3091,56 @@ test('una semana de diferencia es estar en fecha', () => {
 test('sin proyeccion no se inventa un veredicto', () => {
   esperar(veredictoDePlazo('2026-12-14', null).estado, 'sin-datos');
 });
+
+/* ---------------- compartir la sugerencia ---------------- */
+
+test('la sugerencia se manda como lista de ingredientes', () => {
+  const t = textoDeSugerencia({
+    titulo: 'Pollo al horno con ensalada',
+    porque: 'Te quedan 520 kcal y te falta proteína.',
+    items: [
+      { nombre: 'Pechuga de pollo', porcion: '200 g' },
+      { nombre: 'Ensalada de hojas', porcion: '1 plato' }
+    ]
+  });
+  esperar(t, 'Pollo al horno con ensalada\n\nPechuga de pollo (200 g)\nEnsalada de hojas (1 plato)');
+});
+
+test('el porque no viaja salvo que se pida', () => {
+  const o = { titulo: 'Tortilla', porque: 'Entra en tu keto.', items: [{ nombre: 'Huevos' }] };
+  esperarQue(!/keto/.test(textoDeSugerencia(o)), 'sin la nota por defecto');
+  esperarQue(/keto/.test(textoDeSugerencia(o, { conNota: true })), 'con la nota si se pide');
+});
+
+test('un item sin porcion no deja parentesis vacios', () => {
+  esperar(textoDeSugerencia({ titulo: 'Café', items: [{ nombre: 'Café solo' }] }), 'Café\n\nCafé solo');
+});
+
+test('sin titulo no hay nada que mandar', () => {
+  esperar(textoDeSugerencia(null), '');
+  esperar(textoDeSugerencia({ items: [{ nombre: 'x' }] }), '');
+});
+
+testAsync('compartir usa el selector del sistema si esta', async () => {
+  let recibido = null;
+  const via = await compartirTexto('hola', { navegador: { share: async (d) => { recibido = d; } } });
+  esperar(via, 'compartido');
+  esperar(recibido.text, 'hola');
+});
+
+testAsync('si no hay selector, copia', async () => {
+  let copiado = null;
+  const via = await compartirTexto('hola', { navegador: { clipboard: { writeText: async (t) => { copiado = t; } } } });
+  esperar(via, 'copiado');
+  esperar(copiado, 'hola');
+});
+
+testAsync('cancelar el selector no cae al portapapeles', async () => {
+  let copiado = false;
+  const nav = {
+    share: async () => { const e = new Error('cancelado'); e.name = 'AbortError'; throw e; },
+    clipboard: { writeText: async () => { copiado = true; } }
+  };
+  esperar(await compartirTexto('hola', { navegador: nav }), 'cancelado');
+  esperarQue(!copiado, 'cerrar el dialogo es una decision, no un error que compensar');
+});
