@@ -3714,7 +3714,10 @@ test('la cintura medida le gana al IMC estimado', () => {
      contextura en 0,28 y el muneco sale con abdominales marcados. Una cintura
      de 110 cm dice que ahi hay panza, y una medida le gana a una estimacion. */
   const con = cuerpoDe({ altura: 178, peso: 92, cintura: 110 }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO);
-  esperarQue(con.efectiva < 0.35, 'el IMC corregido decia poco: ' + con.efectiva);
+  /* Lo que importa no es un umbral fijo sino la BRECHA: el IMC corregido por
+     entrenamiento dice una cosa y la cinta metrica dice otra bastante peor. */
+  esperarQue(con.grasa - con.efectiva > 0.25,
+    'la cinta (' + con.grasa + ') dice bastante mas que el IMC (' + con.efectiva + ')');
   esperarQue(con.grasa > 0.6, 'la cinta dice mucho: ' + con.grasa);
   esperar(medidasDe(con.efectiva, 1, 0, 0, con.forma, con.grasa).cGrasa, con.grasa);
 
@@ -3911,4 +3914,44 @@ testAsync('un dispositivo nuevo no pisa el perfil cargado con uno en blanco', as
 
   esperar(r.estado.perfil.altura, 178);
   esperar(r.resumen.perfilSubido, false);
+});
+
+test('entrenar descuenta puntos de IMC, no fraccion del eje', () => {
+  /* El eje de contextura no es lineal: su tercer tramo cubre de IMC 45 a 90 con
+     0,22 del recorrido. Restar una fraccion fija valia 2 puntos de IMC abajo y
+     10 arriba, asi que alguien de 140 kg se dibujaba con 34 kg menos. */
+  const equivale = (c) => {
+    for (let i = 17; i <= 90; i += 0.1) {
+      if (contexturaDe(+i.toFixed(1)) >= c.efectiva) return +i.toFixed(1);
+    }
+    return 90;
+  };
+
+  /* El mismo entrenamiento tiene que valer lo mismo arriba que abajo. */
+  for (const peso of [62, 82, 105, 140]) {
+    const c = cuerpoDe({ altura: 171, peso }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO);
+    const desvio = c.imc - equivale(c);
+    esperarQue(desvio <= DESCUENTO_IMC + 0.4,
+      peso + ' kg: el cuerpo se dibuja ' + desvio.toFixed(1) + ' puntos de IMC abajo');
+  }
+});
+
+test('entrenar sigue viendose en el cuerpo, no es solo un numero', () => {
+  const quieto = cuerpoDe({ altura: 178, peso: 88 }, diasCuerpo({ entrenados: 0 }), HOY_CUERPO);
+  const activo = cuerpoDe({ altura: 178, peso: 88 }, diasCuerpo({ entrenados: 12 }), HOY_CUERPO);
+  esperar(quieto.imc, activo.imc, 'el IMC medido no se toca');
+  esperarQue(activo.efectiva < quieto.efectiva, 'pero el cuerpo se ve mas firme');
+  /* Y se tiene que ver en el dibujo, no solo en el numero intermedio. */
+  const cintura = (c) => medidasDe(c.efectiva, c.musculatura, 0, c.demacrado).cintura;
+  esperarQue(cintura(activo) < cintura(quieto) - 1, 'la cintura tiene que afinarse de verdad');
+});
+
+test('entrenar no puede dibujar a nadie demacrado', () => {
+  /* Con el descuento en puntos, un flaco que entrena todos los dias caia por
+     debajo del piso de la escala y entraba en el eje de las costillas. */
+  const flaco = cuerpoDe({ altura: 178, peso: 58 }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO);
+  esperarQue(flaco.imc >= 18, 'de partida no esta demacrado: IMC ' + flaco.imc);
+  esperar(flaco.demacrado, 0, 'y el gimnasio no puede meterlo ahi');
+  esperarQue(flaco.efectiva >= 0, 'la contextura no se va abajo de cero');
+  esperarQue(imcParaElDibujo(18, 1) >= IMC_MIN, 'el piso de la escala es el piso');
 });
