@@ -39,6 +39,22 @@ function objetivosDelDia() {
 
   return [
     {
+      /*
+       * Las comidas: el unico habito que contaba sin verse.
+       *
+       * Era la primera de las rachas del dia perfecto y no tenia casillero,
+       * asi que se podia tener la grilla entera en verde y el dia sin
+       * completar. No abre un editor propio —las comidas se cargan abajo, con
+       * su lista y su boton— pero ocupa su lugar y dice como viene.
+       */
+      id: 'registro',
+      emoji: '🍽️',
+      nombre: 'Comidas',
+      listo: (d.comidas || []).length > 0,
+      nivel: (d.comidas || []).length ? 'bien' : '',
+      valor: (d.comidas || []).length ? String((d.comidas || []).length) : ''
+    },
+    {
       id: 'peso',
       emoji: '⚖️',
       nombre: 'Peso',
@@ -69,6 +85,15 @@ function objetivosDelDia() {
       listo: !!(d.sueno && d.sueno.horas),
       nivel: nivelSueno(d.sueno?.horas),
       valor: d.sueno?.horas ? d.sueno.horas + ' h' : ''
+    },
+    {
+      /* Los pasos van a mano: ver pasosObjetivo() en habitos.js. */
+      id: 'pasos',
+      emoji: '👟',
+      nombre: 'Pasos',
+      listo: (d.pasos || 0) >= metaPasos(),
+      nivel: nivelPasos(d.pasos, metaPasos()),
+      valor: d.pasos ? fmtNum(d.pasos) : ''
     },
     {
       id: 'animo',
@@ -185,9 +210,9 @@ function renderObjetivos() {
   const recien = [...listosAhora].filter(id => !yaEstaban.has(id));
 
   /* Cuántos hábitos van, ahora en el título de la fila y no en un renglón
-     propio: los cinco casilleros ya dicen cuáles están y cuáles no, así que
-     era una segunda copia de lo mismo ocupando alto en la pantalla que tiene
-     que entrar entera. */
+     propio: los casilleros ya dicen cuáles están y cuáles no, así que era una
+     segunda copia de lo mismo ocupando alto en la pantalla que tiene que
+     entrar entera. */
   cont.title = resumenHabitos(objetivosDelDia()).texto || '';
 
   cont.innerHTML = '';
@@ -211,6 +236,11 @@ function renderObjetivos() {
 
     if (recien.includes(o.id)) { pop(b); particulas(b); }
   }
+
+  /* Y el aviso fijo, que muestra esto mismo afuera de la app. Va acá porque
+     este render corre al abrir y en cada toque de un objetivo, que es cuando
+     el estado del día cambia. */
+  if (typeof actualizarObjetivosFijos === 'function') actualizarObjetivosFijos();
 }
 
 /* Los cumplidos del render anterior. Arranca vacío a propósito: en la primera
@@ -225,6 +255,7 @@ let faseAnterior = null;
 const TITULOS_OBJ = {
   peso: 'Peso de hoy',
   agua: 'Agua',
+  pasos: 'Pasos de hoy',
   ejercicio: 'Ejercicio',
   ayuno: 'Ayuno',
   sueno: 'Sueño',
@@ -232,6 +263,14 @@ const TITULOS_OBJ = {
 };
 
 function abrirObjetivo(id) {
+  /* Las comidas no tienen editor en este modal: se cargan abajo, en su propia
+     lista. El casillero lleva hasta ahi en vez de no hacer nada, que desde
+     afuera se ve igual que un boton roto. */
+  if (id === 'registro') {
+    document.getElementById('listaComidas')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
   const secciones = [...document.querySelectorAll('#modalObjetivo [data-obj]')];
 
   /* Sin sección no hay nada que editar, y abrir igual deja una hoja vacía con
@@ -241,6 +280,7 @@ function abrirObjetivo(id) {
   $('tituloObjetivo').textContent = TITULOS_OBJ[id] || 'Objetivo';
   secciones.forEach(s => { s.hidden = s.dataset.obj !== id; });
 
+  if (id === 'pasos') renderPasos();
   if (id === 'peso') renderPeso();
   if (id === 'agua') renderAgua();
   if (id === 'ejercicio') { renderEjercicio(); renderActividades(); }
@@ -262,6 +302,100 @@ function cerrarObjetivo() {
 
 $('btnCerrarObjetivo').onclick = cerrarObjetivo;
 $('modalObjetivo').onclick = (e) => { if (e.target.id === 'modalObjetivo') cerrarObjetivo(); };
+
+/* ---------------- pasos ---------------- */
+
+/*
+ * Los escalones, en vez de un teclado numerico.
+ *
+ * El dato viene de mirar el reloj, no de contar: quien camino 9.847 lee "casi
+ * 10 mil" y eso es lo que quiere anotar. Escribir cinco digitos para un dato
+ * que se redondea igual es friccion pura, y la friccion es lo que hace que un
+ * objetivo se abandone a la semana. El numero exacto sigue estando abajo para
+ * el que lo tiene.
+ */
+function escalonesPasos(meta) {
+  const paso = Math.max(1000, Math.round(meta / 5 / 500) * 500);
+  const lista = [];
+  for (let i = 1; i <= 5; i++) lista.push(paso * i);
+  /* Que la meta este siempre, aunque no caiga justo en un escalon: es el unico
+     que cierra el casillero. */
+  if (!lista.includes(meta)) lista.push(meta);
+  return [...new Set(lista)].sort((a, b) => a - b);
+}
+
+function renderPasos() {
+  const meta = metaPasos();
+  const hechos = dia().pasos || 0;
+
+  const cont = $('pasosEscalones');
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  for (const n of escalonesPasos(meta)) {
+    const b = document.createElement('button');
+    b.className = 'chip' + (hechos >= n ? ' activo' : '');
+    b.textContent = fmtNum(n);
+    b.setAttribute('aria-pressed', String(hechos >= n));
+    b.setAttribute('aria-label', `${fmtNum(n)} pasos, objetivo ${fmtNum(meta)}`);
+    /* Volver a tocar el escalon al que ya estabas lo baja al anterior: es la
+       unica forma de deshacer sin escribir el numero a mano. */
+    b.onclick = () => ponerPasos(hechos === n ? 0 : n);
+    cont.appendChild(b);
+  }
+
+  $('pasosHoy').value = hechos || '';
+  $('pasosInfo').textContent = hechos >= meta
+    ? `${fmtNum(hechos)} pasos — objetivo cumplido`
+    : (hechos
+      ? `${fmtNum(hechos)} de ${fmtNum(meta)}. Faltan ${fmtNum(meta - hechos)}.`
+      : 'Tocá hasta dónde llegaste, o escribí el número.');
+
+  pintarMetaPasos(meta);
+}
+
+function pintarMetaPasos(meta) {
+  if (!$('pasosMeta')) return;
+
+  $('pasosMeta').textContent = fmtNum(meta) + ' pasos';
+  $('pasosMenos').disabled = meta <= PASOS_MIN;
+  $('pasosMas').disabled = meta >= PASOS_MAX;
+
+  /* Los 10.000 no salen de ningun estudio: son de una campaña publicitaria
+     japonesa de 1965 para un podometro que se llamaba asi. Lo que si esta
+     medido es que el beneficio grande aparece bastante antes. Decirlo importa
+     porque un objetivo que no se alcanza nunca termina ignorado. */
+  $('pasosReco').textContent = meta > 8000
+    ? 'Los 10.000 son de una publicidad de 1965, no de un estudio. La mayor parte del beneficio está entre 6.000 y 8.000.'
+    : 'Entre 6.000 y 8.000 pasos está la mayor parte del beneficio medido.';
+}
+
+function ponerPasos(n) {
+  const d = dia();
+  d.pasos = Math.max(0, Math.min(PASOS_MAX * 3, Math.round(Number(n) || 0)));
+  d.act = Date.now();
+  save();
+  renderPasos();
+  renderHoy();
+}
+
+function cambiarMetaPasos(delta) {
+  const meta = metaPasos() + delta;
+  state.cfg.pasosMeta = Math.min(PASOS_MAX, Math.max(PASOS_MIN, meta));
+  save();
+  renderPasos();
+  renderObjetivos();
+}
+
+$('pasosMenos').onclick = () => cambiarMetaPasos(-PASOS_SALTO);
+$('pasosMas').onclick = () => cambiarMetaPasos(PASOS_SALTO);
+
+$('btnPasos').onclick = () => {
+  const v = Number($('pasosHoy').value);
+  if (!(v >= 0)) { toast('Poné un número'); return; }
+  ponerPasos(v);
+  toast(v ? `${fmtNum(Math.round(v))} pasos` : 'Pasos borrados');
+};
 
 /* ---------------- ánimo ---------------- */
 

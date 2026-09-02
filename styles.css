@@ -748,8 +748,8 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    pidiendo atención. Es lo que hace que la pantalla se vacíe durante el día. */
 /* minmax(0, 1fr) y no 1fr a secas: `1fr` respeta el ancho mínimo del contenido,
    así que un valor largo —"16.000 kcal"— ensancha su columna y empuja a las
-   demás fuera de la pantalla. Con el 0 las cinco se reparten el ancho parejo
-   pase lo que pase adentro. */
+   demás fuera de la pantalla. Con el 0 se reparten el ancho parejo pase lo que
+   pase adentro. */
 .objetivos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .objetivo b, .objetivo small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .objetivo {
@@ -854,14 +854,16 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   #tab-hoy.active {
     display: flex; flex-direction: column; min-height: 0; flex: 0 0 auto; height: auto;
   }
-  /* Los cinco objetivos entran en una sola fila. En dos filas se comian 80 px
-     de alto para lo mismo.
+  /* Cuatro y tres, en dos filas.
 
-     Eran SEIS cuando esta regla se escribio. Al quedar cinco, la grilla siguio
-     con seis columnas y la ultima quedaba vacia: los casilleros terminaban
-     antes del borde y sobraba un hueco a la derecha que no era de nadie. */
-  #tab-hoy .objetivos { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-  #tab-hoy .objetivo { padding: 7px 2px; }
+     Fueron seis, despues cinco en una sola fila —que era el objetivo: dos filas
+     costaban 80 px de alto para lo mismo—, y ahora son SIETE, desde que la
+     grilla y las rachas del dia perfecto pasaron a ser la misma lista. Siete en
+     una fila da 50 px por casillero en un telefono, y ahi no entra ni el nombre
+     ni el valor: quedan siete emojis sin etiqueta, que es peor que la fila de
+     mas. Se compensa con menos padding. */
+  #tab-hoy .objetivos { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+  #tab-hoy .objetivo { padding: 5px 2px; }
   #tab-hoy .objetivo b { font-size: 10px; }
   #tab-hoy .objetivo small { font-size: 8.5px; }
   /* La lista de comidas NO tiene scroll propio.
@@ -895,7 +897,9 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* El cronómetro del ayuno: es lo único que hay que ver al abrirlo. */
 .ayuno-reloj { font-size: 40px; font-weight: 700; text-align: center; margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
 .ayuno-reloj.completo { color: var(--acc); }
-.objetivos { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* Cuatro columnas: los siete casilleros entran en 4 + 3. Ver la nota de la
+   version movil, mas abajo. */
+.objetivos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .chip.activo { border-color: var(--acc); color: var(--acc); }
 
 /* El veredicto: lo primero que se ve al entrar al historial. */

@@ -86,6 +86,35 @@ function vasosObjetivo(pesoKg, elegido = null) {
   return VASOS_DEFECTO;
 }
 
+/* ---------------- pasos ---------------- */
+
+/*
+ * Los pasos se cargan A MANO, y eso decide todo lo demas.
+ *
+ * Una PWA no llega al podometro: ni la Sensor API ni Health Connect estan
+ * disponibles desde el navegador, asi que el numero sale de mirar el reloj o
+ * el telefono y anotarlo. Por eso el objetivo se cumple de un toque en vez de
+ * pedir el numero exacto: quien anota 10.000 no conto los pasos, leyo una
+ * pantalla y la copio.
+ *
+ * El default es 10.000 por pedido explicito de Nico. Vale aclarar que va a
+ * contramano de lo que hace el agua unas lineas mas arriba, que arranca bajo a
+ * proposito para que el casillero se pueda cumplir: 10.000 es la cifra
+ * conocida, no la proxima alcanzable. Se baja de a 500 desde el mismo editor.
+ */
+const PASOS_DEFECTO = 10000;
+const PASOS_MIN = 1000;
+const PASOS_MAX = 40000;
+const PASOS_SALTO = 500;
+
+function pasosObjetivo(elegido = null) {
+  const n = Number(elegido);
+  if (n > 0) return Math.min(PASOS_MAX, Math.max(PASOS_MIN, Math.round(n / 100) * 100));
+  return PASOS_DEFECTO;
+}
+
+/* ---------------- agua (sigue) ---------------- */
+
 /** Lo que dice la referencia habitual: 35 ml por kilo, en vasos de 250 ml. */
 function vasosRecomendados(pesoKg) {
   if (!pesoKg) return 8;

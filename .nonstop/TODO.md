@@ -29,3 +29,15 @@
 - [x] Movimiento: respiración con ritmo del día, parpadeo, cabeceo, zzz · verif: getComputedStyle en la app
 - [~] Revisión adversarial (workflow wq3ox92yv) y commit · verif: hallazgos confirmados arreglados, suite en verde
 - [x] Cintura: campo opcional al lado del peso y silueta · verif: 1005 tests en verde, banco 5/5, app en vivo a 375 px
+
+## Ciclo 17 — los pasos y el aviso fijo
+
+- [x] Los pasos, sexto casillero y quinta regla: meta configurable, 10.000 por defecto, cargados a mano · verif: 1030 tests en verde y el editor en la app viva
+- [x] La grilla y las rachas pasan a ser UNA lista de siete · verif: RACHAS.length 7, los siete chips en pantalla, la voz reclamando peso y ánimo
+- [x] Fecha de corte para no reescribir el pasado: antes del 2026-09-02 un día perfecto son las cuatro de siempre · verif: 4 tests de rachasDe/diaPerfecto y del XP viejo
+- [x] Los pasos viajan: columna nueva en `dias` y fusión por el más alto · verif: test de fusionarDia y de aplicarRemoto
+- [x] La cintura bajada llegaba hasta aplicarRemoto y se perdía en la última línea · verif: test nuevo
+- [x] Notificación fija con el estado del día: una sola, por el service worker, con tag fijo y silenciosa · verif: los tres textos (0 de 7, 5 de 7, completo) en la app viva
+- [ ] Correr `supabase-pasos.sql` en Supabase · verif: la columna `pasos` existe en `dias`
+- [ ] Reimportar `deficit-prueba.json` para ver el historial con pasos · verif: 121 días con pasos, promedio 8.888
+- [ ] Probar la notificación fija en el celular con permiso concedido · verif: un solo cartel que se reemplaza, sin vibrar

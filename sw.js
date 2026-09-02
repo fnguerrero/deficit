@@ -1,30 +1,30 @@
 /* Service worker — cachea el shell de la app para que ande offline.
    Subir la versión al cambiar cualquier archivo. */
 
-const VERSION = 'deficit-v459';
+const VERSION = 'deficit-v463';
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=459',
-  './config.js?v=459',
-  './core.js?v=459',
-  './platos.js?v=459',
-  './animar.js?v=459',
-  './fotos.js?v=459',
-  './calibracion.js?v=459',
-  './modos.js?v=459',
-  './arreglos.js?v=459',
-  './habitos.js?v=459',
-  './mascota.js?v=459',
-  './cuerpo.js?v=459',
-  './cintura.js?v=459',
-  './figura.js?v=459',
-  './cara.js?v=459',
-  './personaje.js?v=459',
-  './relieve.js?v=459',
-  './sprite-datos.js?v=459',
-  './sprite.js?v=459',
+  './styles.css?v=463',
+  './config.js?v=463',
+  './core.js?v=463',
+  './platos.js?v=463',
+  './animar.js?v=463',
+  './fotos.js?v=463',
+  './calibracion.js?v=463',
+  './modos.js?v=463',
+  './arreglos.js?v=463',
+  './habitos.js?v=463',
+  './mascota.js?v=463',
+  './cuerpo.js?v=463',
+  './cintura.js?v=463',
+  './figura.js?v=463',
+  './cara.js?v=463',
+  './personaje.js?v=463',
+  './relieve.js?v=463',
+  './sprite-datos.js?v=463',
+  './sprite.js?v=463',
   './img/cuerpo-0.webp',
   './img/cuerpo-1.webp',
   './img/cuerpo-2.webp',
@@ -32,44 +32,44 @@ const SHELL = [
   './img/cuerpo-4.webp',
   './img/cuerpo-5.webp',
   './img/cuerpo-6.webp',
-  './transformacion.js?v=459',
-  './aura.js?v=459',
-  './juego.js?v=459',
-  './sonidos.js?v=459',
-  './voz.js?v=459',
-  './graficos.js?v=459',
-  './plazo.js?v=459',
-  './compartir.js?v=459',
-  './sugerencias.js?v=459',
-  './analisis.js?v=459',
-  './chequeos.js?v=459',
-  './claude.js?v=459',
-  './productos.js?v=459',
-  './sync-perfil.js?v=459',
-  './sync.js?v=459',
-  './estado-sync.js?v=459',
-  './auth.js?v=459',
-  './app.js?v=459',
-  './ui/general.js?v=459',
-  './ui/hoy.js?v=459',
-  './ui/dia.js?v=459',
-  './ui/objetivos.js?v=459',
-  './ui/tarjeta.js?v=459',
-  './ui/comidas.js?v=459',
-  './ui/edicion.js?v=459',
-  './ui/escaner.js?v=459',
-  './ui/asistente.js?v=459',
-  './ui/historial.js?v=459',
-  './ui/progreso.js?v=459',
-  './ui/logros.js?v=459',
-  './ui/perfil.js?v=459',
-  './ui/sincronizacion.js?v=459',
-  './ui/cuenta.js?v=459',
-  './ui/calibracion.js?v=459',
-  './ui/actividades.js?v=459',
-  './ui/recordatorios.js?v=459',
-  './ui/ajustes.js?v=459',
-  './arranque.js?v=459',
+  './transformacion.js?v=463',
+  './aura.js?v=463',
+  './juego.js?v=463',
+  './sonidos.js?v=463',
+  './voz.js?v=463',
+  './graficos.js?v=463',
+  './plazo.js?v=463',
+  './compartir.js?v=463',
+  './sugerencias.js?v=463',
+  './analisis.js?v=463',
+  './chequeos.js?v=463',
+  './claude.js?v=463',
+  './productos.js?v=463',
+  './sync-perfil.js?v=463',
+  './sync.js?v=463',
+  './estado-sync.js?v=463',
+  './auth.js?v=463',
+  './app.js?v=463',
+  './ui/general.js?v=463',
+  './ui/hoy.js?v=463',
+  './ui/dia.js?v=463',
+  './ui/objetivos.js?v=463',
+  './ui/tarjeta.js?v=463',
+  './ui/comidas.js?v=463',
+  './ui/edicion.js?v=463',
+  './ui/escaner.js?v=463',
+  './ui/asistente.js?v=463',
+  './ui/historial.js?v=463',
+  './ui/progreso.js?v=463',
+  './ui/logros.js?v=463',
+  './ui/perfil.js?v=463',
+  './ui/sincronizacion.js?v=463',
+  './ui/cuenta.js?v=463',
+  './ui/calibracion.js?v=463',
+  './ui/actividades.js?v=463',
+  './ui/recordatorios.js?v=463',
+  './ui/ajustes.js?v=463',
+  './arranque.js?v=463',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -104,6 +104,24 @@ self.addEventListener('message', (e) => {
   // sirve: con una versión esperando, su cache ya existe y el diagnóstico diría
   // que estás actualizado cuando todavía corrés la vieja.
   if (e.data === 'version' && e.ports && e.ports[0]) e.ports[0].postMessage(VERSION);
+});
+
+/*
+ * Tocar el aviso de objetivos abre la app en vez de no hacer nada.
+ *
+ * Sin esto la notificacion fija es un cartel muerto: se ve el estado del dia y
+ * al tocarlo no pasa nada, que es peor que no mostrarlo. Si ya hay una pestaña
+ * abierta se le da foco en lugar de abrir otra.
+ */
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(lista => {
+      const abierta = lista.find(c => c.url.includes(self.registration.scope));
+      if (abierta) return abierta.focus();
+      return self.clients.openWindow('./');
+    })
+  );
 });
 
 self.addEventListener('activate', (e) => {

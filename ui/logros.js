@@ -46,7 +46,7 @@ function pintarProximoLogro() {
     $('logrosGrilla').parentElement.insertBefore(caja, $('logrosGrilla'));
   }
 
-  const c = logroMasCerca(state.dias, state.juego, { vasos: metaVasos() });
+  const c = logroMasCerca(state.dias, state.juego, { vasos: metaVasos(), pasos: metaPasos() });
   caja.hidden = !c;
   if (!c) return;
 
@@ -69,7 +69,7 @@ function pintarRachasGrandes() {
   if (!cont) return;
 
   const rachas = todasLasRachas(state.dias, {
-    vasos: metaVasos(),
+    vasos: metaVasos(), pasos: metaPasos(),
     juego: state.juego
   });
 

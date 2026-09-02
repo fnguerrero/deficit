@@ -38,6 +38,9 @@ const DEFAULT_STATE = {
   cfg: {
     apiKey: '', modelo: 'claude-opus-5', precision: 'normal', tema: 'auto',
     recordatorios: false, horarios: null,
+    /* El aviso fijo con el estado del día. Apagado por defecto: una
+       notificación que no se va sola es intrusiva hasta que alguien la pide. */
+    avisoObjetivos: false,
     /* Los sonidos arrancan PRENDIDOS: pedido explícito de Nico, que quiere que
        la app haga ruido al cumplir. Se apagan de un toque en Ajustes, y
        `prefers-reduced-motion` los silencia igual sin preguntar.
@@ -47,6 +50,8 @@ const DEFAULT_STATE = {
     sonido: true, sonidoElegido: false,
     /* Vasos de agua por día. Empieza bajo a propósito: ver vasosObjetivo(). */
     vasosMeta: null,
+    /* Pasos por día. En null usa los 10.000 de siempre: ver pasosObjetivo(). */
+    pasosMeta: null,
     topeGasto: TOPE_DEFECTO,
     avisoKeyOculto: false, onboardingHecho: false
   }
@@ -55,6 +60,11 @@ const DEFAULT_STATE = {
 /** El objetivo de vasos de hoy: el que eligió Nico, o el default bajo. */
 function metaVasos() {
   return vasosObjetivo(state.perfil.peso, state.cfg.vasosMeta);
+}
+
+/** Los pasos que hacen el día, configurables desde el mismo casillero. */
+function metaPasos() {
+  return pasosObjetivo(state.cfg.pasosMeta);
 }
 
 const MAX_FRECUENTES = 200;
@@ -156,6 +166,10 @@ function migrar(guardado) {
          se perdia en el primer arranque. */
       cintura: typeof d.cintura === 'number' ? d.cintura : null,
       agua: Number(d.agua) || 0,
+      /* Los pasos del dia, anotados a mano: el navegador no llega al podometro
+         ni a Health Connect, asi que el numero se copia del reloj o del
+         telefono. Cero y "sin cargar" son lo mismo, como el agua. */
+      pasos: Number(d.pasos) || 0,
       ejercicio: Number(d.ejercicio) || 0,
       nota: String(d.nota || ''),
       /* Como venia el dia, en caritas. Escribir una nota es mucho pedir todos los dias. */

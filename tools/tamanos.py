@@ -42,19 +42,28 @@ LIMITES = [
     ('cara.js', 300),
     ('transformacion.js', 350),
     # +20 por faseEnRiesgo, que vive al lado de diasPerfectos y lee lo mismo
-    ('juego.js', 520),
+    # +40 al pasar las rachas de cuatro a siete y sumarles la fecha de corte:
+    # rachasDe() y diaPerfecto() son el unico lugar donde vive esa regla, y
+    # sacarlas de aca las alejaria de las cinco cuentas que las usan
+    ('juego.js', 560),
     ('sonidos.js', 250),
     ('voz.js', 350),
     ('graficos.js', 400),
     # +20 por la cintura del dia y el enganche del perfil. El perfil entero ya
     # salio a sync-perfil.js: lo que queda aca son tres lineas de llamada
-    ('sync.js', 620),
+    # +10 por los pasos: son cuatro lineas en diaAFila y en fusionarDia
+    ('sync.js', 640),
     ('sync-perfil.js', 250),
     ('estado-sync.js', 250),
     ('auth.js', 300),
     ('tests.js', 6000),   # la suite crece con cada feature
     ('tests2.js', 6000),  # se partio en el ciclo 6, al pasarse la primera
-    ('sw.js', 150),
+    # +20 por notificationclick, que hace que el aviso fijo lleve a la app
+    ('sw.js', 170),
+    # +40 por el editor de pasos. Va con la grilla y no en ui/hoy.js, que ya
+    # esta en 660: los pasos son el sexto casillero y su editor es el mismo
+    # patron que el del sueño y el del animo, que ya viven aca.
+    ('ui/objetivos.js', 740),
     ('ui/*.js', 700),
     # Lo especifico va ANTES del comodin: el primero que matchea manda, y si
     # `tools/*.py` viniera primero se llevaria puesto este limite.
