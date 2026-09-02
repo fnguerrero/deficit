@@ -377,30 +377,33 @@ function logrosPorAnunciar(juego) {
  * acompañe. El cuerpo sigue saliendo de lo que medís. Lo que se prende fuego
  * es el personaje.
  *
- * Lo único que el día perfecto sí toca del cuerpo es un plus de musculatura,
- * chico y temporal: se siente y se va si cortás la racha.
+ * Hubo una excepción a esa regla —un plus de musculatura por día perfecto— y
+ * duró hasta que se vio en pantalla: alguien con IMC 47,9 se dibujaba como uno
+ * de 36,3, porque el plus se colaba en el descuento por músculo. La excepción
+ * era justo lo que el párrafo de arriba dice que no hay que hacer.
  */
 /*
- * `musculo` es lo que la fase le suma al eje del cuerpo SOLO para el dibujo, y
- * `pose` cuánto se abre la postura. Los colores van de dorado a rojo a blanco:
+ * `pose` es cuánto se abre la postura. Los colores van de dorado a rojo a blanco:
  * saturados y calientes, no pasteles — un aura pastel se lee tierna, que es
  * exactamente lo contrario de lo que esto tiene que transmitir.
  */
 const FASES = [
-  { n: 0, nombre: 'Normal', detalle: 'Cumplí un día entero y esto empieza', musculo: 0, pose: 0 },
-  { n: 1, nombre: 'Encendido', color: '#ffc107', pelo: 'punta', musculo: .14, pose: .35 },
-  { n: 2, nombre: 'Furia', color: '#ffab00', pelo: 'punta', rayos: true, musculo: .24, pose: .55 },
-  { n: 3, nombre: 'Bestia', color: '#ff6d00', pelo: 'punta', rayos: true, musculo: .34, pose: .75, suelo: true },
-  { n: 4, nombre: 'Titán', color: '#f4511e', pelo: 'punta', rayos: true, musculo: .44, pose: .9, suelo: true },
-  { n: 5, nombre: 'Leyenda', color: '#d50000', pelo: 'punta', rayos: true, musculo: .55, pose: 1, suelo: true, divino: true },
-  { n: 6, nombre: 'Fuera de escala', color: '#00b0ff', pelo: 'punta', rayos: true, musculo: .68, pose: 1, suelo: true, divino: true }
+  { n: 0, nombre: 'Normal', detalle: 'Cumplí un día entero y esto empieza', pose: 0 },
+  { n: 1, nombre: 'Encendido', color: '#ffc107', pelo: 'punta', pose: .35 },
+  { n: 2, nombre: 'Furia', color: '#ffab00', pelo: 'punta', rayos: true, pose: .55 },
+  { n: 3, nombre: 'Bestia', color: '#ff6d00', pelo: 'punta', rayos: true, pose: .75, suelo: true },
+  { n: 4, nombre: 'Titán', color: '#f4511e', pelo: 'punta', rayos: true, pose: .9, suelo: true },
+  { n: 5, nombre: 'Leyenda', color: '#d50000', pelo: 'punta', rayos: true, pose: 1, suelo: true, divino: true },
+  { n: 6, nombre: 'Fuera de escala', color: '#00b0ff', pelo: 'punta', rayos: true, pose: 1, suelo: true, divino: true }
 ];
 
 const FASE_MAX = FASES.length - 1;
 
-/** Cuánto suma al músculo cada día perfecto seguido, y hasta dónde. */
-const BONUS_POR_PERFECTO = 0.15;
-const BONUS_TOPE = 0.45;
+/* El plus al músculo por días perfectos seguidos se fue del todo, y con él el
+   campo `musculo` de las fases. Inflaba el cuerpo: con IMC 47,9 el muñeco que
+   se dibujaba equivalía a uno de 36,3, porque el plus entraba en el descuento
+   por músculo. La fase se ve en el pelo, el aura, los rayos y la pose — que es
+   lo que aura.js dice desde que existe. */
 
 /**
  * Días perfectos seguidos, contando hacia atrás.
@@ -425,10 +428,7 @@ function faseDe(perfectos) {
   return FASES[Math.min(FASE_MAX, Math.max(0, Number(perfectos) || 0))];
 }
 
-/** Lo que el día perfecto le presta al cuerpo. Chico y temporal a propósito. */
-function bonusDePerfectos(perfectos) {
-  return Math.min(BONUS_TOPE, (Number(perfectos) || 0) * BONUS_POR_PERFECTO);
-}
+
 
 /* ---------------- avisos del juego ---------------- */
 

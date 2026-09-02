@@ -154,16 +154,22 @@ const DESCUENTO_MUSCULO = 0.18;
  * app pide el peso. Inventar una contextura sería mostrarle a Nico un cuerpo
  * que no es el suyo.
  */
-function cuerpoDe(perfil, dias, hasta = hoyISO(), { bonus = 0 } = {}) {
+function cuerpoDe(perfil, dias, hasta = hoyISO()) {
   const peso = ultimoPesoConocido(perfil, dias, hasta);
   const imc = imcDe(peso, perfil?.altura);
   const entrenados = diasEntrenados(dias, hasta);
   const cintura = ultimaCinturaConocida(perfil, dias, hasta);
   const ica = icaDe(cintura, perfil?.altura);
 
-  /* El plus por días perfectos seguidos. Es chico y se va solo al cortar la
-     racha: motiva sin mentir que cumplir un día ya te puso en forma. */
-  const musculatura = +Math.min(1, musculaturaDe(entrenados) + (Number(bonus) || 0)).toFixed(3);
+  /* Sale SOLO de los días entrenados. Hubo un plus por días perfectos seguidos
+     y hubo que sacarlo: se colaba en el descuento por músculo y en el aviso del
+     IMC, así que un día cumplido adelgazaba al muñeco. Con IMC 47,9 el cuerpo
+     dibujado equivalía a uno de 36,3 — casi doce puntos, unos 34 kg.
+
+     La regla ya estaba escrita en aura.js: la transformación va en el pelo y en
+     el aura, nunca en el cuerpo. Si la fase lo inflara, la app estaría diciendo
+     que cumplir objetivos te hace más grande. */
+  const musculatura = musculaturaDe(entrenados);
   const contextura = contexturaDe(imc);
 
   const efectiva = contextura == null
@@ -254,8 +260,8 @@ function descansoDe(dia) {
 /**
  * El cuerpo que se dibuja hoy: lo del peso y el ejercicio, más el resto del día.
  */
-function cuerpoDelDia(perfil, dias, hasta = hoyISO(), { bonus = 0, meta = 8, hora = null } = {}) {
-  const base = cuerpoDe(perfil, dias, hasta, { bonus });
+function cuerpoDelDia(perfil, dias, hasta = hoyISO(), { meta = 8, hora = null } = {}) {
+  const base = cuerpoDe(perfil, dias, hasta);
   const d = dias?.[hasta] || null;
   const h = hora == null ? new Date().getHours() : hora;
 
