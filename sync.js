@@ -244,6 +244,10 @@ function diaAFila(dia, fecha, llave, subido = Date.now(), userId = null) {
     ...(userId ? { user_id: userId } : {}),
     fecha,
     peso: dia.peso,
+    /* La cintura del día en que se midió. No es un dato diario, pero es el
+       único lugar donde queda su fecha, y sin fecha no hay curva que dibujar
+       en el otro dispositivo. */
+    cintura: dia.cintura ?? null,
     agua: dia.agua || 0,
     ejercicio: dia.ejercicio || 0,
     nota: dia.nota || '',
@@ -259,7 +263,7 @@ function diaAFila(dia, fecha, llave, subido = Date.now(), userId = null) {
 }
 
 /** Los campos que la base puede no tener todavía, si falta correr la migración. */
-const CAMPOS_NUEVOS_DIA = ['sueno_horas', 'sueno_calidad', 'animo'];
+const CAMPOS_NUEVOS_DIA = ['sueno_horas', 'sueno_calidad', 'animo', 'cintura'];
 const CAMPOS_NUEVOS_COMIDA = ['fibra', 'azucar', 'sodio', 'porcion_factor'];
 
 /** La misma fila sin los campos nuevos, para reintentar contra una base vieja. */
@@ -346,6 +350,12 @@ function fusionarDia(local, remoto) {
   /* El sueño y el ánimo son "lo tiene el que lo tiene": ninguno de los dos se
      acumula como el agua ni se puede promediar, así que si de un lado hay dato
      y del otro no, gana el que hay, y si hay de los dos gana el más nuevo. */
+  /* La cintura es como el peso: un número medido que no se acumula. Si de un
+     lado hay y del otro no, gana el que hay. */
+  const cintL = local?.cintura == null || local.cintura === '' ? null : Number(local.cintura);
+  const cintR = remoto?.cintura == null || remoto.cintura === '' ? null : Number(remoto.cintura);
+  const cintura = cintL == null ? cintR : (cintR == null ? cintL : (ganaR ? cintR : cintL));
+
   const suenoR = remotoSueno(remoto);
   const suenoL = local?.sueno || null;
   const sueno = !suenoR ? suenoL : (!suenoL ? suenoR : (ganaR ? suenoR : suenoL));
@@ -355,13 +365,14 @@ function fusionarDia(local, remoto) {
   const animo = !animoR ? animoL : (!animoL ? animoR : (ganaR ? animoR : animoL));
 
   const cambio = peso !== (pesoL == null ? null : pesoL) ||
+    cintura !== cintL ||
     agua !== (Number(local?.agua) || 0) ||
     ejercicio !== (Number(local?.ejercicio) || 0) ||
     nota !== notaL ||
     JSON.stringify(sueno) !== JSON.stringify(suenoL) ||
     animo !== animoL;
 
-  return { peso, agua, ejercicio, nota, sueno, animo, act: Math.max(actL, actR), cambio };
+  return { peso, cintura, agua, ejercicio, nota, sueno, animo, act: Math.max(actL, actR), cambio };
 }
 
 /** El sueño que viene del servidor, que llega en dos columnas planas. */
@@ -502,6 +513,15 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
   await guardarComidas(cliente, [...filasComidas, ...filasBorradas]);
   await guardarDias(cliente, filasDias);
 
+  /* 3) y el perfil, que hasta ahora no viajaba: quien abría la app en el
+     celular se encontraba la altura, la edad y el objetivo en blanco. Va aparte
+     porque es UNO solo y se resuelve entero — ver sync-perfil.js — y no puede
+     tumbar el resto si la tabla todavía no existe. */
+  const perfil = await sincronizarPerfil({
+    cliente, perfil: fusionado.perfil, llave, ultimoSync, ahora, userId
+  });
+  fusionado.perfil = perfil.perfil;
+
   return {
     estado: fusionado,
     /* Las filas crudas salen con el resultado para que el llamador pueda volver
@@ -513,6 +533,11 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
       subidasComidas: filasComidas.length,
       subidasBorradas: filasBorradas.length,
       subidasDias: filasDias.length,
+      perfilBajado: perfil.cambio,
+      perfilSubido: perfil.subido,
+      /* Que la pantalla pueda decir que falta correr la migración: fallar en
+         silencio deja a alguien esperando un dato que no va a llegar nunca. */
+      faltaTablaPerfil: perfil.migrar,
       bajadas: remotasComidas.length + remotosDias.length
     },
     ultimoSync: ahora
@@ -582,6 +607,7 @@ if (typeof window !== 'undefined') {
     TABLA_DIAS, TABLA_COMIDAS, LARGO_LLAVE,
     generarLlave, llaveValida, llaveLegible, clienteSupabase,
     comidaAFila, filaAComida, diaAFila, filaSinCamposNuevos, faltaMigracion, guardarDias, guardarComidas,
-    cambiosLocales, aplicarRemoto, fusionarDia, sincronizar, fusionarAlFinal
+    cambiosLocales, aplicarRemoto, fusionarDia, sincronizar, fusionarAlFinal,
+    TABLA_PERFIL, perfilAFila, filaAPerfil, fusionarPerfil, perfilVacio, sincronizarPerfil
   };
 }

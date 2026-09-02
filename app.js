@@ -77,9 +77,34 @@ if (typeof addEventListener === 'function') {
   });
 }
 
+/*
+ * Cuándo se tocó el perfil por última vez.
+ *
+ * Sin este número no hay forma de decidir qué perfil gana cuando la compu y el
+ * celular tienen dos versiones distintas, y el sync no puede fusionar a ciegas.
+ *
+ * Se calcula acá y no en cada lugar que edita el perfil —hay cinco: el
+ * formulario, el modo, el ritmo, el plazo y la cintura— justamente para que
+ * agregar un sexto no obligue a acordarse de nada. Comparar once campos en cada
+ * guardado no se nota; olvidarse de marcar uno hace que un cambio no viaje
+ * nunca, y eso no se nota hasta que ya perdiste el dato.
+ */
+let firmaPerfil = null;
+
+function marcarPerfil() {
+  const p = state.perfil || {};
+  const firma = JSON.stringify(CAMPOS_QUE_VIAJAN.map(c => p[c] ?? null));
+  /* La primera vez solo se toma la foto: recién cargado del disco, el perfil no
+     cambió por nada que haya hecho nadie, y marcarlo lo haría ganar contra un
+     perfil remoto más nuevo sin motivo. */
+  if (firmaPerfil !== null && firma !== firmaPerfil) state.perfil.act = Date.now();
+  firmaPerfil = firma;
+}
+
 function guardarYa() {
   clearTimeout(relojGuardado);
   relojGuardado = null;
+  marcarPerfil();
   const texto = JSON.stringify(state);
 
   try {
