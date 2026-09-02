@@ -750,7 +750,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    así que un valor largo —"16.000 kcal"— ensancha su columna y empuja a las
    demás fuera de la pantalla. Con el 0 se reparten el ancho parejo pase lo que
    pase adentro. */
-.objetivos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.objetivos { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .objetivo b, .objetivo small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .objetivo {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -854,18 +854,19 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   #tab-hoy.active {
     display: flex; flex-direction: column; min-height: 0; flex: 0 0 auto; height: auto;
   }
-  /* Cuatro y tres, en dos filas.
+  /* Los siete en una sola fila, que es el pedido y tambien lo que venia
+     haciendo la grilla desde que eran seis: dos filas cuestan 80 px de alto
+     para decir lo mismo, en la pantalla que tiene que entrar entera.
 
-     Fueron seis, despues cinco en una sola fila —que era el objetivo: dos filas
-     costaban 80 px de alto para lo mismo—, y ahora son SIETE, desde que la
-     grilla y las rachas del dia perfecto pasaron a ser la misma lista. Siete en
-     una fila da 50 px por casillero en un telefono, y ahi no entra ni el nombre
-     ni el valor: quedan siete emojis sin etiqueta, que es peor que la fila de
-     mas. Se compensa con menos padding. */
-  #tab-hoy .objetivos { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  #tab-hoy .objetivo { padding: 5px 2px; }
-  #tab-hoy .objetivo b { font-size: 10px; }
-  #tab-hoy .objetivo small { font-size: 8.5px; }
+     Siete en 375 px dan 47 px por casillero, y ahi la letra de 10 px ya no
+     entra: "Ejercicio" se cortaba en "Ejerci…". Por eso baja a 8,5 px con el
+     interletrado apretado y el emoji a 14 px — es la unica forma de que los
+     siete conserven su NOMBRE, que es lo que los hace distinguibles de un
+     vistazo. Sin nombre serian siete emojis y habria que aprenderselos. */
+  #tab-hoy .objetivos { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+  #tab-hoy .objetivo { padding: 6px 1px; gap: 1px; font-size: 14px; }
+  #tab-hoy .objetivo b { font-size: 8.5px; letter-spacing: -.3px; }
+  #tab-hoy .objetivo small { font-size: 7.5px; }
   /* La lista de comidas NO tiene scroll propio.
      Lo tuvo, y era peor: con seis comidas cargadas la caja quedaba en 52 px y
      se veia una fila y media, mientras el resto de la pantalla estaba lleno de
@@ -897,9 +898,8 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* El cronómetro del ayuno: es lo único que hay que ver al abrirlo. */
 .ayuno-reloj { font-size: 40px; font-weight: 700; text-align: center; margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
 .ayuno-reloj.completo { color: var(--acc); }
-/* Cuatro columnas: los siete casilleros entran en 4 + 3. Ver la nota de la
-   version movil, mas abajo. */
-.objetivos { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* Los siete, en una sola fila. Ver la nota de la version movil, mas abajo. */
+.objetivos { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .chip.activo { border-color: var(--acc); color: var(--acc); }
 
 /* El veredicto: lo primero que se ve al entrar al historial. */
