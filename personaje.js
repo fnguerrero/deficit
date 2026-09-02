@@ -478,7 +478,10 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
   const med = medidasDe(
     cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
     cuerpo?.musculatura ?? 0,
-    f ? f.musculo : 0,
+    /* Solo el destello de la transformación presta músculo, y dura tres cuartos
+       de segundo: ver transformarse() en ui/tarjeta.js. La fase permanente no
+       toca el cuerpo. */
+    f ? (f.musculo || 0) : 0,
     cuerpo?.demacrado ?? 0,
     cuerpo?.forma ?? 0,
     cuerpo?.grasa ?? null

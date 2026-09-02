@@ -62,7 +62,7 @@ function spritePara(cuerpo, fase = null) {
      saltos disponibles y conviene gastarlos a la mitad de la escalera y no al
      final, donde casi nadie llega. */
   const m = Math.min(1, Math.max(0,
-    ((cuerpo?.musculatura ?? 0) + (fase?.musculo ?? 0) * 1.5) * margen));
+    ((cuerpo?.musculatura ?? 0) + (fase?.musculo || 0) * 1.5) * margen));
 
   let mejor = 0;
   let menor = Infinity;
@@ -158,7 +158,7 @@ function htmlPersonaje(animo = 'neutral', alto = 96, cuerpo = null, fase = null)
   const med = medidasDe(
     cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
     cuerpo?.musculatura ?? 0,
-    f ? f.musculo : 0
+    f ? (f.musculo || 0) : 0
   );
 
   /* El aura se dibuja en el sistema de siempre y se estira al alto del sprite:

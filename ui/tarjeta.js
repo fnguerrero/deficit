@@ -28,10 +28,7 @@ function renderMascota() {
   /* cuerpoDelDia y no cuerpoDe: el primero suma el agua, el sueño y el ánimo
      de hoy, que es lo que hace que el muñeco sea el de este día y no el de
      esta balanza. */
-  const cuerpo = cuerpoDelDia(state.perfil, state.dias, hoyISO(), {
-    bonus: bonusDePerfectos(perfectos),
-    meta: metaVasos()
-  });
+  const cuerpo = cuerpoDelDia(state.perfil, state.dias, hoyISO(), { meta: metaVasos() });
 
   /* 86 y no 70: el lienzo crecio para que entren las puntas del pelo y el aura,
      asi que a 70 la figura en si quedaba en 43 px de ancho. */
@@ -311,11 +308,11 @@ function transformarse(fase) {
   const cont = $('mascotaDibujo');
   if (!cont) return;
 
-  const cuerpo = cuerpoDe(state.perfil, state.dias, hoyISO(), {
-    bonus: bonusDePerfectos(diasPerfectos(state.dias, { vasos: metaVasos() }))
-  });
+  const cuerpo = cuerpoDe(state.perfil, state.dias, hoyISO());
 
-  const pico = { ...fase, pose: 1, musculo: Math.max(fase.musculo, 0.5), rayos: true, n: Math.max(fase.n, 2) };
+  /* El único lugar donde el músculo de la fase existe: el destello, que dura
+     750 ms. Está documentado arriba como la única vez que el dibujo miente. */
+  const pico = { ...fase, pose: 1, musculo: 0.5, rayos: true, n: Math.max(fase.n, 2) };
   cont.innerHTML = htmlPersonaje('genial', 86, cuerpo, pico);
 
   cont.classList.remove('transformando');

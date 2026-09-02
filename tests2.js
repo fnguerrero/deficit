@@ -810,7 +810,6 @@ test('un dia que llega de otro dispositivo suma su XP', () => {
 test('sin dias perfectos no hay fase', () => {
   esperar(diasPerfectos(diasJ({ 0: 'comida' }), OPTS_J), 0);
   esperar(faseDe(0).n, 0);
-  esperar(bonusDePerfectos(0), 0);
 });
 
 test('los dias perfectos se cuentan seguidos hacia atras', () => {
@@ -848,11 +847,12 @@ test('los rayos aparecen recien en la fase 2', () => {
   esperarQue(FASES[2].rayos && FASES[FASE_MAX].rayos, 'de la 2 para arriba si');
 });
 
-test('la fase abre la postura y suma musculo', () => {
-  /* Lo que hace que se lea imponente es la silueta, no el color: sin postura
-     abierta y hombros anchos, la transformacion era un cambio de peinado. */
+test('la fase abre la postura, y eso es todo lo que toca del cuerpo', () => {
+  /* Hubo una version en la que la fase tambien ensanchaba, y se veia bien en la
+     lamina y mal en la realidad: con IMC 47,9 el muneco salia como uno de 36,3.
+     Lo que queda es la POSE, que no miente sobre el tamano de nadie. */
   for (let i = 1; i < FASES.length; i++) {
-    esperarQue(FASES[i].musculo > FASES[i - 1].musculo, 'fase ' + i + ': musculo');
+    esperarQue(!FASES[i].musculo, 'fase ' + i + ': no puede prestar musculo');
     esperarQue(FASES[i].pose >= FASES[i - 1].pose, 'fase ' + i + ': pose');
   }
   /* El angulo del brazo lo fija la fase en ABSOLUTO y no sumando sobre el
@@ -866,9 +866,9 @@ test('la fase abre la postura y suma musculo', () => {
   esperarQue(poder.punos, 'y los punos se cierran');
 });
 
-test('la fase ensancha los hombros de verdad', () => {
-  const ancho = (f) => medidasDe(.4, .3, f.musculo).hombro;
-  esperarQue(ancho(FASES[FASE_MAX]) > ancho(FASES[0]) + 4, 'la fase maxima tiene que verse');
+test('la fase no ensancha los hombros: el ancho es del dato medido', () => {
+  const ancho = (f) => medidasDe(.4, .3, f.musculo || 0).hombro;
+  esperar(ancho(FASES[FASE_MAX]), ancho(FASES[0]), 'ni la fase maxima toca el ancho');
 });
 
 test('de la fase 2 para arriba la cara la manda la fase', () => {
@@ -881,50 +881,48 @@ test('de la fase 2 para arriba la cara la manda la fase', () => {
   esperarQue(conFuria !== sinFuria, 'la fase 3 no puede tener la misma cara que la 1');
 });
 
-test('el bonus de musculo sube con los dias y tiene tope', () => {
-  esperar(bonusDePerfectos(1), BONUS_POR_PERFECTO);
-  esperarQue(bonusDePerfectos(2) > bonusDePerfectos(1));
-  esperar(bonusDePerfectos(50), BONUS_TOPE, 'no puede crecer para siempre');
+test('la fase NO toca el cuerpo: ni el musculo ni la contextura', () => {
+  /* La regla la escribe aura.js: la transformacion va en el pelo y en el aura,
+     nunca en el cuerpo. Si la fase lo inflara, la app estaria diciendo que
+     cumplir objetivos te hace mas grande. */
+  for (let n = 0; n <= 6; n++) {
+    esperarQue(!faseDe(n).musculo, 'la fase ' + n + ' no puede prestar musculo');
+  }
+  /* Y la fase sigue teniendo con que verse. */
+  esperarQue(faseDe(3).rayos && faseDe(3).color && faseDe(3).pose > 0, 'le queda aura, color y pose');
 });
 
-test('el bonus es chico: no reemplaza a entrenar', () => {
-  /* Si un dia perfecto igualara a dos semanas de gimnasio, el eje de
-     entrenamiento dejaria de significar algo. */
-  esperarQue(BONUS_TOPE < 0.5, 'el tope del bonus tiene que ser menor que medio eje');
-});
+test('la musculatura son los dias entrenados y nada mas', () => {
+  /* Habia un plus por dias perfectos que se sumaba aca, y de aca se colaba en
+     el descuento por musculo: un dia cumplido adelgazaba al muneco. */
+  const perfil = { altura: 171, peso: 140 };
+  const c = cuerpoDe(perfil, diasCuerpo({ entrenados: 5 }), HOY_CUERPO);
+  esperar(c.musculatura, musculaturaDe(5));
 
-test('el bonus entra en el cuerpo y se va al cortarse la racha', () => {
-  const perfil = { altura: 178, peso: 80 };
-  const dias = diasCuerpo();
-
-  const sinRacha = cuerpoDe(perfil, dias, HOY_CUERPO, { bonus: 0 });
-  const conRacha = cuerpoDe(perfil, dias, HOY_CUERPO, { bonus: bonusDePerfectos(3) });
-
-  esperarQue(conRacha.musculatura > sinRacha.musculatura, 'la racha tiene que verse');
-  esperar(conRacha.imc, sinRacha.imc, 'pero el IMC no se toca');
-  esperarQue(conRacha.efectiva < sinRacha.efectiva, 'y el cuerpo se ve mas firme');
-});
-
-test('el bonus no puede pasar el tope del eje', () => {
-  const c = cuerpoDe({ altura: 178, peso: 80 }, diasCuerpo({ entrenados: 14 }), HOY_CUERPO, { bonus: 1 });
-  esperar(c.musculatura, 1);
+  /* Y cuerpoDe ya no acepta que le presten nada: dos llamadas con los mismos
+     datos medidos tienen que dar el mismo cuerpo, siempre. */
+  const otra = cuerpoDe(perfil, diasCuerpo({ entrenados: 5 }), HOY_CUERPO, { bonus: 0.45 });
+  esperar(otra.efectiva, c.efectiva, 'nada de afuera puede mover el cuerpo');
+  esperar(otra.musculatura, c.musculatura);
 });
 
 /* ---- el dibujo de la fase ---- */
 
-test('la fase ensancha, pero NUNCA afina', () => {
-  /* La regla que reemplaza a la anterior. Antes el test pedia que la fase no
-     tocara la silueta; ahora si la toca, porque Nico pidio verse musculoso al
-     cumplir. Lo que no puede pasar —y es lo que de verdad importa— es que
-     cumplir un dia te dibuje mas flaco: eso seria decirte que ya bajaste de
-     peso sin que la balanza haya dicho nada. */
-  const flaca = medidasDe(.6, .3, 0);
-  const poderosa = medidasDe(.6, .3, FASES[FASE_MAX].musculo);
+test('la fase no toca la silueta, ni para agrandar ni para afinar', () => {
+  /* Hubo dos vueltas acá. Primero la fase no tocaba nada; despues se pidio
+     verse musculoso al cumplir y paso a ensanchar; y al mirarlo con un peso de
+     verdad se vio el costo: el plus entraba en el descuento por musculo y
+     terminaba dibujando 34 kg menos de los que marca la balanza.
 
-  esperarQue(poderosa.hombro > flaca.hombro + 4, 'los hombros tienen que crecer');
-  esperarQue(poderosa.brazo > flaca.brazo, 'los brazos tambien');
-  esperar(poderosa.cintura, flaca.cintura, 'la cintura NO se puede achicar por una racha');
-  esperar(poderosa.cadera, flaca.cadera, 'la cadera tampoco');
+     Lo que queda es lo de aura.js: la transformacion va en el pelo, el aura y
+     la pose. El cuerpo, en lo que medis. */
+  const medida = medidasDe(.6, .3, 0);
+  const enFase = medidasDe(.6, .3, FASES[FASE_MAX].musculo || 0);
+
+  esperar(enFase.hombro, medida.hombro, 'los hombros no cambian por una racha');
+  esperar(enFase.brazo, medida.brazo, 'los brazos tampoco');
+  esperar(enFase.cintura, medida.cintura, 'ni la cintura');
+  esperar(enFase.cadera, medida.cadera, 'ni la cadera');
 });
 
 test('el cuerpo medido no se entera de la fase', () => {
@@ -1405,16 +1403,15 @@ test('una comida que cambio de dia no queda duplicada al sincronizar', () => {
   esperar(r.dias['2026-08-26'].comidas.length, 1);
 });
 
-test('la fase pone musculo, pero no le borra la panza a nadie', () => {
-  /* En la lamina no hay un gordo musculoso: los tres cuerpos con musculo son
-     delgados. Sin freno, alguien con panza llegaba a Bestia y aparecia flaco y
-     marcado, o sea la app le borraba veinte kilos por cumplir tres dias. */
+test('la fase no le cambia el cuerpo a nadie, ni flaco ni panzon', () => {
+  /* El freno estaba puesto solo sobre el panzon —a el la fase no le borraba la
+     panza— y al flaco si le cambiaba el cuerpo. Ahora no le cambia a ninguno:
+     el sprite sale del dato medido y la fase se ve en lo que la rodea. */
   const flaco = { efectiva: .2, musculatura: 0 };
   const panzon = { efectiva: .85, musculatura: 0 };
   const bestia = FASES[3];
 
-  esperarQue(spritePara(flaco, bestia) !== spritePara(flaco, null),
-    'al flaco la fase tiene que cambiarle el cuerpo');
+  esperar(spritePara(flaco, bestia), spritePara(flaco, null));
   esperar(spritePara(panzon, bestia), spritePara(panzon, null));
 });
 
