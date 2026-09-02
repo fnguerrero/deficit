@@ -138,14 +138,37 @@ function musculaturaDe(entrenados) {
 }
 
 /*
- * Cuánto se le descuenta a la contextura por entrenar.
+ * Cuántos PUNTOS DE IMC se le descuentan por entrenar, con rutina sostenida.
  *
  * El músculo pesa más que la grasa, así que el IMC acusa de sobrepeso a
  * cualquiera que entrene en serio. Sin esta corrección el personaje de alguien
- * que entrena cinco veces por semana se ve blando, que es exactamente lo
- * contrario de la verdad.
+ * que entrena cinco veces por semana se ve blando, que es lo contrario de la
+ * verdad.
+ *
+ * En puntos de IMC y no en fracción del eje, y esa es toda la diferencia. El
+ * eje de contextura NO es lineal: su tercer tramo cubre de IMC 45 a 90 con
+ * apenas 0,22 del recorrido, así que restar una fracción fija valía dos puntos
+ * de IMC abajo y DIEZ arriba. Alguien de 140 kg que entrena dos veces y media
+ * por semana se dibujaba con 34 kg menos de los que marca la balanza.
+ *
+ * 2,5 puntos es lo que el músculo explica de verdad: un atleta muy trabajado
+ * ronda IMC 27 con poca grasa donde otro cuerpo estaría en 24.
  */
-const DESCUENTO_MUSCULO = 0.18;
+const DESCUENTO_IMC = 2.5;
+
+/**
+ * El IMC que el dibujo usa: el medido, menos lo que explica el entrenamiento.
+ *
+ * Nunca baja del piso de la escala. Entrenar mucho no puede empujar a nadie a
+ * la zona de "demacrado": ese eje es para quien pesa poco de verdad, y llegar
+ * ahí por ir al gimnasio sería la app diciendo algo bastante peor que un
+ * número mal dibujado.
+ */
+function imcParaElDibujo(imc, musculatura) {
+  if (imc == null) return null;
+  const baja = Math.min(1, Math.max(0, musculatura || 0)) * DESCUENTO_IMC;
+  return Math.max(IMC_MIN, imc - baja);
+}
 
 /**
  * Todo el cuerpo en un objeto.
@@ -174,7 +197,7 @@ function cuerpoDe(perfil, dias, hasta = hoyISO()) {
 
   const efectiva = contextura == null
     ? null
-    : +Math.min(1, Math.max(0, contextura - musculatura * DESCUENTO_MUSCULO)).toFixed(3);
+    : contexturaDe(+imcParaElDibujo(imc, musculatura).toFixed(1));
 
   return {
     peso, imc, entrenados, musculatura, contextura,
