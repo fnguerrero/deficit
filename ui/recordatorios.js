@@ -69,10 +69,141 @@ function programarRecordatorios() {
   }
 }
 
+/* ---------------- el aviso fijo de objetivos ---------------- */
+
+/*
+ * Una sola notificacion, siempre la misma, con el estado del dia.
+ *
+ * Va por el service worker y no por `new Notification()`: una notificacion
+ * creada por la pagina se cierra cuando se cierra la pestaña, que es
+ * exactamente lo contrario de lo que se pide acá. Por el worker queda en el
+ * centro de notificaciones hasta que alguien la descarta.
+ *
+ * Lo que NO hace, y conviene tenerlo escrito: no se actualiza sola. Sin push
+ * server no hay forma de que el telefono la refresque con la app cerrada, asi
+ * que muestra el estado de la ultima vez que la app corrio. Por eso dice la
+ * hora: un cartel viejo que se hace pasar por actual es peor que no tenerlo.
+ */
+const TAG_OBJETIVOS = 'deficit-objetivos';
+
+/** Que falta hoy, en el orden de la grilla. */
+function faltanteDelDia() {
+  const rachas = todasLasRachas(state.dias, {
+    vasos: metaVasos(), pasos: metaPasos(), juego: state.juego
+  });
+  return {
+    total: rachas.length,
+    hechas: rachas.filter(r => r.hoyCumplido),
+    faltan: rachas.filter(r => !r.hoyCumplido)
+  };
+}
+
+function textoObjetivos() {
+  const { total, hechas, faltan } = faltanteDelDia();
+  const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  const titulo = faltan.length
+    ? `Déficit · ${hechas.length} de ${total}`
+    : 'Déficit · día completo ✨';
+
+  /* Con más de tres pendientes la lista con nombres no entra: Android corta el
+     cuerpo en dos renglones y se pierde justo el final. Ahí van solo los
+     iconos, que es lo que se lee de un vistazo desde la barra. */
+  const cuerpo = !faltan.length
+    ? 'Nada pendiente. Mañana se empieza de nuevo.'
+    : faltan.length <= 3
+      ? 'Falta ' + faltan.map(r => r.icono + ' ' + r.nombre.toLowerCase()).join(', ')
+      : 'Falta ' + faltan.map(r => r.icono).join(' ');
+
+  return { titulo, cuerpo: `${cuerpo}
+Al ${hora}`, faltan: faltan.length };
+}
+
+/* Lo ultimo que se mostro, para no repintar el mismo cartel en cada render.
+   Sin esto la notificacion se reescribe decenas de veces por minuto. */
+let ultimoAvisoObjetivos = '';
+
+/**
+ * Repinta el aviso fijo y el numerito del icono.
+ *
+ * Se llama desde renderObjetivos(), o sea al abrir la app y cada vez que se
+ * toca un objetivo, que es lo mas cerca de "siempre actualizada" que se puede
+ * estar sin servidor.
+ */
+async function actualizarObjetivosFijos() {
+  const { faltan } = textoObjetivos();
+
+  /* El numerito del icono va aparte del aviso: no necesita permiso de
+     notificaciones y en el escritorio instalado es lo que mas se mira. */
+  if (navigator.setAppBadge) {
+    try {
+      if (faltan) await navigator.setAppBadge(faltan);
+      else await navigator.clearAppBadge();
+    } catch { /* algunos navegadores lo declaran y lo rechazan */ }
+  }
+
+  if (!state.cfg.avisoObjetivos) return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+  const reg = await navigator.serviceWorker?.getRegistration();
+  if (!reg?.showNotification) return;
+
+  const { titulo, cuerpo } = textoObjetivos();
+  const firma = titulo + '|' + cuerpo;
+  if (firma === ultimoAvisoObjetivos) return;
+  ultimoAvisoObjetivos = firma;
+
+  try {
+    await reg.showNotification(titulo, {
+      body: cuerpo,
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-192.png',
+      /* El tag es lo que la hace UNA: cada aviso nuevo reemplaza al anterior en
+         vez de apilar veinte carteles iguales a lo largo del dia. */
+      tag: TAG_OBJETIVOS,
+      /* Y renotify apagado es lo que la hace soportable: reemplaza en silencio,
+         sin vibrar ni sonar cada vez que se toca un vaso de agua. */
+      renotify: false,
+      silent: true,
+      /* Que no se vaya sola a los pocos segundos. Android lo ignora, y no hay
+         nada que hacer al respecto: "ongoing" es de las apps nativas. */
+      requireInteraction: true
+    });
+  } catch { /* si el navegador la rechaza, no pasa nada mas */ }
+}
+
+/** Saca el aviso y el numerito, al apagar el interruptor. */
+async function borrarObjetivosFijos() {
+  ultimoAvisoObjetivos = '';
+  try { await navigator.clearAppBadge?.(); } catch { /* ver arriba */ }
+
+  const reg = await navigator.serviceWorker?.getRegistration();
+  const abiertas = await reg?.getNotifications?.({ tag: TAG_OBJETIVOS });
+  (abiertas || []).forEach(n => n.close());
+}
+
+function renderAvisoObjetivos() {
+  const fila = $('filaObjetivosFijos');
+  if (!fila) return;
+
+  fila.hidden = !state.cfg.recordatorios;
+  $('chkObjetivosFijos').checked = !!state.cfg.avisoObjetivos;
+}
+
+if ($('chkObjetivosFijos')) {
+  $('chkObjetivosFijos').onchange = async (e) => {
+    state.cfg.avisoObjetivos = e.target.checked;
+    save();
+    if (state.cfg.avisoObjetivos) { await actualizarObjetivosFijos(); toast('Queda fijo el estado del día'); }
+    else await borrarObjetivosFijos();
+  };
+}
+
 function renderRecordatorios() {
   const activos = !!state.cfg.recordatorios;
   $('chkRecordatorios').checked = activos;
   $('horariosRecordatorios').hidden = !activos;
+  renderAvisoObjetivos();
 
   const soportado = typeof Notification !== 'undefined';
   const permiso = soportado ? Notification.permission : 'no-soportado';
@@ -121,7 +252,10 @@ $('chkRecordatorios').onchange = async () => {
 
   if (!quiere) {
     state.cfg.recordatorios = false;
-    save(); limpiarRecordatorios(); renderRecordatorios();
+    /* El aviso fijo se va con ellos: dejarlo colgado en la barra despues de
+       apagar los avisos seria la app desobedeciendo el unico interruptor. */
+    state.cfg.avisoObjetivos = false;
+    save(); limpiarRecordatorios(); borrarObjetivosFijos(); renderRecordatorios();
     return;
   }
 

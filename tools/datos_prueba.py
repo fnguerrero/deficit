@@ -219,6 +219,10 @@ def generar(dias, peso_inicial, peso_final, altura, cintura_inicial, cintura_fin
             # cuando uno recién empieza y se pesa todos los días.
             'peso': pesos[i] if (i % (3 if i < dias * 0.2 else 4) == 0 or i == dias - 1) else None,
             'agua': max(0, round(rnd.gauss(3.4 if finde else 4.6, 1.4))),
+            # Los pasos se anotan a mano, asi que hay dias en que no se anotan.
+            # El numero sale redondeado de a cien porque nadie copia el digito
+            # final del reloj: se mira "9.8 mil" y se escribe 9800.
+            'pasos': 0,
             'ejercicio': 0,
             'animo': None,
             'sueno': None,
@@ -227,11 +231,20 @@ def generar(dias, peso_inicial, peso_final, altura, cintura_inicial, cintura_fin
             'act': 0,
         }
 
+        # Camina bastante entre semana y menos el finde, y los dias de
+        # entrenamiento suman de arrastre. Se anota tres de cada cuatro dias.
+        if rnd.random() < 0.76:
+            base = rnd.gauss(6800 if finde else 8600, 2600)
+            dia['pasos'] = max(400, round(base / 100) * 100)
+
         # Entrena unas tres veces por semana, y menos durante el rebote.
         p_ejercicio = 0.2 if finde else 0.42
         if rnd.random() < p_ejercicio:
             nombre, kcal = rnd.choice(EJERCICIOS)
             dia['ejercicio'] = round(kcal * rnd.uniform(0.7, 1.25))
+            # Si salio a moverse, camino mas: son el mismo dia, no dos vidas.
+            if dia['pasos']:
+                dia['pasos'] = round(dia['pasos'] * rnd.uniform(1.1, 1.45) / 100) * 100
 
         # El sueño y el ánimo se cargan casi siempre, pero no siempre.
         if rnd.random() < 0.82:
@@ -307,6 +320,9 @@ def main():
     print(f'  {con_peso} pesadas, de {pesos[0]} a {pesos[-1]} kg')
     print(f'  {con_cintura} mediciones de cintura, de {args.cintura_inicial:.0f} '
           f'a {args.cintura_final:.0f} cm')
+    con_pasos = [d['pasos'] for d in dias.values() if d.get('pasos')]
+    print(f'  {len(con_pasos)} dias con pasos, promedio '
+          f'{round(sum(con_pasos) / max(1, len(con_pasos)))}')
 
 
 if __name__ == '__main__':

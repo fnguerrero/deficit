@@ -49,6 +49,26 @@ const VOZ = {
     'Movete un poco. Que después se hace tarde y ahí sí no hay tiempo.'
   ],
 
+  peso: [
+    'Falta subirte a la balanza. Un número, cinco segundos.',
+    'Sin el peso de hoy la curva se queda con un agujero.',
+    'Pesate. Sea cual sea el número, sirve más anotado que evitado.',
+    'El peso de hoy sigue sin cargar. La balanza no muerde.'
+  ],
+
+  animo: [
+    'Falta marcar cómo venís. Es una carita, no una terapia.',
+    'Ánimo sin cargar. Un toque y listo.',
+    'Todavía no dijiste cómo venís hoy. Es el dato que explica los otros.'
+  ],
+
+  pasos: [
+    'Los pasos de hoy siguen sin cargar. Aunque sea copiá el número del reloj.',
+    'Vas {n} pasos. La meta son {meta}. Las cuentas las hacés vos.',
+    'Falta anotar los pasos. Caminaste, seguro. Falta que se sepa cuánto.',
+    'Los pasos están en cero. Que no es lo mismo que no haber caminado, pero acá sí.'
+  ],
+
   sueno: [
     'Cargá cuánto dormiste. Es el dato que más explica todo lo demás.',
     'Falta el sueño de anoche. Sin eso no se puede explicar el hambre de hoy.',
@@ -151,10 +171,14 @@ function decir(situacion, datos = {}, memoria = ULTIMAS_FRASES) {
 
 /* Qué reclamar primero cuando falta más de una cosa. El orden no es casual:
    el agua es lo más fácil de resolver en el momento, y por eso encabeza. */
-const ORDEN_RECLAMO = ['agua', 'comida', 'entrenamiento', 'sueno'];
+/* Los pasos van al final: es el unico que no se puede resolver desde el sillon
+   a las once de la noche, asi que reclamarlo primero seria pedir lo imposible
+   antes que lo facil. */
+const ORDEN_RECLAMO = ['agua', 'comida', 'animo', 'entrenamiento', 'sueno', 'peso', 'pasos'];
 
 const NOMBRE_ACTIVIDAD = {
-  agua: 'agua', comida: 'las comidas',
+  agua: 'agua', comida: 'las comidas', pasos: 'pasos',
+  peso: 'peso', animo: 'ánimo',
   entrenamiento: 'entrenamiento', sueno: 'sueño', registro: 'registro'
 };
 
@@ -165,12 +189,18 @@ const NOMBRE_ACTIVIDAD = {
  * no empezó es la forma más rápida de que la app se vuelva molesta de la manera
  * equivocada.
  */
-function reclamoDelDia(d, { vasos = 8, hora = new Date().getHours(), memoria = ULTIMAS_FRASES } = {}) {
+function reclamoDelDia(d, { vasos = 8, pasos = 10000, hora = new Date().getHours(), memoria = ULTIMAS_FRASES } = {}) {
   const hechas = {
     comida: (d?.comidas || []).length > 0,
     agua: (d?.agua || 0) >= vasos,
     entrenamiento: (d?.ejercicio || 0) > 0,
-    sueno: Number(d?.sueno?.horas) > 0
+    sueno: Number(d?.sueno?.horas) > 0,
+    pasos: (d?.pasos || 0) >= pasos,
+    /* El peso y el animo entraron cuando la grilla y las rachas se volvieron
+       una sola lista: sin esto la voz festejaba el dia completo mientras el
+       chip de la fase avisaba que faltaban dos casilleros. */
+    peso: Number(d?.peso) > 0,
+    animo: !!d?.animo
   };
 
   const faltan = ORDEN_RECLAMO.filter(k => !hechas[k]);
@@ -192,7 +222,11 @@ function reclamoDelDia(d, { vasos = 8, hora = new Date().getHours(), memoria = U
   return {
     situacion: cual,
     falta: cual,
-    texto: decir(cual, { n: d?.agua || 0, meta: vasos, que: NOMBRE_ACTIVIDAD[cual] }, memoria)
+    /* Cada reclamo trae SUS numeros: con {n} y {meta} fijos en el agua, la
+       frase de pasos decia "vas 3 pasos, la meta son 4". */
+    texto: decir(cual, cual === 'pasos'
+      ? { n: d?.pasos || 0, meta: pasos, que: NOMBRE_ACTIVIDAD[cual] }
+      : { n: d?.agua || 0, meta: vasos, que: NOMBRE_ACTIVIDAD[cual] }, memoria)
   };
 }
 

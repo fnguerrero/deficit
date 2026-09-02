@@ -6,8 +6,8 @@
 
    Dos decisiones que atraviesan todo el archivo:
 
-   1. **Las rachas son cuatro y separadas.** Perder la del agua no toca la del
-      entrenamiento. Una sola racha grande, cuando se rompe, se abandona; cuatro
+   1. **Las rachas son varias y separadas.** Perder la del agua no toca la del
+      entrenamiento. Una sola racha grande, cuando se rompe, se abandona; las
       chicas se recuperan de a una.
 
    2. **El XP se gana por registrar, no solo por cumplir.** Cumplir paga más,
@@ -16,11 +16,14 @@
       cierra el primer día que se falla.
    ============================================================ */
 
-/* Las cuatro rachas. `cumple` recibe el día y el contexto porque el objetivo de
-   agua depende del peso de cada uno. */
+/* Las rachas. `cumple` recibe el día y el contexto porque los objetivos de agua
+   y de pasos los elige cada uno. */
 const RACHAS = [
   {
-    id: 'registro', nombre: 'Registro', icono: '🍽️',
+    /* El id no cambia nunca: es la clave con la que quedaron guardados los
+       escudos ya gastados. El nombre sí, para que diga lo mismo que el
+       casillero de la grilla. */
+    id: 'registro', nombre: 'Comidas', icono: '🍽️',
     cumple: (d) => (d?.comidas || []).length > 0
   },
   {
@@ -28,14 +31,60 @@ const RACHAS = [
     cumple: (d, ctx) => (d?.agua || 0) >= (ctx?.vasos || 8)
   },
   {
-    id: 'entrenamiento', nombre: 'Entrenamiento', icono: '💪',
+    id: 'entrenamiento', nombre: 'Ejercicio', icono: '🏃',
     cumple: (d) => (d?.ejercicio || 0) > 0
   },
   {
     id: 'sueno', nombre: 'Sueño', icono: '😴',
     cumple: (d) => Number(d?.sueno?.horas) >= 6.5
+  },
+  {
+    id: 'pasos', nombre: 'Pasos', icono: '👟',
+    cumple: (d, ctx) => (d?.pasos || 0) >= (ctx?.pasos || PASOS_DEFECTO)
+  },
+  {
+    id: 'peso', nombre: 'Peso', icono: '⚖️',
+    cumple: (d) => Number(d?.peso) > 0
+  },
+  {
+    id: 'animo', nombre: 'Ánimo', icono: '🙂',
+    cumple: (d) => !!d?.animo
   }
 ];
+
+/*
+ * Las cuatro de siempre, y desde cuando son siete.
+ *
+ * La grilla de Hoy y esta lista venian midiendo cosas distintas sin decirlo:
+ * habia dias con los cinco casilleros en verde que no eran perfectos (faltaba
+ * cargar una comida) y dias perfectos sin haberse pesado. Ahora es una sola
+ * lista, y todo lo que se ve cuenta.
+ *
+ * Pero el cambio no puede mirar hacia atras. Nadie cargo pasos nunca, y quien
+ * se peso o anoto como venia lo hizo sin saber que contaba: exigirselo hoy a
+ * un año de historial borraria de un saque la racha y los dias perfectos
+ * ganados con las reglas que habia. Asi que hay una fecha de corte, y antes de
+ * ella un dia perfecto sigue siendo lo que era cuando se vivio.
+ */
+const RACHAS_BASE = ['registro', 'agua', 'entrenamiento', 'sueno'];
+const DESDE_SIETE = '2026-09-02';
+
+/** Que rachas hacen un dia perfecto en esa fecha. */
+function rachasDe(fecha) {
+  return fecha >= DESDE_SIETE ? RACHAS : RACHAS.filter(r => RACHAS_BASE.includes(r.id));
+}
+
+/**
+ * Si ese dia quedo completo, con las reglas que regian ESE dia.
+ *
+ * Todo lo que decide un dia perfecto —el XP, la fase, los logros— pasa por
+ * aca. Tenerlo en un solo lugar es lo que evita que dentro de seis meses una
+ * de las cuatro cuentas se olvide de la fecha de corte y contradiga a las
+ * otras tres.
+ */
+function diaPerfecto(d, fecha, ctx = {}) {
+  return rachasDe(fecha).every(r => r.cumple(d, ctx));
+}
 
 function racha(id) {
   return RACHAS.find(r => r.id === id) || null;
@@ -72,12 +121,12 @@ function juegoDe(state) {
  * · **Un día tapado por un escudo cuenta como cumplido**, que es exactamente
  *   para lo que existe el escudo.
  */
-function rachaDe(dias, id, { hoy = hoyISO(), vasos = 8, juego = null } = {}) {
+function rachaDe(dias, id, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO, juego = null } = {}) {
   const r = racha(id);
   if (!r) return { actual: 0, mejor: 0, hoyCumplido: false, escudado: false };
 
   const tapados = new Set((juego?.escudosUsados || {})[id] || []);
-  const ctx = { vasos };
+  const ctx = { vasos, pasos };
 
   let actual = 0;
   let escudado = false;
@@ -93,17 +142,17 @@ function rachaDe(dias, id, { hoy = hoyISO(), vasos = 8, juego = null } = {}) {
 
   return {
     actual,
-    mejor: mejorRacha(dias, id, { hoy, vasos, juego }),
+    mejor: mejorRacha(dias, id, { hoy, vasos, pasos, juego }),
     hoyCumplido: r.cumple(dias?.[hoy], ctx),
     escudado
   };
 }
 
 /** La racha más larga que hubo, para poder decir "tu récord son 12". */
-function mejorRacha(dias, id, { hoy = hoyISO(), vasos = 8, juego = null } = {}) {
+function mejorRacha(dias, id, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO, juego = null } = {}) {
   const r = racha(id);
   const tapados = new Set((juego?.escudosUsados || {})[id] || []);
-  const ctx = { vasos };
+  const ctx = { vasos, pasos };
 
   let mejor = 0;
   let corriendo = 0;
@@ -120,7 +169,7 @@ function mejorRacha(dias, id, { hoy = hoyISO(), vasos = 8, juego = null } = {}) 
   return mejor;
 }
 
-/** Las cuatro rachas de un saque, que es como se muestran. */
+/** Las siete rachas de un saque, que es como se muestran. */
 function todasLasRachas(dias, opts = {}) {
   return RACHAS.map(r => ({ ...r, ...rachaDe(dias, r.id, opts) }));
 }
@@ -165,13 +214,15 @@ const RACHA_MINIMA_ESCUDO = 3;
  * Muta el juego a propósito: es una acción, no un cálculo, y corre una vez al
  * arrancar el día. Devuelve qué actividades se salvaron para poder contarlo.
  */
-function aplicarEscudos(dias, juego, { hoy = hoyISO(), vasos = 8 } = {}) {
+function aplicarEscudos(dias, juego, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO } = {}) {
   const ayer = sumarDias(hoy, -1);
   const salvadas = [];
 
-  for (const r of RACHAS) {
+  /* Solo las que regian ayer: un escudo gastado en una racha que ese dia
+     todavia no existia seria tirar el escudo. */
+  for (const r of rachasDe(ayer)) {
     if (escudosDisponibles(dias, juego, hoy) <= 0) break;
-    if (r.cumple(dias?.[ayer], { vasos })) continue;
+    if (r.cumple(dias?.[ayer], { vasos, pasos })) continue;
 
     const usados = juego.escudosUsados[r.id] || [];
     if (usados.includes(ayer)) continue;
@@ -239,20 +290,23 @@ function nivelDe(xp) {
  * error de conteo queda para siempre, y que borrar una comida no devuelve lo
  * que había pagado.
  */
-function xpDelDia(d, { vasos = 8 } = {}) {
+function xpDelDia(d, fecha, { vasos = 8, pasos = PASOS_DEFECTO } = {}) {
   if (!d) return 0;
 
-  const cumplidas = RACHAS.filter(r => r.cumple(d, { vasos })).length;
-  const algo = (d.comidas || []).length || d.peso || d.agua || d.ejercicio || d.animo || d.sueno;
+  /* Contra las rachas de ESE dia: pagar por siete objetivos en un dia en que
+     habia cuatro daria menos XP hoy que ayer por el mismo esfuerzo. */
+  const vigentes = rachasDe(fecha);
+  const cumplidas = vigentes.filter(r => r.cumple(d, { vasos, pasos })).length;
+  const algo = (d.comidas || []).length || d.peso || d.agua || d.ejercicio || d.animo || d.sueno || d.pasos;
   if (!algo) return 0;
 
   let total = XP.registrar + cumplidas * XP.objetivo;
-  if (cumplidas === RACHAS.length) total += XP.diaCompleto;
+  if (cumplidas === vigentes.length) total += XP.diaCompleto;
   return total;
 }
 
-function xpTotal(dias, { vasos = 8, logros = [] } = {}) {
-  const porDias = Object.values(dias || {}).reduce((a, d) => a + xpDelDia(d, { vasos }), 0);
+function xpTotal(dias, { vasos = 8, pasos = PASOS_DEFECTO, logros = [] } = {}) {
+  const porDias = Object.entries(dias || {}).reduce((a, [f, d]) => a + xpDelDia(d, f, { vasos, pasos }), 0);
   return porDias + (logros?.length || 0) * XP.logro;
 }
 
@@ -295,25 +349,26 @@ const LOGROS = [
 
   { id: 'balanza-10', nombre: 'Fiel a la balanza', detalle: 'Pesaste 10 veces', icono: '⚖️',
     cumple: (c) => c.pesadas >= 10 },
-  { id: 'perfecto', nombre: 'Día perfecto', detalle: 'Las cuatro actividades el mismo día', icono: '✨',
+  { id: 'perfecto', nombre: 'Día perfecto', detalle: 'Todo el tablero el mismo día', icono: '✨',
     cumple: (c) => c.perfectos >= 1 },
-  { id: 'perfecto-5', nombre: 'Cinco perfectos', detalle: '5 días con las cuatro completas', icono: '🌟',
+  { id: 'perfecto-5', nombre: 'Cinco perfectos', detalle: '5 días con todo completo', icono: '🌟',
     cumple: (c) => c.perfectos >= 5 },
   { id: 'nivel-5', nombre: 'Veterano', detalle: 'Llegaste al nivel 5', icono: '🎖️',
     cumple: (c) => c.nivel >= 5 }
 ];
 
 /** Todo lo que las condiciones necesitan saber, calculado una sola vez. */
-function contextoLogros(dias, juego, { hoy = hoyISO(), vasos = 8 } = {}) {
-  const valores = Object.values(diasPasados(dias, hoy));
+function contextoLogros(dias, juego, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO } = {}) {
+  const pasadas = Object.entries(diasPasados(dias, hoy));
+  const valores = pasadas.map(([, d]) => d);
   const mejores = {};
-  for (const r of RACHAS) mejores[r.id] = mejorRacha(dias, r.id, { hoy, vasos, juego });
+  for (const r of RACHAS) mejores[r.id] = mejorRacha(dias, r.id, { hoy, vasos, pasos, juego });
 
   return {
     registrados: diasRegistrados(dias, hoy),
     entrenamientos: valores.filter(d => (d?.ejercicio || 0) > 0).length,
     pesadas: valores.filter(d => Number(d?.peso) > 0).length,
-    perfectos: valores.filter(d => RACHAS.every(r => r.cumple(d, { vasos }))).length,
+    perfectos: pasadas.filter(([f, d]) => diaPerfecto(d, f, { vasos, pasos })).length,
     mejores,
     nivel: nivelDe(juego?.xp || 0).nivel
   };
@@ -335,15 +390,15 @@ function logro(id) {
  * Recalcular en vez de acumular es lo que hace que borrar una comida cargada
  * por error no deje XP fantasma dando vueltas.
  */
-function recalcularJuego(dias, juegoPrevio, { hoy = hoyISO(), vasos = 8 } = {}) {
+function recalcularJuego(dias, juegoPrevio, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO } = {}) {
   const juego = juegoDe({ juego: juegoPrevio });
 
-  const salvadas = aplicarEscudos(dias, juego, { hoy, vasos });
+  const salvadas = aplicarEscudos(dias, juego, { hoy, vasos, pasos });
 
   /* Los logros se calculan con el XP anterior porque uno de ellos mira el
      nivel: si se calculara con el XP nuevo, ganar el logro podría subir el
      nivel que desbloquea ese mismo logro. */
-  const ctx = contextoLogros(dias, juego, { hoy, vasos });
+  const ctx = contextoLogros(dias, juego, { hoy, vasos, pasos });
   const ganados = logrosGanados(ctx);
   const nuevos = ganados.filter(id => !juego.logros.includes(id));
 
@@ -356,7 +411,7 @@ function recalcularJuego(dias, juegoPrevio, { hoy = hoyISO(), vasos = 8 } = {}) 
   }
 
   juego.logros = ganados;
-  juego.xp = xpTotal(dias, { vasos, logros: ganados });
+  juego.xp = xpTotal(dias, { vasos, pasos, logros: ganados });
 
   return { juego, nuevos, salvadas, escudos: escudosDisponibles(dias, juego, hoy) };
 }
@@ -412,12 +467,12 @@ const FASE_MAX = FASES.length - 1;
  * puede completar. La diferencia es que acá no hay escudo que valga — la fase
  * se gana y se pierde, y esa es toda la gracia.
  */
-function diasPerfectos(dias, { hoy = hoyISO(), vasos = 8 } = {}) {
+function diasPerfectos(dias, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO } = {}) {
   let n = 0;
   const ventana = ventanaHistorial(dias, hoy);
   for (let i = 0; i < ventana; i++) {
-    const d = dias?.[sumarDias(hoy, -i)];
-    if (RACHAS.every(r => r.cumple(d, { vasos }))) { n++; continue; }
+    const f = sumarDias(hoy, -i);
+    if (diaPerfecto(dias?.[f], f, { vasos, pasos })) { n++; continue; }
     if (i === 0) continue;
     break;
   }
@@ -433,9 +488,8 @@ function diasPerfectos(dias, { hoy = hoyISO(), vasos = 8 } = {}) {
  * blanco"— sin avisar que la fase se cae a la medianoche si el dia no se
  * completa. La cuenta no cambia; lo que faltaba era decirlo.
  */
-function faseEnRiesgo(dias, { hoy = hoyISO(), vasos = 8 } = {}) {
-  const d = dias?.[hoy];
-  return !RACHAS.every(r => r.cumple(d, { vasos }));
+function faseEnRiesgo(dias, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO } = {}) {
+  return !diaPerfecto(dias?.[hoy], hoy, { vasos, pasos });
 }
 
 function faseDe(perfectos) {
@@ -456,10 +510,10 @@ function faseDe(perfectos) {
 const RACHA_QUE_DUELE = 3;
 const HORA_AVISO_RACHA = 18;
 
-function rachasEnPeligro(dias, { hoy = hoyISO(), vasos = 8, juego = null, hora = new Date().getHours() } = {}) {
+function rachasEnPeligro(dias, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO, juego = null, hora = new Date().getHours() } = {}) {
   if (hora < HORA_AVISO_RACHA) return [];
 
-  return todasLasRachas(dias, { hoy, vasos, juego })
+  return todasLasRachas(dias, { hoy, vasos, pasos, juego })
     .filter(r => !r.hoyCumplido && r.actual >= RACHA_QUE_DUELE)
     .sort((a, b) => b.actual - a.actual);
 }
@@ -470,8 +524,8 @@ function rachasEnPeligro(dias, { hoy = hoyISO(), vasos = 8, juego = null, hora =
  * Un tablero con dieciséis medallas grises no dice por dónde seguir. Uno solo,
  * con cuánto falta, sí.
  */
-function logroMasCerca(dias, juego, { hoy = hoyISO(), vasos = 8 } = {}) {
-  const ctx = contextoLogros(dias, juego, { hoy, vasos });
+function logroMasCerca(dias, juego, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO } = {}) {
+  const ctx = contextoLogros(dias, juego, { hoy, vasos, pasos });
   const ganados = new Set(logrosGanados(ctx));
 
   /* Cuánto falta se mide por familia, porque cada logro cuenta otra cosa. */
@@ -484,7 +538,7 @@ function logroMasCerca(dias, juego, { hoy = hoyISO(), vasos = 8 } = {}) {
       /registrad/.test(l.detalle) ? ctx.registrados :
         /entrenamiento/.test(l.detalle) ? ctx.entrenamientos :
           /Pesaste/.test(l.detalle) ? ctx.pesadas :
-            /cuatro|completas/.test(l.detalle) ? ctx.perfectos :
+            /tablero|completo/.test(l.detalle) ? ctx.perfectos :
               /seguidos.*registro|registro/.test(l.detalle) ? ctx.mejores.registro :
                 /agua/.test(l.detalle) ? ctx.mejores.agua :
                   /entrenando/.test(l.detalle) ? ctx.mejores.entrenamiento :

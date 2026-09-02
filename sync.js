@@ -249,6 +249,8 @@ function diaAFila(dia, fecha, llave, subido = Date.now(), userId = null) {
        en el otro dispositivo. */
     cintura: dia.cintura ?? null,
     agua: dia.agua || 0,
+    /* Los pasos son como el agua: un contador del día que solo sube. */
+    pasos: dia.pasos || 0,
     ejercicio: dia.ejercicio || 0,
     nota: dia.nota || '',
     /* Dos de los cinco hábitos del día viajaban sin subir: el sueño y el ánimo
@@ -263,7 +265,7 @@ function diaAFila(dia, fecha, llave, subido = Date.now(), userId = null) {
 }
 
 /** Los campos que la base puede no tener todavía, si falta correr la migración. */
-const CAMPOS_NUEVOS_DIA = ['sueno_horas', 'sueno_calidad', 'animo', 'cintura'];
+const CAMPOS_NUEVOS_DIA = ['sueno_horas', 'sueno_calidad', 'animo', 'cintura', 'pasos'];
 const CAMPOS_NUEVOS_COMIDA = ['fibra', 'azucar', 'sodio', 'porcion_factor'];
 
 /** La misma fila sin los campos nuevos, para reintentar contra una base vieja. */
@@ -338,6 +340,10 @@ function fusionarDia(local, remoto) {
 
   const agua = Math.max(Number(local?.agua) || 0, Number(remoto?.agua) || 0);
   const ejercicio = Math.max(Number(local?.ejercicio) || 0, Number(remoto?.ejercicio) || 0);
+  /* Como el agua y el ejercicio: gana el más alto. Los pasos del día no bajan,
+     así que el número más grande es siempre el más completo, sin importar cuál
+     de los dos dispositivos lo anotó último. */
+  const pasos = Math.max(Number(local?.pasos) || 0, Number(remoto?.pasos) || 0);
 
   const pesoL = local?.peso == null || local.peso === '' ? null : Number(local.peso);
   const pesoR = remoto?.peso == null || remoto.peso === '' ? null : Number(remoto.peso);
@@ -368,11 +374,12 @@ function fusionarDia(local, remoto) {
     cintura !== cintL ||
     agua !== (Number(local?.agua) || 0) ||
     ejercicio !== (Number(local?.ejercicio) || 0) ||
+    pasos !== (Number(local?.pasos) || 0) ||
     nota !== notaL ||
     JSON.stringify(sueno) !== JSON.stringify(suenoL) ||
     animo !== animoL;
 
-  return { peso, cintura, agua, ejercicio, nota, sueno, animo, act: Math.max(actL, actR), cambio };
+  return { peso, cintura, agua, pasos, ejercicio, nota, sueno, animo, act: Math.max(actL, actR), cambio };
 }
 
 /** El sueño que viene del servidor, que llega en dos columnas planas. */
@@ -452,13 +459,18 @@ function aplicarRemoto(estado, { comidas = [], dias = [] }) {
   for (const fila of dias) {
     const fecha = fila.fecha;
     if (!esFechaISO(fecha)) continue;
-    if (!salida.dias[fecha]) salida.dias[fecha] = { peso: null, agua: 0, ejercicio: 0, nota: '', comidas: [] };
+    if (!salida.dias[fecha]) salida.dias[fecha] = { peso: null, cintura: null, agua: 0, pasos: 0, ejercicio: 0, nota: '', comidas: [] };
 
     const d = salida.dias[fecha];
     const f = fusionarDia(d, fila);
     if (f.cambio) {
       d.peso = f.peso;
+      /* La cintura se fusionaba y se tiraba: `fusionarDia` la devolvía desde el
+         ciclo pasado y esta lista no la nombraba, así que una medición hecha en
+         el celular llegaba hasta acá y se perdía en la última línea. */
+      d.cintura = f.cintura;
       d.agua = f.agua;
+      d.pasos = f.pasos;
       d.ejercicio = f.ejercicio;
       d.nota = f.nota;
       d.sueno = f.sueno;

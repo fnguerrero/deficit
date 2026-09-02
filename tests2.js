@@ -326,10 +326,15 @@ function diaJ(que = '') {
   const q = String(que);
   const todo = q === 'todo';
   return {
-    peso: null,
+    /* El peso, el animo y los pasos entraron a 'todo' cuando la grilla y las
+       rachas se volvieron la misma lista: antes eran tres casilleros que se
+       veian en la pantalla y no contaban para el dia perfecto. */
+    peso: todo || q.includes('peso') ? 80 : null,
     agua: todo || q.includes('agua') ? 12 : 0,
+    pasos: todo || q.includes('pasos') ? 12000 : 0,
     ejercicio: todo || q.includes('ejercicio') ? 300 : 0,
-    nota: '', animo: null, act: 0,
+    nota: '', act: 0,
+    animo: todo || q.includes('animo') ? 'bien' : null,
     sueno: todo || q.includes('sueno') ? { horas: 8 } : null,
     comidas: todo || q.includes('comida') ? [{ id: 'x', kcal: 600 }] : []
   };
@@ -341,12 +346,12 @@ function diasJ(mapa, desde = HOY_JUEGO) {
   return dias;
 }
 
-const OPTS_J = { hoy: HOY_JUEGO, vasos: 8 };
+const OPTS_J = { hoy: HOY_JUEGO, vasos: 8, pasos: 10000 };
 
-/* ---- las cuatro rachas ---- */
+/* ---- las rachas ---- */
 
-test('hay cuatro rachas y cada una sabe como se cumple', () => {
-  esperar(RACHAS.length, 4);
+test('hay siete rachas y cada una sabe como se cumple', () => {
+  esperar(RACHAS.length, 7);
   for (const r of RACHAS) {
     esperarQue(!!r.nombre && !!r.icono, r.id);
     esperarQue(typeof r.cumple === 'function', r.id);
@@ -364,7 +369,7 @@ test('el dia de hoy sin cumplir no corta la racha', () => {
   esperarQue(!rachaDe(dias, 'registro', OPTS_J).hoyCumplido);
 });
 
-test('las cuatro rachas son independientes entre si', () => {
+test('las rachas son independientes entre si', () => {
   const dias = diasJ({ 0: 'agua comida', 1: 'agua', 2: 'agua', 3: 'agua' });
   esperar(rachaDe(dias, 'agua', OPTS_J).actual, 4);
   esperar(rachaDe(dias, 'registro', OPTS_J).actual, 1, 'perder el agua no puede tocar el registro');
@@ -393,10 +398,40 @@ test('una racha que no existe no rompe nada', () => {
   esperar(rachaDe({}, 'inventada', OPTS_J).actual, 0);
 });
 
-test('las cuatro se pueden pedir de un saque', () => {
+test('las siete se pueden pedir de un saque', () => {
   const todas = todasLasRachas(diasJ({ 0: 'todo' }), OPTS_J);
-  esperar(todas.length, 4);
-  esperarQue(todas.every(r => r.hoyCumplido), 'un dia completo cumple las cuatro');
+  esperar(todas.length, 7);
+  esperarQue(todas.every(r => r.hoyCumplido), 'un dia completo cumple las siete');
+});
+
+/* ---- la fecha de corte ---- */
+
+test('antes del corte un dia perfecto son las cuatro de siempre', () => {
+  const antes = sumarDias(DESDE_SIETE, -1);
+  esperar(rachasDe(antes).length, 4, 'nadie cargo pasos nunca: exigirlos borraria el historial');
+  esperarQue(diaPerfecto(diaJ('agua comida ejercicio sueno'), antes, OPTS_J));
+});
+
+test('desde el corte un dia perfecto son las siete', () => {
+  esperar(rachasDe(DESDE_SIETE).length, 7);
+  esperarQue(!diaPerfecto(diaJ('agua comida ejercicio sueno'), DESDE_SIETE, OPTS_J),
+    'sin pasos, peso ni animo ya no alcanza');
+  esperarQue(diaPerfecto(diaJ('todo'), DESDE_SIETE, OPTS_J));
+});
+
+test('la racha vigente sobrevive al cambio de reglas', () => {
+  /* Es la razon de ser de la fecha de corte: los dias de antes se siguen
+     midiendo con lo que se les pidio cuando se vivieron. */
+  const dias = {};
+  for (let i = 0; i < 5; i++) dias[sumarDias(DESDE_SIETE, -1 - i)] = diaJ('agua comida ejercicio sueno');
+  esperar(diasPerfectos(dias, { hoy: sumarDias(DESDE_SIETE, -1), vasos: 8, pasos: 10000 }), 5);
+});
+
+test('los pasos se miden contra el objetivo de cada uno', () => {
+  const dias = diasJ({ 0: 'pasos', 1: 'pasos' });
+  esperar(rachaDe(dias, 'pasos', { hoy: HOY_JUEGO, vasos: 8, pasos: 10000 }).actual, 2);
+  esperar(rachaDe(dias, 'pasos', { hoy: HOY_JUEGO, vasos: 8, pasos: 15000 }).actual, 0,
+    '12.000 no alcanzan si la meta son 15.000');
 });
 
 /* ---- los escudos ---- */
@@ -462,21 +497,29 @@ test('el mismo dia no se tapa dos veces', () => {
 
 test('registrar suma XP aunque el dia venga mal', () => {
   const malo = { ...diaJ(), comidas: [{ id: 'x', kcal: 4000 }] };
-  esperarQue(xpDelDia(malo, { vasos: 8 }) > 0, 'volver tiene que pagar algo');
+  esperarQue(xpDelDia(malo, HOY_JUEGO, OPTS_J) > 0, 'volver tiene que pagar algo');
 });
 
 test('cumplir paga mas que solo registrar', () => {
-  esperarQue(xpDelDia(diaJ('todo'), { vasos: 8 }) > xpDelDia(diaJ('comida'), { vasos: 8 }));
+  esperarQue(xpDelDia(diaJ('todo'), HOY_JUEGO, OPTS_J) > xpDelDia(diaJ('comida'), HOY_JUEGO, OPTS_J));
 });
 
 test('el dia completo tiene su premio aparte', () => {
-  const completo = xpDelDia(diaJ('todo'), { vasos: 8 });
-  esperar(completo, XP.registrar + 4 * XP.objetivo + XP.diaCompleto);
+  const completo = xpDelDia(diaJ('todo'), HOY_JUEGO, OPTS_J);
+  esperar(completo, XP.registrar + 7 * XP.objetivo + XP.diaCompleto);
+});
+
+test('un dia viejo cobra por las rachas que habia ese dia', () => {
+  /* Sin esto, el mismo esfuerzo de hace un mes valdria menos XP hoy que ayer
+     nada mas que porque cambiaron las reglas. */
+  const antes = sumarDias(DESDE_SIETE, -1);
+  const viejo = xpDelDia(diaJ('agua comida ejercicio sueno'), antes, OPTS_J);
+  esperar(viejo, XP.registrar + 4 * XP.objetivo + XP.diaCompleto);
 });
 
 test('un dia vacio no paga nada', () => {
-  esperar(xpDelDia(diaJ(), { vasos: 8 }), 0);
-  esperar(xpDelDia(null), 0);
+  esperar(xpDelDia(diaJ(), HOY_JUEGO, OPTS_J), 0);
+  esperar(xpDelDia(null, HOY_JUEGO), 0);
 });
 
 test('el XP total suma los dias y los logros', () => {
@@ -513,7 +556,7 @@ test('los logros de racha miran el record, no el dia de hoy', () => {
   esperarQue(logrosGanados(ctx).includes('racha-7'), 'la racha se corto pero el record queda');
 });
 
-test('el dia perfecto pide las cuatro actividades', () => {
+test('el dia perfecto pide el tablero entero', () => {
   const casi = contextoLogros(diasJ({ 0: 'agua comida ejercicio' }), JUEGO_VACIO, OPTS_J);
   esperarQue(!logrosGanados(casi).includes('perfecto'), 'faltando el sueno no es perfecto');
 
@@ -708,8 +751,9 @@ test('una situacion que no existe devuelve vacio', () => {
 });
 
 test('con el dia completo festeja en vez de reclamar', () => {
-  const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 200, sueno: { horas: 8 } };
-  const r = reclamoDelDia(d, { vasos: 8, hora: 20, memoria: {} });
+  const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 200, sueno: { horas: 8 },
+    pasos: 12000, peso: 80, animo: 'bien' };
+  const r = reclamoDelDia(d, { vasos: 8, pasos: 10000, hora: 20, memoria: {} });
   esperar(r.situacion, 'completo');
   esperarQue(!!r.texto);
 });
@@ -731,10 +775,21 @@ test('reclama primero lo mas facil de resolver', () => {
 });
 
 test('cuando falta una sola cosa insiste con esa', () => {
-  const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 0, sueno: { horas: 8 } };
-  const r = reclamoDelDia(d, { vasos: 8, hora: 19, memoria: {} });
+  const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 0, sueno: { horas: 8 },
+    pasos: 12000, peso: 80, animo: 'bien' };
+  const r = reclamoDelDia(d, { vasos: 8, pasos: 10000, hora: 19, memoria: {} });
   esperar(r.situacion, 'casi');
   esperar(r.falta, 'entrenamiento');
+});
+
+test('la frase de pasos trae los numeros de los pasos', () => {
+  /* {n} y {meta} estaban fijos en el agua: la frase de pasos decia "vas 3
+     pasos, la meta son 4". */
+  const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 200, sueno: { horas: 8 },
+    pasos: 3000, peso: 80, animo: 'bien' };
+  const r = reclamoDelDia(d, { vasos: 8, pasos: 10000, hora: 19, memoria: {} });
+  esperar(r.falta, 'pasos');
+  esperarQue(!/4/.test(r.texto), 'no puede colarse el objetivo de agua: ' + r.texto);
 });
 
 test('celebrar un logro lo nombra', () => {
@@ -2198,6 +2253,26 @@ test('dos notas escritas: gana la mas nueva', () => {
 test('si no cambia nada, el dia no se marca como tocado', () => {
   const d = { peso: 80, agua: 4, ejercicio: 30, nota: 'x', act: 20 };
   esperar(fusionarDia(d, { ...d, act: 99 }).cambio, false);
+});
+
+test('los pasos se fusionan como el agua: gana el mas alto', () => {
+  /* Los pasos del dia solo suben, asi que el numero mas grande es siempre el
+     mas completo, sin importar cual de los dos dispositivos lo anoto ultimo. */
+  esperar(fusionarDia({ pasos: 8200, act: 99 }, { pasos: 11400, act: 10 }).pasos, 11400);
+  esperar(fusionarDia({ pasos: 0, act: 10 }, { pasos: 9000, act: 20 }).pasos, 9000);
+  esperarQue(fusionarDia({ pasos: 0, act: 10 }, { pasos: 9000, act: 20 }).cambio);
+});
+
+test('la cintura bajada del otro dispositivo llega hasta el dia', () => {
+  /* fusionarDia la devolvia desde el ciclo pasado y aplicarRemoto no la
+     nombraba: una medicion hecha en el celular llegaba hasta la ultima linea
+     y se perdia ahi. */
+  const estado = { dias: {}, cacheAnalisis: {} };
+  const r = aplicarRemoto(estado, {
+    dias: [{ fecha: '2026-08-15', peso: null, cintura: 96, agua: 0, pasos: 7000, ejercicio: 0, nota: '', act: 50 }]
+  });
+  esperar(r.estado.dias['2026-08-15'].cintura, 96);
+  esperar(r.estado.dias['2026-08-15'].pasos, 7000);
 });
 
 test('el act del dia fusionado es el mas alto de los dos', () => {

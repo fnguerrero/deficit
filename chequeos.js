@@ -212,6 +212,19 @@ function nivelEjercicio(kcal) {
   return (Number(kcal) || 0) > 0 ? 'bien' : '';
 }
 
+/*
+ * Los pasos tampoco van en rojo, por lo mismo que el ejercicio: un dia de
+ * pocos pasos no es una falla, es un dia de escritorio. Y como el agua, mira
+ * la hora: a las nueve de la mañana faltar 9.000 pasos no dice nada.
+ */
+function nivelPasos(pasos, meta, hora = new Date().getHours()) {
+  const v = Number(pasos) || 0;
+  const m = Number(meta) || 0;
+  if (!m || !v) return '';
+  if (v >= m) return 'bien';
+  return hora >= 18 ? 'flojo' : '';
+}
+
 /* Tampoco en rojo, y por otro motivo: sentirse mal no es un error que se
    pueda cometer. Se marca en ámbar, que es "lo estoy viendo", no "corregilo". */
 function nivelAnimo(id) {
