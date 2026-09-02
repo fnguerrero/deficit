@@ -1901,13 +1901,17 @@ test('sin objetivo no se inventa un porcentaje', () => {
    mirar QUE se subio y en que orden.
    ============================================================ */
 
-function servidorFalso({ comidas = [], dias = [], huerfanas = null, falla = null } = {}) {
-  const tablas = { comidas: comidas.map(c => ({ ...c })), dias: dias.map(d => ({ ...d })) };
+function servidorFalso({ comidas = [], dias = [], perfil = [], huerfanas = null, falla = null } = {}) {
+  const tablas = {
+    comidas: comidas.map(c => ({ ...c })),
+    dias: dias.map(d => ({ ...d })),
+    perfil: perfil.map(p => ({ ...p }))
+  };
   const llamadas = [];
 
   /* La PK de verdad es (user_id, id) para comidas y (user_id, fecha) para dias.
      Aca alcanza con la segunda mitad: los tests tienen un solo usuario. */
-  const claveDe = (tabla) => (tabla === 'comidas' ? 'id' : 'fecha');
+  const claveDe = (tabla) => (tabla === 'comidas' ? 'id' : (tabla === 'perfil' ? 'llave' : 'fecha'));
 
   return {
     tablas,
@@ -1916,6 +1920,7 @@ function servidorFalso({ comidas = [], dias = [], huerfanas = null, falla = null
 
     async guardar(tabla, filas) {
       if (falla === 'guardar') throw new Error('Supabase respondió 500');
+      if (!tablas[tabla]) throw new Error('No encontré las tablas. ¿Corriste el SQL de supabase.sql?');
       llamadas.push({ op: 'guardar', tabla, filas: filas.map(f => ({ ...f })) });
       const k = claveDe(tabla);
       for (const f of filas) {
@@ -1928,6 +1933,9 @@ function servidorFalso({ comidas = [], dias = [], huerfanas = null, falla = null
 
     async traer(tabla, llave, desde = 0) {
       if (falla === 'traer') throw new Error('No se pudo conectar con Supabase.');
+      /* Una tabla que la base no tiene responde como la de verdad: 404. Sirve
+         para probar que el sync sigue andando con la base sin migrar. */
+      if (!tablas[tabla]) throw new Error('No encontré las tablas. ¿Corriste el SQL de supabase.sql?');
       llamadas.push({ op: 'traer', tabla, desde });
       // el mismo margen por relojes desfasados que usa el cliente de verdad
       const piso = Math.max(0, desde - 5 * 60000);
@@ -3751,4 +3759,159 @@ test('migrar preserva la cintura del dia', () => {
   const s = migrar({ dias: { '2026-03-06': { cintura: 104, comidas: [] } } });
   esperar(s.dias['2026-03-06'].cintura, 104);
   esperar(migrar({ dias: { '2026-03-06': { comidas: [] } } }).dias['2026-03-06'].cintura, null);
+});
+
+/* ---------------- el perfil en el sync ---------------- */
+
+test('el perfil sube y baja con los nombres de columna de la base', () => {
+  const perfil = { sexo: 'm', edad: 36, altura: 178, peso: 82.5, pesoObj: 75,
+                   cintura: 91, actividad: 1.375, ritmo: 0.5, plazo: null,
+                   manual: null, modo: 'moderado', act: 1234 };
+  const fila = perfilAFila(perfil, 'k'.repeat(32), 9999);
+  esperar(fila.peso_obj, 75);
+  esperar(fila.cintura, 91);
+  esperar(fila.act, 1234);
+  esperar(fila.subido, 9999);
+
+  /* Lo que no está en la lista se queda donde se cargó: el perfil junta cosas
+     de ESTE dispositivo que no tienen por qué viajar. */
+  esperar(perfilAFila({ ...perfil, apiKeyVista: true }, 'k'.repeat(32)).apiKeyVista, undefined);
+
+  const vuelta = filaAPerfil(fila);
+  esperar(vuelta.pesoObj, 75);
+  esperar(vuelta.cintura, 91);
+  esperar(vuelta.altura, 178);
+  esperar(vuelta.modo, 'moderado');
+});
+
+test('un campo vacio viaja como null y no como cadena', () => {
+  /* Un string vacío en una columna numérica hace fallar el POST entero, y con
+     él se cae la subida de todo lo demás. */
+  const fila = perfilAFila({ altura: '', cintura: undefined, edad: 36 }, 'k'.repeat(32));
+  esperar(fila.altura, null);
+  esperar(fila.cintura, null);
+  esperar(fila.edad, 36);
+});
+
+test('entre dos perfiles gana el mas nuevo, entero', () => {
+  const local = { altura: 178, peso: 82.5, pesoObj: 75, act: 100 };
+  const remoto = { altura: 178, peso: 80, pesoObj: 72, act: 200 };
+  const g = fusionarPerfil(local, remoto);
+  esperar(g.cambio, true);
+  esperar(g.perfil.peso, 80);
+  esperar(g.perfil.pesoObj, 72);
+
+  /* Y no campo por campo: mezclar el peso viejo con el objetivo nuevo arma un
+     perfil que nadie cargó, y es justo el que da vuelta la lectura de si vas
+     bien o mal. */
+  const viejo = fusionarPerfil({ altura: 178, peso: 82.5, pesoObj: 75, act: 300 }, remoto);
+  esperar(viejo.cambio, false);
+  esperar(viejo.perfil.pesoObj, 75);
+});
+
+test('sin act en ninguno de los dos, el perfil local no se pisa', () => {
+  const local = { altura: 178, peso: 82.5 };
+  const g = fusionarPerfil(local, { altura: 160, peso: 60 });
+  esperar(g.cambio, false);
+  esperar(g.perfil.altura, 178);
+  /* Sin remoto tampoco pasa nada. */
+  esperar(fusionarPerfil(local, null).perfil.altura, 178);
+});
+
+test('lo que no viaja se conserva al bajar un perfil de afuera', () => {
+  const local = { altura: 178, act: 1, avisoModoCallado: 'hasta-el-lunes' };
+  const g = fusionarPerfil(local, { altura: 160, peso: 60, act: 2 });
+  esperar(g.perfil.altura, 160);
+  esperar(g.perfil.avisoModoCallado, 'hasta-el-lunes');
+});
+
+test('un perfil en blanco no pisa a uno cargado', () => {
+  esperar(perfilVacio({ act: 999 }), true);
+  esperar(perfilVacio({ altura: 178 }), false);
+  esperar(perfilVacio(null), true);
+});
+
+test('la cintura del dia viaja y se fusiona como el peso', () => {
+  const fila = diaAFila({ peso: 82.5, cintura: 91, comidas: [] }, '2026-09-01', 'k'.repeat(32));
+  esperar(fila.cintura, 91);
+  esperar(diaAFila({ peso: 82.5, comidas: [] }, '2026-09-01', 'k'.repeat(32)).cintura, null);
+
+  /* Si de un lado hay medición y del otro no, gana la que hay. */
+  esperar(fusionarDia({ cintura: 91, act: 10 }, { cintura: null, act: 99 }).cintura, 91);
+  esperar(fusionarDia({ cintura: null, act: 99 }, { cintura: 94, act: 10 }).cintura, 94);
+  // Y si hay de los dos, gana el más nuevo.
+  esperar(fusionarDia({ cintura: 91, act: 10 }, { cintura: 94, act: 20 }).cintura, 94);
+  esperar(fusionarDia({ cintura: 91, act: 30 }, { cintura: 94, act: 20 }).cintura, 91);
+});
+
+test('la cintura entra en la lista de columnas que la base vieja puede no tener', () => {
+  /* Sin esto, una base sin migrar rechaza el POST entero y deja de subir TODO,
+     no solo la cintura. */
+  esperarQue(CAMPOS_NUEVOS_DIA.indexOf('cintura') !== -1, 'tiene que estar en CAMPOS_NUEVOS_DIA');
+  esperar(filaSinCamposNuevos({ peso: 82, cintura: 91 }).cintura, undefined);
+  esperar(filaSinCamposNuevos({ peso: 82, cintura: 91 }).peso, 82);
+});
+
+testAsync('el perfil viaja en el sync completo, en las dos direcciones', async () => {
+  const srv = servidorFalso({
+    perfil: [{ llave: LLAVE_T, subido: 5000, act: 8000,
+               sexo: 'm', edad: 36, altura: 178, peso: 80, peso_obj: 72,
+               cintura: 89, actividad: 1.375, ritmo: 0.5, plazo: null,
+               manual: null, modo: 'moderado' }]
+  });
+
+  /* Lo de acá es más viejo: tiene que ganar lo remoto y quedar completo. */
+  const estado = estadoT();
+  estado.perfil = { altura: 178, peso: 82.5, pesoObj: 75, act: 100 };
+  const r = await sincronizar({ cliente: srv, estado, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  esperar(r.estado.perfil.peso, 80);
+  esperar(r.estado.perfil.pesoObj, 72);
+  esperar(r.estado.perfil.cintura, 89);
+  esperar(r.resumen.perfilBajado, true);
+  esperar(r.resumen.faltaTablaPerfil, false);
+
+  /* Y al revés: con el local más nuevo, sube. */
+  const srv2 = servidorFalso({ perfil: [] });
+  const estado2 = estadoT();
+  estado2.perfil = { altura: 171, peso: 90, pesoObj: 80, cintura: 104, act: 12345 };
+  const r2 = await sincronizar({ cliente: srv2, estado: estado2, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  esperar(r2.resumen.perfilSubido, true);
+  const subido = srv2.subidas('perfil')[0];
+  esperar(subido.peso_obj, 80);
+  esperar(subido.cintura, 104);
+  esperar(subido.act, 12345);
+});
+
+testAsync('con la base sin migrar, el resto del sync sigue viajando igual', async () => {
+  /* Es el estado en el que queda cualquiera que actualice la app antes de
+     correr supabase-perfil.sql. Que el perfil no pueda subir NO puede dejar sin
+     sincronizar meses de comidas: son once números contra todo el historial. */
+  const srv = servidorFalso({ comidas: [], dias: [] });
+  delete srv.tablas.perfil;
+
+  const estado = estadoT({ '2026-08-01': { comidas: [comidaT('l1', 2000)] } });
+  estado.perfil = { altura: 178, peso: 82.5, act: 12345 };
+
+  const r = await sincronizar({ cliente: srv, estado, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  esperarQue(srv.subidas('comidas').some(f => f.id === 'l1'), 'la comida tenia que subir igual');
+  esperar(r.resumen.faltaTablaPerfil, true);
+  esperar(r.resumen.perfilSubido, false);
+  // y el perfil local queda intacto, no se pierde ni se vacía
+  esperar(r.estado.perfil.altura, 178);
+});
+
+testAsync('un dispositivo nuevo no pisa el perfil cargado con uno en blanco', async () => {
+  const srv = servidorFalso({
+    perfil: [{ llave: LLAVE_T, subido: 5000, act: 8000, altura: 178, peso: 82.5 }]
+  });
+  const estado = estadoT();
+  estado.perfil = { sexo: 'm', actividad: 1.55, ritmo: 0.5, modo: 'moderado' };
+
+  const r = await sincronizar({ cliente: srv, estado, llave: LLAVE_T, ultimoSync: 0, ahora: 9000 });
+
+  esperar(r.estado.perfil.altura, 178);
+  esperar(r.resumen.perfilSubido, false);
 });

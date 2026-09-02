@@ -3192,8 +3192,11 @@ test('estadoRespaldo usa el singular con un día', () => {
    ============================================================ */
 
 /** Supabase de mentira: guarda filas en memoria y responde como el real. */
-function supabaseFalso(inicial = { comidas: [], dias: [] }) {
+function supabaseFalso(inicial = { comidas: [], dias: [], perfil: [] }) {
   const tablas = clonar(inicial);
+  /* Una base creada antes de la tabla del perfil sigue dando 404 ahí, que es
+     justo lo que hay que poder probar. */
+  if (inicial.perfil === undefined && inicial.comidas !== undefined) tablas.perfil = [];
   const pedidos = [];
 
   const fetchFn = async (url, opciones = {}) => {
@@ -3208,7 +3211,7 @@ function supabaseFalso(inicial = { comidas: [], dias: [] }) {
     if ((opciones.method || 'GET') === 'POST') {
       // upsert por (llave, id) en comidas y (llave, fecha) en días
       for (const fila of JSON.parse(opciones.body)) {
-        const clave = tabla === 'comidas' ? 'id' : 'fecha';
+        const clave = tabla === 'comidas' ? 'id' : (tabla === 'perfil' ? 'llave' : 'fecha');
         const pos = tablas[tabla].findIndex(f => f.llave === fila.llave && f[clave] === fila[clave]);
         if (pos >= 0) tablas[tabla][pos] = fila;
         else tablas[tabla].push(fila);

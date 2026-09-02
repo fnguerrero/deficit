@@ -43,7 +43,10 @@ LIMITES = [
     ('sonidos.js', 250),
     ('voz.js', 350),
     ('graficos.js', 400),
-    ('sync.js', 600),
+    # +20 por la cintura del dia y el enganche del perfil. El perfil entero ya
+    # salio a sync-perfil.js: lo que queda aca son tres lineas de llamada
+    ('sync.js', 620),
+    ('sync-perfil.js', 250),
     ('estado-sync.js', 250),
     ('auth.js', 300),
     ('tests.js', 6000),   # la suite crece con cada feature
