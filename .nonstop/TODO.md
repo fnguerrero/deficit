@@ -41,3 +41,18 @@
 - [x] Correr `supabase-pasos.sql` en Supabase · verif: la columna `pasos` figura en information_schema (02/09/2026)
 - [ ] Reimportar `deficit-prueba.json` para ver el historial con pasos · verif: 121 días con pasos, promedio 8.888
 - [ ] Probar la notificación fija en el celular con permiso concedido · verif: un solo cartel que se reemplaza, sin vibrar
+
+## Ciclo 18 — Simplificar (pedido de Nico, 02/09/2026)
+
+Criterio: que cada pantalla muestre lo que estas USANDO y el resto quede a un
+toque. Solo informacion que sirva de verdad. El ejemplo que lo define: los 12
+modos en Perfil ocupan la pantalla entera para elegir uno — tiene que verse el
+elegido y los demas en una lista desplegable.
+
+- [ ] Perfil: el modo elegido visible, los otros 11 en desplegable
+- [ ] Perfil: revisar que queda a la vista y que se puede plegar
+- [ ] Ajustes: agrupar y plegar lo que casi nunca se toca
+- [ ] Historial: quedarse con lo que se mira de verdad
+- [ ] Progreso: idem
+- Sin decidir: si lo que sobra se PLIEGA o se SACA. Plegar no simplifica, solo
+  esconde; sacar duele pero es lo que se pidio. Preguntar caso por caso.
