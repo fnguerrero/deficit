@@ -3955,3 +3955,26 @@ test('entrenar no puede dibujar a nadie demacrado', () => {
   esperarQue(flaco.efectiva >= 0, 'la contextura no se va abajo de cero');
   esperarQue(imcParaElDibujo(18, 1) >= IMC_MIN, 'el piso de la escala es el piso');
 });
+
+test('la fase de ayer se marca como en riesgo mientras hoy este en blanco', () => {
+  /* La cuenta no cambia —hoy incompleto no corta la racha, porque todavia se
+     puede completar— pero la pantalla decia dos cosas opuestas: el muneco en
+     llamas al lado de "el dia esta en blanco". */
+  esperar(faseEnRiesgo(diasJ({ 0: 'todo', 1: 'todo' }), OPTS_J), false, 'hoy cumplido, no hay riesgo');
+  esperar(faseEnRiesgo(diasJ({ 1: 'todo' }), OPTS_J), true, 'hoy en blanco y la fase viene de ayer');
+  esperar(faseEnRiesgo(diasJ({ 0: 'comida', 1: 'todo' }), OPTS_J), true, 'hoy a medias tambien cuenta');
+  /* Y la fase sigue siendo la misma: se avisa, no se saca. */
+  esperar(diasPerfectos(diasJ({ 1: 'todo', 2: 'todo' }), OPTS_J), 2);
+});
+
+test('el aviso de que el IMC exagera solo sale si el musculo lo explica', () => {
+  /* Salia con IMC 47,9 y cinco entrenamientos en catorce dias. Ahi el numero no
+     exagera nada, y decirlo es la app ayudando a mirar para otro lado. */
+  const aviso = (peso, entrenados) =>
+    cuerpoDe({ altura: 171, peso }, diasCuerpo({ entrenados }), HOY_CUERPO).aviso;
+
+  esperar(aviso(140, 14), '', 'con IMC 47,9 no hay musculo que lo explique');
+  esperar(aviso(105, 14), '', 'con IMC 35,9 tampoco');
+  esperarQue(/exagera/.test(aviso(85, 14)), 'con IMC 29 y rutina sostenida si: ' + aviso(85, 14));
+  esperar(aviso(85, 0), '', 'sin entrenar no hay nada que aclarar');
+});

@@ -67,7 +67,7 @@ function renderMascota() {
   if (faseAnterior != null && fase.n > faseAnterior) saltar(dibujo);
   faseAnterior = fase.n;
 
-  pintarFase(fase, perfectos);
+  pintarFase(fase, perfectos, faseEnRiesgo(state.dias, { vasos: metaVasos() }));
   /* El emoji va con el titulo porque el cuerpo es un dibujo fijo y ya no pone
      cara. Ver EMOJI_ANIMO en sprite.js. */
   $('mascotaTitulo').textContent = emojiDeAnimo(est.animo) + ' ' + est.titulo;

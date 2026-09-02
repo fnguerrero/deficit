@@ -234,6 +234,18 @@ function avisoDeIMC(imc, musculatura, entrenados) {
   const b = bandaIMC(imc);
   if (b.id !== 'sobrepeso' && b.id !== 'obesidad') return '';
 
+  /*
+   * Y solo si el músculo puede explicar de verdad la diferencia.
+   *
+   * El aviso salía con IMC 47,9 y cinco entrenamientos en catorce días: ahí el
+   * número no exagera nada, y decirlo es la app ayudando a mirar para otro
+   * lado. Tiene sentido cuando sacando lo que el músculo pesa quedarías de
+   * este lado del umbral —o sea cuando el número te pone en un lugar donde no
+   * estás—, y no cuando quedarías igual.
+   */
+  const UMBRAL_OBESIDAD = BANDAS_IMC.find(x => x.id === 'sobrepeso').hasta;
+  if (imcParaElDibujo(imc, musculatura) >= UMBRAL_OBESIDAD) return '';
+
   return `Entrenaste ${entrenados} de los últimos 14 días. El IMC no distingue músculo de ` +
     'grasa, así que en tu caso el número exagera: tomalo como referencia, no como diagnóstico.';
 }

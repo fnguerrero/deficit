@@ -424,6 +424,20 @@ function diasPerfectos(dias, { hoy = hoyISO(), vasos = 8 } = {}) {
   return n;
 }
 
+/**
+ * Si la fase se gano en dias que ya terminaron y hoy todavia no aporta nada.
+ *
+ * `diasPerfectos` no corta la racha con el dia de hoy incompleto, y esta bien:
+ * a las nueve de la manana nadie cumplio nada todavia. Pero eso deja la pantalla
+ * diciendo dos cosas opuestas —el muneco en llamas al lado de "el dia esta en
+ * blanco"— sin avisar que la fase se cae a la medianoche si el dia no se
+ * completa. La cuenta no cambia; lo que faltaba era decirlo.
+ */
+function faseEnRiesgo(dias, { hoy = hoyISO(), vasos = 8 } = {}) {
+  const d = dias?.[hoy];
+  return !RACHAS.every(r => r.cumple(d, { vasos }));
+}
+
 function faseDe(perfectos) {
   return FASES[Math.min(FASE_MAX, Math.max(0, Number(perfectos) || 0))];
 }

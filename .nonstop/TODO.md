@@ -7,8 +7,7 @@
 - [x] Agua: piel seca, labios partidos, gotas al cumplir · verif: DOM del SVG con y sin agua
 - [x] Sueño: ojeras y párpados caídos · verif: DOM del SVG con 3 h y con 8 h
 - [x] Ánimo: la cara sigue las caritas que ya elige la persona · verif: DOM con los ocho ánimos
-- [ ] PENDIENTE Cintura: campo opcional al lado del peso, y que afine la silueta · verif: tests del campo y del dibujo
-- [ ] PENDIENTE Cintura: campo opcional al lado del peso, y que afine la silueta - verif: tests del campo y del dibujo
+- [x] Cintura: entró en el ciclo 16 · ver la línea del ciclo 16
 - [x] Los cinco juntos sin pisarse · verif: test de independencia por eje
 - [x] Cambiar la tarjeta de Hoy al personaje SVG · verif: render en vivo a 375 px, sin errores de consola
 - [x] Sacar el nombre del encabezado — ya no estaba: el header solo tiene el modo y el punto de la cuenta · verif: búsqueda en el DOM, cero coincidencias

@@ -87,14 +87,24 @@ function objetivosDelDia() {
  * Se muestra al lado del título porque es lo que más rápido cambia y lo que más
  * ganas dan de mirar: el nivel sube en semanas, la fase en días.
  */
-function pintarFase(fase, perfectos) {
+function pintarFase(fase, perfectos, enRiesgo = false) {
   const chip = $('mascotaFase');
   if (!chip) return;
 
   chip.hidden = !fase.n;
   if (!fase.n) return;
 
-  chip.textContent = `${fase.nombre} · ${perfectos}`;
+  /* Con el día todavía en blanco la fase es de ayer, y la pantalla lo decía
+     todo junto: el muñeco en llamas al lado de "el día está en blanco". No se
+     esconde —te la ganaste— pero se muestra apagada y con su fecha, que es la
+     diferencia entre un premio y un premio que se está por caer. */
+  chip.classList.toggle('en-riesgo', !!enRiesgo);
+  chip.textContent = enRiesgo
+    ? `${fase.nombre} · ${perfectos} · de ayer`
+    : `${fase.nombre} · ${perfectos}`;
+  chip.title = enRiesgo
+    ? 'La ganaste con los días anteriores. Si hoy no completás el día, la perdés.'
+    : `${perfectos} ${perfectos === 1 ? 'día perfecto' : 'días perfectos'} seguidos.`;
   chip.style.color = fase.color;
   chip.style.borderColor = fase.color;
 }
