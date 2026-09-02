@@ -1122,6 +1122,13 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   border: 1px solid; border-radius: 20px; padding: 1px 6px;
 }
 
+/* La fase que viene de ayer, con el día de hoy todavía en blanco. Apagada y
+   con el borde cortado: se ve que está, y se ve que no está firme. Sin esto la
+   pantalla mostraba el muñeco en llamas al lado de "el día está en blanco". */
+.fase-chip.en-riesgo {
+  opacity: .55; border-style: dashed; font-weight: 700;
+}
+
 /* El +XP que sube cuando se completa un objetivo. Sin esto, cumplir no se
    sentia: el casillero se ponia verde y nada mas. */
 .objetivo { position: relative; }

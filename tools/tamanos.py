@@ -27,7 +27,9 @@ LIMITES = [
     ('mascota.js', 400),
     # +30 por el eje demacrado y el dia en el cuerpo: es la misma familia de
     # traducciones dato->dibujo que ya vivia aca.
-    ('cuerpo.js', 300),
+    # +20 por el descuento en puntos de IMC y por acotar el aviso: es la misma
+    # familia de traducciones dato->dibujo, y la cintura ya salio a su archivo
+    ('cuerpo.js', 320),
     # la cintura salio de cuerpo.js: es el unico dato del cuerpo que hay que ir
     # a medir a mano, y todo el resto se recalcula solo
     ('cintura.js', 200),
@@ -39,7 +41,8 @@ LIMITES = [
     ('relieve.js', 250),
     ('cara.js', 300),
     ('transformacion.js', 350),
-    ('juego.js', 500),
+    # +20 por faseEnRiesgo, que vive al lado de diasPerfectos y lee lo mismo
+    ('juego.js', 520),
     ('sonidos.js', 250),
     ('voz.js', 350),
     ('graficos.js', 400),
