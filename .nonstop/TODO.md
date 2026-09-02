@@ -38,6 +38,6 @@
 - [x] Los pasos viajan: columna nueva en `dias` y fusión por el más alto · verif: test de fusionarDia y de aplicarRemoto
 - [x] La cintura bajada llegaba hasta aplicarRemoto y se perdía en la última línea · verif: test nuevo
 - [x] Notificación fija con el estado del día: una sola, por el service worker, con tag fijo y silenciosa · verif: los tres textos (0 de 7, 5 de 7, completo) en la app viva
-- [ ] Correr `supabase-pasos.sql` en Supabase · verif: la columna `pasos` existe en `dias`
+- [x] Correr `supabase-pasos.sql` en Supabase · verif: la columna `pasos` figura en information_schema (02/09/2026)
 - [ ] Reimportar `deficit-prueba.json` para ver el historial con pasos · verif: 121 días con pasos, promedio 8.888
 - [ ] Probar la notificación fija en el celular con permiso concedido · verif: un solo cartel que se reemplaza, sin vibrar
