@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=464">
+<link rel="stylesheet" href="styles.css?v=466">
 </head>
 <body>
 
@@ -618,14 +618,14 @@
 
   <!-- ============ AJUSTES ============ -->
   <section id="tab-ajustes" class="tab">
-    <div class="card" id="cardInstalar" hidden>
-      <div class="card-head"><h2>Instalar</h2></div>
+    <details class="card plegable" id="cardInstalar" hidden>
+      <summary class="card-head"><h2>Instalar</h2></summary>
       <p class="hint" style="margin:0 0 12px">Instalala en el celular y queda como una app más, con su ícono y a pantalla completa.</p>
       <button id="btnInstalar" class="primary big">Instalar en este dispositivo</button>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-head"><h2>API de Claude</h2></div>
+    <details class="card plegable">
+      <summary class="card-head"><h2>API de Claude</h2></summary>
       <p class="hint" id="estadoAcceso"></p>
       <details class="avanzado" id="avanzadoKey">
         <summary>Usar mi propia clave</summary>
@@ -665,19 +665,19 @@
         <ul id="listaAnalisis" class="lista analisis"></ul>
         <p id="analisisVacio" class="vacio">Todavía no analizaste ninguna foto. Cuando lo hagas, acá vas a ver cuánto salió cada una y cuánto ahorró el caché.</p>
       </details>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-head"><h2>Sonidos</h2><span id="sonidoPill" class="pill"></span></div>
+    <details class="card plegable">
+      <summary class="card-head"><h2>Sonidos</h2><span id="sonidoPill" class="pill"></span></summary>
       <label class="switch">
         <input type="checkbox" id="chkSonido">
         <span>Sonar al cumplir un objetivo, subir de nivel o ganar un logro</span>
       </label>
       <p class="hint" id="sonidoNota"></p>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-head"><h2>Recordatorios</h2><span id="recordatoriosPill" class="pill"></span></div>
+    <details class="card plegable">
+      <summary class="card-head"><h2>Recordatorios</h2><span id="recordatoriosPill" class="pill"></span></summary>
       <label class="switch">
         <input type="checkbox" id="chkRecordatorios">
         <span>Avisarme si no cargué una comida</span>
@@ -697,21 +697,21 @@
         <span>Dejar fijo el estado del día</span>
       </label>
       <p class="hint" id="recordatoriosInfo"></p>
-    </div>
+    </details>
 
-    <div class="card" id="cardAtajos" hidden>
-      <div class="card-head"><h2>Atajos de teclado</h2></div>
+    <details class="card plegable" id="cardAtajos" hidden>
+      <summary class="card-head"><h2>Atajos de teclado</h2></summary>
       <ul class="kv" id="listaAtajos"></ul>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-head"><h2>Apariencia</h2></div>
+    <details class="card plegable">
+      <summary class="card-head"><h2>Apariencia</h2></summary>
       <div class="momento-sel" id="selTema" role="group" aria-label="Tema de la app"></div>
       <p class="hint" id="temaDetalle"></p>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-head"><h2>Diagnóstico</h2><span id="diagPill" class="pill"></span></div>
+    <details class="card plegable">
+      <summary class="card-head"><h2>Diagnóstico</h2><span id="diagPill" class="pill"></span></summary>
       <details>
         <summary>Ver el estado de la app</summary>
         <ul class="kv" id="listaDiagnostico"></ul>
@@ -724,10 +724,10 @@
           <button id="btnLimpiarErrores" class="ghost small" hidden>Borrar los errores</button>
         </div>
       </details>
-    </div>
+    </details>
 
-    <div class="card" id="cardCuenta">
-      <div class="card-head"><h2>Tu cuenta</h2></div>
+    <details class="card plegable" id="cardCuenta">
+      <summary class="card-head"><h2>Tu cuenta</h2></summary>
       <p class="hint" id="estadoCuenta"></p>
 
       <div id="formCuenta">
@@ -762,10 +762,10 @@
 
       <p class="hint sync-mal" id="cuentaError"></p>
       <p class="hint sync-ok" id="cuentaOk"></p>
-    </div>
+    </details>
 
-    <div class="card" id="cardSync">
-      <div class="card-head"><h2>Sincronización</h2><span id="syncPill" class="pill"></span></div>
+    <details class="card plegable" id="cardSync">
+      <summary class="card-head"><h2>Sincronización</h2><span id="syncPill" class="pill"></span></summary>
 
       <p class="hint" id="syncIntro">
         Para ver lo mismo en la compu y en el celular. Necesita un proyecto de Supabase
@@ -798,10 +798,10 @@
       </div>
 
       <p class="hint" id="syncEstado"></p>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-head"><h2>Actividades</h2><span class="pill" id="actPill"></span></div>
+    <details class="card plegable">
+      <summary class="card-head"><h2>Actividades</h2><span class="pill" id="actPill"></span></summary>
       <p class="hint">Tocá una para elegir si va en Hoy y cuánto dura. Las de un toque son las tres primeras.</p>
       <div id="listaActEditar"></div>
 
@@ -826,10 +826,10 @@
         </div>
         <button id="btnAgregarAct" class="primary small">Agregar</button>
       </details>
-    </div>
+    </details>
 
-    <div class="card" id="cardCalibracion">
-      <div class="card-head"><h2>Calibrar la estimación</h2><span id="calibPill" class="pill"></span></div>
+    <details class="card plegable" id="cardCalibracion">
+      <summary class="card-head"><h2>Calibrar la estimación</h2><span id="calibPill" class="pill"></span></summary>
       <p class="hint" style="margin:0 0 12px">
         Cargá fotos de comidas cuyas calorías reales conozcas (algo con etiqueta, algo pesado
         en balanza) y corré la prueba: te dice cuánto se equivoca la app con TUS comidas.
@@ -851,16 +851,16 @@
         <button id="btnCorrerCalib" class="primary small" hidden>Correr la prueba</button>
       </div>
       <input type="file" id="refInput" accept="image/*" hidden>
-    </div>
+    </details>
 
-    <div class="card" id="cardRevision" hidden>
-      <div class="card-head"><h2>Revisión de datos</h2><span id="revisionPill" class="pill"></span></div>
+    <details class="card plegable" id="cardRevision" hidden>
+      <summary class="card-head"><h2>Revisión de datos</h2><span id="revisionPill" class="pill"></span></summary>
       <ul id="listaProblemas" class="lista problemas"></ul>
       <button id="btnArreglar" class="ghost small" hidden>Recalcular los que se pueden</button>
-    </div>
+    </details>
 
-    <div class="card">
-      <div class="card-head"><h2>Datos</h2></div>
+    <details class="card plegable" id="cardDatos">
+      <summary class="card-head"><h2>Datos</h2></summary>
       <div class="actions-row">
         <button id="btnExport" class="ghost">Exportar JSON</button>
         <button id="btnExportCsv" class="ghost">Exportar CSV</button>
@@ -888,7 +888,7 @@
       </div>
       <p class="hint aviso-cuota" id="avisoCuota" hidden></p>
       <button id="btnLiberar" class="ghost small" hidden>Borrar las fotos viejas</button>
-    </div>
+    </details>
   </section>
 
 </main>
@@ -1093,61 +1093,61 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=464"></script>
-<script src="core.js?v=464"></script>
-<script src="platos.js?v=464"></script>
-<script src="animar.js?v=464"></script>
-<script src="fotos.js?v=464"></script>
-<script src="calibracion.js?v=464"></script>
-<script src="modos.js?v=464"></script>
-<script src="arreglos.js?v=464"></script>
-<script src="habitos.js?v=464"></script>
-<script src="mascota.js?v=464"></script>
-<script src="cuerpo.js?v=464"></script>
-<script src="cintura.js?v=464"></script>
-<script src="figura.js?v=464"></script>
-<script src="cara.js?v=464"></script>
-<script src="personaje.js?v=464"></script>
-<script src="relieve.js?v=464"></script>
-<script src="sprite-datos.js?v=464"></script>
-<script src="sprite.js?v=464"></script>
-<script src="transformacion.js?v=464"></script>
-<script src="aura.js?v=464"></script>
-<script src="juego.js?v=464"></script>
-<script src="sonidos.js?v=464"></script>
-<script src="voz.js?v=464"></script>
-<script src="graficos.js?v=464"></script>
-<script src="plazo.js?v=464"></script>
-<script src="compartir.js?v=464"></script>
-<script src="sugerencias.js?v=464"></script>
-<script src="analisis.js?v=464"></script>
-<script src="chequeos.js?v=464"></script>
-<script src="claude.js?v=464"></script>
-<script src="productos.js?v=464"></script>
-<script src="sync-perfil.js?v=464"></script>
-<script src="sync.js?v=464"></script>
-<script src="estado-sync.js?v=464"></script>
-<script src="auth.js?v=464"></script>
-<script src="app.js?v=464"></script>
-<script src="ui/general.js?v=464"></script>
-<script src="ui/hoy.js?v=464"></script>
-<script src="ui/dia.js?v=464"></script>
-<script src="ui/objetivos.js?v=464"></script>
-<script src="ui/tarjeta.js?v=464"></script>
-<script src="ui/logros.js?v=464"></script>
-<script src="ui/comidas.js?v=464"></script>
-<script src="ui/edicion.js?v=464"></script>
-<script src="ui/escaner.js?v=464"></script>
-<script src="ui/asistente.js?v=464"></script>
-<script src="ui/historial.js?v=464"></script>
-<script src="ui/progreso.js?v=464"></script>
-<script src="ui/perfil.js?v=464"></script>
-<script src="ui/sincronizacion.js?v=464"></script>
-<script src="ui/cuenta.js?v=464"></script>
-<script src="ui/calibracion.js?v=464"></script>
-<script src="ui/actividades.js?v=464"></script>
-<script src="ui/recordatorios.js?v=464"></script>
-<script src="ui/ajustes.js?v=464"></script>
-<script src="arranque.js?v=464"></script>
+<script src="config.js?v=466"></script>
+<script src="core.js?v=466"></script>
+<script src="platos.js?v=466"></script>
+<script src="animar.js?v=466"></script>
+<script src="fotos.js?v=466"></script>
+<script src="calibracion.js?v=466"></script>
+<script src="modos.js?v=466"></script>
+<script src="arreglos.js?v=466"></script>
+<script src="habitos.js?v=466"></script>
+<script src="mascota.js?v=466"></script>
+<script src="cuerpo.js?v=466"></script>
+<script src="cintura.js?v=466"></script>
+<script src="figura.js?v=466"></script>
+<script src="cara.js?v=466"></script>
+<script src="personaje.js?v=466"></script>
+<script src="relieve.js?v=466"></script>
+<script src="sprite-datos.js?v=466"></script>
+<script src="sprite.js?v=466"></script>
+<script src="transformacion.js?v=466"></script>
+<script src="aura.js?v=466"></script>
+<script src="juego.js?v=466"></script>
+<script src="sonidos.js?v=466"></script>
+<script src="voz.js?v=466"></script>
+<script src="graficos.js?v=466"></script>
+<script src="plazo.js?v=466"></script>
+<script src="compartir.js?v=466"></script>
+<script src="sugerencias.js?v=466"></script>
+<script src="analisis.js?v=466"></script>
+<script src="chequeos.js?v=466"></script>
+<script src="claude.js?v=466"></script>
+<script src="productos.js?v=466"></script>
+<script src="sync-perfil.js?v=466"></script>
+<script src="sync.js?v=466"></script>
+<script src="estado-sync.js?v=466"></script>
+<script src="auth.js?v=466"></script>
+<script src="app.js?v=466"></script>
+<script src="ui/general.js?v=466"></script>
+<script src="ui/hoy.js?v=466"></script>
+<script src="ui/dia.js?v=466"></script>
+<script src="ui/objetivos.js?v=466"></script>
+<script src="ui/tarjeta.js?v=466"></script>
+<script src="ui/logros.js?v=466"></script>
+<script src="ui/comidas.js?v=466"></script>
+<script src="ui/edicion.js?v=466"></script>
+<script src="ui/escaner.js?v=466"></script>
+<script src="ui/asistente.js?v=466"></script>
+<script src="ui/historial.js?v=466"></script>
+<script src="ui/progreso.js?v=466"></script>
+<script src="ui/perfil.js?v=466"></script>
+<script src="ui/sincronizacion.js?v=466"></script>
+<script src="ui/cuenta.js?v=466"></script>
+<script src="ui/calibracion.js?v=466"></script>
+<script src="ui/actividades.js?v=466"></script>
+<script src="ui/recordatorios.js?v=466"></script>
+<script src="ui/ajustes.js?v=466"></script>
+<script src="arranque.js?v=466"></script>
 </body>
 </html>

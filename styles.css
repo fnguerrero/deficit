@@ -156,6 +156,9 @@ main { padding: 0 14px; max-width: 620px; margin: 0 auto; min-width: 0; width: 1
 .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .card-head h2 { margin: 0; font-size: 14px; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
 .pill { background: var(--card2); color: var(--dim); border-radius: 20px; padding: 2px 9px; font-size: 12px; }
+/* Un pill sin texto igual dibujaba la pastilla: al lado de un titulo se lee
+   como una mancha. Ahora un estado que no dice nada no ocupa nada. */
+.pill:empty { display: none; }
 
 /* ---------- anillo ---------- */
 .ring-card { display: flex; flex-direction: column; align-items: center; padding-top: 18px; }
@@ -1114,6 +1117,21 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 @media (max-width: 480px) {
   .modos { grid-template-columns: 1fr; }
 }
+
+/* Ajustes eran trece tarjetas apiladas, cuatro pantallas de scroll para llegar
+   a la ultima. Ahora cada una se pliega: el titulo y su estado siempre a la
+   vista, el contenido a un toque. El indice entero entra en una pantalla. */
+.card.plegable > summary { cursor: pointer; list-style: none; margin-bottom: 0; gap: 8px; }
+.card.plegable[open] > summary { margin-bottom: 10px; }
+.card.plegable > summary::-webkit-details-marker { display: none; }
+.card.plegable > summary::after { content: '▾'; color: var(--dim); font-size: 13px; }
+.card.plegable[open] > summary::after { content: '▴'; }
+/* El estado se pega a la flecha: con space-between y tres piezas quedaba
+   repartido por el medio del renglon. */
+.card.plegable > summary .pill { margin-left: auto; margin-right: 8px; }
+/* Sin esto un navegador que no aplique el ocultado nativo de <details> deja
+   trece tarjetas abiertas, que es exactamente lo que se venia a arreglar. */
+.card.plegable:not([open]) > *:not(summary) { display: none; }
 
 /* Lo que un plegable esconde, dicho en el propio rotulo. */
 .resumen-plegado { color: var(--dim); font-weight: 400; }

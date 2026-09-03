@@ -51,7 +51,7 @@ elegido y los demas en una lista desplegable.
 
 - [x] Perfil: el modo elegido visible, los otros quince a un toque · verif: 1030 tests en verde, cabecera de 56 px, cero repetidos, abrir/elegir/cerrar en la app viva a 375 y 320 px
 - [x] Perfil: sacado lo repetido (objetivo, macros y fecha de llegada estaban dos veces), plegados sexo/edad/altura, el objetivo manual y el detalle del calculo · verif: 1030 tests en verde, guardar sigue guardando lo plegado, el error abre el plegable y el foco cae en el campo
-- [ ] Ajustes: agrupar y plegar lo que casi nunca se toca
+- [x] Ajustes: las trece tarjetas se pliegan, con titulo y estado a la vista · verif: de 4,2 pantallas de scroll a 1,2; abren y cierran, el switch de adentro sigue andando, 1030 tests en verde
 - [ ] Historial: quedarse con lo que se mira de verdad
 - [ ] Progreso: idem
 - Sin decidir: si lo que sobra se PLIEGA o se SACA. Plegar no simplifica, solo
