@@ -49,7 +49,7 @@ toque. Solo informacion que sirva de verdad. El ejemplo que lo define: los 12
 modos en Perfil ocupan la pantalla entera para elegir uno — tiene que verse el
 elegido y los demas en una lista desplegable.
 
-- [ ] Perfil: el modo elegido visible, los otros 11 en desplegable
+- [x] Perfil: el modo elegido visible, los otros quince a un toque · verif: 1030 tests en verde, cabecera de 56 px, cero repetidos, abrir/elegir/cerrar en la app viva a 375 y 320 px
 - [ ] Perfil: revisar que queda a la vista y que se puede plegar
 - [ ] Ajustes: agrupar y plegar lo que casi nunca se toca
 - [ ] Historial: quedarse con lo que se mira de verdad

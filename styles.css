@@ -1079,6 +1079,19 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    ("MantenimientoSostener el peso actual") porque el <small> es inline y los
    botones se apilaban como texto corrido. */
 .modos { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 8px; }
+/* La regla de clase le gana al display:none del navegador: sin esto el atributo
+   hidden no plegaba nada. */
+.modos[hidden] { display: none; }
+
+/* El modo en uso, siempre a la vista, y la flecha que despliega los otros. */
+.modo-actual { position: relative; padding-right: 34px; margin-bottom: 8px; }
+/* La flecha cambia de caracter y no de rotacion: el transform sobre el
+   pseudo-elemento no se veia. */
+.modo-actual::after {
+  content: '▾'; position: absolute; right: 12px; top: 9px;
+  color: var(--dim); font-size: 15px; line-height: 1;
+}
+.modo-actual[aria-expanded="true"]::after { content: '▴'; }
 
 .modo-btn {
   display: flex; align-items: flex-start; gap: 9px; text-align: left; width: 100%;
