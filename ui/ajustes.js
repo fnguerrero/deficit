@@ -298,6 +298,30 @@ $('btnGuardarTope').onclick = () => {
   toast(`Tope en US$ ${fmtNum(v)} por mes`);
 };
 
+/**
+ * Cuales de las trece tarjetas de Ajustes arrancan abiertas.
+ *
+ * Ninguna, salvo las que estan reclamando algo: un error anotado, datos por
+ * revisar, la app sin instalar, una cuenta sin sesion, el almacenamiento
+ * llenandose. Solo abre — nunca cierra — porque una tarjeta que el usuario
+ * abrio no se le puede cerrar sola en el proximo render.
+ */
+function abrirLoQueReclama(uso) {
+  const abrir = (sel, cuando) => {
+    if (cuando) document.querySelector(sel)?.closest('.plegable')?.setAttribute('open', '');
+  };
+
+  abrir('#cardInstalar', !$('cardInstalar').hidden);
+  abrir('#diagPill', (state.errores || []).length > 0);
+  abrir('#cardRevision', !$('cardRevision').hidden);
+  /* Sin sesion los datos viven solo en este navegador: el formulario para
+     entrar tiene que estar delante, no adentro de un plegable. Se mira el
+     bloque de "ya entraste", que es el unico que dice si hay sesion sin
+     depender del CSS que pliega la tarjeta. */
+  abrir('#cuentaAdentro', $('cuentaAdentro').hidden);
+  abrir('#cardDatos', uso?.alerta || uso?.critico);
+}
+
 function renderAjustes() {
   renderActividadesEditar();
   renderTope();
@@ -326,6 +350,8 @@ function renderAjustes() {
   const barra = $('barraCuota');
   barra.style.width = Math.min(uso.pct, 100) + '%';
   barra.className = uso.critico ? 'critico' : (uso.alerta ? 'alerta' : '');
+
+  abrirLoQueReclama(uso);
 
   const thumbs = pesoDeThumbs(state.dias);
   $('avisoCuota').hidden = !uso.alerta;
