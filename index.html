@@ -364,16 +364,24 @@
       <div class="modos" id="listaModos" hidden></div>
       <p class="hint" id="detalleModo"></p>
 
+      <!-- Sexo, edad y altura se cargan una vez y no se vuelven a tocar: entran
+           al calculo igual, pero no ocupan la parte de arriba de la pantalla. -->
+      <details class="avanzado datos-fijos">
+        <summary>Sexo, edad y altura <span id="fijosResumen" class="resumen-plegado"></span></summary>
+        <div class="form-grid">
+          <label>Sexo
+            <select id="pSexo"><option value="m">Masculino</option><option value="f">Femenino</option></select>
+          </label>
+          <label>Edad
+            <input type="number" id="pEdad" inputmode="numeric" placeholder="años">
+          </label>
+          <label>Altura (cm)
+            <input type="number" id="pAltura" inputmode="numeric" placeholder="cm">
+          </label>
+        </div>
+      </details>
+
       <div class="form-grid">
-        <label>Sexo
-          <select id="pSexo"><option value="m">Masculino</option><option value="f">Femenino</option></select>
-        </label>
-        <label>Edad
-          <input type="number" id="pEdad" inputmode="numeric" placeholder="años">
-        </label>
-        <label>Altura (cm)
-          <input type="number" id="pAltura" inputmode="numeric" placeholder="cm">
-        </label>
         <label>Peso actual (kg)
           <input type="number" id="pPeso" step="0.1" inputmode="decimal" placeholder="kg">
         </label>
@@ -418,16 +426,28 @@
           <input type="date" id="pFecha">
         </label>
         <p class="hint plazo-aviso" id="plazoAviso" hidden></p>
+      </div>
+      <!-- Pisa todo el calculo de arriba. Casi nunca se usa, asi que no puede
+           estar al mismo nivel que el peso. -->
+      <details class="avanzado" id="avanzadoManual">
+        <summary>Objetivo manual <span id="manualResumen" class="resumen-plegado"></span></summary>
         <label>Objetivo manual (kcal)
           <input type="number" id="pManual" inputmode="numeric" placeholder="vacío = calculado">
         </label>
-      </div>
+      </details>
       <button id="btnGuardarPerfil" class="primary big">Guardar perfil</button>
     </div>
 
     <div class="card">
       <div class="card-head"><h2>Tu cálculo</h2></div>
-      <ul class="kv" id="calcLista"></ul>
+      <!-- El numero que se mira: cuanto comer hoy. El resto es de donde salio. -->
+      <div class="calc-objetivo" id="calcObjetivo" hidden>
+        <b id="calcObjetivoKcal"></b><span>por día</span>
+      </div>
+      <details class="avanzado" id="avanzadoCalc">
+        <summary>De dónde sale</summary>
+        <ul class="kv" id="calcLista"></ul>
+      </details>
       <p class="hint" id="calcAviso"></p>
     </div>
   </section>
