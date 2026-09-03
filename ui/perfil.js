@@ -217,6 +217,17 @@ $('pFecha').onchange = () => {
 
 /* ---------------- el modo ---------------- */
 
+/* Los quince que no estás usando arrancan plegados y se despliegan a un toque.
+   No se van: los dieciséis siguen estando, pero elegir uno no puede costar la
+   pantalla entera. */
+let modosAbiertos = false;
+
+/** El adentro de un botón de modo: el emoji y el par nombre/resumen. */
+function pintarModo(b, m) {
+  b.innerHTML = `<i aria-hidden="true">${m.emoji || '🎯'}</i>` +
+    `<span><b>${m.nombre}</b><small>${m.resumen}</small></span>`;
+}
+
 /**
  * Elegir el modo es la decisión que más cambia la app: de acá salen el objetivo
  * del día, el reparto de macros, qué comida entra y qué se recomienda.
@@ -225,17 +236,36 @@ function renderModos() {
   const cont = $('listaModos');
   if (!cont) return;
 
-  const actual = state.perfil.modo || MODO_DEFECTO;
+  /* El id que se pinta arriba, no el que está guardado: con un modo viejo que
+     ya no existe modoDe() cae al de siempre, y comparar contra el guardado
+     dejaba al de siempre repetido en la lista. */
+  const elModo = modoDe(state.perfil.modo || MODO_DEFECTO);
+  const actual = elModo.id;
   cont.innerHTML = '';
 
+  const cabecera = $('modoActual');
+  if (cabecera) {
+    pintarModo(cabecera, elModo);
+    cabecera.setAttribute('aria-expanded', String(modosAbiertos));
+    cabecera.onclick = () => {
+      modosAbiertos = !modosAbiertos;
+      renderModos();
+    };
+  }
+  cont.hidden = !modosAbiertos;
+
   for (const m of listaModos()) {
+    /* El que está en uso ya se ve arriba: repetirlo en la lista era mostrar
+       dieciséis para elegir entre quince. */
+    if (m.id === actual) continue;
+
     const b = document.createElement('button');
-    b.className = 'modo-btn' + (m.id === actual ? ' activo' : '');
-    b.innerHTML = `<i aria-hidden="true">${m.emoji || '🎯'}</i>` +
-      `<span><b>${m.nombre}</b><small>${m.resumen}</small></span>`;
-    b.setAttribute('aria-pressed', String(m.id === actual));
+    b.className = 'modo-btn';
+    pintarModo(b, m);
+    b.setAttribute('aria-pressed', 'false');
     b.onclick = () => {
       state.perfil.modo = m.id;
+      modosAbiertos = false;
       save();
       renderModos();
       renderPerfil();

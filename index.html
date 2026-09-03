@@ -356,8 +356,12 @@
     <div class="card">
       <div class="card-head"><h2>Tus datos</h2></div>
 
-      <!-- El modo va primero: decide el objetivo del dia y que comida entra. -->
-      <div class="modos" id="listaModos"></div>
+      <!-- El modo va primero: decide el objetivo del dia y que comida entra.
+           A la vista queda el que estas usando; los otros quince, a un toque:
+           dieciseis apilados se comian la pantalla entera para elegir uno. -->
+      <button class="modo-btn activo modo-actual" id="modoActual"
+              aria-expanded="false" aria-controls="listaModos"></button>
+      <div class="modos" id="listaModos" hidden></div>
       <p class="hint" id="detalleModo"></p>
 
       <div class="form-grid">
