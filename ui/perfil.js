@@ -26,6 +26,12 @@ function renderPerfil() {
   const ul = $('calcLista');
   ul.innerHTML = '';
 
+  const caja = $('calcObjetivo');
+  if (caja) {
+    caja.hidden = !calc;
+    if (calc) $('calcObjetivoKcal').textContent = fmtKcal(calc.objetivo);
+  }
+
   if (!calc) {
     $('calcAviso').textContent = 'Completá edad, altura y peso para ver tu objetivo.';
     return;
@@ -48,11 +54,8 @@ function renderPerfil() {
     filas.push(['Cintura sobre altura', `${fmtNum(ica, 2)} — ${b.nombre}`]);
   }
 
-  if (calc.semanas) {
-    const meta = new Date(Date.now() + calc.semanas * 7 * 86400000)
-      .toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
-    filas.push(['Llegás a la meta en', `${calc.semanas} semanas (~${meta})`]);
-  }
+  /* La fecha de llegada no se repite acá: ya está arriba, al lado del ritmo
+     que la produce, que es donde se decide. */
 
   for (const [k, v] of filas) {
     const li = document.createElement('li');
@@ -60,6 +63,8 @@ function renderPerfil() {
     const b = document.createElement('b'); b.textContent = v;
     li.append(s, b); ul.appendChild(li);
   }
+
+  renderResumenesPlegados();
 
   $('calcAviso').textContent = state.perfil.manual
     ? 'Estás usando un objetivo manual; el ritmo de pérdida se recalcula a partir de ese valor.'
@@ -72,7 +77,16 @@ function renderPerfil() {
 
 const CAMPOS_PERFIL = { edad: 'pEdad', altura: 'pAltura', peso: 'pPeso', pesoObj: 'pPesoObj', cintura: 'pCintura', manual: 'pManual' };
 
+/* Un campo marcado dentro de un plegable cerrado es un error invisible: se ve
+   el aviso, no el campo, y el foco se va a un input que nadie tiene delante. */
+const PLEGABLE_DE = { edad: '.datos-fijos', altura: '.datos-fijos', manual: '#avanzadoManual' };
+
 function mostrarErroresPerfil(errores) {
+  for (const campo of Object.keys(errores)) {
+    const sel = PLEGABLE_DE[campo];
+    if (sel) document.querySelector(sel)?.setAttribute('open', '');
+  }
+
   for (const [campo, id] of Object.entries(CAMPOS_PERFIL)) {
     const input = $(id);
     const label = input.parentElement;
@@ -275,16 +289,13 @@ function renderModos() {
     cont.appendChild(b);
   }
 
-  const modo = modoDe(actual);
   const calc = calcular();
-  const partes = [modo.detalle];
+  /* El objetivo y los macros no se repiten acá: viven en "Tu cálculo", que es
+     la tarjeta que los explica. Queda lo que solo dice este modo. */
+  const partes = [elModo.detalle];
 
-  if (calc) {
-    partes.push(`Tu objetivo: ${fmtNum(calc.objetivo)} kcal — ${fmtNum(calc.macros.prot)} g de proteína, ` +
-      `${fmtNum(calc.macros.carb)} g de carbohidratos y ${fmtNum(calc.macros.gras)} g de grasas.`);
-    if (calc.ajustado && calc.motivo) partes.push(calc.motivo);
-  }
-  if (modo.aviso) partes.push(modo.aviso);
+  if (calc?.ajustado && calc.motivo) partes.push(calc.motivo);
+  if (elModo.aviso) partes.push(elModo.aviso);
 
   $('detalleModo').textContent = partes.join(' ');
 }
@@ -336,4 +347,30 @@ function renderPlanEtapas() {
 
 for (const id of ['pPeso', 'pPesoObj', 'pRitmo']) {
   $(id)?.addEventListener('input', renderPlanEtapas);
+}
+
+/* ---------------- lo plegado dice lo que esconde ---------------- */
+
+/**
+ * Un plegable sin resumen es una caja negra: hay que abrirlo para saber si
+ * adentro hay algo. Cada summary lleva al lado lo que guarda.
+ */
+function renderResumenesPlegados() {
+  const p = state.perfil;
+
+  const fijos = $('fijosResumen');
+  if (fijos) {
+    const partes = [];
+    if (p.edad) partes.push(`${fmtNum(p.edad)} años`);
+    if (p.altura) partes.push(`${fmtNum(p.altura)} cm`);
+    fijos.textContent = partes.length ? `· ${partes.join(' · ')}` : '· sin cargar';
+  }
+
+  const manual = $('manualResumen');
+  if (manual) manual.textContent = p.manual ? `· ${fmtKcal(p.manual)}` : '';
+  /* Un objetivo manual puesto no puede quedar escondido: cambia todo el numero
+     de arriba y hay que poder ver de donde salio. Se abre, nunca se cierra:
+     cerrarlo por codigo le sacaria el campo de adelante a alguien que lo esta
+     escribiendo. */
+  if (p.manual) $('avanzadoManual')?.setAttribute('open', '');
 }
