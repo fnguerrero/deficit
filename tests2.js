@@ -2798,6 +2798,39 @@ test('un plato keto de verdad pasa sin peros', () => {
   esperar(v.nivel, 'si');
 });
 
+/* Pasado el tope del dia, el "no apto" era del resto de las comidas. */
+
+test('con el dia ya pasado, una comida sin carbos no es la culpable', () => {
+  // 60 g de carbos arriba y un pescado de cero: el pescado no rompio nada
+  const v = comidaApta({ kcal: 300, carb: 0, fibra: 0, prot: 45, gras: 12 },
+    'keto', null, { carb: 60, fibra: 0, kcal: 400 });
+  esperar(v.apta, true);
+  esperarQue(v.nivel !== 'no', v.nivel);
+});
+
+test('la que cruza el tope sí es la culpable', () => {
+  // venias en 25 de 30 y esta trae 10: es esta la que se pasa
+  const v = comidaApta({ kcal: 300, carb: 10, fibra: 0, prot: 10, gras: 20 },
+    'keto', null, { carb: 25, fibra: 0, kcal: 500 });
+  esperar(v.nivel, 'no');
+  esperarQue(/te quedaban 5 g/.test(v.motivo), v.motivo);
+});
+
+test('con el dia pasado, lo que igual suma carbos se avisa sin condenar', () => {
+  const v = comidaApta({ kcal: 300, carb: 8, fibra: 0, prot: 10, gras: 20 },
+    'keto', null, { carb: 60, fibra: 0, kcal: 400 });
+  esperar(v.nivel, 'justo');
+  esperarQue(/ya pasó/.test(v.motivo), v.motivo);
+});
+
+test('un plato que solo ya se pasa del tope no entra, venga cuando venga', () => {
+  // la segunda pasta del dia: el dia ya estaba roto, pero esto tampoco entra
+  const v = comidaApta({ kcal: 800, carb: 110, fibra: 6, prot: 25, gras: 20 },
+    'keto', null, { carb: 110, fibra: 6, kcal: 800 });
+  esperar(v.nivel, 'no');
+  esperarQue(/techo del día/.test(v.motivo), v.motivo);
+});
+
 test('en un plato chico el reparto no dice nada', () => {
   // un café con crema es casi toda grasa, y una feta de jamón casi toda proteína
   esperar(repartoKeto({ kcal: 120, prot: 18, gras: 4 }, MODOS.keto), null);
