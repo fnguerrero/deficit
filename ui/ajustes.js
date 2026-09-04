@@ -298,6 +298,44 @@ $('btnGuardarTope').onclick = () => {
   toast(`Tope en US$ ${fmtNum(v)} por mes`);
 };
 
+/* Lo borrado, por si el numero no era el que se esperaba. Vive en memoria: es
+   para el minuto siguiente al toque, no para manana. */
+let diasAntesDeLimpiar = null;
+
+/**
+ * El boton para sacar las comidas que vinieron del archivo de prueba.
+ *
+ * Importar `deficit-prueba.json` para mirar como se ven las pantallas deja el
+ * historial mezclado, y a simple vista una comida generada no se distingue de
+ * una real. El boton dice cuantas encontro antes de tocarlo, y despues deja
+ * deshacer.
+ */
+function renderBorrarPrueba() {
+  const b = $('btnBorrarPrueba');
+  if (!b) return;
+
+  const { comidas, dias } = contarDatosDePrueba(state.dias);
+  b.hidden = !comidas;
+  if (!comidas) return;
+
+  b.textContent = `Borrar los datos de prueba · ${plural(dias, 'día')}, ${plural(comidas, 'comida')}`;
+  b.onclick = () => {
+    diasAntesDeLimpiar = clonar(state.dias);
+    state.dias = sinDatosDePrueba(state.dias);
+    save(); renderAll();
+    toast(`Datos de prueba borrados: ${plural(dias, 'día')}`, {
+      texto: 'Deshacer',
+      accion: () => {
+        if (!diasAntesDeLimpiar) return;
+        state.dias = diasAntesDeLimpiar;
+        diasAntesDeLimpiar = null;
+        save(); renderAll();
+        toast('Se volvieron a poner');
+      }
+    });
+  };
+}
+
 /**
  * Cuales de las trece tarjetas de Ajustes arrancan abiertas.
  *
@@ -351,6 +389,7 @@ function renderAjustes() {
   barra.style.width = Math.min(uso.pct, 100) + '%';
   barra.className = uso.critico ? 'critico' : (uso.alerta ? 'alerta' : '');
 
+  renderBorrarPrueba();
   abrirLoQueReclama(uso);
 
   const thumbs = pesoDeThumbs(state.dias);
