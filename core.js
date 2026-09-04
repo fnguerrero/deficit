@@ -1021,6 +1021,58 @@ function agruparPorMomento(comidas, { todos = false } = {}) {
   return grupos;
 }
 
+/* ---------------- los datos de prueba ---------------- */
+
+/*
+ * Que comidas vinieron de `deficit-prueba.json`.
+ *
+ * El generador les pone un id con forma fija —fecha, momento y cuatro digitos—
+ * mientras que las de verdad llevan el id que arma la app al guardarlas. Eso
+ * alcanza para separarlas sin tocar ni una comida real, que es lo unico que
+ * importa aca: borrar de mas no se puede deshacer si la app ya se cerro.
+ */
+const ID_DE_PRUEBA = /^\d{4}-\d{2}-\d{2}-(desayuno|almuerzo|merienda|cena|snack)-\d{4}$/;
+
+function esComidaDePrueba(c) {
+  return ID_DE_PRUEBA.test(String(c?.id || ''));
+}
+
+/** Cuantas comidas de prueba hay y en cuantos dias. */
+function contarDatosDePrueba(dias) {
+  let comidas = 0;
+  let conDatos = 0;
+  for (const f of Object.keys(dias || {})) {
+    const n = (dias[f].comidas || []).filter(esComidaDePrueba).length;
+    if (n) { comidas += n; conDatos++; }
+  }
+  return { comidas, dias: conDatos };
+}
+
+/**
+ * Los dias sin nada de lo que trajo el archivo de prueba.
+ *
+ * Un dia donde TODAS las comidas son generadas se borra entero, con su peso,
+ * su agua y sus pasos: el archivo pisa el dia completo al importarse, asi que
+ * esos numeros son tan de prueba como las comidas, y dejarlos ahi mantiene el
+ * historial y los graficos llenos de datos que no pasaron.
+ *
+ * Un dia con aunque sea una comida propia es tuyo: se le sacan las generadas y
+ * se conserva todo lo demas.
+ */
+function sinDatosDePrueba(dias) {
+  const limpio = {};
+  for (const f of Object.keys(dias || {})) {
+    const d = dias[f];
+    const todas = d.comidas || [];
+    const propias = todas.filter(c => !esComidaDePrueba(c));
+    const hayDePrueba = propias.length < todas.length;
+
+    if (hayDePrueba && !propias.length) continue;
+    limpio[f] = hayDePrueba ? { ...d, comidas: propias } : d;
+  }
+  return limpio;
+}
+
 /* ---------------- alimentos frecuentes ---------------- */
 
 /** Clave de comparación: sin acentos, sin mayúsculas, sin espacios de más. */

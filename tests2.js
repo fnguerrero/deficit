@@ -3643,6 +3643,64 @@ test('sin minutos o sin peso no se inventa un numero', () => {
   esperar(caloriasDeMovimiento(30, 'medio', null), 0);
 });
 
+/* ---------------- separar los datos de prueba ---------------- */
+
+test('reconoce el id que arma el generador', () => {
+  esperar(esComidaDePrueba({ id: '2026-09-04-almuerzo-4821' }), true);
+  esperar(esComidaDePrueba({ id: '2026-09-04-desayuno-1000' }), true);
+});
+
+test('una comida real no se toca', () => {
+  // el id que arma la app: fecha y seis caracteres al azar, sin momento
+  esperar(esComidaDePrueba({ id: '2026-09-04-a7f2k9' }), false);
+  esperar(esComidaDePrueba({ id: 'abc123' }), false);
+  esperar(esComidaDePrueba({}), false);
+});
+
+test('cuenta las de prueba sin contar las reales', () => {
+  const dias = {
+    '2026-09-01': { comidas: [{ id: '2026-09-01-cena-1234' }, { id: '2026-09-01-x9k2m1' }] },
+    '2026-09-02': { comidas: [{ id: '2026-09-02-almuerzo-9999' }] },
+    '2026-09-03': { comidas: [{ id: '2026-09-03-p0l2z4' }] }
+  };
+  const r = contarDatosDePrueba(dias);
+  esperar(r.comidas, 2);
+  esperar(r.dias, 2);
+});
+
+test('al limpiar quedan solo las reales', () => {
+  const dias = { '2026-09-01': { comidas: [{ id: '2026-09-01-cena-1234' }, { id: '2026-09-01-x9k2m1' }] } };
+  const l = sinDatosDePrueba(dias);
+  esperar(l['2026-09-01'].comidas.length, 1);
+  esperar(l['2026-09-01'].comidas[0].id, '2026-09-01-x9k2m1');
+});
+
+test('un dia que queda vacio se va', () => {
+  const dias = { '2026-09-01': { comidas: [{ id: '2026-09-01-cena-1234' }] } };
+  esperar(Object.keys(sinDatosDePrueba(dias)).length, 0);
+});
+
+test('un dia de prueba se va entero, con su peso y su agua', () => {
+  // el archivo pisa el dia completo: ese peso tampoco paso
+  const dias = { '2026-09-01': { peso: 82.5, agua: 6, comidas: [{ id: '2026-09-01-cena-1234' }] } };
+  esperar(Object.keys(sinDatosDePrueba(dias)).length, 0);
+});
+
+test('con una comida propia el dia se queda entero menos las generadas', () => {
+  const dias = { '2026-09-01': { peso: 82.5, agua: 6, comidas: [
+    { id: '2026-09-01-cena-1234' }, { id: '2026-09-01-x9k2m1' }
+  ] } };
+  const l = sinDatosDePrueba(dias);
+  esperar(l['2026-09-01'].comidas.length, 1);
+  esperar(l['2026-09-01'].peso, 82.5);
+  esperar(l['2026-09-01'].agua, 6);
+});
+
+test('un dia sin nada de prueba no se toca', () => {
+  const dias = { '2026-09-01': { peso: 82.5, comidas: [] } };
+  esperar(Object.keys(sinDatosDePrueba(dias)).length, 1);
+});
+
 /* ---------------- el desglose del ejercicio del dia ---------------- */
 
 test('un dia viejo sin renglones no rompe nada', () => {
