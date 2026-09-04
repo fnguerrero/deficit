@@ -208,17 +208,5 @@ function renderListaDias() {
   }
 }
 
-/* --- resumen --- */
-
-
-/* ---------------- veredicto y recomendaciones ---------------- */
-
-const ETIQUETA_VEREDICTO = {
-  bien: 'en camino',
-  lento: 'más lento',
-  rapido: 'muy rápido',
-  mal: 'atención',
-  'sin-datos': 'sin datos'
-};
 
 

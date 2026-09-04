@@ -53,8 +53,10 @@ elegido y los demas en una lista desplegable.
 - [x] Perfil: sacado lo repetido (objetivo, macros y fecha de llegada estaban dos veces), plegados sexo/edad/altura, el objetivo manual y el detalle del calculo · verif: 1030 tests en verde, guardar sigue guardando lo plegado, el error abre el plegable y el foco cae en el campo
 - [x] Ajustes: las trece tarjetas se pliegan, con titulo y estado a la vista · verif: de 4,2 pantallas de scroll a 1,2; abren y cierran, el switch de adentro sigue andando, 1030 tests en verde
 - [x] Historial: se queda con los dias (buscar y la lista); las curvas y el resumen del mes se fueron a Progreso · verif: de 4,3 pantallas a 1,7, 1030 tests en verde, cero errores de consola
-- [ ] Progreso: quedo en 4,1 pantallas al recibir lo de Historial — falta decidir si se pliega como Ajustes
+- [x] Progreso: las once tarjetas plegadas, abiertas el veredicto, el peso y las calorias por dia · verif: de 4,1 pantallas a 1,9 con los 153 dias de prueba cargados, graficos dibujando, 1030 tests en verde
 - [x] El porque del borde rojo de un momento, en pantalla: el motivo existia pero solo en un tooltip · verif: "Desayuno no entra en el modo: 68% de tu objetivo del dia en una sola comida" en la app viva a 375 px
-- [ ] Progreso: idem
-- Sin decidir: si lo que sobra se PLIEGA o se SACA. Plegar no simplifica, solo
-  esconde; sacar duele pero es lo que se pidio. Preguntar caso por caso.
+
+- Resuelto caso por caso: se SACO lo repetido (el objetivo y los macros en
+  Perfil, el resumen del mes y los graficos de peso y calorias que estaban en
+  Historial y en Progreso a la vez) y se PLEGO lo que hace falta pero no todos
+  los dias. Ninguna funcion se perdio.

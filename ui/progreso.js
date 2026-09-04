@@ -36,6 +36,29 @@ function renderProgreso() {
   pintarAdherencia(s);
   pintarDelModo(s);
   pintarSueno(objetivo);
+  abrirLoQueSeMira();
+}
+
+/* Se hace una sola vez: si corriera en cada render, una tarjeta que cerraste
+   se te volveria a abrir al tocar el selector de periodo. */
+let progresoAbierto = false;
+
+/**
+ * Que se ve al entrar a Progreso.
+ *
+ * Once tarjetas apiladas eran cuatro pantallas de scroll. Quedan abiertas las
+ * tres que contestan "como voy": el veredicto, el peso y las calorias por dia.
+ * Las otras ocho estan a un toque, con su titulo y su numero a la vista. Los
+ * dos avisos —la balanza y la semana— aparecen solo cuando hay algo que decir,
+ * asi que cuando aparecen se abren.
+ */
+function abrirLoQueSeMira() {
+  if (progresoAbierto) return;
+  progresoAbierto = true;
+
+  for (const sel of ['#cardBrecha', '#cardSemana', '#cardVeredicto', '#chartPeso', '#chartKcal']) {
+    document.querySelector(sel)?.closest('.plegable')?.setAttribute('open', '');
+  }
 }
 
 /** Cuántos días abarca todo el historial, para el rango "Todo". */
@@ -59,7 +82,9 @@ function pintarSueno(objetivo) {
   $('suenoTitulo').textContent = r.titulo;
   $('suenoTexto').textContent = r.texto;
   $('suenoPill').textContent = r.hayDatos ? `${r.datos.cortos} vs ${r.datos.largos} días` : 'sin datos';
-  card.className = 'card' + (r.estado === 'come-mas' ? ' lento' : '');
+  /* classList y no className: la tarjeta tambien lleva 'plegable', y pisar el
+     atributo entero se la borraba —dejaba de plegarse y de abrirse sola. */
+  card.classList.toggle('lento', r.estado === 'come-mas');
 }
 
 
@@ -580,13 +605,28 @@ function renderComoVenis() {
  * suficientes lo dice, en vez de dar un veredicto de cortesía que llevaría a
  * decidir mal.
  */
+const ETIQUETA_VEREDICTO = {
+  bien: 'en camino',
+  lento: 'más lento',
+  rapido: 'muy rápido',
+  mal: 'atención',
+  'sin-datos': 'sin datos'
+};
+
+/* Para poder sacar el estado anterior sin barrer las demas clases de la
+   tarjeta. */
+const ESTADOS_VEREDICTO = Object.keys(ETIQUETA_VEREDICTO);
+
 function renderVeredicto() {
   const card = $('cardVeredicto');
   if (!card) return;
 
   const v = veredictoProgreso(state.dias, calcular());
 
-  card.className = 'card ' + v.estado;
+  /* Solo el estado, sin tocar el resto de las clases: ver la nota de
+     pintarSueno(). */
+  card.classList.remove(...ESTADOS_VEREDICTO);
+  if (v.estado) card.classList.add(v.estado);
   $('veredictoTitulo').textContent = v.titulo || '¿Cómo venís?';
   $('veredictoPill').textContent = ETIQUETA_VEREDICTO[v.estado] || '';
   $('veredictoDetalle').textContent = v.detalle;
