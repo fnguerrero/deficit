@@ -403,12 +403,46 @@ function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy
     const yaConsumidos = carbosNetos(consumidoHoy);
     const tope = modo.carbosMaxDia;
 
-    if (yaConsumidos + netos > tope) {
+    /*
+     * "No entra" es de la comida que cruza el tope, no de las que vienen
+     * despues.
+     *
+     * Comparar `yaConsumidos + netos` a secas condenaba al resto del dia: una
+     * vez pasado el tope, cualquier comida posterior daba "no apto" aunque
+     * tuviera cero carbohidratos, y el motivo quedaba en "0 g de carbohidratos
+     * netos y te quedaban 0 g para hoy". Un pescado no rompe la cetosis por
+     * llegar tarde a un dia que ya rompio otra cosa.
+     */
+    const yaPasado = yaConsumidos >= tope;
+
+    /* Lo primero es la comida contra el tope, sin mirar la hora ni el resto del
+       dia: un plato que solo ya se pasa de los 30 g no entra en keto, venga
+       cuando venga. Sin esta regla, un dia de dos platos de pasta daba una
+       "no" y una "justo", y el aviso de que el modo no cuadra dejaba de salir. */
+    if (netos > tope) {
+      return {
+        apta: false,
+        nivel: 'no',
+        motivo: `${Math.round(netos)} g de carbohidratos netos y el techo del día son ${Math.round(tope)}.`
+      };
+    }
+
+    if (!yaPasado && yaConsumidos + netos > tope) {
       const restantes = Math.max(0, tope - yaConsumidos);
       return {
         apta: false,
         nivel: 'no',
         motivo: `${Math.round(netos)} g de carbohidratos netos y te quedaban ${Math.round(restantes)} g para hoy.`
+      };
+    }
+
+    /* Con el dia ya pasado, lo que suma carbos igual se avisa —pero como lo que
+       es: no fue esta la que rompio nada. */
+    if (yaPasado && netos > 0) {
+      return {
+        apta: true,
+        nivel: 'justo',
+        motivo: `El día ya pasó los ${Math.round(tope)} g y esto suma ${Math.round(netos)} g más.`
       };
     }
 
