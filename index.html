@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=466">
+<link rel="stylesheet" href="styles.css?v=470">
 </head>
 <body>
 
@@ -190,15 +190,61 @@
          control y estaban en lugares distintos de cada pestaña. -->
     <div class="periodos" id="selRangoHist"></div>
 
+
+
+
+    <!-- La cintura tiene curva propia y no comparte eje con el peso: son
+         escalas distintas y superponerlas obliga a un segundo eje que en 375 px
+         no se lee. Ademas la tarjeta NO EXISTE si no hay dos mediciones: es un
+         dato opcional, y un cartel vacio pidiendolo seria un reproche. -->
+
+
+
+    <div class="card">
+      <div class="card-head"><h2>Buscar</h2></div>
+      <div class="buscador">
+        <input id="inputBuscar" type="search" placeholder="Buscá un alimento o una comida" aria-label="Buscar en el historial">
+        <button id="btnLimpiarBusqueda" class="icon-btn" aria-label="Limpiar la búsqueda" hidden>✕</button>
+      </div>
+      <p id="resumenBusqueda" class="hint"></p>
+      <ul id="resultadosBusqueda" class="lista"></ul>
+    </div>
+
+    <div class="card" id="cardUltimosDias">
+      <div class="card-head"><h2 id="tituloUltimosDias">Últimos días</h2></div>
+      <ul id="listaDias" class="lista dias"></ul>
+      <p id="diasVacio" class="vacio">Sin registros todavía.</p>
+    </div>
+
+  </section>
+
+  <!-- ============ PROGRESO ============ -->
+  <section id="tab-progreso" class="tab">
+    <!-- Arriba de todo: manda sobre la pestaña entera. Vivía a mitad de
+         pantalla, después de cuatro tarjetas que no le obedecían, así que
+         tocarlo parecía no hacer nada. -->
+    <div class="periodos" id="selPeriodo"></div>
+
+    <!-- La app comparando sus propios numeros contra la balanza. Incomodo a
+         proposito: ver brechaConLaBalanza() en analisis.js. -->
+    <div class="card brecha" id="cardBrecha" hidden>
+      <div class="card-head"><h2>Lo que dice la balanza</h2></div>
+      <p id="brechaTexto"></p>
+      <p class="hint" id="brechaDetalle"></p>
+    </div>
+
+    <!-- La semana de un vistazo. resumenPeriodo() estaba escrito y probado desde
+         hacia rato, y no lo mostraba ninguna pantalla. -->
+    <div class="card semana" id="cardSemana" hidden>
+      <div class="card-head"><h2>Tu semana</h2><span id="semanaPill" class="pill"></span></div>
+      <div class="semana-nums" id="semanaNums"></div>
+      <p class="hint" id="semanaNota"></p>
+    </div>
+
     <div class="card" id="cardVeredicto">
       <div class="card-head"><h2 id="veredictoTitulo">¿Cómo venís?</h2><span id="veredictoPill" class="pill"></span></div>
       <p id="veredictoDetalle" class="hint"></p>
       <div class="ring-stats" id="veredictoDatos" hidden></div>
-    </div>
-
-    <div class="card" id="cardRecomendaciones">
-      <div class="card-head"><h2>Para tu modo</h2><span id="recoPill" class="pill"></span></div>
-      <ul id="listaReco" class="lista-reco"></ul>
     </div>
 
     <div class="card">
@@ -217,10 +263,6 @@
       </div>
     </div>
 
-    <!-- La cintura tiene curva propia y no comparte eje con el peso: son
-         escalas distintas y superponerlas obliga a un segundo eje que en 375 px
-         no se lee. Ademas la tarjeta NO EXISTE si no hay dos mediciones: es un
-         dato opcional, y un cartel vacio pidiendolo seria un reproche. -->
     <div class="card" id="cardCintura" hidden>
       <div class="card-head"><h2>Cintura</h2><span id="cinturaDelta" class="pill"></span></div>
       <svg id="chartCintura" class="chart" viewBox="0 0 320 120" role="img" aria-label="Evolución de tu cintura"></svg>
@@ -258,50 +300,9 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><h2>Buscar</h2></div>
-      <div class="buscador">
-        <input id="inputBuscar" type="search" placeholder="Buscá un alimento o una comida" aria-label="Buscar en el historial">
-        <button id="btnLimpiarBusqueda" class="icon-btn" aria-label="Limpiar la búsqueda" hidden>✕</button>
-      </div>
-      <p id="resumenBusqueda" class="hint"></p>
-      <ul id="resultadosBusqueda" class="lista"></ul>
-    </div>
-
-    <div class="card" id="cardUltimosDias">
-      <div class="card-head"><h2 id="tituloUltimosDias">Últimos días</h2></div>
-      <ul id="listaDias" class="lista dias"></ul>
-      <p id="diasVacio" class="vacio">Sin registros todavía.</p>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2 id="tituloResumen">Resumen</h2></div>
-      <ul class="kv" id="resumenSemana"></ul>
-      <p class="hint" id="avisoTdee"></p>
-    </div>
-  </section>
-
-  <!-- ============ PROGRESO ============ -->
-  <section id="tab-progreso" class="tab">
-    <!-- Arriba de todo: manda sobre la pestaña entera. Vivía a mitad de
-         pantalla, después de cuatro tarjetas que no le obedecían, así que
-         tocarlo parecía no hacer nada. -->
-    <div class="periodos" id="selPeriodo"></div>
-
-    <!-- La app comparando sus propios numeros contra la balanza. Incomodo a
-         proposito: ver brechaConLaBalanza() en analisis.js. -->
-    <div class="card brecha" id="cardBrecha" hidden>
-      <div class="card-head"><h2>Lo que dice la balanza</h2></div>
-      <p id="brechaTexto"></p>
-      <p class="hint" id="brechaDetalle"></p>
-    </div>
-
-    <!-- La semana de un vistazo. resumenPeriodo() estaba escrito y probado desde
-         hacia rato, y no lo mostraba ninguna pantalla. -->
-    <div class="card semana" id="cardSemana" hidden>
-      <div class="card-head"><h2>Tu semana</h2><span id="semanaPill" class="pill"></span></div>
-      <div class="semana-nums" id="semanaNums"></div>
-      <p class="hint" id="semanaNota"></p>
+    <div class="card" id="cardRecomendaciones">
+      <div class="card-head"><h2>Para tu modo</h2><span id="recoPill" class="pill"></span></div>
+      <ul id="listaReco" class="lista-reco"></ul>
     </div>
 
     <div class="card nivel-card">
@@ -319,17 +320,7 @@
     </div>
 
 
-    <div class="card">
-      <div class="card-head"><h2>Peso</h2><span id="pesoDeltaProgreso" class="pill"></span></div>
-      <div id="grPeso"></div>
-      <p class="hint" id="pesoNota"></p>
-    </div>
 
-    <div class="card">
-      <div class="card-head"><h2>Calorías</h2><span id="kcalPill" class="pill"></span></div>
-      <div id="grKcal"></div>
-      <p class="hint">La línea punteada es tu objetivo. En rojo, los que se pasaron.</p>
-    </div>
 
     <div class="card">
       <div class="card-head"><h2>Adherencia</h2><span id="adhPill" class="pill"></span></div>
@@ -1093,61 +1084,61 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=466"></script>
-<script src="core.js?v=466"></script>
-<script src="platos.js?v=466"></script>
-<script src="animar.js?v=466"></script>
-<script src="fotos.js?v=466"></script>
-<script src="calibracion.js?v=466"></script>
-<script src="modos.js?v=466"></script>
-<script src="arreglos.js?v=466"></script>
-<script src="habitos.js?v=466"></script>
-<script src="mascota.js?v=466"></script>
-<script src="cuerpo.js?v=466"></script>
-<script src="cintura.js?v=466"></script>
-<script src="figura.js?v=466"></script>
-<script src="cara.js?v=466"></script>
-<script src="personaje.js?v=466"></script>
-<script src="relieve.js?v=466"></script>
-<script src="sprite-datos.js?v=466"></script>
-<script src="sprite.js?v=466"></script>
-<script src="transformacion.js?v=466"></script>
-<script src="aura.js?v=466"></script>
-<script src="juego.js?v=466"></script>
-<script src="sonidos.js?v=466"></script>
-<script src="voz.js?v=466"></script>
-<script src="graficos.js?v=466"></script>
-<script src="plazo.js?v=466"></script>
-<script src="compartir.js?v=466"></script>
-<script src="sugerencias.js?v=466"></script>
-<script src="analisis.js?v=466"></script>
-<script src="chequeos.js?v=466"></script>
-<script src="claude.js?v=466"></script>
-<script src="productos.js?v=466"></script>
-<script src="sync-perfil.js?v=466"></script>
-<script src="sync.js?v=466"></script>
-<script src="estado-sync.js?v=466"></script>
-<script src="auth.js?v=466"></script>
-<script src="app.js?v=466"></script>
-<script src="ui/general.js?v=466"></script>
-<script src="ui/hoy.js?v=466"></script>
-<script src="ui/dia.js?v=466"></script>
-<script src="ui/objetivos.js?v=466"></script>
-<script src="ui/tarjeta.js?v=466"></script>
-<script src="ui/logros.js?v=466"></script>
-<script src="ui/comidas.js?v=466"></script>
-<script src="ui/edicion.js?v=466"></script>
-<script src="ui/escaner.js?v=466"></script>
-<script src="ui/asistente.js?v=466"></script>
-<script src="ui/historial.js?v=466"></script>
-<script src="ui/progreso.js?v=466"></script>
-<script src="ui/perfil.js?v=466"></script>
-<script src="ui/sincronizacion.js?v=466"></script>
-<script src="ui/cuenta.js?v=466"></script>
-<script src="ui/calibracion.js?v=466"></script>
-<script src="ui/actividades.js?v=466"></script>
-<script src="ui/recordatorios.js?v=466"></script>
-<script src="ui/ajustes.js?v=466"></script>
-<script src="arranque.js?v=466"></script>
+<script src="config.js?v=470"></script>
+<script src="core.js?v=470"></script>
+<script src="platos.js?v=470"></script>
+<script src="animar.js?v=470"></script>
+<script src="fotos.js?v=470"></script>
+<script src="calibracion.js?v=470"></script>
+<script src="modos.js?v=470"></script>
+<script src="arreglos.js?v=470"></script>
+<script src="habitos.js?v=470"></script>
+<script src="mascota.js?v=470"></script>
+<script src="cuerpo.js?v=470"></script>
+<script src="cintura.js?v=470"></script>
+<script src="figura.js?v=470"></script>
+<script src="cara.js?v=470"></script>
+<script src="personaje.js?v=470"></script>
+<script src="relieve.js?v=470"></script>
+<script src="sprite-datos.js?v=470"></script>
+<script src="sprite.js?v=470"></script>
+<script src="transformacion.js?v=470"></script>
+<script src="aura.js?v=470"></script>
+<script src="juego.js?v=470"></script>
+<script src="sonidos.js?v=470"></script>
+<script src="voz.js?v=470"></script>
+<script src="graficos.js?v=470"></script>
+<script src="plazo.js?v=470"></script>
+<script src="compartir.js?v=470"></script>
+<script src="sugerencias.js?v=470"></script>
+<script src="analisis.js?v=470"></script>
+<script src="chequeos.js?v=470"></script>
+<script src="claude.js?v=470"></script>
+<script src="productos.js?v=470"></script>
+<script src="sync-perfil.js?v=470"></script>
+<script src="sync.js?v=470"></script>
+<script src="estado-sync.js?v=470"></script>
+<script src="auth.js?v=470"></script>
+<script src="app.js?v=470"></script>
+<script src="ui/general.js?v=470"></script>
+<script src="ui/hoy.js?v=470"></script>
+<script src="ui/dia.js?v=470"></script>
+<script src="ui/objetivos.js?v=470"></script>
+<script src="ui/tarjeta.js?v=470"></script>
+<script src="ui/logros.js?v=470"></script>
+<script src="ui/comidas.js?v=470"></script>
+<script src="ui/edicion.js?v=470"></script>
+<script src="ui/escaner.js?v=470"></script>
+<script src="ui/asistente.js?v=470"></script>
+<script src="ui/historial.js?v=470"></script>
+<script src="ui/progreso.js?v=470"></script>
+<script src="ui/perfil.js?v=470"></script>
+<script src="ui/sincronizacion.js?v=470"></script>
+<script src="ui/cuenta.js?v=470"></script>
+<script src="ui/calibracion.js?v=470"></script>
+<script src="ui/actividades.js?v=470"></script>
+<script src="ui/recordatorios.js?v=470"></script>
+<script src="ui/ajustes.js?v=470"></script>
+<script src="arranque.js?v=470"></script>
 </body>
 </html>
