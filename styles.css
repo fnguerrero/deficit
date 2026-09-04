@@ -1948,6 +1948,48 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .act-mas:hover { color: var(--txt); border-color: var(--acc); }
 .chip-nuevo { border-style: dashed; color: var(--txt2); }
 
+/* Agregar un ejercicio no es elegir uno: era el cuarto chip de una fila de
+   tres y se leia como uno mas de los de siempre. */
+.otro-ejercicio {
+  display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 10px;
+  background: var(--card2); border: 1px dashed var(--line); border-radius: 12px;
+  padding: 10px 12px; cursor: pointer; color: var(--txt); text-align: left;
+  transition: border-color .15s, background .15s;
+}
+.otro-ejercicio:hover { border-color: var(--acc2); background: color-mix(in srgb, var(--acc) 8%, var(--card2)); }
+.otro-ejercicio .oe-mas {
+  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+  background: color-mix(in srgb, var(--acc) 18%, transparent); color: var(--acc);
+  display: grid; place-items: center; font-size: 17px; font-weight: 700; line-height: 1;
+}
+.otro-ejercicio .oe-txt { min-width: 0; }
+.otro-ejercicio b { display: block; font-size: 13.5px; font-weight: 650; }
+.otro-ejercicio small { display: block; font-size: 11px; color: var(--dim); margin-top: 1px; }
+
+/* El ticket del ejercicio: que sumaste, cuanto duro, cuanto quemo y el total.
+   Con un solo numero no se puede ni revisar ni corregir. */
+.carrito { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 6px; }
+.carrito-fila {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+.carrito-fila .cf-que { flex: 1 1 auto; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carrito-fila .cf-cuanto { flex: 0 0 auto; font-size: 11.5px; color: var(--dim); }
+.carrito-fila .cf-kcal { flex: 0 0 auto; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.carrito-fila .cf-x {
+  flex: 0 0 auto; background: none; border: 0; color: var(--dim); cursor: pointer;
+  font-size: 12px; padding: 2px 2px 2px 4px; line-height: 1;
+}
+.carrito-fila .cf-x:hover { color: var(--bad); }
+.carrito-total {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding-top: 9px; font-size: 13px; color: var(--dim);
+}
+.carrito-total b { font-size: 18px; font-weight: 700; color: var(--acc); font-variant-numeric: tabular-nums; }
+/* El total cierra el ticket: lo que sigue necesita aire propio o se lee como
+   parte de la misma cuenta. */
+.carrito + .sub { margin-top: 18px; }
+
 /* Las seis formas ocasionales de cargar, de a dos. Apiladas eran seis filas
    iguales para cosas que no se usan igual, y el menú no entraba en pantalla. */
 .origen-grilla { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }

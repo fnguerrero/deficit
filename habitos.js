@@ -26,10 +26,11 @@ const ACTIVIDADES = [
   { id: 'caminata', nombre: 'Caminata', emoji: '🚶', met: 3.5, minutos: 45 },
   { id: 'tenis', nombre: 'Tenis / pádel', emoji: '🎾', met: 6.5, minutos: 60 },
   { id: 'basquet', nombre: 'Básquet', emoji: '🏀', met: 6.5, minutos: 60 },
-  { id: 'yoga', nombre: 'Yoga', emoji: '🧘', met: 3.0, minutos: 45 }
+  { id: 'yoga', nombre: 'Yoga', emoji: '🧘', met: 3.0, minutos: 45 },
+  { id: 'boxeo', nombre: 'Boxeo', emoji: '🥊', met: 7.8, minutos: 45 }
 ];
 
-const FAVORITAS_DEFECTO = ['funcional', 'running', 'futbol'];
+const FAVORITAS_DEFECTO = ['funcional', 'futbol', 'boxeo'];
 
 /** Las actividades del catálogo más las que agregó la persona. */
 function actividadesDe(estado) {
@@ -316,16 +317,51 @@ function vasosPorEjercicio(kcalEjercicio, mlVaso = ML_POR_VASO) {
  * Los MET son los de tabla: 3 es caminar tranquilo, 6 trotar o una clase, 9
  * correr fuerte o un partido.
  */
+/* Se llaman por lo que uno hizo, no por una escala. "Moderado" hay que
+   traducirlo cada vez; "Trote" ya es la respuesta. Los ids no cambian: son lo
+   que quedo guardado. */
 const INTENSIDADES = [
-  { id: 'suave', nombre: 'Suave', met: 3, detalle: 'caminata, elongar' },
-  { id: 'medio', nombre: 'Moderado', met: 6, detalle: 'trote, clase, bici' },
-  { id: 'fuerte', nombre: 'Fuerte', met: 9, detalle: 'correr, partido, pesas' }
+  { id: 'suave', nombre: 'Caminata', met: 3, detalle: 'o elongar, mandados' },
+  { id: 'medio', nombre: 'Trote', met: 6, detalle: 'o bici, clase, nadar' },
+  { id: 'fuerte', nombre: 'Correr', met: 9, detalle: 'o partido, pesas fuerte' }
 ];
 
 const MINUTOS_EJERCICIO = [15, 30, 45, 60, 90];
 
 function intensidadDe(id) {
   return INTENSIDADES.find(i => i.id === id) || INTENSIDADES[1];
+}
+
+/* ---------------- los ratos de movimiento del dia ---------------- */
+
+/*
+ * El dia guardaba un solo numero: 583 kcal de ejercicio, y de donde salian era
+ * cosa de acordarse. Ahora cada rato queda anotado —que fue, cuanto duro y
+ * cuanto quemo— y el total es la suma, que es lo unico que ve el resto de la
+ * app. Sin el desglose el numero no se puede corregir: borrar los 200 de mas
+ * que cargaste dos veces era volver a calcular a mano lo que quedaba.
+ */
+
+/** Los ratos anotados de un dia, tolerando los dias viejos que no los tienen. */
+function movimientosDe(d) {
+  return Array.isArray(d?.movimientos) ? d.movimientos : [];
+}
+
+/** La suma de los ratos anotados. */
+function kcalDeMovimientos(d) {
+  return movimientosDe(d).reduce((a, m) => a + (Number(m.kcal) || 0), 0);
+}
+
+/**
+ * Lo que no esta desglosado.
+ *
+ * Un dia de antes de esto, o uno con las kcal puestas a mano, tiene total sin
+ * renglones. Ese resto se muestra como una linea propia en vez de esconderse:
+ * si el total dice 500 y los renglones suman 300, los otros 200 tienen que
+ * estar en alguna parte.
+ */
+function restoSinDesglosar(d) {
+  return Math.max(0, (Number(d?.ejercicio) || 0) - kcalDeMovimientos(d));
 }
 
 /** Las calorías de moverse tantos minutos a tal intensidad, para ese cuerpo. */

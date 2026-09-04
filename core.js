@@ -171,6 +171,17 @@ function migrar(guardado) {
          telefono. Cero y "sin cargar" son lo mismo, como el agua. */
       pasos: Number(d.pasos) || 0,
       ejercicio: Number(d.ejercicio) || 0,
+      /* Y de donde sale ese numero: cada rato de movimiento con lo que duro y
+         lo que quemo. Va nombrado aca por lo mismo que el ayuno: esta lista
+         descarta lo que no menciona y migrar() corre en cada arranque, asi que
+         sin esta linea el desglose se borraba al cerrar la app. */
+      movimientos: (Array.isArray(d.movimientos) ? d.movimientos : []).map(m => ({
+        ts: Number(m?.ts) || 0,
+        nombre: String(m?.nombre || 'Movimiento'),
+        emoji: String(m?.emoji || '🏃'),
+        minutos: Number(m?.minutos) || 0,
+        kcal: Number(m?.kcal) || 0
+      })).filter(m => m.kcal > 0),
       nota: String(d.nota || ''),
       /* Como venia el dia, en caritas. Escribir una nota es mucho pedir todos los dias. */
       animo: d.animo || null,

@@ -340,6 +340,11 @@ function fusionarDia(local, remoto) {
 
   const agua = Math.max(Number(local?.agua) || 0, Number(remoto?.agua) || 0);
   const ejercicio = Math.max(Number(local?.ejercicio) || 0, Number(remoto?.ejercicio) || 0);
+  /* El desglose viaja con el total: los renglones del lado que tiene el numero
+     mas alto, para que el ticket y la suma digan lo mismo. */
+  const movL = Array.isArray(local?.movimientos) ? local.movimientos : [];
+  const movR = Array.isArray(remoto?.movimientos) ? remoto.movimientos : [];
+  const movimientos = (Number(remoto?.ejercicio) || 0) > (Number(local?.ejercicio) || 0) ? movR : movL;
   /* Como el agua y el ejercicio: gana el más alto. Los pasos del día no bajan,
      así que el número más grande es siempre el más completo, sin importar cuál
      de los dos dispositivos lo anotó último. */
@@ -379,7 +384,7 @@ function fusionarDia(local, remoto) {
     JSON.stringify(sueno) !== JSON.stringify(suenoL) ||
     animo !== animoL;
 
-  return { peso, cintura, agua, pasos, ejercicio, nota, sueno, animo, act: Math.max(actL, actR), cambio };
+  return { peso, cintura, agua, pasos, ejercicio, movimientos, nota, sueno, animo, act: Math.max(actL, actR), cambio };
 }
 
 /** El sueño que viene del servidor, que llega en dos columnas planas. */

@@ -442,16 +442,17 @@ function renderActividades() {
     cont.appendChild(chipActividad(a, peso));
   }
 
-  /* Agregar uno nuevo sin salir del modal.
-     Antes había que ir a Ajustes, buscar la sección de actividades, cargarlo,
-     volver a Hoy y recién ahí tocarlo: cinco pasos para anotar que saliste a
-     andar en bici. */
-  const nuevo = document.createElement('button');
-  nuevo.className = 'chip chip-nuevo';
-  nuevo.innerHTML = '＋ Otro ejercicio';
-  nuevo.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); abrirAltaActividad(); };
-  cont.appendChild(nuevo);
 }
+
+/* Agregar uno nuevo sin salir del modal.
+   Antes había que ir a Ajustes, buscar la sección de actividades, cargarlo,
+   volver a Hoy y recién ahí tocarlo: cinco pasos para anotar que saliste a
+   andar en bici. Vive fuera de la fila de chips: era el cuarto chip de una
+   fila de tres y se leia como un ejercicio mas. */
+$('btnOtroEjercicio').onclick = (e) => {
+  if (e.detail > 0) e.currentTarget.blur();
+  abrirAltaActividad();
+};
 
 /**
  * Un ejercicio, con sus minutos editables ahí mismo.
@@ -470,11 +471,7 @@ function chipActividad(a, peso) {
   b.className = 'chip';
   b.innerHTML = `${a.emoji} ${a.nombre} <small>${a.minutos}′ · ${fmtNum(kcal)} kcal</small>`;
   b.onclick = () => {
-    const d = dia();
-    d.ejercicio = (d.ejercicio || 0) + kcal;
-    d.act = Date.now();
-    save();
-    renderEjercicio();
+    anotarMovimiento({ nombre: a.nombre, emoji: a.emoji, minutos: a.minutos, kcal });
     renderHoy();
     toast(`${a.nombre}: +${fmtNum(kcal)} kcal`);
   };
