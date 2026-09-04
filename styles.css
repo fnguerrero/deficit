@@ -1874,6 +1874,17 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* El porque del borde rojo, en texto. Sin esto el color avisa pero no explica,
+   y el motivo solo existia en un tooltip que en el celular no se puede abrir. */
+/* Con la lista adelante: `.lista li` ya declara flex y le ganaba en
+   especificidad, asi que el nombre del momento se iba a una columna y el
+   motivo a otra. */
+.lista .motivo-momento, .motivo-momento {
+  display: block; list-style: none; margin: 6px 0 0; padding: 0;
+  font-size: 11.5px; line-height: 1.35; color: var(--bad);
+}
+.motivo-momento b { font-weight: 700; }
+
 /*
  * El borde dice si lo del momento entra en el modo: verde entra, ámbar entra
  * justo, rojo no entra. Es el mismo semáforo que ya usan los casilleros del

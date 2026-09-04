@@ -88,6 +88,26 @@ function pintarComidasDelDia(comidas, cont) {
      una: con una sola, tocar la tarjeta va derecho a editarla. */
   const abierto = grupos.find(g => g.id === momentoAbierto && g.comidas.length > 1);
   if (abierto) cont.appendChild(tiraDeComidas(abierto, niveles));
+
+  /* Por que un momento quedo en rojo, escrito.
+     El motivo se calcula desde siempre, pero vivia en el title de la etiqueta
+     "no apto": en el celular no hay hover, y con una sola comida el momento ni
+     siquiera despliega esa etiqueta —va derecho a editar—, asi que la pregunta
+     "por que esta en rojo" no tenia respuesta en ninguna pantalla.
+     Solo el rojo: el ambar quiere decir "entra pero es grande" y no necesita
+     una linea de texto cada dia. */
+  for (const g of grupos) {
+    if (!g.comidas.length || nivelDelMomento(g.comidas, niveles) !== 'no') continue;
+    const motivo = motivoDelMomento(g.comidas, niveles);
+    if (!motivo) continue;
+
+    const aviso = document.createElement('li');
+    aviso.className = 'motivo-momento';
+    const b = document.createElement('b');
+    b.textContent = g.nombre;
+    aviso.append(b, document.createTextNode(` no entra en el modo: ${motivo}`));
+    cont.appendChild(aviso);
+  }
 }
 
 function abrirMomento(g, e) {
@@ -247,6 +267,15 @@ const TITULO_NIVEL = {
   justo: ' · entra justo',
   no: ' · no entra en el modo'
 };
+
+/** Y por que: el motivo de la primera comida que no entra. */
+function motivoDelMomento(comidas, niveles) {
+  for (const c of comidas || []) {
+    const v = niveles[c.id];
+    if (v?.nivel === 'no' && v.motivo) return v.motivo;
+  }
+  return '';
+}
 
 function nivelDelMomento(comidas, niveles) {
   let peor = 'si';
