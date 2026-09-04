@@ -3643,6 +3643,54 @@ test('sin minutos o sin peso no se inventa un numero', () => {
   esperar(caloriasDeMovimiento(30, 'medio', null), 0);
 });
 
+/* ---------------- el desglose del ejercicio del dia ---------------- */
+
+test('un dia viejo sin renglones no rompe nada', () => {
+  const d = { ejercicio: 400 };
+  esperar(movimientosDe(d).length, 0);
+  esperar(kcalDeMovimientos(d), 0);
+  // los 400 estan pero sin desglosar: se muestran igual
+  esperar(restoSinDesglosar(d), 400);
+});
+
+test('con todo desglosado no sobra nada', () => {
+  const d = { ejercicio: 500, movimientos: [{ kcal: 200 }, { kcal: 300 }] };
+  esperar(kcalDeMovimientos(d), 500);
+  esperar(restoSinDesglosar(d), 0);
+});
+
+test('lo cargado a mano antes de los renglones sigue contando', () => {
+  // 400 puestos a mano y despues un rato de 200: el resto son los 400
+  const d = { ejercicio: 600, movimientos: [{ kcal: 200 }] };
+  esperar(restoSinDesglosar(d), 400);
+});
+
+test('el resto nunca es negativo', () => {
+  // si el total quedo por debajo de la suma, no se resta hacia abajo
+  const d = { ejercicio: 100, movimientos: [{ kcal: 200 }] };
+  esperar(restoSinDesglosar(d), 0);
+});
+
+test('migrar guarda los ratos del dia y descarta los vacios', () => {
+  const s = migrar({ dias: { '2026-09-01': { ejercicio: 300,
+    movimientos: [
+      { ts: 1, nombre: 'Trote', emoji: '🏃', minutos: 30, kcal: 248 },
+      { ts: 2, nombre: 'Nada', kcal: 0 }
+    ] } } });
+  const m = s.dias['2026-09-01'].movimientos;
+  esperar(m.length, 1);
+  esperar(m[0].nombre, 'Trote');
+  esperar(m[0].kcal, 248);
+});
+
+test('fusionar trae el desglose del lado que tiene el total mas alto', () => {
+  const local  = { act: 9, ejercicio: 200, movimientos: [{ ts: 1, kcal: 200 }] };
+  const remoto = { act: 1, ejercicio: 500, movimientos: [{ ts: 2, kcal: 500 }] };
+  const f = fusionarDia(local, remoto);
+  esperar(f.ejercicio, 500);
+  esperar(f.movimientos[0].ts, 2);
+});
+
 test('una intensidad que no existe cae en la del medio', () => {
   esperar(intensidadDe('nada').id, 'medio');
   esperar(intensidadDe('fuerte').met, 9);
