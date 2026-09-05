@@ -3696,27 +3696,19 @@ test('un dia en blanco no da un cuerpo castigado', () => {
   esperar(c.animo, null);
 });
 
-/* ---------------- moverse por minutos e intensidad ---------------- */
-
-test('media hora moderada para 80 kg', () => {
-  // 6 MET x 80 kg x 0,5 h = 240
-  esperar(caloriasDeMovimiento(30, 'medio', 80), 240);
-});
-
-test('la intensidad cambia el resultado', () => {
-  esperar(caloriasDeMovimiento(60, 'suave', 80), 240);
-  esperar(caloriasDeMovimiento(60, 'medio', 80), 480);
-  esperar(caloriasDeMovimiento(60, 'fuerte', 80), 720);
-});
+/* ---------------- moverse: el gasto de un rato ---------------- */
 
 test('el peso importa: el mismo rato gasta distinto', () => {
-  esperarQue(caloriasDeMovimiento(30, 'medio', 120) > caloriasDeMovimiento(30, 'medio', 60), 'mas cuerpo, mas gasto');
+  const trote = { met: 6, minutos: 30 };
+  esperarQue(caloriasActividad(trote, 120, 30) > caloriasActividad(trote, 60, 30), 'mas cuerpo, mas gasto');
 });
 
 test('sin minutos o sin peso no se inventa un numero', () => {
-  esperar(caloriasDeMovimiento(0, 'medio', 80), 0);
-  esperar(caloriasDeMovimiento(30, 'medio', 0), 0);
-  esperar(caloriasDeMovimiento(30, 'medio', null), 0);
+  const trote = { met: 6, minutos: 30 };
+  esperar(caloriasActividad(trote, 80, 0), 0);
+  esperar(caloriasActividad(trote, 0, 30), 0);
+  esperar(caloriasActividad(trote, null, 30), 0);
+  esperar(caloriasActividad(null, 80, 30), 0);
 });
 
 /* ---------------- separar los datos de prueba ---------------- */
@@ -3823,11 +3815,6 @@ test('fusionar trae el desglose del lado que tiene el total mas alto', () => {
   const f = fusionarDia(local, remoto);
   esperar(f.ejercicio, 500);
   esperar(f.movimientos[0].ts, 2);
-});
-
-test('una intensidad que no existe cae en la del medio', () => {
-  esperar(intensidadDe('nada').id, 'medio');
-  esperar(intensidadDe('fuerte').met, 9);
 });
 
 /* ---------------- el tamagotchi, segunda pasada ---------------- */
@@ -4355,4 +4342,43 @@ test('el pie no inventa partes que no estan', () => {
   esperar(pieDelVisor({ titulo: 'Cafe' }), 'Cafe', 'sin kcal ni items, solo el nombre');
   esperar(pieDelVisor({ titulo: 'Cafe', kcal: 5, notas: 'con leche' }), 'Cafe · 5 kcal · con leche');
   esperar(pieDelVisor(null), '');
+});
+
+/* ---------------- los ejercicios, todos juntos (ciclo 20) ---------------- */
+
+test('las actividades salen todas, con las favoritas adelante', () => {
+  const est = { cfg: { favoritasActividad: ['caminata', 'boxeo'] } };
+  const orden = actividadesOrdenadas(est).map(a => a.id);
+
+  esperar(orden.slice(0, 2).join(','), 'caminata,boxeo', 'las favoritas primero y en su orden');
+  esperar(orden.length, ACTIVIDADES.length, 'y despues el resto, sin perder ninguna');
+  esperar(new Set(orden).size, orden.length, 'sin repetir las favoritas abajo');
+});
+
+test('un ejercicio propio tambien entra en la lista', () => {
+  const est = { cfg: {
+    favoritasActividad: ['funcional'],
+    actividades: [{ id: 'escalada', nombre: 'Escalada', met: 8, minutos: 60, emoji: '🧗' }]
+  } };
+  const orden = actividadesOrdenadas(est).map(a => a.id);
+  esperar(orden[0], 'funcional');
+  esperarQue(orden.includes('escalada'), 'el que agrego la persona no se queda afuera');
+  esperar(orden.length, ACTIVIDADES.length + 1);
+});
+
+test('sin favoritas guardadas manda el orden por defecto', () => {
+  const orden = actividadesOrdenadas({}).map(a => a.id);
+  esperar(orden.slice(0, 3).join(','), FAVORITAS_DEFECTO.join(','));
+  esperar(orden.length, ACTIVIDADES.length);
+});
+
+test('las calorias de un ejercicio salen del tiempo elegido arriba', () => {
+  /* El chip ya no muestra la duracion propia de la actividad: muestra lo que
+     quema en el rato que elegiste, que es el numero que estas por cargar. */
+  const caminata = ACTIVIDADES.find(a => a.id === 'caminata');   // MET 3,5
+  esperar(caloriasActividad(caminata, 80, 60), 280, 'una hora de caminata a 80 kg');
+  esperar(caloriasActividad(caminata, 80, 30), 140, 'media hora, la mitad');
+  esperar(caloriasActividad(caminata, 80), Math.round(3.5 * 80 * (caminata.minutos / 60)),
+    'sin minutos sigue valiendo la duracion propia');
+  esperar(caloriasActividad(caminata, 0, 60), 0, 'sin peso no se estima nada');
 });

@@ -9,12 +9,18 @@
 /* ---------------- editar las actividades ---------------- */
 
 /**
- * Elegir cuáles van en Hoy y cuánto duran.
+ * Elegir cuáles van primero.
  *
- * Las favoritas son las que aparecen a un toque en el tablero, y son tres
- * porque más no entran en la pantalla sin apretar todo.
+ * Antes esto decidia cuales se VEIAN en Hoy —tres— y las otras ocho quedaban
+ * guardadas donde nadie las encontraba. Ahora salen todas y esto decide el
+ * orden: las tres primeras son las que se ven sin recorrer la lista.
+ *
+ * Los minutos por actividad se fueron con el mismo cambio: el tiempo se elige
+ * arriba de la lista, uno para todas, asi que un minutaje propio por ejercicio
+ * era un campo que ya no movia nada.
  */
 const MAX_FAVORITAS = 3;
+const REFERENCIA_MIN = 30;
 
 function renderActividadesEditar() {
   const cont = $('listaActEditar');
@@ -23,7 +29,7 @@ function renderActividadesEditar() {
   const favoritas = state.cfg.favoritasActividad || FAVORITAS_DEFECTO;
   const peso = state.perfil.peso;
 
-  $('actPill').textContent = `${favoritas.length} en Hoy`;
+  $('actPill').textContent = `${favoritas.length} primeras`;
   cont.innerHTML = '';
 
   for (const a of actividadesDe(state)) {
@@ -31,11 +37,13 @@ function renderActividadesEditar() {
     const fila = document.createElement('div');
     fila.className = 'act-fila' + (esFav ? ' fav' : '');
 
-    const kcal = peso ? caloriasActividad(a, peso) : null;
+    /* Media hora es la referencia para comparar un ejercicio con otro: sin un
+       tiempo fijo, "Caminata 158" y "Boxeo 351" estarian diciendo cosas de
+       ratos distintos y no se podrian leer en la misma columna. */
+    const kcal = peso ? caloriasActividad(a, peso, REFERENCIA_MIN) : null;
     fila.innerHTML =
       `<button class="act-nombre" aria-pressed="${esFav}">${a.emoji || '🏃'} ${a.nombre}` +
-      `<small>${a.minutos}′${kcal ? ' · ' + fmtNum(kcal) + ' kcal' : ''}</small></button>` +
-      `<input type="number" class="act-min" value="${a.minutos}" inputmode="numeric" aria-label="Minutos de ${a.nombre}">`;
+      `<small>${kcal ? fmtNum(kcal) + ' kcal cada ' + REFERENCIA_MIN + '′' : 'Cargá tu peso'}</small></button>`;
 
     // el nombre alterna favorita
     fila.querySelector('.act-nombre').onclick = () => {
@@ -44,26 +52,11 @@ function renderActividadesEditar() {
 
       if (i >= 0) actuales.splice(i, 1);
       else if (actuales.length >= MAX_FAVORITAS) {
-        toast(`En Hoy entran ${MAX_FAVORITAS}: sacá una antes`);
+        toast(`Adelante van ${MAX_FAVORITAS}: sacá una antes`);
         return;
       } else actuales.push(a.id);
 
       state.cfg.favoritasActividad = actuales;
-      save();
-      renderActividadesEditar();
-    };
-
-    // los minutos se guardan como ajuste propio de esa actividad
-    fila.querySelector('.act-min').onchange = (e) => {
-      const min = parseInt(e.target.value, 10);
-      if (!min || min < 1 || min > 600) { toast('Poné entre 1 y 600 minutos'); renderActividadesEditar(); return; }
-
-      const propias = [...(state.cfg.actividades || [])];
-      const i = propias.findIndex(x => x.id === a.id);
-      if (i >= 0) propias[i] = { ...propias[i], minutos: min };
-      else propias.push({ id: a.id, nombre: a.nombre, minutos: min });
-
-      state.cfg.actividades = propias;
       save();
       renderActividadesEditar();
     };
@@ -74,7 +67,6 @@ function renderActividadesEditar() {
 
 $('btnAgregarAct').onclick = () => {
   const nombre = $('actNombre').value.trim();
-  const minutos = parseInt($('actMinutos').value, 10) || 45;
   const met = Number($('actMet').value) || 6;
 
   if (!nombre) { toast('Ponele un nombre'); return; }
@@ -86,13 +78,12 @@ $('btnAgregarAct').onclick = () => {
   let n = 2;
   while (usados.includes(id)) id = base + n++;
 
-  state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, minutos, met, emoji: '⭐' }];
+  state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, met, emoji: '⭐' }];
 
   /* Y va a los favoritos si hay lugar.
      Se agregaba a la lista general y nada más: desde el modal de Ejercicio
-     decía "agregada" y no aparecía por ningún lado, porque en Hoy solo salen
-     las tres favoritas. Había que ir a Ajustes a marcarla, y eso no lo dice
-     ningún cartel. */
+     decía "agregada" y no aparecía por ningún lado. Hoy ya se ve igual, porque
+     salen todas: esto solo la pone adelante si queda lugar. */
   const favs = [...(state.cfg.favoritasActividad || FAVORITAS_DEFECTO)];
   const entraSola = favs.length < MAX_FAVORITAS;
   if (entraSola) {
@@ -102,7 +93,6 @@ $('btnAgregarAct').onclick = () => {
   save();
 
   $('actNombre').value = '';
-  $('actMinutos').value = '';
   renderActividadesEditar();
   if (typeof renderActividades === 'function') renderActividades();
   toast(entraSola
@@ -119,7 +109,6 @@ $('btnAgregarAct').onclick = () => {
    ============================================================ */
 
 
-const EMOJI_INTENSIDAD = { suave: '🚶', medio: '🏃', fuerte: '💨' };
 
 /** Deja el rato anotado y vuelve a sumar el total del dia. */
 function anotarMovimiento(m) {
@@ -149,9 +138,9 @@ function borrarMovimiento(ts) {
   renderHoy();
 }
 
-/* Lo elegido en el modal, hasta que se toca Sumar. */
+/* El tiempo elegido arriba, que es lo unico que hay que decir antes de tocar
+   el ejercicio. Vive fuera del render para que sobreviva a repintar la lista. */
 let ejMinutos = 30;
-let ejIntensidad = 'medio';
 
 function renderEjercicio() {
   const kcal = dia().ejercicio || 0;
@@ -164,23 +153,9 @@ function renderEjercicio() {
     id: m, texto: m + ' min'
   })), ejMinutos, (id) => { ejMinutos = id; renderEjercicio(); });
 
-  pintarChips($('intensidadEjercicio'), INTENSIDADES.map(i => ({
-    id: i.id, texto: i.nombre, detalle: i.detalle
-  })), ejIntensidad, (id) => { ejIntensidad = id; renderEjercicio(); });
-
-  /* El número antes de tocar nada: es lo que convierte "media hora moderada" en
-     algo que se puede comparar con lo que comiste. */
-  const peso = state.perfil.peso;
-  const suma = caloriasDeMovimiento(ejMinutos, ejIntensidad, peso);
-  const calc = $('ejercicioCalculo');
-  if (calc) {
-    calc.textContent = peso
-      ? `${fmtNum(suma)} kcal para tus ${fmtPeso(peso)}`
-      : 'Cargá tu peso en Perfil para estimar las calorías.';
-  }
-  const btn = $('btnSumarEjercicio');
-  if (btn) btn.disabled = !peso;
-
+  /* Cambiar el tiempo repinta los ejercicios: cada uno muestra lo que quema en
+     ESE rato, que es el numero que se esta por cargar. */
+  renderActividades();
   renderCarritoEjercicio();
 }
 
@@ -275,23 +250,6 @@ function pintarChips(cont, opciones, elegido, alTocar) {
     cont.appendChild(b);
   }
 }
-
-/*
- * Sumar, no reemplazar: si saliste a caminar a la mañana y a la tarde hiciste
- * pesas, son dos ratos de movimiento y no uno que pisa al otro.
- */
-$('btnSumarEjercicio').onclick = () => {
-  const peso = state.perfil.peso;
-  const suma = caloriasDeMovimiento(ejMinutos, ejIntensidad, peso);
-  if (!suma) { toast('Cargá tu peso en Perfil'); return; }
-
-  recordarCambio('el ejercicio');
-  const nombre = intensidadDe(ejIntensidad).nombre;
-  anotarMovimiento({ nombre, emoji: EMOJI_INTENSIDAD[ejIntensidad] || '🏃', minutos: ejMinutos, kcal: suma });
-  renderHoy();
-  toast(`+${fmtNum(suma)} kcal · ${ejMinutos} min de ${nombre.toLowerCase()}`);
-  cerrarObjetivo();
-};
 
 /*
  * Guardar cierra el modal. El boton es el final del tramite: quien lo toca ya
