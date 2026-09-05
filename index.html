@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=488">
+<link rel="stylesheet" href="styles.css?v=489">
 </head>
 <body>
 
@@ -496,29 +496,24 @@
         </section>
 
         <section data-obj="ejercicio" hidden>
-          <!-- Cuánto y qué tan fuerte, que es como uno se acuerda de lo que
-               hizo. La lista de actividades quedó abajo como atajo: sirve
-               cuando siempre hacés lo mismo, pero obligaba a elegir un nombre
-               de una lista de tres para anotar que saliste a caminar. -->
+          <!-- Dos pasos y ninguno de confirmacion: cuanto tiempo, y que
+               hiciste. El nombre de la actividad ES la intensidad —cada una
+               trae su MET— asi que la escala generica de suave/medio/fuerte y
+               el boton Sumar se fueron: tocar el ejercicio ya es cargarlo. -->
           <p class="hint">¿Cuánto te moviste?</p>
           <div class="chips" id="minutosEjercicio"></div>
-          <p class="hint" style="margin-top:10px">¿Qué tan fuerte?</p>
-          <div class="chips" id="intensidadEjercicio"></div>
-          <p id="ejercicioCalculo" class="hint calculo-ej"></p>
-          <button id="btnSumarEjercicio" class="primary big" style="margin-top:6px">Sumar</button>
-
-          <!-- Lo que ya sumaste hoy, renglon por renglon y con su total: el
-               numero solo no se puede ni revisar ni corregir. -->
-          <div class="carrito" id="carritoEjercicio" hidden></div>
-
-          <h3 class="sub">Tus de siempre</h3>
-          <div class="chips" id="listaActividades"></div>
+          <p class="hint" style="margin-top:10px">¿Qué hiciste?</p>
+          <div class="chips act-todas" id="listaActividades"></div>
           <!-- Aparte y no como un chip mas al final de la fila: agregar un
                ejercicio es otra cosa que elegir uno de los que ya tenes. -->
           <button id="btnOtroEjercicio" class="otro-ejercicio">
             <span class="oe-mas" aria-hidden="true">+</span>
             <span class="oe-txt"><b>Otro ejercicio</b><small>Bici, natación, tenis, lo que sea</small></span>
           </button>
+          <!-- Lo que ya sumaste hoy, renglon por renglon y con su total: el
+               numero solo no se puede ni revisar ni corregir. -->
+          <div class="carrito" id="carritoEjercicio" hidden></div>
+
           <div class="peso-row" style="margin-top:12px">
             <input type="number" id="ejercicioHoy" inputmode="numeric" placeholder="o poné las kcal a mano" aria-label="Calorías quemadas">
             <button id="btnEjercicio" class="ghost">Guardar</button>
@@ -803,7 +798,9 @@
 
     <details class="card plegable">
       <summary class="card-head"><h2>Actividades</h2><span class="pill" id="actPill"></span></summary>
-      <p class="hint">Tocá una para elegir si va en Hoy y cuánto dura. Las de un toque son las tres primeras.</p>
+      <!-- El tiempo se elige en Hoy, arriba de la lista y para todas: aca ya
+           no hay minutos que ajustar. Lo unico que queda es el orden. -->
+      <p class="hint">Tocá una para subirla al principio de la lista de Hoy. Las tres primeras son las que ves sin buscar.</p>
       <div id="listaActEditar"></div>
 
       <details class="avanzado">
@@ -811,9 +808,6 @@
         <div class="form-grid">
           <label>Nombre
             <input type="text" id="actNombre" placeholder="Escalada" maxlength="24">
-          </label>
-          <label>Minutos
-            <input type="number" id="actMinutos" inputmode="numeric" placeholder="60">
           </label>
           <label>Intensidad
             <select id="actMet">
@@ -1103,61 +1097,61 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=488"></script>
-<script src="core.js?v=488"></script>
-<script src="platos.js?v=488"></script>
-<script src="animar.js?v=488"></script>
-<script src="fotos.js?v=488"></script>
-<script src="calibracion.js?v=488"></script>
-<script src="modos.js?v=488"></script>
-<script src="arreglos.js?v=488"></script>
-<script src="habitos.js?v=488"></script>
-<script src="mascota.js?v=488"></script>
-<script src="cuerpo.js?v=488"></script>
-<script src="cintura.js?v=488"></script>
-<script src="figura.js?v=488"></script>
-<script src="cara.js?v=488"></script>
-<script src="personaje.js?v=488"></script>
-<script src="relieve.js?v=488"></script>
-<script src="sprite-datos.js?v=488"></script>
-<script src="sprite.js?v=488"></script>
-<script src="transformacion.js?v=488"></script>
-<script src="aura.js?v=488"></script>
-<script src="juego.js?v=488"></script>
-<script src="sonidos.js?v=488"></script>
-<script src="voz.js?v=488"></script>
-<script src="graficos.js?v=488"></script>
-<script src="plazo.js?v=488"></script>
-<script src="compartir.js?v=488"></script>
-<script src="sugerencias.js?v=488"></script>
-<script src="analisis.js?v=488"></script>
-<script src="chequeos.js?v=488"></script>
-<script src="claude.js?v=488"></script>
-<script src="productos.js?v=488"></script>
-<script src="sync-perfil.js?v=488"></script>
-<script src="sync.js?v=488"></script>
-<script src="estado-sync.js?v=488"></script>
-<script src="auth.js?v=488"></script>
-<script src="app.js?v=488"></script>
-<script src="ui/general.js?v=488"></script>
-<script src="ui/hoy.js?v=488"></script>
-<script src="ui/dia.js?v=488"></script>
-<script src="ui/objetivos.js?v=488"></script>
-<script src="ui/tarjeta.js?v=488"></script>
-<script src="ui/logros.js?v=488"></script>
-<script src="ui/comidas.js?v=488"></script>
-<script src="ui/edicion.js?v=488"></script>
-<script src="ui/escaner.js?v=488"></script>
-<script src="ui/asistente.js?v=488"></script>
-<script src="ui/historial.js?v=488"></script>
-<script src="ui/progreso.js?v=488"></script>
-<script src="ui/perfil.js?v=488"></script>
-<script src="ui/sincronizacion.js?v=488"></script>
-<script src="ui/cuenta.js?v=488"></script>
-<script src="ui/calibracion.js?v=488"></script>
-<script src="ui/actividades.js?v=488"></script>
-<script src="ui/recordatorios.js?v=488"></script>
-<script src="ui/ajustes.js?v=488"></script>
-<script src="arranque.js?v=488"></script>
+<script src="config.js?v=489"></script>
+<script src="core.js?v=489"></script>
+<script src="platos.js?v=489"></script>
+<script src="animar.js?v=489"></script>
+<script src="fotos.js?v=489"></script>
+<script src="calibracion.js?v=489"></script>
+<script src="modos.js?v=489"></script>
+<script src="arreglos.js?v=489"></script>
+<script src="habitos.js?v=489"></script>
+<script src="mascota.js?v=489"></script>
+<script src="cuerpo.js?v=489"></script>
+<script src="cintura.js?v=489"></script>
+<script src="figura.js?v=489"></script>
+<script src="cara.js?v=489"></script>
+<script src="personaje.js?v=489"></script>
+<script src="relieve.js?v=489"></script>
+<script src="sprite-datos.js?v=489"></script>
+<script src="sprite.js?v=489"></script>
+<script src="transformacion.js?v=489"></script>
+<script src="aura.js?v=489"></script>
+<script src="juego.js?v=489"></script>
+<script src="sonidos.js?v=489"></script>
+<script src="voz.js?v=489"></script>
+<script src="graficos.js?v=489"></script>
+<script src="plazo.js?v=489"></script>
+<script src="compartir.js?v=489"></script>
+<script src="sugerencias.js?v=489"></script>
+<script src="analisis.js?v=489"></script>
+<script src="chequeos.js?v=489"></script>
+<script src="claude.js?v=489"></script>
+<script src="productos.js?v=489"></script>
+<script src="sync-perfil.js?v=489"></script>
+<script src="sync.js?v=489"></script>
+<script src="estado-sync.js?v=489"></script>
+<script src="auth.js?v=489"></script>
+<script src="app.js?v=489"></script>
+<script src="ui/general.js?v=489"></script>
+<script src="ui/hoy.js?v=489"></script>
+<script src="ui/dia.js?v=489"></script>
+<script src="ui/objetivos.js?v=489"></script>
+<script src="ui/tarjeta.js?v=489"></script>
+<script src="ui/logros.js?v=489"></script>
+<script src="ui/comidas.js?v=489"></script>
+<script src="ui/edicion.js?v=489"></script>
+<script src="ui/escaner.js?v=489"></script>
+<script src="ui/asistente.js?v=489"></script>
+<script src="ui/historial.js?v=489"></script>
+<script src="ui/progreso.js?v=489"></script>
+<script src="ui/perfil.js?v=489"></script>
+<script src="ui/sincronizacion.js?v=489"></script>
+<script src="ui/cuenta.js?v=489"></script>
+<script src="ui/calibracion.js?v=489"></script>
+<script src="ui/actividades.js?v=489"></script>
+<script src="ui/recordatorios.js?v=489"></script>
+<script src="ui/ajustes.js?v=489"></script>
+<script src="arranque.js?v=489"></script>
 </body>
 </html>

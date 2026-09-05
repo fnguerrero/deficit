@@ -1954,14 +1954,12 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* Un ejercicio con sus minutos al lado. El − y el + son lo que evita ir a
    Ajustes por el número que más cambia de un día a otro. */
-.act-chip { display: flex; align-items: stretch; gap: 4px; }
-.act-chip .chip { flex: 1; min-width: 0; text-align: left; }
-.act-mas {
-  flex: 0 0 auto; width: 30px; border-radius: 10px;
-  border: 1px solid var(--line); background: var(--card2); color: var(--txt2);
-  font-size: 16px; font-weight: 700; cursor: pointer; line-height: 1;
-}
-.act-mas:hover { color: var(--txt); border-color: var(--acc); }
+.act-todas { flex-wrap: wrap; gap: 6px; }
+/* Once ejercicios tienen que entrar sin volverse una lista larga: el chip se
+   arma en dos renglones —nombre arriba, kcal abajo— y entran de a tres en
+   375 px sin que ninguno corte su nombre. */
+.act-uno { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.2; }
+.act-uno small { opacity: .75; font-weight: 600; }
 .chip-nuevo { border-style: dashed; color: var(--txt2); }
 
 /* Agregar un ejercicio no es elegir uno: era el cuarto chip de una fila de
@@ -2162,7 +2160,6 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .momento-sug .chip { font-size: 11.5px; padding: 5px 7px; white-space: nowrap; }
 
 /* El cálculo del rato de movimiento, antes de sumarlo. */
-.calculo-ej { margin: 10px 0 0; font-size: 13px; font-weight: 700; color: var(--txt); }
 
 /* ---------- el muñeco respira ----------
    La respiración mueve torso, brazos y cabeza —las piernas quedan plantadas—

@@ -439,6 +439,15 @@ function renderCaritas() {
 
 /* ---------------- actividades ---------------- */
 
+/**
+ * Todos los ejercicios juntos, cada uno con lo que quema en el tiempo elegido
+ * arriba.
+ *
+ * Antes se veian solo tres —las favoritas— y el resto del catalogo estaba
+ * escondido en Ajustes: para anotar una caminata, que es de las cosas que uno
+ * mas hace, habia que ir a buscarla y ponerla en la lista corta. Ahora estan
+ * las once, y las favoritas siguen sirviendo: son las que van PRIMERO.
+ */
 function renderActividades() {
   const cont = $('listaActividades');
   if (!cont) return;
@@ -451,10 +460,9 @@ function renderActividades() {
     return;
   }
 
-  for (const a of actividadesFavoritas(state)) {
+  for (const a of actividadesOrdenadas(state)) {
     cont.appendChild(chipActividad(a, peso));
   }
-
 }
 
 /* Agregar uno nuevo sin salir del modal.
@@ -475,50 +483,32 @@ $('btnOtroEjercicio').onclick = (e) => {
  * − y el + al lado, las calorías se recalculan solas y el chip queda listo
  * para tocarlo.
  */
+/**
+ * Un ejercicio: tocarlo lo carga y cierra, sin paso de confirmacion.
+ *
+ * Los − y + de minutos que tenia cada chip se fueron: el tiempo es uno solo y
+ * esta arriba, igual para todos. Tener las dos cosas significaba que el mismo
+ * dato se pedia en dos lugares y ganaba el de mas abajo.
+ */
 function chipActividad(a, peso) {
-  const caja = document.createElement('div');
-  caja.className = 'act-chip';
+  const minutos = typeof ejMinutos === 'number' ? ejMinutos : a.minutos;
+  const kcal = caloriasActividad(a, peso, minutos);
 
-  const kcal = caloriasActividad(a, peso);
   const b = document.createElement('button');
-  b.className = 'chip';
-  b.innerHTML = `${a.emoji} ${a.nombre} <small>${a.minutos}′ · ${fmtNum(kcal)} kcal</small>`;
+  b.className = 'chip act-uno';
+  b.innerHTML = `${a.emoji} ${a.nombre} <small>${fmtNum(kcal)} kcal</small>`;
+  b.setAttribute('aria-label', `${a.nombre}, ${minutos} minutos, ${fmtNum(kcal)} calorías`);
   b.onclick = () => {
-    anotarMovimiento({ nombre: a.nombre, emoji: a.emoji, minutos: a.minutos, kcal });
+    recordarCambio('el ejercicio');
+    anotarMovimiento({ nombre: a.nombre, emoji: a.emoji, minutos, kcal });
     renderHoy();
-    toast(`${a.nombre}: +${fmtNum(kcal)} kcal`);
+    toast(`${a.nombre} ${minutos}′: +${fmtNum(kcal)} kcal`);
+    /* Cierra, como el peso, el agua y lo que hacia el boton Sumar: cargar el
+       ejercicio es el tramite entero. Los dos ratos de un dia se anotan
+       entrando dos veces, y el ticket de adentro los muestra sumados. */
+    cerrarObjetivo();
   };
-
-  const menos = document.createElement('button');
-  menos.className = 'act-mas';
-  menos.textContent = '−';
-  menos.title = 'Cinco minutos menos';
-  menos.setAttribute('aria-label', `Cinco minutos menos de ${a.nombre}`);
-  menos.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); cambiarMinutos(a, -5); };
-
-  const mas = document.createElement('button');
-  mas.className = 'act-mas';
-  mas.textContent = '+';
-  mas.title = 'Cinco minutos más';
-  mas.setAttribute('aria-label', `Cinco minutos más de ${a.nombre}`);
-  mas.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); cambiarMinutos(a, 5); };
-
-  caja.append(menos, b, mas);
-  return caja;
-}
-
-/** Cambia los minutos de una actividad y los deja guardados para la próxima. */
-function cambiarMinutos(a, delta) {
-  const min = Math.max(5, Math.min(600, (Number(a.minutos) || 30) + delta));
-
-  const propias = [...(state.cfg.actividades || [])];
-  const i = propias.findIndex(x => x.id === a.id);
-  if (i >= 0) propias[i] = { ...propias[i], minutos: min };
-  else propias.push({ id: a.id, nombre: a.nombre, minutos: min, met: a.met, emoji: a.emoji });
-
-  state.cfg.actividades = propias;
-  save();
-  renderActividades();
+  return b;
 }
 
 /*
@@ -532,8 +522,6 @@ function abrirAltaActividad() {
   const nombre = (prompt('¿Qué ejercicio?') || '').trim();
   if (!nombre) return;
 
-  const minutos = Math.max(5, Math.min(600, parseInt(prompt('¿Cuántos minutos?', '45'), 10) || 45));
-
   /* El id sale del nombre, sin acentos ni espacios y sin pisar uno existente. */
   const base = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '') || 'act';
   const usados = actividadesDe(state).map(x => x.id);
@@ -541,10 +529,11 @@ function abrirAltaActividad() {
   let n = 2;
   while (usados.includes(id)) id = base + n++;
 
-  state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, minutos, met: 6, emoji: '⭐' }];
+  /* Un solo dato: el nombre. Los minutos se eligen arriba y valen para todos,
+     asi que preguntarlos en el alta era pedir algo que despues no se usaba. */
+  state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, met: 6, emoji: '⭐' }];
 
-  /* Y queda listo en Hoy: agregarlo sin que aparezca sería agregarlo a un
-     cajón. Si ya hay tres, entra sacando el más viejo. */
+  /* Y queda adelante: si ya hay tres, entra sacando el más viejo. */
   const favs = [...(state.cfg.favoritasActividad || FAVORITAS_DEFECTO)];
   favs.push(id);
   state.cfg.favoritasActividad = favs.slice(-MAX_FAVORITAS);

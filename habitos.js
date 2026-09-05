@@ -48,11 +48,25 @@ function actividadPorId(estado, id) {
   return actividadesDe(estado).find(a => a.id === id) || null;
 }
 
-/** Las que aparecen en Hoy, de un toque. */
+/** Las favoritas, que ahora son las que van primero y no las unicas que se ven. */
 function actividadesFavoritas(estado) {
   const ids = estado?.cfg?.favoritasActividad || FAVORITAS_DEFECTO;
   const todas = actividadesDe(estado);
   return ids.map(id => todas.find(a => a.id === id)).filter(Boolean);
+}
+
+/**
+ * Todas, con las favoritas adelante.
+ *
+ * En Hoy se veian solo tres y el resto vivia en Ajustes: anotar una caminata
+ * pedia ir a buscarla y meterla en la lista corta. Mostrandolas todas, ser
+ * favorita ya no es entrar o no entrar —es el orden—, que es lo unico que
+ * sigue haciendo falta cuando la lista es larga.
+ */
+function actividadesOrdenadas(estado) {
+  const favs = actividadesFavoritas(estado);
+  const ids = favs.map(a => a.id);
+  return [...favs, ...actividadesDe(estado).filter(a => !ids.includes(a.id))];
 }
 
 /** Lo que gastó de verdad esa actividad, para ese cuerpo y ese tiempo. */
@@ -307,30 +321,16 @@ function vasosPorEjercicio(kcalEjercicio, mlVaso = ML_POR_VASO) {
 }
 
 /*
- * Moverse, sin tener que ponerle nombre.
+ * De un rato de movimiento uno se acuerda de dos cosas: cuanto duro y que
+ * hizo. Esos son los dos pasos del editor, y en ese orden — el tiempo primero
+ * porque es el que cambia todos los dias; el ejercicio, casi nunca.
  *
- * Para anotar que saliste a caminar había que elegir un rótulo de una lista de
- * tres. Pero de un rato de movimiento uno se acuerda de dos cosas: cuánto duró
- * y qué tan fuerte fue. Con eso alcanza para estimar, y no hace falta mantener
- * una lista de actividades que nunca va a estar completa.
- *
- * Los MET son los de tabla: 3 es caminar tranquilo, 6 trotar o una clase, 9
- * correr fuerte o un partido.
+ * La escala generica de suave/medio/fuerte se fue: el nombre de la actividad ya
+ * ES la intensidad, cada una con su MET de tabla, y pedir las dos cosas era
+ * pedir el mismo dato dos veces. Lo que no esta en la lista se agrega con
+ * "Otro ejercicio".
  */
-/* Se llaman por lo que uno hizo, no por una escala. "Moderado" hay que
-   traducirlo cada vez; "Trote" ya es la respuesta. Los ids no cambian: son lo
-   que quedo guardado. */
-const INTENSIDADES = [
-  { id: 'suave', nombre: 'Caminata', met: 3, detalle: 'o elongar, mandados' },
-  { id: 'medio', nombre: 'Trote', met: 6, detalle: 'o bici, clase, nadar' },
-  { id: 'fuerte', nombre: 'Correr', met: 9, detalle: 'o partido, pesas fuerte' }
-];
-
 const MINUTOS_EJERCICIO = [15, 30, 45, 60, 90];
-
-function intensidadDe(id) {
-  return INTENSIDADES.find(i => i.id === id) || INTENSIDADES[1];
-}
 
 /* ---------------- los ratos de movimiento del dia ---------------- */
 
@@ -364,10 +364,3 @@ function restoSinDesglosar(d) {
   return Math.max(0, (Number(d?.ejercicio) || 0) - kcalDeMovimientos(d));
 }
 
-/** Las calorías de moverse tantos minutos a tal intensidad, para ese cuerpo. */
-function caloriasDeMovimiento(minutos, intensidadId, pesoKg) {
-  const m = Number(minutos) || 0;
-  const p = Number(pesoKg) || 0;
-  if (m <= 0 || p <= 0) return 0;
-  return Math.round(intensidadDe(intensidadId).met * p * (m / 60));
-}

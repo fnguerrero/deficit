@@ -81,3 +81,5 @@ encontrar la tarjeta y tocar la lupa.
 - [x] Miniatura de la foto en el editor, que abre el visor grande · verif: tests de que la cabecera aparece solo con foto y que el visor recibe la imagen grande; app viva a 375 px con el visor sobre el modal y el modal sin cerrarse al salir · archivos: index.html, ui/edicion.js, ui/hoy.js, styles.css, tests2.js
 - [x] El visor no anclaba el boton atras al abrirse desde la lista de Hoy · verif: test de que abrirVisor deja el ancla puesta
 - [x] Tocar un vaso de agua cierra su ventana, como ya hace el peso al guardarse (pedido de Nico, 05/09/2026) · verif: en la app viva, tocar un vaso deja la ventana cerrada y el casillero actualizado · archivos: ui/hoy.js
+- [x] Ejercicio: el tiempo arriba y TODAS las actividades abajo; tocar una carga el valor, sin boton Sumar (pedido de Nico, 05/09/2026) · verif: tests del catalogo ordenado y de las kcal por minutos elegidos; app viva a 375 px cargando funcional y caminata · archivos: index.html, ui/actividades.js, ui/objetivos.js, styles.css, tests2.js
+- [x] Sacar lo que queda muerto al irse la intensidad · verif: guardas OK y suite en verde sin los tests de lo borrado
