@@ -89,3 +89,5 @@ encontrar la tarjeta y tocar la lupa.
 ## Ciclo 21 — el arranque desde el celular (pedido de Nico, 05/09/2026)
 
 - [x] Icono neutro y splash que no choque con ningun tema · verif: alpha en las esquinas del icono any, maskable opaco con su zona segura, manifest valido y la app viva sin errores · archivos: tools/gen_iconos.py, icons/*, manifest.json
+- [x] "No hay forma de acomodarla" contradecia la pregunta de abajo, y no decia que consecuencia tiene (pedido de Nico, 05/09/2026) · verif: tests de opcionQueLaSalva y consecuenciaNoApta, y el caso del screenshot en la app viva · archivos: arreglos.js, ui/edicion.js, index.html, styles.css, tests2.js
+- [ ] Que el perfil y la duda de cada comida VIAJEN entre dispositivos · pendiente de que Nico corra `supabase-perfil-comida.sql`; el codigo de sync.js no se toco todavia para no romperle el sync a quien no lo haya corrido · verif: round-trip en la app viva con la columna ya creada

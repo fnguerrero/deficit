@@ -235,7 +235,25 @@ function migrar(guardado) {
         porcionFactor: Number(c.porcionFactor) > 0 ? Number(c.porcionFactor) : 1,
         /* De donde salio el dato. Lo trae el escaner y se perdia al arrancar. */
         codigo: c.codigo || null,
-        marca: c.marca || null
+        marca: c.marca || null,
+        /*
+         * QUE ES el plato, y la pregunta que quedo abierta.
+         *
+         * Los dos faltaban en esta lista, y migrar() corre en CADA arranque:
+         * cerrar y volver a abrir la app le borraba a cada comida su perfil y
+         * su duda. Sin perfil, los modos que juzgan por patron —mediterranea,
+         * vegetariana, paleo, sin gluten— se quedan sin nada que mirar y pasan
+         * a juzgar solo por numeros: un plato con azucar agregada volvia como
+         * apto al dia siguiente, y con el se movian el casillero de Comidas,
+         * la racha y la adherencia del historial entero. Sin ambiguedad, la
+         * pregunta de "de que era" desaparecia sin haberse respondido.
+         *
+         * Es la cuarta vez que esta lista blanca se come un campo nuevo —ya
+         * paso con el ayuno, con la cintura y con los pasos—: el campo se
+         * agrega donde se usa y nadie se acuerda de venir hasta aca.
+         */
+        perfil: c.perfil || null,
+        ambiguedad: c.ambiguedad || null
       }))
     };
   }

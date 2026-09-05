@@ -329,6 +329,24 @@ function aplicarOpcion(comida, indice) {
     grasas: Number(op.grasas) || 0
   };
 
+  /*
+   * Y el perfil del plato, si la opcion lo cambia.
+   *
+   * Sin esto la pregunta no servia para nada en los modos que juzgan POR LO QUE
+   * EL PLATO ES y no por sus numeros. El caso que lo mostro: un licuado de
+   * yogur con la pregunta "lleva azucar agregada?", se elegia "natural sin
+   * azucar", bajaban las calorias... y el cartel seguia diciendo "no apto
+   * mediterranea: tiene azucar agregada". La app preguntaba y despues ignoraba
+   * la respuesta.
+   *
+   * Se parte SIEMPRE del perfil original y no del que quedo de la eleccion
+   * anterior: si no, apagar una bandera con una opcion y volver a la primera la
+   * dejaba apagada para siempre. Es el mismo encadenado que ya habia pasado con
+   * los botones de porcion.
+   */
+  const base = amb.perfilBase || comida.perfil || null;
+  const perfil = (base && op.perfil) ? { ...base, ...op.perfil } : base;
+
   const t = sumarItems(items);
   return {
     ...comida,
@@ -340,7 +358,8 @@ function aplicarOpcion(comida, indice) {
     fibra: t.fibra,
     azucar: t.azucar,
     sodio: t.sodio,
-    ambiguedad: { ...amb, elegida: indice }
+    ...(perfil ? { perfil } : {}),
+    ambiguedad: { ...amb, elegida: indice, ...(base ? { perfilBase: base } : {}) }
   };
 }
 
