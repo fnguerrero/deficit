@@ -71,3 +71,13 @@ elegido y los demas en una lista desplegable.
 - [x] Los dos porcentajes de adherencia unificados: una sola definicion de "dia
   dentro del objetivo" · verif: con los 153 dias de prueba las dos tarjetas dan
   50 % (antes 41 % y 60 %), 1060 tests en verde
+
+## Ciclo 20 — la foto desde el editor (pedido de Nico, 05/09/2026)
+
+El editor de comida guarda `foto` y `thumb` en el pendiente pero no los dibuja:
+para ver la foto de la comida que estas editando hay que cerrar el editor,
+encontrar la tarjeta y tocar la lupa.
+
+- [x] Miniatura de la foto en el editor, que abre el visor grande · verif: tests de que la cabecera aparece solo con foto y que el visor recibe la imagen grande; app viva a 375 px con el visor sobre el modal y el modal sin cerrarse al salir · archivos: index.html, ui/edicion.js, ui/hoy.js, styles.css, tests2.js
+- [x] El visor no anclaba el boton atras al abrirse desde la lista de Hoy · verif: test de que abrirVisor deja el ancla puesta
+- [x] Tocar un vaso de agua cierra su ventana, como ya hace el peso al guardarse (pedido de Nico, 05/09/2026) · verif: en la app viva, tocar un vaso deja la ventana cerrada y el casillero actualizado · archivos: ui/hoy.js

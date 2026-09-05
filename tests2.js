@@ -4315,3 +4315,44 @@ test('el aviso de que el IMC exagera solo sale si el musculo lo explica', () => 
   esperarQue(/exagera/.test(aviso(85, 14)), 'con IMC 29 y rutina sostenida si: ' + aviso(85, 14));
   esperar(aviso(85, 0), '', 'sin entrenar no hay nada que aclarar');
 });
+
+/* ---------------- el visor de fotos (ciclo 20) ---------------- */
+
+test('la imagen del visor prefiere la grande y cae en la miniatura', () => {
+  /* Duran distinto: la foto 21 dias y el thumb 180. Una comida de hace dos
+     meses tiene que seguir mostrando algo. */
+  esperar(imagenDelVisor({ foto: 'GRANDE', thumb: 'chica' }), 'GRANDE');
+  esperar(imagenDelVisor({ thumb: 'chica' }), 'chica', 'sin la grande, la que quedo');
+  esperar(imagenDelVisor({}), null, 'sin ninguna no hay visor que abrir');
+  esperar(imagenDelVisor(null), null, 'y sin comida tampoco');
+});
+
+test('el pie del visor saca las calorias de donde esten', () => {
+  /* El mismo visor se abre desde una comida guardada, que tiene el total ya
+     calculado, y desde el editor, donde todavia se esta armando y solo hay
+     items. Antes se leia comida.kcal a secas y desde el editor decia 0 kcal. */
+  esperar(pieDelVisor({ titulo: 'Milanesa', kcal: 620, foto: 'x' }), 'Milanesa · 620 kcal');
+
+  const editando = { titulo: 'Milanesa', foto: 'x', items: [
+    { nombre: 'milanesa', calorias: 500 },
+    { nombre: 'pure', calorias: 120 }
+  ] };
+  esperar(pieDelVisor(editando), 'Milanesa · 620 kcal', 'el editor suma sus alimentos');
+});
+
+test('el pie avisa cuando solo queda la miniatura, y solo entonces', () => {
+  esperarQue(/solo queda la miniatura/.test(pieDelVisor({ titulo: 'Asado', kcal: 700, thumb: 'chica' })),
+    'sin la foto grande hay que decir por que se ve borrosa');
+  esperarQue(!/miniatura/.test(pieDelVisor({ titulo: 'Asado', kcal: 700, foto: 'x', thumb: 'chica' })),
+    'con la foto entera no se avisa nada');
+  /* Y una comida sin ninguna de las dos no puede reprochar una perdida que no
+     hubo: nunca tuvo foto. */
+  esperarQue(!/miniatura/.test(pieDelVisor({ titulo: 'A mano', kcal: 300 })), 'cargada a mano, sin aviso');
+});
+
+test('el pie no inventa partes que no estan', () => {
+  esperar(pieDelVisor({ kcal: 0 }), '0 kcal', 'sin titulo no queda el separador colgado');
+  esperar(pieDelVisor({ titulo: 'Cafe' }), 'Cafe', 'sin kcal ni items, solo el nombre');
+  esperar(pieDelVisor({ titulo: 'Cafe', kcal: 5, notas: 'con leche' }), 'Cafe · 5 kcal · con leche');
+  esperar(pieDelVisor(null), '');
+});
