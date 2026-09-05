@@ -2197,3 +2197,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   .mascota-svg .anim-respira, .mascota-svg .anim-parpado,
   .mascota-svg .anim-cabecea, .mascota-svg .anim-zzz { animation: none; }
 }
+
+/* El aviso de que el ejercicio se cuenta dos veces. No es un error —los dos
+   numeros son validos por separado— asi que va en ambar y no en rojo. */
+.aviso-doble {
+  margin: 10px 0 0; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent);
+  font-size: 13px; line-height: 1.45;
+}
