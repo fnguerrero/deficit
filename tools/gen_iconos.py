@@ -12,7 +12,17 @@ ACC = (74, 222, 128)     # --acc
 
 def dibujar(size, maskable=False):
     S = 1024  # dibujamos grande y reducimos para que quede suave
-    img = Image.new('RGBA', (S, S), BG + (255,))
+
+    # El icono "any" va SIN fondo: es el que Chrome pone en la pantalla de
+    # arranque de la PWA, sobre el background_color del manifest. Con el fondo
+    # opaco #0e1116 encima quedaba un cuadrado oscuro recortado contra el
+    # splash, y al abrir la app en tema claro eso se leia como un parpadeo.
+    #
+    # El maskable NO puede ser transparente: Android le aplica su mascara y lo
+    # que quede fuera del recorte tiene que ser fondo, no vacio. Ese sigue
+    # opaco, que ademas es como se ve en la pantalla de inicio del telefono.
+    fondo = BG + (255,) if maskable else (0, 0, 0, 0)
+    img = Image.new('RGBA', (S, S), fondo)
     d = ImageDraw.Draw(img)
 
     # zona segura: en el icono maskable el contenido va mas chico (Android le recorta los bordes)
