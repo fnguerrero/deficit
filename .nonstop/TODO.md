@@ -85,3 +85,7 @@ encontrar la tarjeta y tocar la lupa.
 - [x] Sacar lo que queda muerto al irse la intensidad · verif: guardas OK y suite en verde sin los tests de lo borrado
 - [x] El informe del mes usaba el objetivo despejado del ritmo y no el del modo · verif: test nuevo y 1069 en verde
 - [x] Aviso de doble conteo: actividad Alta/Muy alta y ademas ejercicios cargados (pedido de Nico, 05/09/2026) · verif: tests de la funcion pura en sus cuatro casos y el aviso en la app viva · archivos: chequeos.js, ui/perfil.js, index.html, styles.css, tests2.js
+
+## Ciclo 21 — el arranque desde el celular (pedido de Nico, 05/09/2026)
+
+- [x] Icono neutro y splash que no choque con ningun tema · verif: alpha en las esquinas del icono any, maskable opaco con su zona segura, manifest valido y la app viva sin errores · archivos: tools/gen_iconos.py, icons/*, manifest.json
