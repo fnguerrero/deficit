@@ -89,13 +89,21 @@ body {
 .topbar {
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px 12px;
+  padding: 14px 12px 12px;
   background: linear-gradient(var(--bg) 70%, transparent);
   backdrop-filter: blur(8px);
 }
-.topbar h1 { margin: 0; font-size: 20px; letter-spacing: -.4px; }
-.date-nav { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); }
-.date-nav span { min-width: 92px; text-align: center; }
+.topbar { gap: 8px; }
+/* Tres cosas en un renglon de 375 px: el titulo cede primero —"Mediterránea"
+   se puede cortar y se sigue reconociendo—, el ayuno se achica hasta su texto y
+   la fecha no se toca, que es lo unico con lo que se navega. */
+.topbar h1 {
+  margin: 0; font-size: 17px; letter-spacing: -.4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.topbar .tiras { flex: 0 1 auto; margin: 0; min-width: 0; }
+.date-nav { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--dim); flex: 0 0 auto; }
+.date-nav span { min-width: 50px; text-align: center; }
 
 .icon-btn {
   background: var(--card); border: 1px solid var(--line); color: var(--txt);
@@ -1235,7 +1243,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
  */
 .tiras {
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
-  gap: 6px; margin-bottom: 8px;
+  gap: 6px;
 }
 .tiras > * { min-width: 0; justify-content: center; overflow: hidden; }
 .tira small, .tira span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1652,17 +1660,10 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   content: ''; flex: 1; height: 1px; background: var(--line);
 }
 
-/* Quién está entrado, bajo el título. Chiquito y gris: tiene que poder
-   consultarse de un vistazo sin competir con el nombre de la app ni con la
-   fecha, que son lo que se mira todo el tiempo. Es un botón porque de ahí se
-   va a la cuenta, que es lo único que se quiere hacer después de mirarlo. */
-.titulo { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.quien-soy {
-  background: none; border: 0; padding: 0;
-  font-size: 11.5px; color: var(--dim); text-align: left;
-  max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.quien-soy:hover { color: var(--txt2); }
+/* El punto de "quién está entrado" se fue del encabezado: con una sola persona
+   usando la app no decía nada que no estuviera en Ajustes, y se comía el lugar
+   que ahora usa el ayuno. */
+.titulo { min-width: 0; flex: 1 1 auto; }
 
 /* El color de los casilleros dice cómo estuvo el dato, no si lo cargaste.
    Cargar tres horas de sueño y ocho no puede verse igual. */
