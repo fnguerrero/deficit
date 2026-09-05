@@ -247,44 +247,6 @@ $('btnSalir').onclick = async () => {
 };
 
 
-/* ---------------- quién está entrado ---------------- */
-
-/*
- * El nombre en el encabezado.
- *
- * Sin esto, la única forma de saber con qué cuenta estás entrado era ir a
- * Ajustes y bajar hasta la tarjeta de la cuenta. Con dos cuentas —la del mail
- * y la de Google, que pueden no ser el mismo mail— eso importa: si entraste
- * con la que no es, todo lo que cargues va a parar a otro historial y no hay
- * nada en pantalla que lo delate.
- */
-function renderQuienSoy() {
-  const el = $('quienSoy');
-  if (!el) return;
-
-  const s = sesionActual();
-  el.hidden = !s;
-  if (!s) return;
-
-  /* `nombre` no existe en las sesiones que se guardaron antes de que se
-     empezara a pedir: para esas se deriva del mail, así no hace falta volver a
-     entrar para que el encabezado deje de mostrar la dirección entera. */
-  /* El nombre no se muestra. Hay una sola persona usando esto, así que leer
-     el propio nombre en el encabezado no informa nada — y encima lo deja a la
-     vista de cualquiera que mire la pantalla por encima del hombro. Queda el
-     punto de acceso, que es para lo que sirve, y el nombre y el mail siguen
-     en el título para cuando haga falta confirmar con qué cuenta se entró. */
-  const u = s.usuario || {};
-  const completo = u.nombre || nombreDeUsuario({ email: u.email }) || 'tu cuenta';
-  el.textContent = u.email ? '◍' : '○';
-  el.title = u.email ? `${completo} · ${u.email}` : 'Tocá para ver tu cuenta';
-}
-
-$('quienSoy').onclick = () => {
-  irTab('ajustes');
-  $('cardCuenta')?.scrollIntoView({ block: 'center', behavior: quieto() ? 'auto' : 'smooth' });
-};
-
 /* ---------------- el aviso de "estás sin cuenta" ---------------- */
 
 /*

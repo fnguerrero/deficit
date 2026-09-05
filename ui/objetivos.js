@@ -194,8 +194,14 @@ function renderTiras() {
 
   const chipAyuno = document.createElement('button');
   chipAyuno.className = 'tira' + (enCurso ? ' corriendo' : '');
+  /* El "tocá para arrancar" se fue al subir la tira a la barra del titulo:
+     comia setenta pixeles del renglon para decir lo que un boton ya dice, y los
+     que faltaban eran justo los que le cortaban el nombre al modo. El "hecho"
+     queda, porque ese si informa —distingue las 16 h que llevas de las 16 h que
+     cerraste— y va solo cuando hay un ayuno del dia. */
   chipAyuno.innerHTML = `<i>⏱️</i>${ayunoTexto}` +
-    (enCurso ? '' : '<small>' + (d.ayuno ? 'hecho' : 'tocá para arrancar') + '</small>');
+    (!enCurso && d.ayuno ? '<small>hecho</small>' : '');
+  chipAyuno.title = enCurso ? 'Ayuno en curso' : (d.ayuno ? 'Ayuno de hoy, ya cerrado' : 'Tocá para arrancar un ayuno');
   chipAyuno.onclick = () => abrirObjetivo('ayuno');
   cont.appendChild(chipAyuno);
 }
