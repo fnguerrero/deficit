@@ -89,7 +89,7 @@ const TAG_OBJETIVOS = 'deficit-objetivos';
 /** Que falta hoy, en el orden de la grilla. */
 function faltanteDelDia() {
   const rachas = todasLasRachas(state.dias, {
-    vasos: metaVasos(), pasos: metaPasos(), juego: state.juego
+    ...metasDelJuego(), juego: state.juego
   });
   return {
     total: rachas.length,

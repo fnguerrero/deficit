@@ -60,3 +60,11 @@ elegido y los demas en una lista desplegable.
   Perfil, el resumen del mes y los graficos de peso y calorias que estaban en
   Historial y en Progreso a la vez) y se PLEGO lo que hace falta pero no todos
   los dias. Ninguna funcion se perdio.
+
+## Ciclo 19 — que el verde signifique algo (pedido de Nico, 04/09/2026)
+
+- [x] El casillero Comidas pide registrar Y que al menos una comida entre en el
+  modo; ambar cuando cargaste pero no entro nada · verif: 1055 tests en verde,
+  la grilla y la racha dando lo mismo en la app viva con keto
+- Fecha de corte 2026-09-05 (`DESDE_APTAS`): antes de esa fecha registrar sigue
+  alcanzando, como se hizo con las siete rachas en el ciclo 17
