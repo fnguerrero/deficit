@@ -95,4 +95,4 @@ encontrar la tarjeta y tocar la lupa.
 ## Ciclo 22 — una sola barra arriba (pedido de Nico, 05/09/2026)
 
 - [x] Fuera el punto de la cuenta y el ayuno sube a la barra del titulo · verif: una sola fila a 375 y a 320 px sin corte ni scroll horizontal, el ayuno sigue abriendo su editor, y Hoy entra sin scroll · archivos: index.html, ui/cuenta.js, ui/ajustes.js, styles.css
-- [~] Los motivos de "no entra en el modo": un solo renglon, el resto al tocarlos, y el texto resumido para que entre (pedido de Nico, 05/09/2026) · verif: una linea a 375 y 320 px, expandir y plegar en la app viva
+- [x] Los motivos de "no entra en el modo": un solo renglon, el resto al tocarlos, y el texto resumido para que entre (pedido de Nico, 05/09/2026) · verif: una linea a 375 y 320 px, expandir y plegar en la app viva

@@ -423,7 +423,10 @@ function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy
       return {
         apta: false,
         nivel: 'no',
-        motivo: `${Math.round(netos)} g de carbohidratos netos y el techo del día son ${Math.round(tope)}.`
+        /* Corto a proposito: este motivo se muestra en un solo renglon debajo
+           de los momentos, y "carbohidratos netos y el techo del día son" se
+           comia la linea entera. Dice lo mismo con la mitad. */
+        motivo: `${Math.round(netos)} g de carbos netos, el techo es ${Math.round(tope)}.`
       };
     }
 
@@ -432,7 +435,7 @@ function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy
       return {
         apta: false,
         nivel: 'no',
-        motivo: `${Math.round(netos)} g de carbohidratos netos y te quedaban ${Math.round(restantes)} g para hoy.`
+        motivo: `${Math.round(netos)} g de carbos netos, te quedaban ${Math.round(restantes)}.`
       };
     }
 
