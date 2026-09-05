@@ -4382,3 +4382,18 @@ test('las calorias de un ejercicio salen del tiempo elegido arriba', () => {
     'sin minutos sigue valiendo la duracion propia');
   esperar(caloriasActividad(caminata, 0, 60), 0, 'sin peso no se estima nada');
 });
+
+test('el informe del mes usa el objetivo del modo, no el del ritmo', () => {
+  /* Eran dos numeros distintos para lo mismo: Hoy mostraba el objetivo del modo
+     y el informe lo despejaba del ritmo en kg/semana. Con el ritmo agresivo la
+     brecha llega a 176 kcal y dias dados por cumplidos figuraban pasados. */
+  const perfil = { sexo: 'm', edad: 36, altura: 178, peso: 82.5, actividad: 1.375, ritmo: 1, manual: null, modo: 'moderado' };
+  const st = {
+    perfil,
+    dias: { '2026-07-05': { comidas: [{ kcal: 1900, prot: 100, carb: 100, gras: 50 }] } }
+  };
+
+  const d = datosDelMes(st, '2026-07');
+  esperar(d.objetivo, objetivoDeModo(perfil, 'moderado').kcal, 'el mismo numero que ve la persona en Hoy');
+  esperarQue(d.objetivo !== calcularPlan(perfil).objetivo, 'y no el que despeja el ritmo');
+});

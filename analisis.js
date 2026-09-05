@@ -22,8 +22,15 @@ function datosDelMes(state, mes) {
     .sort();
 
   const conComidas = fechas.filter(f => (state.dias[f].comidas || []).length);
-  const calc = calcularPlan(state.perfil);
-  const objetivo = calc ? calc.objetivo : 0;
+  /* El objetivo del MODO, que es el que ve la persona todos los dias.
+     Antes salia de calcularPlan(), que lo despeja del ritmo de perdida en
+     kg/semana: dos numeros distintos para lo mismo. Con el ritmo en "muy
+     agresivo" el informe del mes usaba 1.763 donde Hoy decia 1.939, asi que
+     dias que la app habia dado por cumplidos figuraban pasados en el informe
+     que uno imprime. El ritmo decide la FECHA de llegada, no lo que se come:
+     esa es toda su influencia y no puede filtrarse a otro lado. */
+  const calc = objetivoDeModo(state.perfil, state.perfil?.modo);
+  const objetivo = calc ? calc.kcal : 0;
 
   const filas = conComidas.map(f => {
     const d = state.dias[f];
