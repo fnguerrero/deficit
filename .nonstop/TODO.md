@@ -27,7 +27,7 @@
 - [x] Pose del día: sed y cansancio encorvan · verif: test de poseDelDia
 - [x] Alias mal/normal para las caritas · verif: banco ánimo 5/5
 - [x] Movimiento: respiración con ritmo del día, parpadeo, cabeceo, zzz · verif: getComputedStyle en la app
-- [~] Revisión adversarial (workflow wq3ox92yv) y commit · verif: hallazgos confirmados arreglados, suite en verde
+- [x] Revisión adversarial del ciclo 16 (05/09/2026) · verif: 1.624 combinaciones sin un NaN, invariantes cumplidos, cero bugs confirmados. Lo que parecia bug era deliberado: el agua no se reprocha antes de las 14 y dormir 0 h se lee como "no lo cargue" (la UI solo ofrece de 4 a 10 h). Quedaron 3 tests fijando la fragilidad de poseDelDia y el barrido de cuerpos extremos
 - [x] Cintura: campo opcional al lado del peso y silueta · verif: 1005 tests en verde, banco 5/5, app en vivo a 375 px
 
 ## Ciclo 17 — los pasos y el aviso fijo

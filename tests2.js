@@ -3981,6 +3981,53 @@ test('la panza real tapa los abs, y la cintura fina los deja ver', () => {
   esperarQue(/class="musculo"/.test(svg(cuerpo(82))), 'con cintura fina, si');
 });
 
+/* --- lo que dejo la revision adversarial del ciclo 16 --- */
+
+test('todas las poses traen las cinco medidas que poseDelDia suma', () => {
+  /* poseDelDia() hace `base.hombros + caida * 4`: a una pose a la que le falte
+     una de las cinco, el dia cansado le pone NaN en un atributo del SVG y el
+     muñeco desaparece sin un solo error en consola. */
+  for (const [animo, pose] of Object.entries(POSES)) {
+    for (const medida of ['hombros', 'cabeza', 'inclina', 'brazos', 'piernas']) {
+      esperar(typeof pose[medida], 'number', `${animo} no trae ${medida}`);
+    }
+  }
+});
+
+test('ningun cuerpo extremo mete NaN en el SVG', () => {
+  /* El barrido que la revision corrio a mano, fijado: pesos y alturas de los
+     dos extremos, con y sin cansancio, contra todos los animos. */
+  const hoy = HOY_CUERPO;
+  let probados = 0;
+
+  for (const peso of [40, 82.5, 200]) {
+    for (const altura of [120, 179, 210]) {
+      for (const [horas, agua] of [[3, 0], [8, 8]]) {
+        const dias = { [hoy]: { agua, sueno: { horas }, comidas: [] } };
+        const cuerpo = cuerpoDelDia({ peso, altura, sexo: 'm', edad: 36 }, dias, hoy, { meta: 8, hora: 12 });
+
+        for (const animo of Object.keys(POSES)) {
+          probados++;
+          const svg = svgPersonaje(animo, 120, cuerpo);
+          esperarQue(!/NaN|undefined|Infinity/.test(svg), `${peso}kg ${altura}cm ${horas}h ${animo}`);
+        }
+      }
+    }
+  }
+  esperar(probados, 180);
+});
+
+test('el ancho crece donde tiene que crecer: en la panza, no en los hombros', () => {
+  /* "200 kg se ve de 200" se mide en la panza. A la altura del pecho los dos
+     cuerpos son casi iguales, que es justo lo que tiene que pasar. */
+  const anchoEnY = (peso, y) => {
+    const c = cuerpoDelDia({ peso, altura: 179, sexo: 'm', edad: 36 }, {}, HOY_CUERPO, { hora: 12 });
+    return anchoEn(y, medidasDe(c.contextura, c.musculatura, 0, c.demacrado, c.forma, c.grasa));
+  };
+  esperarQue(anchoEnY(200, 80) > anchoEnY(60, 80) * 1.8, 'en la panza, casi el doble');
+  esperarQue(anchoEnY(200, 30) < anchoEnY(60, 30) * 1.3, 'en el pecho, parecidos');
+});
+
 test('la cintura del perfil manda sobre la de los dias', () => {
   const dias = diasCuerpo();
   dias[HOY_CUERPO] = { ...(dias[HOY_CUERPO] || {}), cintura: 99 };
