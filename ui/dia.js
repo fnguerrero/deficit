@@ -101,11 +101,28 @@ function pintarComidasDelDia(comidas, cont) {
     const motivo = motivoDelMomento(g.comidas, niveles);
     if (!motivo) continue;
 
+    /* Un renglon y no mas.
+       Estas lineas se apilan —una por momento en rojo— justo arriba de las
+       tarjetas de comida, en la pantalla que tiene que entrar sin scroll: dos
+       momentos con motivo de dos renglones cada uno empujaban la grilla fuera
+       de pantalla. Se corta con puntos suspensivos y se abre al tocarla, que es
+       cuando de verdad se quiere leer el detalle.
+       El "no entra en el modo" tampoco se escribe: el rojo ya lo dice, y eran
+       veintidos caracteres del unico renglon disponible. */
     const aviso = document.createElement('li');
     aviso.className = 'motivo-momento';
     const b = document.createElement('b');
-    b.textContent = g.nombre;
-    aviso.append(b, document.createTextNode(` no entra en el modo: ${motivo}`));
+    b.textContent = g.nombre + ':';
+    aviso.append(b, document.createTextNode(' ' + motivo));
+    aviso.title = `${g.nombre} no entra en el modo: ${motivo}`;
+    aviso.onclick = () => {
+      const abierto = aviso.classList.toggle('abierto');
+      aviso.setAttribute('aria-expanded', String(abierto));
+    };
+    aviso.setAttribute('role', 'button');
+    aviso.tabIndex = 0;
+    aviso.setAttribute('aria-expanded', 'false');
+    aviso.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); aviso.onclick(); } };
     cont.appendChild(aviso);
   }
 }

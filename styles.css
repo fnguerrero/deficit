@@ -1899,7 +1899,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .lista .motivo-momento, .motivo-momento {
   display: block; list-style: none; margin: 6px 0 0; padding: 0;
   font-size: 11.5px; line-height: 1.35; color: var(--bad);
+  /* Un renglon, con puntos suspensivos. Se abre al tocarla. */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: pointer;
 }
+.motivo-momento.abierto { white-space: normal; overflow: visible; }
 .motivo-momento b { font-weight: 700; }
 
 /*

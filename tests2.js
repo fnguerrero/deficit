@@ -2889,7 +2889,7 @@ test('la que cruza el tope sí es la culpable', () => {
   const v = comidaApta({ kcal: 300, carb: 10, fibra: 0, prot: 10, gras: 20 },
     'keto', null, { carb: 25, fibra: 0, kcal: 500 });
   esperar(v.nivel, 'no');
-  esperarQue(/te quedaban 5 g/.test(v.motivo), v.motivo);
+  esperarQue(/te quedaban 5\./.test(v.motivo), v.motivo);
 });
 
 test('con el dia pasado, lo que igual suma carbos se avisa sin condenar', () => {
@@ -2904,7 +2904,7 @@ test('un plato que solo ya se pasa del tope no entra, venga cuando venga', () =>
   const v = comidaApta({ kcal: 800, carb: 110, fibra: 6, prot: 25, gras: 20 },
     'keto', null, { carb: 110, fibra: 6, kcal: 800 });
   esperar(v.nivel, 'no');
-  esperarQue(/techo del día/.test(v.motivo), v.motivo);
+  esperarQue(/el techo es/.test(v.motivo), v.motivo);
 });
 
 test('en un plato chico el reparto no dice nada', () => {
