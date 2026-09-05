@@ -503,6 +503,26 @@ function comidaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumidoHoy
   return { apta: true, nivel: 'si', motivo: '' };
 }
 
+/*
+ * Cuantas comidas del dia entran en el modo.
+ *
+ * En orden y contra lo que ya se habia comido, que es como juzga la pantalla:
+ * contra el total del dia no entraria ninguna, porque la primera comida
+ * competiria con las que todavia no pasaron.
+ */
+function comidasQueEntran(comidas, idModo, objetivo = null) {
+  const acumulado = { carb: 0, fibra: 0, kcal: 0 };
+  let entran = 0;
+
+  for (const c of [...(comidas || [])].sort((a, b) => (a.ts || 0) - (b.ts || 0))) {
+    if (comidaApta(c, idModo, objetivo, { ...acumulado }).nivel !== 'no') entran++;
+    acumulado.carb += Number(c.carb) || 0;
+    acumulado.fibra += Number(c.fibra) || 0;
+    acumulado.kcal += Number(c.kcal) || 0;
+  }
+  return entran;
+}
+
 /* ---------------- qué conviene hacer en cada modo ---------------- */
 
 const RECOMENDACIONES = {

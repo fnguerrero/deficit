@@ -23,7 +23,7 @@ function renderMascota() {
 
   /* El cuerpo sale de la balanza y de los entrenamientos; la cara, del dia de
      hoy. Son dos fuentes distintas a proposito: ver arriba de personaje.js. */
-  const perfectos = diasPerfectos(state.dias, { vasos: metaVasos(), pasos: metaPasos() });
+  const perfectos = diasPerfectos(state.dias, { ...metasDelJuego() });
   const fase = faseDe(perfectos);
   /* cuerpoDelDia y no cuerpoDe: el primero suma el agua, el sueño y el ánimo
      de hoy, que es lo que hace que el muñeco sea el de este día y no el de
@@ -67,7 +67,7 @@ function renderMascota() {
   if (faseAnterior != null && fase.n > faseAnterior) saltar(dibujo);
   faseAnterior = fase.n;
 
-  pintarFase(fase, perfectos, faseEnRiesgo(state.dias, { vasos: metaVasos(), pasos: metaPasos() }));
+  pintarFase(fase, perfectos, faseEnRiesgo(state.dias, { ...metasDelJuego() }));
   /* El emoji va con el titulo porque el cuerpo es un dibujo fijo y ya no pone
      cara. Ver EMOJI_ANIMO en sprite.js. */
   $('mascotaTitulo').textContent = emojiDeAnimo(est.animo) + ' ' + est.titulo;
@@ -133,7 +133,7 @@ let vozActual = { situacion: null, texto: '', desde: 0, insistido: 0, falta: nul
 const MS_INSISTENCIA = 12 * 60 * 1000;
 
 function fraseDelDia(d, ahora = Date.now()) {
-  const r = reclamoDelDia(d, { vasos: metaVasos(), pasos: metaPasos() });
+  const r = reclamoDelDia(d, { ...metasDelJuego() });
 
   if (r.situacion !== vozActual.situacion) {
     vozActual = { situacion: r.situacion, texto: r.texto, desde: ahora, insistido: 0, falta: r.falta || null };
@@ -157,7 +157,7 @@ function avisarRachasEnPeligro() {
   if (avisadasHoy?.fecha !== hoyISO()) avisadasHoy = { fecha: hoyISO(), ids: new Set() };
 
   const enPeligro = rachasEnPeligro(state.dias, {
-    vasos: metaVasos(), pasos: metaPasos(),
+    ...metasDelJuego(),
     juego: state.juego
   });
 
@@ -208,7 +208,7 @@ function actualizarJuego() {
   const nivelPrevio = nivelDe(state.juego?.xp || 0).nivel;
 
   const r = recalcularJuego(state.dias, state.juego, {
-    vasos: metaVasos(), pasos: metaPasos()
+    ...metasDelJuego()
   });
 
   state.juego = { ...r.juego, anunciados: (state.juego?.anunciados || []).slice() };
@@ -228,7 +228,7 @@ function actualizarJuego() {
 let fasePrevia = null;
 
 function anunciarFase() {
-  const n = diasPerfectos(state.dias, { vasos: metaVasos(), pasos: metaPasos() });
+  const n = diasPerfectos(state.dias, { ...metasDelJuego() });
   const fase = faseDe(n);
 
   if (fasePrevia === null) { fasePrevia = fase.n; return; }
@@ -251,7 +251,7 @@ let cumplidasPrevias = null;
 
 function sonarObjetivosNuevos() {
   const ahora = todasLasRachas(state.dias, {
-    vasos: metaVasos(), pasos: metaPasos(),
+    ...metasDelJuego(),
     juego: state.juego
   }).filter(r => r.hoyCumplido).map(r => r.id);
 

@@ -350,6 +350,55 @@ const OPTS_J = { hoy: HOY_JUEGO, vasos: 8, pasos: 10000 };
 
 /* ---- las rachas ---- */
 
+/* El casillero de Comidas: registrar Y que algo entre. */
+
+const COMIDA_KETO = { id: 'k', ts: 1, kcal: 600, carb: 8, fibra: 3, prot: 30, gras: 47 };
+const COMIDA_PASTA = { id: 'p', ts: 2, kcal: 800, carb: 110, fibra: 6, prot: 25, gras: 20 };
+const REGLA_COMIDAS = RACHAS.find(r => r.id === 'registro');
+
+test('cuenta las que entran, juzgadas en orden', () => {
+  esperar(comidasQueEntran([COMIDA_KETO], 'keto'), 1);
+  esperar(comidasQueEntran([COMIDA_PASTA], 'keto'), 0);
+  // la pasta no entra, el plato keto si: una de dos
+  esperar(comidasQueEntran([COMIDA_PASTA, COMIDA_KETO], 'keto'), 1);
+});
+
+test('sin comidas el casillero no se cumple', () => {
+  esperar(REGLA_COMIDAS.cumple({ comidas: [] }, { modo: 'keto', fecha: '2026-09-10' }), false);
+});
+
+test('con una sola que entre alcanza: no se pide perfeccion', () => {
+  const d = { comidas: [COMIDA_PASTA, COMIDA_KETO] };
+  esperar(REGLA_COMIDAS.cumple(d, { modo: 'keto', fecha: '2026-09-10' }), true);
+});
+
+test('cargar un dia entero fuera del modo ya no lo pone en verde', () => {
+  const d = { comidas: [COMIDA_PASTA] };
+  esperar(REGLA_COMIDAS.cumple(d, { modo: 'keto', fecha: '2026-09-10' }), false);
+});
+
+test('antes de la fecha de corte, registrar sigue alcanzando', () => {
+  const d = { comidas: [COMIDA_PASTA] };
+  esperar(REGLA_COMIDAS.cumple(d, { modo: 'keto', fecha: '2026-08-01' }), true);
+});
+
+test('sin modo en el contexto vale la regla vieja', () => {
+  // lo que sigue llamando sin contexto de modo no cambia de comportamiento
+  esperar(REGLA_COMIDAS.cumple({ comidas: [COMIDA_PASTA] }, { vasos: 8 }), true);
+});
+
+test('la racha usa la regla nueva cuando le pasan el modo', () => {
+  const hoy = '2026-09-10';
+  const dias = {
+    [hoy]: { comidas: [COMIDA_KETO] },
+    [sumarDias(hoy, -1)]: { comidas: [COMIDA_PASTA] }
+  };
+  const conModo = rachaDe(dias, 'registro', { hoy, modo: 'keto' });
+  const sinModo = rachaDe(dias, 'registro', { hoy });
+  esperar(conModo.actual, 1, 'el dia de pasta corta la racha');
+  esperar(sinModo.actual, 2, 'sin modo cuentan los dos');
+});
+
 test('hay siete rachas y cada una sabe como se cumple', () => {
   esperar(RACHAS.length, 7);
   for (const r of RACHAS) {

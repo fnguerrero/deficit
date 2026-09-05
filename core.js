@@ -67,6 +67,23 @@ function metaPasos() {
   return pasosObjetivo(state.cfg.pasosMeta);
 }
 
+/*
+ * Todo lo que las rachas necesitan saber del contexto, de un saque.
+ *
+ * Eran dos datos —los vasos y los pasos— repetidos en diez llamadas. Con el
+ * modo y el objetivo sumados a la cuenta, repetir cuatro en diez lugares es
+ * garantizar que alguno quede afuera y que esa pantalla juzgue distinto al
+ * resto, que es exactamente lo que ya paso una vez.
+ */
+function metasDelJuego() {
+  return {
+    vasos: metaVasos(),
+    pasos: metaPasos(),
+    modo: state.perfil.modo || MODO_DEFECTO,
+    objetivo: calcular()
+  };
+}
+
 const MAX_FRECUENTES = 200;
 
 /* ---------------- estado ---------------- */

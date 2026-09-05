@@ -37,6 +37,15 @@ function objetivosDelDia() {
    */
   const ref = referenciaDePeso(state.dias, fecha);
 
+  /* Cuantas comidas del dia entran en el modo. Se pregunta una sola vez: la
+     cuenta recorre todas las comidas del dia y el casillero se repinta seguido.
+     Con la fecha del dia que se esta mirando, no la de hoy: un dia anterior al
+     corte se juzga con la regla que regia entonces. */
+  const comidasDeHoy = d.comidas || [];
+  const entranHoy = !comidasDeHoy.length ? 0
+    : (fecha < DESDE_APTAS ? comidasDeHoy.length
+      : comidasQueEntran(comidasDeHoy, state.perfil.modo || MODO_DEFECTO, calcular()));
+
   return [
     {
       /*
@@ -50,8 +59,12 @@ function objetivosDelDia() {
       id: 'registro',
       emoji: '🍽️',
       nombre: 'Comidas',
-      listo: (d.comidas || []).length > 0,
-      nivel: (d.comidas || []).length ? 'bien' : '',
+      /* Verde solo si ademas algo entro en el modo. La misma cuenta que hace
+         la racha —ver RACHAS en juego.js— porque si las dos midieran distinto
+         volveria el problema del ciclo 17: la grilla en verde y el dia sin
+         completar. Ambar es "cargaste, pero no entro nada". */
+      listo: entranHoy > 0,
+      nivel: !(d.comidas || []).length ? '' : (entranHoy > 0 ? 'bien' : 'flojo'),
       valor: (d.comidas || []).length ? String((d.comidas || []).length) : ''
     },
     {
