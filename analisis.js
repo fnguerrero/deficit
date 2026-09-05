@@ -394,6 +394,30 @@ function proyectarPeso(dias, semanas = 4, hoy = hoyISO()) {
   };
 }
 
+/*
+ * Como cerro un dia contra su objetivo: la definicion, en un solo lugar.
+ *
+ * Habia dos. "Como venis" no perdonaba ni una kcal de mas pero sumaba el
+ * ejercicio y castigaba comer de menos; el grafico de Adherencia toleraba un
+ * 5 %, ignoraba el ejercicio y daba por bueno cualquier dia por debajo. Con
+ * los mismos dias uno decia 41 % y el otro 60 %, en la misma pantalla.
+ *
+ * Se queda lo mejor de cada uno: el ejercicio suma —lo que quemaste es tuyo—,
+ * pasarse por menos de un 5 % no es pasarse, y comer muy por debajo tampoco
+ * es cumplir.
+ */
+const TOLERANCIA_DIA = 1.05;
+const PISO_DIA = 0.7;
+
+function comoCerroElDia(kcal, objetivoKcal, ejercicio = 0) {
+  if (!objetivoKcal) return null;
+
+  const meta = objetivoKcal + (Number(ejercicio) || 0);
+  if (kcal > meta * TOLERANCIA_DIA) return 'excedido';
+  if (kcal < meta * PISO_DIA) return 'muy-por-debajo';
+  return 'dentro';
+}
+
 /** Cuántos días cerraron dentro del objetivo, sobre los que tienen comidas. */
 function adherencia(dias, objetivo, desde = null, hasta = hoyISO()) {
   if (!objetivo) return null;
@@ -408,10 +432,10 @@ function adherencia(dias, objetivo, desde = null, hasta = hoyISO()) {
 
   for (const f of fechas) {
     const kcal = sumarComidas(dias[f].comidas).kcal;
-    const meta = objetivo + (Number(dias[f].ejercicio) || 0);
+    const como = comoCerroElDia(kcal, objetivo, dias[f].ejercicio);
 
-    if (kcal > meta) excedidos++;
-    else if (kcal < meta * 0.7) muyPorDebajo++;   // comer de menos también es un problema
+    if (como === 'excedido') excedidos++;
+    else if (como === 'muy-por-debajo') muyPorDebajo++;
     else dentro++;
   }
 
@@ -697,7 +721,7 @@ if (typeof window !== 'undefined') {
   window.__analisis = {
     escaparHTML, datosDelMes, armarInforme,
     mediaMovil, recortarSerie, rachaDias, progresoPeso, balanceSemanal, tdeeAdaptativo,
-    pendienteLineal, proyectarPeso, adherencia, pluralDia, repartoPorMomento,
+    pendienteLineal, proyectarPeso, adherencia, comoCerroElDia, pluralDia, repartoPorMomento,
     patronSemanal, compararSemanas, alertaProteina,
     buscarEnHistorial, resumenBusqueda,
     kcalDeMacros, revisarDatos, arreglarDatos

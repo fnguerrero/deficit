@@ -68,3 +68,6 @@ elegido y los demas en una lista desplegable.
   la grilla y la racha dando lo mismo en la app viva con keto
 - Fecha de corte 2026-09-05 (`DESDE_APTAS`): antes de esa fecha registrar sigue
   alcanzando, como se hizo con las siete rachas en el ciclo 17
+- [x] Los dos porcentajes de adherencia unificados: una sola definicion de "dia
+  dentro del objetivo" · verif: con los 153 dias de prueba las dos tarjetas dan
+  50 % (antes 41 % y 60 %), 1060 tests en verde

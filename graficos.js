@@ -134,7 +134,9 @@ function seriesDe(dias, { periodo = 'dia', objetivo = null, hasta = hoyISO(), la
       g.carb.push(t.carb);
       g.prot.push(t.prot);
       g.conComidas++;
-      if (objetivo?.kcal && t.kcal <= objetivo.kcal * 1.05) g.dentro++;
+      /* La misma cuenta que hace "Como venis": ver comoCerroElDia(). Aca habia
+         una copia mas permisiva y las dos tarjetas se contradecian. */
+      if (comoCerroElDia(t.kcal, objetivo?.kcal, d.ejercicio) === 'dentro') g.dentro++;
     }
   }
 
