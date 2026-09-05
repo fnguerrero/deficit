@@ -84,3 +84,4 @@ encontrar la tarjeta y tocar la lupa.
 - [x] Ejercicio: el tiempo arriba y TODAS las actividades abajo; tocar una carga el valor, sin boton Sumar (pedido de Nico, 05/09/2026) · verif: tests del catalogo ordenado y de las kcal por minutos elegidos; app viva a 375 px cargando funcional y caminata · archivos: index.html, ui/actividades.js, ui/objetivos.js, styles.css, tests2.js
 - [x] Sacar lo que queda muerto al irse la intensidad · verif: guardas OK y suite en verde sin los tests de lo borrado
 - [x] El informe del mes usaba el objetivo despejado del ritmo y no el del modo · verif: test nuevo y 1069 en verde
+- [x] Aviso de doble conteo: actividad Alta/Muy alta y ademas ejercicios cargados (pedido de Nico, 05/09/2026) · verif: tests de la funcion pura en sus cuatro casos y el aviso en la app viva · archivos: chequeos.js, ui/perfil.js, index.html, styles.css, tests2.js

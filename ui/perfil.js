@@ -66,11 +66,39 @@ function renderPerfil() {
 
   renderResumenesPlegados();
 
+  pintarAvisoDobleConteo();
+
   $('calcAviso').textContent = state.perfil.manual
     ? 'Estás usando un objetivo manual; el ritmo de pérdida se recalcula a partir de ese valor.'
     : calc.ajustado
       ? `El ritmo elegido daba por debajo del piso seguro (${fmtKcal(calc.piso)}). Se ajustó el objetivo.`
       : 'Mifflin-St Jeor. Es una estimación: ajustala según cómo evolucione tu peso real.';
+}
+
+/**
+ * El aviso de que el ejercicio se esta contando dos veces.
+ *
+ * No propone corregir el numero por su cuenta: la app no sabe cual de las dos
+ * mitades sobra —si el factor esta alto de mas o si los ejercicios no habria
+ * que cargarlos— y elegir por la persona seria mover su objetivo sin que lo
+ * pida. Dice cuanto se duplica y cual es la salida.
+ */
+function pintarAvisoDobleConteo() {
+  const caja = $('avisoDobleConteo');
+  if (!caja) return;
+
+  const d = typeof dobleConteoActividad === 'function'
+    ? dobleConteoActividad(state.perfil, state.dias)
+    : null;
+
+  caja.hidden = !d;
+  if (!d) return;
+
+  caja.textContent =
+    `Tu actividad dice que entrenás casi todos los días, y además cargaste ${d.entrenados} días de ejercicio ` +
+    `en las últimas dos semanas. Esas ${fmtKcal(d.porDia)} por día se están contando dos veces: una en el ` +
+    `factor de actividad y otra al sumarse al objetivo. Elegí una sola — bajá la actividad a Ligera y seguí ` +
+    `cargando los ejercicios, o dejala como está y no los cargues.`;
 }
 
 /* ---------------- perfil ---------------- */

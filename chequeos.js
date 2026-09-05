@@ -384,3 +384,40 @@ function resumenHabitos(objetivos) {
     total
   };
 }
+
+/* ---------------- el ejercicio contado dos veces ---------------- */
+
+/*
+ * El factor de actividad del perfil YA incluye el entrenamiento habitual: eso
+ * es lo que significa "6-7 dias/sem". Y ademas la app suma al objetivo del dia
+ * las calorias de cada ejercicio que se carga —objetivoEfectivo()—. Con las dos
+ * cosas juntas, el mismo entrenamiento entra dos veces y el objetivo termina
+ * dando permiso para comer de mas.
+ *
+ * El aviso arranca en "Alta" y no antes a proposito. Con 1,375 y con 1,55 el
+ * factor tambien incluye ejercicio, pero esa es la forma correcta de usar la
+ * app —base baja y cargar lo del dia— y avisarlo ahi seria un cartel
+ * permanente para el uso normal. Un aviso que sale siempre no lo lee nadie.
+ */
+const ACTIVIDAD_QUE_YA_ENTRENA = 1.725;
+const DIAS_PARA_AVISAR_DOBLE = 3;
+
+function dobleConteoActividad(perfil, dias, hasta = hoyISO(), ventana = 14) {
+  const factor = Number(perfil?.actividad) || 0;
+  if (factor < ACTIVIDAD_QUE_YA_ENTRENA) return null;
+
+  const entrenados = diasEntrenados(dias, hasta, ventana);
+  if (entrenados < DIAS_PARA_AVISAR_DOBLE) return null;
+
+  /* Repartido sobre TODOS los dias de la ventana y no solo sobre los que
+     entrenaste: lo que se cuenta dos veces se suma dia por dia al objetivo, y
+     dividir por los dias entrenados daria el numero de un dia de gimnasio como
+     si fuera el de todos. */
+  let kcal = 0;
+  for (let i = 0; i < ventana; i++) {
+    const f = sumarDias(hasta, -i);
+    if (f) kcal += Number(dias?.[f]?.ejercicio) || 0;
+  }
+
+  return { factor, entrenados, ventana, porDia: Math.round(kcal / ventana) };
+}

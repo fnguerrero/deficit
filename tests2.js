@@ -4397,3 +4397,39 @@ test('el informe del mes usa el objetivo del modo, no el del ritmo', () => {
   esperar(d.objetivo, objetivoDeModo(perfil, 'moderado').kcal, 'el mismo numero que ve la persona en Hoy');
   esperarQue(d.objetivo !== calcularPlan(perfil).objetivo, 'y no el que despeja el ritmo');
 });
+
+/* ---------------- el ejercicio contado dos veces (ciclo 20) ---------------- */
+
+const DIAS_EJ = (n, kcal = 400, hasta = '2026-09-05') => {
+  const dias = {};
+  for (let i = 0; i < n; i++) dias[sumarDias(hasta, -i)] = { ejercicio: kcal };
+  return dias;
+};
+
+test('con actividad Alta y ejercicios cargados avisa', () => {
+  const p = { actividad: 1.725 };
+  const d = dobleConteoActividad(p, DIAS_EJ(4), '2026-09-05');
+  esperarQue(!!d, 'tiene que avisar');
+  esperar(d.entrenados, 4);
+  /* Repartido sobre los catorce dias y no sobre los cuatro: lo que se duplica
+     se suma dia por dia. 4 x 400 / 14 = 114. */
+  esperar(d.porDia, 114);
+});
+
+test('con actividad Ligera o Moderada no avisa nada', () => {
+  esperar(dobleConteoActividad({ actividad: 1.375 }, DIAS_EJ(7), '2026-09-05'), null, 'ligera es la forma correcta de usarla');
+  esperar(dobleConteoActividad({ actividad: 1.55 }, DIAS_EJ(7), '2026-09-05'), null, 'moderada tampoco');
+  esperar(dobleConteoActividad({ actividad: 1.2 }, DIAS_EJ(7), '2026-09-05'), null, 'sedentario menos que menos');
+});
+
+test('con actividad Alta pero sin cargar ejercicio no hay nada que duplicar', () => {
+  esperar(dobleConteoActividad({ actividad: 1.9 }, {}, '2026-09-05'), null, 'sin dias cargados no hay doble conteo');
+  esperar(dobleConteoActividad({ actividad: 1.9 }, DIAS_EJ(2), '2026-09-05'), null, 'dos dias sueltos todavia no son una rutina');
+  esperarQue(!!dobleConteoActividad({ actividad: 1.9 }, DIAS_EJ(3), '2026-09-05'), 'tres si');
+});
+
+test('el aviso no se cae con datos incompletos', () => {
+  esperar(dobleConteoActividad(null, DIAS_EJ(5), '2026-09-05'), null);
+  esperar(dobleConteoActividad({}, DIAS_EJ(5), '2026-09-05'), null, 'sin factor no se supone uno');
+  esperar(dobleConteoActividad({ actividad: 1.9 }, null, '2026-09-05'), null);
+});
