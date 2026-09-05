@@ -10,6 +10,8 @@
 function mostrarResultado(r) {
   // La foto de como se abrio: es contra esto que se compara al salir.
   if (typeof fijarHuella === 'function') fijarHuella();
+  pintarFoto(r);
+
   const desc = $('resDescripcion');
   desc.innerHTML = '';
   const inp = document.createElement('input');
@@ -54,6 +56,30 @@ function mostrarResultado(r) {
 
   // corregir solo tiene sentido sobre una estimación de la IA
   $('cajaCorreccion').hidden = !ultimaImagen || !r.confianza || !r.costo;
+}
+
+/**
+ * La foto de la comida que estas editando, chica y al lado del nombre.
+ *
+ * El editor tenia la imagen guardada en el pendiente desde siempre y no la
+ * dibujaba: para mirar el plato que estabas corrigiendo habia que cerrar el
+ * editor, encontrar la tarjeta en la lista y tocar su lupa —tres pasos para ver
+ * lo que ya estabas editando—. Va chica a proposito: sirve para reconocer el
+ * plato de un vistazo, y el que quiera mirarlo de verdad la toca y se abre el
+ * mismo visor de siempre, que tapa al modal sin cerrarlo.
+ */
+function pintarFoto(r) {
+  const caja = $('resFoto');
+  const src = typeof imagenDelVisor === 'function' ? imagenDelVisor(r) : (r.foto || r.thumb);
+
+  caja.hidden = !src;
+  if (!src) { $('resFotoImg').src = ''; return; }
+
+  $('resFotoImg').src = src;
+  $('resFotoImg').alt = 'Foto de ' + (r.titulo || 'la comida');
+  caja.setAttribute('aria-label', 'Ver la foto en grande');
+  caja.title = 'Ver la foto en grande';
+  caja.onclick = () => abrirVisor(r);
 }
 
 function pintarMomentos(r) {

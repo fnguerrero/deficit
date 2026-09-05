@@ -190,18 +190,20 @@ function renderPeso() {
 /* ---------------- visor de fotos ---------------- */
 
 function abrirVisor(comida) {
-  const src = comida.foto || comida.thumb;
+  const src = imagenDelVisor(comida);
   if (!src) return;
 
   $('visorImg').src = src;
   $('visorImg').alt = 'Foto de ' + (comida.titulo || 'la comida');
-
-  const partes = [comida.titulo, fmtKcal(comida.kcal)];
-  if (!comida.foto) partes.push('solo queda la miniatura de esta comida');
-  if (comida.notas) partes.push(comida.notas);
-  $('visorPie').textContent = partes.filter(Boolean).join(' · ');
+  $('visorPie').textContent = pieDelVisor(comida);
 
   $('visorFoto').hidden = false;
+
+  /* Y anclar el atras. Faltaba: abierto desde la lista de Hoy no habia ningun
+     modal debajo, asi que no habia ancla puesta y el gesto de volver se llevaba
+     la app entera en vez de cerrar la foto. Desde el editor no se notaba porque
+     el ancla ya estaba puesta por el modal. */
+  marcarAtras();
 }
 
 function cerrarVisor() {
@@ -404,7 +406,7 @@ function renderAgua() {
       ? `Vaso ${i} de ${meta}, tomado. Tocar para bajar a ${i - 1}.`
       : `Vaso ${i} de ${meta}, sin tomar. Tocar para marcar ${i}.`);
     b.setAttribute('aria-pressed', String(i <= vasos));
-    b.onclick = () => ponerAgua(i === vasos ? i - 1 : i);
+    b.onclick = () => { ponerAgua(i === vasos ? i - 1 : i); cerrarTrasElVaso(); };
     cont.appendChild(b);
   }
 
@@ -448,6 +450,29 @@ function pintarMetaAgua(meta) {
   $('aguaMenos').onclick = () => mover(-1);
   $('aguaMas').onclick = () => mover(1);
 }
+
+/*
+ * Tocar un vaso cierra la ventana, como ya hacen guardar el peso y anotar un
+ * ejercicio: marcar hasta donde llegaste es la accion entera, no el primer paso
+ * de nada, y quedarse con la hoja abierta obligaba a un segundo toque que no
+ * agregaba nada.
+ *
+ * Con una demora corta y no de una: sin ella el vaso se llena y desaparece en
+ * el mismo cuadro, y no llegas a ver ni que quedo marcado ni el "objetivo
+ * cumplido" del ultimo. Se cierra igual si te equivocaste de vaso —volves a
+ * abrir y tocas el correcto—: adivinar cuando fue un error seria peor que el
+ * toque de mas.
+ */
+const DEMORA_CIERRE_AGUA = 420;
+
+function cerrarTrasElVaso() {
+  clearTimeout(cerrarAguaT);
+  cerrarAguaT = setTimeout(() => {
+    // ya no esta abierta: la cerro el usuario, o el atras, antes de que llegara
+    if ($('modalObjetivo').classList.contains('open')) cerrarObjetivo();
+  }, DEMORA_CIERRE_AGUA);
+}
+let cerrarAguaT;
 
 function ponerAgua(cantidad) {
   recordarCambio('el agua');

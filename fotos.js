@@ -108,3 +108,36 @@ function textoCola(cola) {
     ? 'Hay 1 foto esperando señal. Se analiza sola cuando vuelva.'
     : `Hay ${n} fotos esperando señal. Se analizan solas cuando vuelva.`;
 }
+
+/* ---------------- el visor ---------------- */
+
+/**
+ * La imagen que le toca al visor: la grande si sobrevivió, y si no la miniatura.
+ *
+ * Se separan porque duran distinto —la foto 21 días y el thumb 180—, así que
+ * una comida de hace dos meses tiene qué mostrar aunque ya no tenga la original.
+ */
+function imagenDelVisor(c) {
+  return (c && (c.foto || c.thumb)) || null;
+}
+
+/**
+ * El pie del visor.
+ *
+ * Las calorías salen de `kcal` o, si no está, de sumar los alimentos: el mismo
+ * visor se abre desde una comida guardada —que tiene el total ya calculado— y
+ * desde el editor, donde el total todavía se está armando y solo hay items. Sin
+ * esto, abrirlo desde el editor mostraba "0 kcal" al lado de la foto.
+ */
+function pieDelVisor(c) {
+  if (!c) return '';
+  const kcal = (c.kcal === undefined || c.kcal === null)
+    ? (c.items ? sumarItems(c.items).calorias : null)
+    : c.kcal;
+
+  const partes = [c.titulo, kcal === null ? '' : fmtKcal(kcal)];
+  // Decirlo importa: la foto se ve borrosa y el motivo no es el celular.
+  if (!c.foto && c.thumb) partes.push('solo queda la miniatura de esta comida');
+  if (c.notas) partes.push(c.notas);
+  return partes.filter(Boolean).join(' · ');
+}
