@@ -40,7 +40,7 @@
 - [x] Notificación fija con el estado del día: una sola, por el service worker, con tag fijo y silenciosa · verif: los tres textos (0 de 7, 5 de 7, completo) en la app viva
 - [x] Correr `supabase-pasos.sql` en Supabase · verif: la columna `pasos` figura en information_schema (02/09/2026)
 - [x] `deficit-prueba.json` con pasos · verif: 121 dias con pasos y promedio 8.888 (cargado por consola, no por la bandeja de importacion)
-- [ ] Probar la notificación fija en el celular con permiso concedido · verif: un solo cartel que se reemplaza, sin vibrar
+- [!] Probar la notificación fija en el celular con permiso concedido · verif: un solo cartel que se reemplaza, sin vibrar — BLOQUEADO: necesita el celular de Nico con el permiso dado. Lo verificable desde acá ya se hizo (los tres textos en la app viva, #158); lo que falta es exactamente lo que no se puede simular en el escritorio
 
 ## Ciclo 18 — Simplificar (pedido de Nico, 02/09/2026)
 
