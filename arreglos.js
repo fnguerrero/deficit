@@ -129,6 +129,17 @@ function comoHacerlaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumi
       sodio: Number(comida?.sodio) || 0
     });
     if (v && !v.apta) {
+      /* Antes de cerrar la puerta: si la app todavia esta preguntando de que
+         era el plato y alguna de las respuestas lo hace entrar, no hay ningun
+         "no hay forma" que decir. Ver opcionQueLaSalva(). */
+      const salva = opcionQueLaSalva(comida, idModo, objetivo, consumidoHoy);
+      if (salva) {
+        /* Sin nombrar el alimento con articulo: "el milanesa" y "el pizza"
+           salen de cualquier plato con nombre femenino, y acertarle al genero
+           pide una tabla que no vale lo que arregla. La etiqueta entre comillas
+           es ademas literalmente el boton que hay que tocar. */
+        return { posible: true, texto: `Si era «${salva.etiqueta}», entra: elegilo acá abajo.` };
+      }
       return { posible: false, texto: 'No hay forma de acomodarla: el problema es de qué está hecha.' };
     }
   }
@@ -165,83 +176,4 @@ function comoHacerlaApta(comida, idModo = MODO_DEFECTO, objetivo = null, consumi
   }
 
   return { posible: true, texto: '' };
-}
-
-/* ---------------- cuando el modo no cuadra hace días ---------------- */
-
-/*
- * Si casi nada entra en el modo, varios días seguidos.
- *
- * El aviso por comida hace su trabajo: te dice que ese plato te saca de
- * cetosis. Pero repetido cinco días es un cartel siempre encendido, y un
- * cartel siempre encendido deja de leerse.
- *
- * Lo que la app puede notar y no decía: que el patrón no es un desliz sino
- * otra cosa. O el modo no es el que querés, o hace falta un plan distinto para
- * llegar a él. Cualquiera de las dos es una conversación que conviene tener
- * una vez, no en cada foto.
- *
- * No juzga si está bien o mal: solo dice lo que pasó y deja la decisión.
- */
-/** "pan, fideos y alfajor": una coma entre todos menos el último. */
-function listaEnTexto(items) {
-  const l = (items || []).filter(Boolean);
-  if (l.length <= 1) return l[0] || '';
-  return l.slice(0, -1).join(', ') + ' y ' + l[l.length - 1];
-}
-
-const DIAS_PARA_DUDAR = 4;
-const PISO_ADHERENCIA = 0.34;   // menos de un tercio de las comidas entrando
-
-function modoQueNoCuadra(dias, idModo, objetivo, { hasta = hoyISO(), largo = 7 } = {}) {
-  const modo = modoDe(idModo);
-  if (!modo) return null;
-
-  let diasFuera = 0;
-  let diasConDatos = 0;
-
-  for (let i = 0; i < largo; i++) {
-    const f = sumarDias(hasta, -i);
-    const comidas = (dias?.[f]?.comidas) || [];
-    if (!comidas.length) continue;
-
-    diasConDatos++;
-
-    /* Cada comida contra lo que ya se había comido ese día, igual que en la
-       pantalla: contra el total del día no entraría nunca ninguna. */
-    const acumulado = { carb: 0, fibra: 0 };
-    let entran = 0;
-
-    for (const c of [...comidas].sort((a, b) => a.ts - b.ts)) {
-      if (comidaApta(c, idModo, objetivo, { ...acumulado }).nivel !== 'no') entran++;
-      acumulado.carb += Number(c.carb) || 0;
-      acumulado.fibra += Number(c.fibra) || 0;
-    }
-
-    if (entran / comidas.length < PISO_ADHERENCIA) diasFuera++;
-  }
-
-  /* Con pocos días registrados no hay patrón, hay poca información. */
-  if (diasConDatos < DIAS_PARA_DUDAR || diasFuera < DIAS_PARA_DUDAR) return null;
-
-  /*
-   * El aviso empuja hacia el modo, no hacia afuera.
-   *
-   * Antes decía "puede ser que te sirva otro modo", y eso es ofrecer bajar la
-   * vara justo cuando cuesta: si elegiste keto, lo que hace falta saber es por
-   * cuánto te estás pasando y qué lo trae, que es sobre lo que se puede hacer
-   * algo mañana. Cambiar de modo sigue estando, pero como la segunda opción.
-   */
-  const fuente = loQueTeSaca(dias, modo.carbosMaxDia, { hasta, largo });
-  const detalle = fuente && fuente.porDia > fuente.techo
-    ? ` Venís en ${fmtNum(fuente.porDia)} g de carbos por día y el techo son ${fmtNum(fuente.techo)}.` +
-      (fuente.culpables.length ? ` Lo que más te saca: ${listaEnTexto(fuente.culpables)}.` : '')
-    : '';
-
-  return {
-    dias: diasFuera,
-    modo: modo.nombre,
-    fuente,
-    texto: `Hace ${diasFuera} días que casi nada entra en ${modo.nombre}.${detalle}`
-  };
 }

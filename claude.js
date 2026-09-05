@@ -185,7 +185,33 @@ const SCHEMA_COMIDA = {
               calorias: { type: 'number', description: 'De ese alimento con esta opción, no del plato entero' },
               proteinas: { type: 'number' },
               carbohidratos: { type: 'number' },
-              grasas: { type: 'number' }
+              grasas: { type: 'number' },
+              /*
+               * Lo que la opcion cambia de lo que el PLATO ES.
+               *
+               * Los modos con regla de patron —mediterranea, vegetariana,
+               * paleo, sin gluten— no miran los macros: miran estas banderas.
+               * Sin este campo, elegir "yogur natural sin azucar" bajaba las
+               * calorias y el plato seguia rechazado por azucar agregada: la
+               * app preguntaba y despues ignoraba la respuesta.
+               *
+               * Va solo lo que esta opcion define, no el perfil entero.
+               */
+              perfil: {
+                type: ['object', 'null'],
+                description: 'Solo las banderas del perfil del PLATO que esta opción cambia respecto de las de arriba. Ej: si la opción es "yogur natural sin azúcar" y el plato figuraba con azucarAgregada, acá va {"azucarAgregada": false}. Si la opción no cambia ninguna, null.',
+                properties: {
+                  vegetales: { type: 'boolean' }, frutas: { type: 'boolean' },
+                  legumbres: { type: 'boolean' }, pescado: { type: 'boolean' },
+                  carneRoja: { type: 'boolean' }, aveOHuevo: { type: 'boolean' },
+                  lacteos: { type: 'boolean' }, cereales: { type: 'boolean' },
+                  integral: { type: 'boolean' }, aceiteOliva: { type: 'boolean' },
+                  frutosSecos: { type: 'boolean' }, ultraprocesado: { type: 'boolean' },
+                  azucarAgregada: { type: 'boolean' }, frito: { type: 'boolean' },
+                  gluten: { type: 'boolean' }, vegetariano: { type: 'boolean' }
+                },
+                additionalProperties: false
+              }
             },
             required: ['etiqueta', 'calorias', 'proteinas', 'carbohidratos', 'grasas'],
             additionalProperties: false
@@ -216,7 +242,8 @@ Pautas:
 - Fibra, azúcar y sodio: estimalos si el alimento los tiene de forma evidente (una fruta tiene fibra, una gaseosa azúcar, un embutido sodio). Si no podés, poné 0; es mejor que inventar.
 - Respondé todo en español.
 - El campo "perfil" describe de qué está hecho el plato, para poder juzgarlo contra distintas dietas. Marcá cada cosa solo si está presente de forma clara: no adivines.
-- El campo "ambiguedad" es para lo que la foto no puede mostrar: el relleno de una empanada o una tarta, si la milanesa es de carne o de soja, si el yogur es entero o descremado. Usalo SOLO cuando no se pueda saber mirando y la diferencia sea grande. Poné primero la opción que ya usaste en los items. Si la foto alcanza para saberlo, va null.`;
+- El campo "ambiguedad" es para lo que la foto no puede mostrar: el relleno de una empanada o una tarta, si la milanesa es de carne o de soja, si el yogur es entero o descremado. Usalo SOLO cuando no se pueda saber mirando y la diferencia sea grande. Poné primero la opción que ya usaste en los items. Si la foto alcanza para saberlo, va null.
+- Si una opción cambia lo que el plato ES —y no solo sus calorías—, ponelo en su "perfil": "yogur natural sin azúcar" lleva {"azucarAgregada": false}, "milanesa de soja" lleva {"vegetariano": true, "carneRoja": false}. Solo las banderas que esa opción cambia; si no cambia ninguna, null.`;
 
 const PROMPT_ETIQUETA = `Sos un nutricionista leyendo la etiqueta nutricional de un producto envasado.
 

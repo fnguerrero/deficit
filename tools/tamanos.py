@@ -21,6 +21,7 @@ LIMITES = [
     ('chequeos.js', 450),
     ('modos.js', 800),
     ('arreglos.js', 250),
+    ('consecuencias.js', 220),
     # +50 al sumarle moverse por minutos e intensidad, que es logica de habito
     # como el resto del archivo: partirlo por nueve lineas seria peor.
     ('habitos.js', 350),

@@ -4433,3 +4433,117 @@ test('el aviso no se cae con datos incompletos', () => {
   esperar(dobleConteoActividad({}, DIAS_EJ(5), '2026-09-05'), null, 'sin factor no se supone uno');
   esperar(dobleConteoActividad({ actividad: 1.9 }, null, '2026-09-05'), null);
 });
+
+/* ---------------- la duda que puede cambiar el veredicto (ciclo 21) ---------------- */
+
+const ID_MED = Object.keys(MODOS).find(k => MODOS[k].regla === 'mediterranea');
+
+/* El caso real: huevo frito sobre pan con duraznos y licuado de yogur. Sale
+   "no apto mediterranea: tiene azucar agregada" y abajo, en la misma pantalla,
+   la app pregunta si el yogur lleva azucar y ofrece "natural sin azucar". */
+const LICUADO = () => ({
+  kcal: 455, prot: 20, carb: 55, gras: 18,
+  perfil: { azucarAgregada: true, vegetales: false, frito: true },
+  /* Los cuatro suman los 455 del plato: un fixture cuyo total no cuadra con sus
+     items hace que "sumo mas que antes" no se pueda comparar contra nada. */
+  items: [
+    { nombre: 'Huevo frito', calorias: 120 },
+    { nombre: 'Pan tostado', calorias: 85 },
+    { nombre: 'Duraznos', calorias: 60 },
+    { nombre: 'Licuado de yogur', calorias: 190, carbohidratos: 30 }
+  ],
+  ambiguedad: {
+    item: 'Licuado de yogur',
+    pregunta: '¿El licuado de yogur lleva azúcar agregada?',
+    opciones: [
+      { etiqueta: 'Yogur entero saborizado', calorias: 190, carbohidratos: 30 },
+      { etiqueta: 'Yogur natural sin azúcar', calorias: 140, carbohidratos: 12, perfil: { azucarAgregada: false } },
+      { etiqueta: 'Con azúcar/miel agregada', calorias: 250, carbohidratos: 45 }
+    ]
+  }
+});
+
+test('elegir una opcion cambia lo que el plato ES, no solo sus calorias', () => {
+  /* Antes solo movia los numeros: se elegia "natural sin azucar", bajaban las
+     calorias, y el cartel seguia diciendo "tiene azucar agregada". La app
+     preguntaba y despues ignoraba la respuesta. */
+  const con = aplicarOpcion(LICUADO(), 1);
+  esperar(con.perfil.azucarAgregada, false, 'la bandera se apaga');
+  esperar(con.perfil.frito, true, 'y lo que la opcion no toca queda como estaba');
+  esperar(comidaApta(con, ID_MED, null, null).apta, true, 'y ahora si entra');
+});
+
+test('cambiar de opcion no encadena: se parte siempre del perfil original', () => {
+  /* Mismo encadenado que ya habia pasado con los botones de porcion: apagar
+     una bandera y volver atras la dejaba apagada para siempre. */
+  const sinAzucar = aplicarOpcion(LICUADO(), 1);
+  const devuelta = aplicarOpcion(sinAzucar, 0);
+  esperar(devuelta.perfil.azucarAgregada, true, 'volver a la primera opcion la vuelve a prender');
+  esperar(comidaApta(devuelta, ID_MED, null, null).apta, false);
+});
+
+test('una opcion sin perfil propio deja el plato como estaba', () => {
+  const con = aplicarOpcion(LICUADO(), 2);
+  esperar(con.perfil.azucarAgregada, true, 'no se inventa un cambio que la opcion no declara');
+  esperar(con.kcal, 515, 'pero los numeros si se aplican: 60 kcal mas de licuado');
+});
+
+test('con una respuesta que la salva, el consejo manda a la pregunta', () => {
+  const r = comoHacerlaApta(LICUADO(), ID_MED, null, null);
+  esperar(r.posible, true, 'hay una salida, y decir "no hay forma" seria mentir');
+  esperarQue(/«Yogur natural sin azúcar»/.test(r.texto), 'nombra el boton que hay que tocar: ' + r.texto);
+  esperarQue(!/el licuado/i.test(r.texto), 'sin articulo delante del alimento, que se equivoca de genero');
+  esperarQue(!/no hay forma/.test(r.texto), r.texto);
+});
+
+test('si ninguna respuesta la salva, sigue diciendo que no hay forma', () => {
+  /* Mandar a tocar botones que no cambian nada es la otra forma de mentir. */
+  const c = LICUADO();
+  c.ambiguedad.opciones = c.ambiguedad.opciones.map(o => ({ ...o, perfil: undefined }));
+  const r = comoHacerlaApta(c, ID_MED, null, null);
+  esperar(r.posible, false);
+  esperarQue(/de qué está hecha/.test(r.texto), r.texto);
+});
+
+test('una duda ya resuelta no vuelve a ofrecerse como salida', () => {
+  const c = LICUADO();
+  c.ambiguedad.elegida = 0;
+  esperar(opcionQueLaSalva(c, ID_MED, null, null), null, 'ahi el veredicto es sobre lo que eligio');
+});
+
+test('la consecuencia dice si el dia ya esta cubierto o todavia no', () => {
+  const noApta = LICUADO();
+  const apta = { kcal: 400, prot: 30, carb: 20, gras: 15, items: [{ nombre: 'Pescado', calorias: 400 }],
+    perfil: { pescado: true, vegetales: true, aceiteOliva: true } };
+
+  const sola = consecuenciaNoApta({ comidas: [noApta] }, ID_MED, null);
+  esperarQue(/Todavía ninguna/.test(sola), sola);
+
+  const acompanada = consecuenciaNoApta({ comidas: [noApta, apta] }, ID_MED, null);
+  esperarQue(/sigue cumplido/.test(acompanada), acompanada);
+
+  esperar(consecuenciaNoApta({ comidas: [] }, ID_MED, null), '', 'sin comidas no hay nada que decir');
+  esperar(consecuenciaNoApta(null, ID_MED, null), '');
+});
+
+test('migrar conserva de que esta hecha la comida y su duda abierta', () => {
+  /* migrar() corre en cada arranque: lo que no este en su lista blanca se
+     borra al abrir la app. Sin `perfil`, los modos que juzgan por patron se
+     quedan sin nada que mirar y una comida rechazada vuelve como apta. */
+  const guardado = { dias: { '2026-09-05': { comidas: [{
+    id: 'x', ts: Date.now(), titulo: 'Licuado', kcal: 200,
+    perfil: { azucarAgregada: true, vegetales: false },
+    ambiguedad: { item: 'Licuado', pregunta: '¿Lleva azúcar?', opciones: [
+      { etiqueta: 'Sin azúcar', calorias: 140 }, { etiqueta: 'Con azúcar', calorias: 200 }
+    ] }
+  }] } } };
+
+  const c = migrar(guardado).dias['2026-09-05'].comidas[0];
+  esperar(c.perfil.azucarAgregada, true, 'el perfil sobrevive al arranque');
+  esperar(c.ambiguedad.opciones.length, 2, 'y la pregunta tambien');
+
+  // y una comida vieja que no los tiene no se rompe
+  const vieja = migrar({ dias: { '2026-09-05': { comidas: [{ id: 'y', ts: 1, titulo: 'Cafe', kcal: 5 }] } } });
+  esperar(vieja.dias['2026-09-05'].comidas[0].perfil, null);
+  esperar(vieja.dias['2026-09-05'].comidas[0].ambiguedad, null);
+});
