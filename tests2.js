@@ -348,6 +348,33 @@ function diasJ(mapa, desde = HOY_JUEGO) {
 
 const OPTS_J = { hoy: HOY_JUEGO, vasos: 8, pasos: 10000 };
 
+/* Un dia contra su objetivo: una sola definicion para las dos tarjetas. */
+
+test('un dia justo en el objetivo esta dentro', () => {
+  esperar(comoCerroElDia(2000, 2000), 'dentro');
+});
+
+test('pasarse por menos de un 5 % no es pasarse', () => {
+  esperar(comoCerroElDia(2080, 2000), 'dentro');
+  esperar(comoCerroElDia(2200, 2000), 'excedido');
+});
+
+test('comer muy por debajo tampoco es cumplir', () => {
+  esperar(comoCerroElDia(1200, 2000), 'muy-por-debajo');
+  esperar(comoCerroElDia(1450, 2000), 'dentro');
+});
+
+test('lo que quemaste sube el techo del dia', () => {
+  // 2.400 kcal con 2.000 de objetivo se pasa, salvo que hayas quemado 500
+  esperar(comoCerroElDia(2400, 2000), 'excedido');
+  esperar(comoCerroElDia(2400, 2000, 500), 'dentro');
+});
+
+test('sin objetivo no se opina', () => {
+  esperar(comoCerroElDia(2000, null), null);
+  esperar(comoCerroElDia(2000, 0), null);
+});
+
 /* ---- las rachas ---- */
 
 /* El casillero de Comidas: registrar Y que algo entre. */
