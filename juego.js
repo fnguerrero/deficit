@@ -107,9 +107,27 @@ const DESDE_APTAS = '2026-09-05';
    dos de arriba: la regla cambia de hoy en adelante. */
 const DESDE_PASOS_LIBRES = '2026-09-06';
 
+/*
+ * Y desde cuando son cinco: el peso y el animo dejaron de contar.
+ *
+ * Pesarse no es un habito diario —entre dos dias hay hasta un kilo de agua y
+ * sal, y pedirlo todos los dias empuja a mirar ruido— y el animo paso a vivir
+ * adentro del sueno, donde suma pero no se exige: hay dias en que uno no
+ * quiere contestarlo y eso no es un dia incompleto.
+ *
+ * El corte va en el mismo sentido que los otros tres, aunque esta vez la regla
+ * afloje en vez de apretar: sin el, cada dia viejo en que no te pesaste pasaria
+ * a perfecto de un saque y la racha y los dias perfectos de meses enteros
+ * cambiarian solos. Lo que se vivio con siete se sigue contando con siete.
+ */
+const RACHAS_CINCO = ['registro', 'agua', 'entrenamiento', 'sueno', 'pasos'];
+const DESDE_CINCO = '2026-09-06';
+
 /** Que rachas hacen un dia perfecto en esa fecha. */
 function rachasDe(fecha) {
-  return fecha >= DESDE_SIETE ? RACHAS : RACHAS.filter(r => RACHAS_BASE.includes(r.id));
+  if (fecha >= DESDE_CINCO) return RACHAS.filter(r => RACHAS_CINCO.includes(r.id));
+  if (fecha >= DESDE_SIETE) return RACHAS;
+  return RACHAS.filter(r => RACHAS_BASE.includes(r.id));
 }
 
 /**
@@ -208,8 +226,11 @@ function mejorRacha(dias, id, { hoy = hoyISO(), vasos = 8, pasos = PASOS_DEFECTO
 }
 
 /** Las siete rachas de un saque, que es como se muestran. */
+/* Las que cuentan HOY, no las siete de siempre: mostrar la racha de peso al
+   lado de las otras despues de haberla sacado del dia perfecto seria mostrar un
+   contador que ya no cuenta para nada. */
 function todasLasRachas(dias, opts = {}) {
-  return RACHAS.map(r => ({ ...r, ...rachaDe(dias, r.id, opts) }));
+  return rachasDe(opts.hoy || hoyISO()).map(r => ({ ...r, ...rachaDe(dias, r.id, opts) }));
 }
 
 /* ---------------- los escudos ---------------- */

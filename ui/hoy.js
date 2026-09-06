@@ -609,16 +609,32 @@ function renderFaltaSiempre() {
  * diferencia por sal y agua, y poner ese número arriba invita a mirarlo todas
  * las mañanas y a sacar conclusiones del ruido.
  *
- * Sin peso cargado no aparece: una barra de progreso vacía sobre un objetivo
- * que no existe no informa nada y ocupa lugar.
+ * Sin nada cargado no desaparece: desde que el peso dejo de tener casillero,
+ * esta tira es el unico lugar desde donde pesarse, y una app de peso que no
+ * ofrece donde cargarlo hasta que ya cargaste uno es una puerta cerrada por
+ * dentro. Sin datos muestra la invitacion y nada mas.
  */
 function renderPesoTira() {
   const el = $('pesoTira');
   if (!el) return;
 
+  /* Toca donde se carga, no donde se mira: la tendencia esta a un toque en
+     Historial y pesarse es lo que se viene a hacer. */
+  el.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); abrirObjetivo('peso'); };
+
   const r = resumenPeso(state.dias, state.perfil, { rango: rangoActual().dias || 30 });
-  el.hidden = !r;
-  if (!r) return;
+  el.hidden = false;
+  el.classList.toggle('vacia', !r);
+
+  if (!r) {
+    $('pesoTiraKg').textContent = 'Pesarte';
+    $('pesoTiraMeta').textContent = 'tocá para cargar tu peso';
+    $('pesoTiraBarra').parentElement.hidden = true;
+    $('pesoTiraDelta').textContent = '';
+    $('pesoTiraDelta').className = 'peso-tira-delta';
+    el.title = 'Cargá tu peso para ver la tendencia';
+    return;
+  }
 
   $('pesoTiraKg').textContent = fmtNum(r.actual, 1) + ' kg';
   /* Y el IMC al lado, que es el número que le da sentido a los kilos: 90 kg
@@ -649,7 +665,6 @@ function renderPesoTira() {
   el.title = r.faltan != null
     ? `Te faltan ${fmtNum(Math.abs(r.faltan), 1)} kg · ${r.mediciones} mediciones`
     : 'Cargá un objetivo de peso en Perfil';
-  el.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); irTab('historial'); };
 }
 
 

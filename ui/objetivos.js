@@ -47,41 +47,23 @@ function objetivosDelDia() {
       : comidasQueEntran(comidasDeHoy, state.perfil.modo || MODO_DEFECTO, calcular()));
 
   return [
-    {
-      /*
-       * Las comidas: el unico habito que contaba sin verse.
-       *
-       * Era la primera de las rachas del dia perfecto y no tenia casillero,
-       * asi que se podia tener la grilla entera en verde y el dia sin
-       * completar. No abre un editor propio —las comidas se cargan abajo, con
-       * su lista y su boton— pero ocupa su lugar y dice como viene.
-       */
-      id: 'registro',
-      emoji: '🍽️',
-      nombre: 'Comidas',
-      /* Verde solo si ademas algo entro en el modo. La misma cuenta que hace
-         la racha —ver RACHAS en juego.js— porque si las dos midieran distinto
-         volveria el problema del ciclo 17: la grilla en verde y el dia sin
-         completar. */
-      listo: entranHoy > 0,
-      /* El color mira ademas cuanto comiste: ver nivelComidas(). El tilde dice
-         que cargaste; el color, como viene el dia. */
-      nivel: nivelComidas({
-        cargadas: comidasDeHoy.length,
-        entran: entranHoy,
-        kcal: sumarComidas(comidasDeHoy).kcal,
-        objetivo: calcular() ? objetivoEfectivo(calcular().objetivo, d.ejercicio) : 0
-      }),
-      valor: (d.comidas || []).length ? String((d.comidas || []).length) : ''
-    },
-    {
-      id: 'peso',
-      emoji: '⚖️',
-      nombre: 'Peso',
-      listo: typeof d.peso === 'number' && d.peso > 0,
-      nivel: nivelPeso(d.peso, ref, state.perfil.pesoObj),
-      valor: d.peso ? fmtNum(d.peso) + ' kg' : ''
-    },
+    /*
+     * Cuatro casilleros, no siete.
+     *
+     * Las comidas salieron de la grilla: estan justo abajo, con su barra de
+     * momentos, su color por momento y el anillo con las calorias del dia. El
+     * casillero era una cuarta forma de decir lo mismo, y la mas pobre —un
+     * numero— de las cuatro.
+     *
+     * El peso subio a la tira de arriba, donde ya vivia su tendencia: pesarse
+     * no es un habito diario. Entre dos dias hay hasta un kilo de agua y sal,
+     * asi que pedirlo todos los dias para completar el dia empujaba a mirar
+     * ruido y a sacar conclusiones de el.
+     *
+     * Y el animo se metio adentro del sueno: son la misma pregunta hecha dos
+     * veces —como estuvo la noche y como estas— y se contestan en el mismo
+     * momento, con las mismas caritas.
+     */
     {
       id: 'agua',
       emoji: '💧',
@@ -102,9 +84,15 @@ function objetivosDelDia() {
       id: 'sueno',
       emoji: '😴',
       nombre: 'Sueño',
+      /* Las horas son lo que lo da por cargado; el animo va adentro y suma a lo
+         que se ve, pero no se exige: hay dias en que uno no quiere contestarlo
+         y eso no es un dia incompleto. */
       listo: !!(d.sueno && d.sueno.horas),
       nivel: nivelSueno(d.sueno?.horas),
-      valor: d.sueno?.horas ? d.sueno.horas + ' h' : ''
+      valor: [
+        d.sueno?.horas ? d.sueno.horas + ' h' : '',
+        d.animo ? (CARITAS.find(c => c.id === d.animo)?.emoji || '') : ''
+      ].filter(Boolean).join(' ')
     },
     {
       /* Los pasos van a mano: ver pasosObjetivo() en habitos.js. */
@@ -115,14 +103,6 @@ function objetivosDelDia() {
       listo: (d.pasos || 0) > 0,
       nivel: nivelPasos(d.pasos),
       valor: d.pasos ? fmtNum(d.pasos) : ''
-    },
-    {
-      id: 'animo',
-      emoji: '🙂',
-      nombre: 'Ánimo',
-      listo: !!d.animo,
-      nivel: nivelAnimo(d.animo),
-      valor: d.animo ? (CARITAS.find(c => c.id === d.animo)?.emoji || '') : ''
     }
   ];
 }
@@ -226,8 +206,7 @@ const TITULOS_OBJ = {
   pasos: 'Pasos de hoy',
   ejercicio: 'Ejercicio',
   ayuno: 'Ayuno',
-  sueno: 'Sueño',
-  animo: '¿Cómo venís hoy?'
+  sueno: 'Sueño y ánimo'
 };
 
 function abrirObjetivo(id) {
@@ -253,8 +232,7 @@ function abrirObjetivo(id) {
   if (id === 'agua') renderAgua();
   if (id === 'ejercicio') { renderEjercicio(); renderActividades(); }
   if (id === 'ayuno') renderAyuno();
-  if (id === 'sueno') renderSueno();
-  if (id === 'animo') renderCaritas();
+  if (id === 'sueno') { renderSueno(); renderCaritas(); }
 
   abrirCapa('modalObjetivo');
   tomarFoco($('modalObjetivo'));

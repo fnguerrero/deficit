@@ -104,7 +104,9 @@ const OBJETIVO_DE_DIM = {
   sueno: 'sueno',
   agua: 'agua',
   movimiento: 'ejercicio',
-  animo: 'animo'
+  /* El animo se edita adentro del sueno desde que son un solo casillero: son
+     la misma pregunta hecha dos veces y se contestan en el mismo momento. */
+  animo: 'sueno'
 };
 
 function irAlTemaDe(dim) {
@@ -114,7 +116,7 @@ function irAlTemaDe(dim) {
     $('cardComidas')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
-  abrirObjetivo(OBJETIVO_DE_DIM[dim] || 'animo');
+  abrirObjetivo(OBJETIVO_DE_DIM[dim] || 'sueno');
 }
 
 /* ---------------- lo que dice la app ---------------- */
