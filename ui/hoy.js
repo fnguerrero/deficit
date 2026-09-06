@@ -406,7 +406,7 @@ function renderAgua() {
       ? `Vaso ${i} de ${meta}, tomado. Tocar para bajar a ${i - 1}.`
       : `Vaso ${i} de ${meta}, sin tomar. Tocar para marcar ${i}.`);
     b.setAttribute('aria-pressed', String(i <= vasos));
-    b.onclick = () => { ponerAgua(i === vasos ? i - 1 : i); cerrarTrasElVaso(); };
+    b.onclick = () => { ponerAgua(i === vasos ? i - 1 : i); cerrarTrasCargar(); };
     cont.appendChild(b);
   }
 
@@ -455,7 +455,8 @@ function pintarMetaAgua(meta) {
  * Tocar un vaso cierra la ventana, como ya hacen guardar el peso y anotar un
  * ejercicio: marcar hasta donde llegaste es la accion entera, no el primer paso
  * de nada, y quedarse con la hoja abierta obligaba a un segundo toque que no
- * agregaba nada.
+ * agregaba nada. Lo mismo hacen ahora los pasos, y el sueño cuando ya tiene
+ * las dos cosas que pide.
  *
  * Con una demora corta y no de una: sin ella el vaso se llena y desaparece en
  * el mismo cuadro, y no llegas a ver ni que quedo marcado ni el "objetivo
@@ -463,16 +464,16 @@ function pintarMetaAgua(meta) {
  * abrir y tocas el correcto—: adivinar cuando fue un error seria peor que el
  * toque de mas.
  */
-const DEMORA_CIERRE_AGUA = 420;
+const DEMORA_CIERRE = 420;
 
-function cerrarTrasElVaso() {
-  clearTimeout(cerrarAguaT);
-  cerrarAguaT = setTimeout(() => {
+function cerrarTrasCargar() {
+  clearTimeout(cerrarSoloT);
+  cerrarSoloT = setTimeout(() => {
     // ya no esta abierta: la cerro el usuario, o el atras, antes de que llegara
     if ($('modalObjetivo').classList.contains('open')) cerrarObjetivo();
-  }, DEMORA_CIERRE_AGUA);
+  }, DEMORA_CIERRE);
 }
-let cerrarAguaT;
+let cerrarSoloT;
 
 function ponerAgua(cantidad) {
   recordarCambio('el agua');

@@ -503,11 +503,28 @@ test('la racha vigente sobrevive al cambio de reglas', () => {
   esperar(diasPerfectos(dias, { hoy: sumarDias(DESDE_SIETE, -1), vasos: 8, pasos: 10000 }), 5);
 });
 
-test('los pasos se miden contra el objetivo de cada uno', () => {
+test('los pasos se anotan y con eso el casillero queda cumplido', () => {
   const dias = diasJ({ 0: 'pasos', 1: 'pasos' });
-  esperar(rachaDe(dias, 'pasos', { hoy: HOY_JUEGO, vasos: 8, pasos: 10000 }).actual, 2);
-  esperar(rachaDe(dias, 'pasos', { hoy: HOY_JUEGO, vasos: 8, pasos: 15000 }).actual, 0,
-    '12.000 no alcanzan si la meta son 15.000');
+  esperar(rachaDe(dias, 'pasos', { hoy: HOY_JUEGO, vasos: 8, pasos: 15000 }).actual, 2,
+    'ya no hay objetivo contra el cual quedar corto');
+});
+
+test('antes del corte los pasos se seguian midiendo contra el objetivo', () => {
+  /* Los dias vividos con la regla vieja se siguen leyendo con la regla vieja:
+     darlos por cumplidos ahora moveria rachas y adherencia de meses enteros. */
+  const hoy = sumarDias(DESDE_PASOS_LIBRES, -1);
+  const dias = { [hoy]: diaJ('pasos'), [sumarDias(hoy, -1)]: diaJ('pasos') };
+  esperar(rachaDe(dias, 'pasos', { hoy, vasos: 8, pasos: 10000 }).actual, 2);
+  esperar(rachaDe(dias, 'pasos', { hoy, vasos: 8, pasos: 15000 }).actual, 0,
+    '12.000 no alcanzaban si la meta eran 15.000');
+});
+
+test('sin meta, cualquier cantidad de pasos cargada esta bien', () => {
+  esperar(nivelPasos(3000), 'bien');
+  esperar(nivelPasos(0), '', 'sin nada cargado no dice nada');
+  // y con meta —los dias viejos— sigue comparando
+  esperar(nivelPasos(3000, 10000, 20), 'flojo');
+  esperar(nivelPasos(12000, 10000, 20), 'bien');
 });
 
 /* ---- los escudos ---- */

@@ -114,3 +114,9 @@ encontrar la tarjeta y tocar la lupa.
 - [x] Cancelar tira la foto antes de gastar el analisis, y limpia el input para poder reelegir la misma · verif: change real del input, cancelar, y el input vacio
 - [x] El atras de Android cierra el recortador · verif: history.back() con el recortador abierto
 
+## Ciclo 25 — los pasos y el sueño se anotan y listo (pedido de Nico, 06/09/2026)
+
+- [x] Pasos sin objetivo del dia: se carga la cantidad, se autoguarda y el casillero queda en check · verif: seis chips y ningun "Objetivo del dia" en la app viva, tocar 8.000 cierra la ventana y deja "✓ Pasos 8.000" · archivos: index.html, ui/objetivos.js, ui/hoy.js, juego.js, chequeos.js, tests2.js
+- [x] La regla vieja sigue rigiendo el pasado (DESDE_PASOS_LIBRES = 2026-09-06) · verif: 2 tests, uno de cada lado del corte
+- [x] Sueño: la ventana se cierra sola cuando ya estan las horas Y la calidad · verif: tocar horas la deja abierta, tocar la carita la cierra
+

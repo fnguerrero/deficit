@@ -57,7 +57,15 @@ const RACHAS = [
   },
   {
     id: 'pasos', nombre: 'Pasos', icono: '👟',
-    cumple: (d, ctx) => (d?.pasos || 0) >= (ctx?.pasos || PASOS_DEFECTO)
+    /* Anotarlos alcanza. Los pasos dejaron de tener objetivo —se registran, no
+       se aprueban—, pero el pasado se juzga con la regla que regia entonces:
+       dar por cumplidos dias que en su momento quedaron cortos moveria rachas
+       y adherencia de meses enteros sin que nada lo dijera. */
+    cumple: (d, ctx) => {
+      const pasos = Number(d?.pasos) || 0;
+      if ((ctx?.fecha || '') >= DESDE_PASOS_LIBRES) return pasos > 0;
+      return pasos >= (ctx?.pasos || PASOS_DEFECTO);
+    }
   },
   {
     id: 'peso', nombre: 'Peso', icono: '⚖️',
@@ -94,6 +102,10 @@ const DESDE_SIETE = '2026-09-02';
  * existia. Antes de esta fecha, registrar sigue alcanzando.
  */
 const DESDE_APTAS = '2026-09-05';
+
+/* Y desde cuando los pasos se anotan en vez de cumplirse. Misma idea que las
+   dos de arriba: la regla cambia de hoy en adelante. */
+const DESDE_PASOS_LIBRES = '2026-09-06';
 
 /** Que rachas hacen un dia perfecto en esa fecha. */
 function rachasDe(fecha) {
