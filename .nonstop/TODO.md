@@ -90,7 +90,7 @@ encontrar la tarjeta y tocar la lupa.
 
 - [x] Icono neutro y splash que no choque con ningun tema · verif: alpha en las esquinas del icono any, maskable opaco con su zona segura, manifest valido y la app viva sin errores · archivos: tools/gen_iconos.py, icons/*, manifest.json
 - [x] "No hay forma de acomodarla" contradecia la pregunta de abajo, y no decia que consecuencia tiene (pedido de Nico, 05/09/2026) · verif: tests de opcionQueLaSalva y consecuenciaNoApta, y el caso del screenshot en la app viva · archivos: arreglos.js, ui/edicion.js, index.html, styles.css, tests2.js
-- [ ] Que el perfil y la duda de cada comida VIAJEN entre dispositivos · pendiente de que Nico corra `supabase-perfil-comida.sql`; el codigo de sync.js no se toco todavia para no romperle el sync a quien no lo haya corrido · verif: round-trip en la app viva con la columna ya creada
+- [x] Que el perfil y la duda de cada comida VIAJEN entre dispositivos · Nico corrio `supabase-perfil-comida.sql` el 05/09/2026 y recien ahi se toco sync.js · verif: 3 tests de round-trip y de que una fila vieja no borra el perfil local; los dos campos entran en CAMPOS_NUEVOS_COMIDA, asi que una base sin migrar reintenta sin ellos en vez de fallar el insert entero · archivos: sync.js, tests2.js
 
 ## Ciclo 22 — una sola barra arriba (pedido de Nico, 05/09/2026)
 
