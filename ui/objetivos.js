@@ -277,7 +277,12 @@ $('modalObjetivo').onclick = (e) => { if (e.target.id === 'modalObjetivo') cerra
 function escalonesPasos(meta) {
   const paso = Math.max(1000, Math.round(meta / 5 / 500) * 500);
   const lista = [];
-  for (let i = 1; i <= 5; i++) lista.push(paso * i);
+  /* Del segundo escalon a uno por ARRIBA de la meta. El primero —2.000 pasos
+     con la meta en 10.000— no lo toca nadie: es lo que se camina yendo a la
+     esquina, y quien abre esta pantalla ya camino algo. Y faltaba el de arriba:
+     los dias que te pasas de la meta no habia con que anotarlos sin escribir el
+     numero a mano. */
+  for (let n = paso * 2; n <= meta + paso; n += paso) lista.push(n);
   /* Que la meta este siempre, aunque no caiga justo en un escalon: es el unico
      que cierra el casillero. */
   if (!lista.includes(meta)) lista.push(meta);
