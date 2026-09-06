@@ -2355,10 +2355,20 @@ test('si no cambia nada, el dia no se marca como tocado', () => {
   esperar(fusionarDia(d, { ...d, act: 99 }).cambio, false);
 });
 
-test('los pasos se fusionan como el agua: gana el mas alto', () => {
-  /* Los pasos del dia solo suben, asi que el numero mas grande es siempre el
-     mas completo, sin importar cual de los dos dispositivos lo anoto ultimo. */
-  esperar(fusionarDia({ pasos: 8200, act: 99 }, { pasos: 11400, act: 10 }).pasos, 11400);
+test('en los contadores del dia gana el mas nuevo, no el mas alto', () => {
+  /* El caso de Nico: sacaba un vaso de agua y volvia solo, con festejo, porque
+     el sync se quedaba siempre con el numero mas grande. Lo mismo dejaba
+     clavados un ejercicio cargado de mas y unos pasos mal tipeados. */
+  esperar(fusionarDia({ agua: 4, act: 99 }, { agua: 5, act: 10 }).agua, 4,
+    'lo ultimo que tocaste manda, aunque sea menos');
+  esperar(fusionarDia({ pasos: 8200, act: 99 }, { pasos: 11400, act: 10 }).pasos, 8200);
+  esperar(fusionarDia({ pasos: 8200, act: 10 }, { pasos: 11400, act: 99 }).pasos, 11400);
+});
+
+test('un cero no pisa lo que el otro dispositivo si tiene', () => {
+  /* `act` es del dia entero: donde solo cargaste una comida el agua esta en
+     cero y el act es nuevo, y sin esta salvedad esa comida borraria los vasos. */
+  esperar(fusionarDia({ agua: 0, act: 99 }, { agua: 5, act: 10 }).agua, 5);
   esperar(fusionarDia({ pasos: 0, act: 10 }, { pasos: 9000, act: 20 }).pasos, 9000);
   esperarQue(fusionarDia({ pasos: 0, act: 10 }, { pasos: 9000, act: 20 }).cambio);
 });
@@ -3856,12 +3866,18 @@ test('migrar guarda los ratos del dia y descarta los vacios', () => {
   esperar(m[0].kcal, 248);
 });
 
-test('fusionar trae el desglose del lado que tiene el total mas alto', () => {
-  const local  = { act: 9, ejercicio: 200, movimientos: [{ ts: 1, kcal: 200 }] };
-  const remoto = { act: 1, ejercicio: 500, movimientos: [{ ts: 2, kcal: 500 }] };
+test('el desglose del ejercicio viaja con el total que quedo', () => {
+  /* El ticket y la suma tienen que decir lo mismo: si queda el ejercicio del
+     otro dispositivo, tienen que quedar sus renglones. */
+  const local  = { act: 1, ejercicio: 200, movimientos: [{ ts: 1, kcal: 200 }] };
+  const remoto = { act: 9, ejercicio: 500, movimientos: [{ ts: 2, kcal: 500 }] };
   const f = fusionarDia(local, remoto);
   esperar(f.ejercicio, 500);
   esperar(f.movimientos[0].ts, 2);
+
+  const alReves = fusionarDia({ ...local, act: 9 }, { ...remoto, act: 1 });
+  esperar(alReves.ejercicio, 200);
+  esperar(alReves.movimientos[0].ts, 1);
 });
 
 /* ---------------- el tamagotchi, segunda pasada ---------------- */
