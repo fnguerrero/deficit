@@ -20,7 +20,7 @@
 const MOMENTOS = [
   { id: 'desayuno', nombre: 'Desayuno', articulo: 'el', icono: '☕', desde: 6 * 60, hasta: 11 * 60 + 29 },
   { id: 'almuerzo', nombre: 'Almuerzo', articulo: 'el', icono: '🍽️', desde: 11 * 60 + 30, hasta: 16 * 60 + 29 },
-  { id: 'merienda', nombre: 'Merienda', articulo: 'la', icono: '🥐', desde: 16 * 60 + 30, hasta: 20 * 60 + 29 },
+  { id: 'merienda', nombre: 'Merienda', articulo: 'la', icono: '🍵', desde: 16 * 60 + 30, hasta: 20 * 60 + 29 },
   { id: 'cena', nombre: 'Cena', articulo: 'la', icono: '🌙', desde: 20 * 60 + 30, hasta: 23 * 60 + 59 },
   { id: 'snack', nombre: 'Snack', articulo: 'el', icono: '🍎', desde: 0, hasta: 5 * 60 + 59 }
 ];

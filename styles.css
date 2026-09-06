@@ -1972,8 +1972,9 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .momento img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 
 /* El emoji, centrado en el hueco de arriba y fuera del pie, para no empujarlo. */
+/* El emoji arranca debajo de la hora: pegados se leian como una sola cosa. */
 .momento-emoji {
-  position: absolute; left: 0; right: 0; top: 0; bottom: 22px;
+  position: absolute; left: 0; right: 0; top: 14px; bottom: 20px;
   display: flex; align-items: center; justify-content: center;
   font-style: normal; font-size: 19px; opacity: .5;
 }
@@ -2091,11 +2092,14 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* La hora de cada momento, arriba de la tarjeta. La sugerida va mas apagada:
    es una propuesta, no un dato —y tiene que distinguirse de la hora real. */
 .momento-hora {
-  position: absolute; top: 3px; left: 0; right: 0;
-  font-style: normal; font-size: 9px; font-weight: 600;
-  color: var(--txt2); text-align: center; letter-spacing: -.2px;
+  position: absolute; top: 5px; left: 0; right: 0;
+  font-style: normal; font-size: 10.5px; font-weight: 700;
+  color: var(--txt); text-align: center; letter-spacing: -.2px;
 }
-.momento-hora.sugerida { color: var(--dim); opacity: .6; font-weight: 500; }
+/* La sugerida se distingue de la real: mas chica, gris y con el ~ adelante.
+   Con las dos iguales no habia forma de saber si ese numero era la hora a la
+   que comiste o la hora a la que deberias comer. */
+.momento-hora.sugerida { font-size: 9.5px; font-weight: 600; color: var(--dim); opacity: .75; }
 
 /* Los cinco pasos, en una fila: envueltos ocupaban dos renglones para cinco
    numeros de cuatro cifras. */

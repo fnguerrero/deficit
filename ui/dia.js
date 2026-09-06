@@ -77,9 +77,15 @@ function pintarComidasDelDia(comidas, cont) {
       : null;
     const hora = document.createElement('em');
     hora.className = 'momento-hora' + (cuando ? '' : ' sugerida');
+    /* Con "~" adelante cuando es la sugerida: es la diferencia entre "comiste a
+       esta hora" y "a esta hora te toca", y sin marcarla los dos numeros se
+       leian igual. */
     hora.textContent = cuando
       ? comoHora(cuando.getHours() * 60 + cuando.getMinutes())
-      : comoHora(horaDelMomento(g.id, state.dias));
+      : (comoHora(horaDelMomento(g.id, state.dias)) ? '~' + comoHora(horaDelMomento(g.id, state.dias)) : '');
+    hora.title = cuando
+      ? `${g.nombre} cargado a las ${comoHora(cuando.getHours() * 60 + cuando.getMinutes())}`
+      : `A esta hora solés ${g.nombre.toLowerCase() === 'desayuno' ? 'desayunar' : 'comer ' + g.nombre.toLowerCase()}`;
     if (hora.textContent) card.appendChild(hora);
 
     const pie = document.createElement('span');
