@@ -1142,6 +1142,39 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   .modos { grid-template-columns: 1fr; }
 }
 
+/* El desplegable de la barra: cuelga del titulo, tapando lo de abajo en vez de
+   empujarlo. Con diecisiete modos no entra en pantalla, asi que scrollea el
+   panel y no la app: el titulo tiene que seguir a la vista para cerrarlo. */
+.modos-barra {
+  position: absolute; top: 100%; left: 8px; right: 8px;
+  max-height: 62vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; padding: 8px; z-index: 30;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .3);
+  grid-template-columns: 1fr;
+}
+
+/* La flecha del titulo, como la del modo en Perfil: sin ella el nombre no dice
+   que se pueda tocar. */
+/* La flecha va en el contenedor y no en el h1: adentro del h1 entraba en el
+   calculo de los puntos suspensivos y le comia una letra al nombre del modo. */
+.titulo::after { content: '▾'; color: var(--dim); font-size: 11px; flex: 0 0 auto; }
+.titulo.abierta::after { content: '▴'; }
+/* Cuatro pixeles de la fecha para que el nombre del modo entre entero al lado
+   del icono: "Hoy" y "12 sep" entran igual en 46. */
+.topbar .date-nav span { min-width: 46px; }
+
+/* A 320 px no entran las cuatro cosas: la que cede es la palabra "Ayuno", que
+   el reloj ya dice. Con un ayuno corriendo el texto vuelve —ahi dice cuantas
+   horas llevas— y lo que cede es el nombre del modo, que se lee igual cortado. */
+@media (max-width: 360px) {
+  .topbar .tira:not(.corriendo) > span { display: none; }
+  /* Los ultimos nueve pixeles salen de los tres espacios entre las cuatro
+     cosas y del boton de datos, que se toca igual con 26. */
+  .topbar { gap: 5px; }
+  .topbar #btnDatos { width: 26px; height: 26px; font-size: 14px; }
+}
+
 /* Ajustes eran trece tarjetas apiladas, cuatro pantallas de scroll para llegar
    a la ultima. Ahora cada una se pliega: el titulo y su estado siempre a la
    vista, el contenido a un toque. El indice entero entra en una pantalla. */
@@ -1663,7 +1696,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* El punto de "quién está entrado" se fue del encabezado: con una sola persona
    usando la app no decía nada que no estuviera en Ajustes, y se comía el lugar
    que ahora usa el ayuno. */
-.titulo { min-width: 0; flex: 1 1 auto; }
+.titulo { min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 3px; }
 
 /* El color de los casilleros dice cómo estuvo el dato, no si lo cargaste.
    Cargar tres horas de sueño y ocho no puede verse igual. */

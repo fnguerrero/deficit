@@ -96,3 +96,15 @@ encontrar la tarjeta y tocar la lupa.
 
 - [x] Fuera el punto de la cuenta y el ayuno sube a la barra del titulo · verif: una sola fila a 375 y a 320 px sin corte ni scroll horizontal, el ayuno sigue abriendo su editor, y Hoy entra sin scroll · archivos: index.html, ui/cuenta.js, ui/ajustes.js, styles.css
 - [x] Los motivos de "no entra en el modo": un solo renglon, el resto al tocarlos, y el texto resumido para que entre (pedido de Nico, 05/09/2026) · verif: una linea a 375 y 320 px, expandir y plegar en la app viva
+
+## Ciclo 23 — seis pedidos de Nico (06/09/2026)
+
+- [x] Diagnóstico: fuera el "Ver el estado de la app", que era un segundo plegable adentro del primero · verif: un solo toque abre los datos, en la app viva · archivos: index.html
+- [x] Historial: fuera la tarjeta Buscar de la pantalla; la búsqueda queda a un toque en "Últimos días" · verif: la pantalla sin la tarjeta, el buscador abriendo y filtrando igual · archivos: index.html, ui/historial.js, styles.css
+- [x] Historial con gráficos: el peso, la cintura y las calorías por día se MUDAN de Progreso (no se copian: en el ciclo 18 se sacaron de acá justo por estar en las dos) · verif: los tres dibujando en Historial y ninguno repetido en Progreso · archivos: index.html, ui/historial.js, ui/progreso.js
+- [x] Progreso compacto: las dos tarjetas que se llaman casi igual —"¿Cómo venís?" y "Cómo venís"— y Nivel + Logros · verif: menos tarjetas y ninguna función perdida, medido en pantallas de scroll · archivos: index.html, ui/progreso.js
+- [x] La barra: tocar el modo despliega los dieciséis ahí mismo en vez de mandar a Perfil · verif: elegir desde Hoy cambia el objetivo y los veredictos sin cambiar de pantalla · archivos: index.html, ui/objetivos.js, ui/perfil.js, styles.css
+- [x] La barra: un ícono al lado del modo que abre los datos personales · verif: entra en la fila a 375 y 320 px y lleva a la ficha · archivos: index.html, ui/objetivos.js, styles.css
+- [x] La barra no daba para las cuatro cosas con el icono nuevo: el modo se escribe corto ("Moderado", no "Déficit moderado") y a 320 px la palabra "Ayuno" cede · verif: nombre entero a 375 y a 320, una fila de 56 px, sin scroll horizontal · archivos: ui/barra.js, styles.css
+- [x] ui/objetivos.js se paso de su limite con el desplegable: salio ui/barra.js con la barra de arriba entera · verif: 664 y 109 lineas, guardas OK con 59 scripts
+

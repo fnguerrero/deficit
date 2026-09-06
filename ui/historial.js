@@ -9,12 +9,31 @@
 /** Helper para armar nodos SVG. */
 const NS_SVG = 'http://www.w3.org/2000/svg';
 
-/* Historial son los dias, uno por uno: buscar y la lista. Las curvas y los
-   promedios se fueron a Progreso, que es la pantalla de las tendencias — antes
-   el peso, las calorias y el resumen del mes estaban en las dos. */
+/* Historial son los dias: las curvas de como vienen y la lista de uno por uno.
+   Buscar dejo de tener tarjeta propia y vive adentro de la lista. */
 function renderHistorial() {
+  abrirLasCurvas();
+  renderChartPeso();
+  renderChartCintura();
+  renderProgresoMeta();
+  renderChartKcal();
+  renderProyeccion();
   renderBusqueda();
   renderListaDias();
+}
+
+/* Una sola vez, como en Progreso: si corriera en cada render, una curva que
+   cerraste se te volveria a abrir al tocar el selector de rango. El peso y las
+   calorias son a lo que se entra; la cintura queda plegada porque es opcional
+   y muchos dias no tiene nada nuevo que mostrar. */
+let curvasAbiertas = false;
+
+function abrirLasCurvas() {
+  if (curvasAbiertas) return;
+  curvasAbiertas = true;
+  for (const sel of ['#chartPeso', '#chartKcal']) {
+    document.querySelector(sel)?.closest('.plegable')?.setAttribute('open', '');
+  }
 }
 
 /* --- curva de peso con media móvil --- */
@@ -47,14 +66,24 @@ function renderAvisoProteina() {
 
 /* --- buscador --- */
 
+/** Dos letras: con una sola, cualquier historial devuelve todo y no dice nada. */
+function hayBusqueda() {
+  return normalizar($('inputBuscar').value).length >= 2;
+}
+
 function renderBusqueda() {
   const texto = $('inputBuscar').value;
   const ul = $('resultadosBusqueda');
   ul.innerHTML = '';
   $('btnLimpiarBusqueda').hidden = !texto;
 
-  const buscando = normalizar(texto).length >= 2;
-  $('cardUltimosDias').hidden = buscando;
+  /* Buscando, la lista de dias se va: son dos respuestas a la misma pregunta y
+     ahora comparten tarjeta. Antes se ocultaba la tarjeta entera, que era otra.
+     El titulo se escribe aca tambien: al teclear corre solo esta. */
+  const buscando = hayBusqueda();
+  $('listaDias').hidden = buscando;
+  $('tituloUltimosDias').textContent = buscando ? 'Resultados' : rangoActual().detalle;
+  if (buscando) $('diasVacio').hidden = true;
 
   if (!buscando) {
     $('resumenBusqueda').textContent = texto ? 'Escribí al menos dos letras.' : '';
@@ -116,6 +145,19 @@ $('btnLimpiarBusqueda').onclick = () => {
   $('inputBuscar').focus();
 };
 
+/* El campo aparece al pedirlo. Cerrarlo tambien borra lo escrito: dejarlo
+   guardado escondido haria que la lista de dias siguiera filtrada sin que nada
+   en pantalla dijera por que. */
+$('btnBuscar').onclick = () => {
+  const caja = $('buscador');
+  const abierto = caja.hidden;
+  caja.hidden = !abierto;
+  $('btnBuscar').setAttribute('aria-expanded', String(abierto));
+  if (abierto) { $('inputBuscar').focus(); return; }
+  $('inputBuscar').value = '';
+  renderBusqueda();
+};
+
 /* --- lista de días --- */
 
 /* Cuantos dias se arman de una. Antes se cortaba en 30 sin decirlo: con seis
@@ -166,7 +208,7 @@ function renderListaDias() {
   const fechas = todas.slice(0, diasVisibles);
 
   const titulo = $('tituloUltimosDias');
-  if (titulo) titulo.textContent = r.detalle;
+  if (titulo) titulo.textContent = hayBusqueda() ? 'Resultados' : r.detalle;
   const ul = $('listaDias');
   ul.innerHTML = '';
   $('diasVacio').hidden = fechas.length > 0;
@@ -208,5 +250,316 @@ function renderListaDias() {
   }
 }
 
+/* ============================================================
+   Las curvas: el peso, la cintura y las calorias por dia.
 
+   Volvieron a Historial —de donde el ciclo 18 las habia sacado por estar en
+   las dos pantallas a la vez— porque son la evolucion dia a dia, que es de lo
+   que habla esta pantalla. Progreso se queda con las lecturas: el veredicto,
+   la adherencia, los logros. Siguen sin estar repetidas.
+   ============================================================ */
 
+function seriePesos() {
+  return Object.entries(state.dias)
+    .filter(([, d]) => typeof d.peso === 'number')
+    .map(([f, d]) => ({ f, kg: d.peso }))
+    .sort((a, b) => a.f.localeCompare(b.f));
+}
+
+function svgEl(tag, attrs, texto) {
+  const el = document.createElementNS(NS_SVG, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (texto != null) el.textContent = texto;
+  return el;
+}
+
+function renderChartPeso() {
+  const todos = seriePesos();
+  /* También mira el rango de arriba. "Todo" sigue con el tope de 120 puntos,
+     que es lo que entra sin que la curva se vuelva un borrón. */
+  const dias = rangoActual().dias;
+  const desde = dias ? sumarDias(hoyISO(), -(dias - 1)) : null;
+  const pesos = recortarSerie(desde ? todos.filter(p => p.f >= desde) : todos, 120);
+  const svg = $('chartPeso');
+  svg.innerHTML = '';
+  $('chartVacio').hidden = pesos.length >= 2;
+  $('chartLeyenda').hidden = pesos.length < 2;
+
+  if (pesos.length < 2) { $('pesoDelta').textContent = ''; return; }
+
+  const W = 320, H = 120, pad = 22;
+  const media = mediaMovil(pesos, 7);
+  const objetivo = state.perfil.pesoObj;
+
+  const valores = pesos.map(p => p.kg).concat(media.map(p => p.kg), objetivo ? [objetivo] : []);
+  const min = Math.min(...valores), max = Math.max(...valores);
+  const span = (max - min) || 1;
+  /*
+   * El eje X va por FECHA, no por indice.
+   *
+   * Con el indice, dos pesadas separadas por dos meses quedaban a la misma
+   * distancia que dos de dias seguidos: el grafico deformaba el tiempo y una
+   * bajada lenta parecia una caida en picada. Es peor que unir con una recta,
+   * porque la recta al menos no miente sobre cuando paso cada cosa.
+   */
+  const t0 = Date.parse(pesos[0].f + 'T00:00:00');
+  const tramo = (Date.parse(pesos.at(-1).f + 'T00:00:00') - t0) || 1;
+  const x = p => pad + ((Date.parse(p.f + 'T00:00:00') - t0) / tramo) * (W - pad * 2);
+  const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
+
+  const pts = (serie) => serie.map(p => `${x(p).toFixed(1)},${y(p.kg).toFixed(1)}`).join(' ');
+
+  /* Y con un hueco de mas de diez dias la linea se corta: unir dos pesos con
+     dos semanas de nada en el medio es dibujar una tendencia que nadie midio. */
+  const HUECO = 10 * 86400000;
+  const tramos = (serie) => {
+    const out = [];
+    let actual = [];
+    serie.forEach((p, i) => {
+      const previo = serie[i - 1];
+      if (previo && Date.parse(p.f + 'T00:00:00') - Date.parse(previo.f + 'T00:00:00') > HUECO) {
+        if (actual.length > 1) out.push(actual);
+        actual = [];
+      }
+      actual.push(p);
+    });
+    if (actual.length > 1) out.push(actual);
+    return out;
+  };
+
+  svg.appendChild(svgEl('polygon', { class: 'area', points: `${pad},${H - pad} ${pts(media)} ${x(pesos.at(-1))},${H - pad}` }));
+  for (const t of tramos(pesos)) svg.appendChild(svgEl('polyline', { class: 'line diario', points: pts(t) }));
+  for (const t of tramos(media)) svg.appendChild(svgEl('polyline', { class: 'line media', points: pts(t) }));
+
+  if (objetivo) {
+    svg.appendChild(svgEl('line', { class: 'goal', x1: pad, x2: W - pad, y1: y(objetivo), y2: y(objetivo) }));
+    svg.appendChild(svgEl('text', { x: W - pad, y: y(objetivo) - 4, 'text-anchor': 'end' }, `meta ${fmtPeso(objetivo)}`));
+  }
+
+  pesos.forEach(p => svg.appendChild(svgEl('circle', { class: 'dot', cx: x(p), cy: y(p.kg), r: 2.2 })));
+
+  svg.appendChild(svgEl('text', { x: pad, y: 12 }, fmtPeso(pesos[0].kg)));
+  svg.appendChild(svgEl('text', { x: W - pad, y: 12, 'text-anchor': 'end' }, fmtPeso(pesos.at(-1).kg)));
+
+  // la tendencia importa más que el último número suelto
+  const delta = +(media.at(-1).kg - media[0].kg).toFixed(1);
+  $('pesoDelta').textContent = fmtDelta(delta, 1, 'kg');
+
+  $('chartLeyenda').lastChild.textContent = todos.length > pesos.length
+    ? ` tendencia (7 días) · ${fmtNum(todos.length)} registros`
+    : ' tendencia (7 días)';
+}
+
+/*
+ * La curva de la cinta métrica.
+ *
+ * Se parece a la del peso pero no es la misma: acá hay siete puntos en medio
+ * año y no ciento cincuenta, así que no lleva media móvil —promediar siete
+ * días cuando medís una vez por mes no promedia nada— y la línea une puntos
+ * separados por semanas, que en la cintura es exactamente lo que corresponde.
+ */
+function renderChartCintura() {
+  const todas = serieCinturas(state.dias);
+  const dias = rangoActual().dias;
+  const desde = dias ? sumarDias(hoyISO(), -(dias - 1)) : null;
+  const enRango = desde ? todas.filter(p => p.f >= desde) : todas;
+
+  /* El selector de rango está pensado para datos DIARIOS. La cintura se mide
+     una vez por mes, así que "7 días" o "1 mes" casi nunca tienen dos puntos y
+     la tarjeta desaparecía justo cuando había medio año de mediciones. Si el
+     rango elegido no alcanza, se muestran todas y la leyenda lo aclara. */
+  const recortada = enRango.length >= 2;
+  const serie = recortarSerie(recortada ? enRango : todas, 60);
+  const card = $('cardCintura');
+
+  /* Con menos de dos mediciones no hay curva y la tarjeta no aparece. Un dato
+     opcional no se pide con un cartel vacío ocupando pantalla. */
+  card.hidden = serie.length < 2;
+  if (serie.length < 2) return;
+
+  const svg = $('chartCintura');
+  svg.innerHTML = '';
+
+  const W = 320, H = 120, pad = 22;
+  const meta = cinturaObjetivo(state.perfil.altura);
+  const valores = serie.map(p => p.cm).concat(meta ? [meta] : []);
+  const min = Math.min(...valores), max = Math.max(...valores);
+  const span = (max - min) || 1;
+
+  const t0 = Date.parse(serie[0].f + 'T00:00:00');
+  const tramo = (Date.parse(serie.at(-1).f + 'T00:00:00') - t0) || 1;
+  const x = p => pad + ((Date.parse(p.f + 'T00:00:00') - t0) / tramo) * (W - pad * 2);
+  const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
+  const pts = serie.map(p => `${x(p).toFixed(1)},${y(p.cm).toFixed(1)}`).join(' ');
+
+  svg.appendChild(svgEl('polygon', { class: 'area', points: `${pad},${H - pad} ${pts} ${x(serie.at(-1))},${H - pad}` }));
+  svg.appendChild(svgEl('polyline', { class: 'line media', points: pts }));
+
+  /* La meta no la elige nadie a ojo: es la mitad de tu altura, que es el
+     umbral 0,5 del mismo índice que la app ya muestra en el perfil. */
+  if (meta) {
+    svg.appendChild(svgEl('line', { class: 'goal', x1: pad, x2: W - pad, y1: y(meta), y2: y(meta) }));
+    svg.appendChild(svgEl('text', { x: W - pad, y: y(meta) - 4, 'text-anchor': 'end' }, `${meta} cm · 0,5`));
+  }
+
+  serie.forEach(p => svg.appendChild(svgEl('circle', { class: 'dot', cx: x(p), cy: y(p.cm), r: 2.8 })));
+  svg.appendChild(svgEl('text', { x: pad, y: 12 }, `${fmtNum(serie[0].cm)} cm`));
+  svg.appendChild(svgEl('text', { x: W - pad, y: 12, 'text-anchor': 'end' }, `${fmtNum(serie.at(-1).cm)} cm`));
+
+  $('cinturaDelta').textContent = fmtDelta(+(serie.at(-1).cm - serie[0].cm).toFixed(1), 1, 'cm');
+
+  const ica = icaDe(serie.at(-1).cm, state.perfil.altura);
+  const cuantas = recortada
+    ? `${serie.length} mediciones`
+    : `${serie.length} mediciones, todas las que hay`;
+  $('cinturaLeyenda').textContent = ica == null
+    ? cuantas
+    : `${cuantas} · hoy ${fmtNum(ica, 2)} sobre tu altura — ${bandaICA(ica).nombre.toLowerCase()}`;
+}
+
+function renderProgresoMeta() {
+  const pesos = seriePesos();
+  const meta = state.perfil.pesoObj;
+  const caja = $('progresoMeta');
+
+  if (!meta || !pesos.length) { caja.hidden = true; return; }
+
+  const inicial = pesos[0].kg;
+  const actual = pesos.at(-1).kg;
+  const pct = progresoPeso(inicial, actual, meta);
+  if (pct == null) { caja.hidden = true; return; }
+
+  caja.hidden = false;
+  $('progresoPct').textContent = pct + '%';
+  $('progresoBar').style.width = pct + '%';
+
+  const faltan = +(actual - meta).toFixed(1);
+  $('progresoTxt').textContent = faltan > 0
+    ? `Arrancaste en ${fmtPeso(inicial)}, vas por ${fmtPeso(actual)} y te faltan ${fmtPeso(faltan)}.`
+    : `Llegaste a la meta: ${fmtPeso(actual)}.`;
+}
+
+function renderChartKcal() {
+  const svg = $('chartKcal');
+  svg.innerHTML = '';
+
+  const calc = calcular();
+  const objetivo = calc ? calc.objetivo : 0;
+
+  /* Obedece al selector de arriba, con tope en 30 barras: más no entran
+     legibles en 320 px de ancho, y el rango largo se mira en Progreso. */
+  const N = Math.min(rangoActual().dias || 30, 30);
+  const fechas = Array.from({ length: N }, (_, i) => sumarDias(hoyISO(), -(N - 1 - i)));
+  const datos = fechas.map(f => ({
+    f,
+    kcal: (state.dias[f]?.comidas || []).length ? sumarComidas(state.dias[f].comidas).kcal : null
+  }));
+  const conDatos = datos.filter(d => d.kcal != null);
+
+  $('kcalVacio').hidden = conDatos.length > 0;
+  /* "2 días seguidos" al lado de un gráfico de calorías se lee como dos días
+     dentro del objetivo, y es otra cosa: son días seguidos cargando comidas. */
+  const r = rachaDias(state.dias);
+  $('rachaPill').textContent = r ? `🔥 ${r} ${r === 1 ? 'día' : 'días'} cargando` : '';
+  $('rachaPill').title = r ? `Cargaste comidas ${r} ${r === 1 ? 'día' : 'días'} seguidos` : '';
+
+  if (!conDatos.length) return;
+
+  const W = 320, H = 140, padX = 6, padTop = 14, padBottom = 20;
+  const tope = Math.max(objetivo || 0, ...conDatos.map(d => d.kcal)) * 1.1 || 1;
+  const ancho = (W - padX * 2) / N;
+  /* Con treinta barras las iniciales de los días se pisan: se saltean. */
+  const cadaEtiqueta = Math.ceil(N / 14);
+  const alto = v => (v / tope) * (H - padTop - padBottom);
+
+  datos.forEach((d, i) => {
+    const bx = padX + i * ancho;
+    if (d.kcal == null) {
+      // el día sin cargar deja una marca mínima, para que se note el hueco
+      svg.appendChild(svgEl('rect', { class: 'barra vacia', x: bx + 2, y: H - padBottom - 3, width: ancho - 4, height: 3, rx: 1.5 }));
+    } else {
+      const h = Math.max(3, alto(d.kcal));
+      svg.appendChild(svgEl('rect', {
+        class: 'barra' + (objetivo && d.kcal > objetivo ? ' over' : ''),
+        x: bx + 2, y: H - padBottom - h, width: ancho - 4, height: h, rx: 2
+      }));
+    }
+    if (i % cadaEtiqueta === 0) {
+      const [yy, mm, dd] = d.f.split('-').map(Number);
+      const letra = new Date(yy, mm - 1, dd).toLocaleDateString('es-AR', { weekday: 'narrow' });
+      svg.appendChild(svgEl('text', { x: bx + ancho / 2, y: H - 6, 'text-anchor': 'middle' }, letra));
+    }
+  });
+
+  if (objetivo) {
+    const yObj = H - padBottom - alto(objetivo);
+    svg.appendChild(svgEl('line', { class: 'goal', x1: padX, x2: W - padX, y1: yObj, y2: yObj }));
+    svg.appendChild(svgEl('text', { x: padX, y: yObj - 4 }, `objetivo ${fmtNum(objetivo)}`));
+  }
+}
+
+function renderProyeccion() {
+  const p = proyectarPeso(state.dias, 4);
+  const caja = $('cardProyeccion');
+
+  if (!p) { caja.hidden = true; return; }
+
+  caja.hidden = false;
+  const meta = state.perfil.pesoObj;
+  const sentido = p.kgPorSemana < 0 ? 'bajando' : (p.kgPorSemana > 0 ? 'subiendo' : 'estable');
+
+  if (sentido === 'estable') {
+    caja.innerHTML = '';
+    caja.append(`Tu peso está estable según los últimos ${plural(p.diasDeDatos, 'día')}.`);
+    return;
+  }
+
+  const cuando = new Date(p.fecha + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+  caja.innerHTML = '';
+  caja.append(`Venís ${sentido} ${fmtNum(Math.abs(p.kgPorSemana), 2)} kg por semana. Si sigue así, el ${cuando} vas a estar en `);
+  const b = document.createElement('b');
+  b.textContent = fmtPeso(p.proyectado);
+  caja.append(b, '.');
+
+  if (meta && p.kgPorSemana < 0 && p.proyectado <= meta) {
+    caja.append(' Llegás a tu meta antes de eso.');
+  }
+
+  pintarPlazo(caja, p);
+}
+
+/*
+ * Si vas a tiempo, en fechas.
+ *
+ * "Vas lento" es abstracto y no dice cuánto. Contra la fecha que prometía tu
+ * plan, el mismo dato se vuelve una cuenta que se entiende sola.
+ */
+function pintarPlazo(caja, proy) {
+  const perfil = state.perfil;
+  const prometida = perfil.plazo || fechaDeLlegada(perfil.peso, perfil.pesoObj, perfil.ritmo);
+  if (!prometida) return;
+
+  /* El ritmo real, con el signo dado vuelta: proyectarPeso() cuenta bajar como
+     negativo y fechaDeLlegada() espera cuánto se baja por semana. */
+  const real = fechaDeLlegada(perfil.peso, perfil.pesoObj, -proy.kgPorSemana);
+  const v = veredictoDePlazo(prometida, real);
+  if (!v) return;
+
+  const li = document.createElement('p');
+  li.className = 'plazo-veredicto ' + v.estado;
+
+  if (v.estado === 'sin-datos') {
+    /* Sin fecha real no es que vayas mal: es que a este ritmo no llegás nunca,
+       y eso hay que decirlo así y no con un número inventado. */
+    li.textContent = `Tu plan llegaba el ${fechaLarga(prometida)}. A este ritmo no llegás.`;
+  } else if (v.estado === 'en-fecha') {
+    li.textContent = `Vas en fecha: tu plan llegaba el ${fechaLarga(prometida)} y a este ritmo llegás el ${fechaLarga(v.proyectada)}.`;
+  } else {
+    const cuanto = v.semanas === 1 ? 'una semana' : `${v.semanas} semanas`;
+    li.textContent = v.estado === 'tarde'
+      ? `Ibas a llegar el ${fechaLarga(prometida)}. A este ritmo llegás el ${fechaLarga(v.proyectada)}: ${cuanto} tarde.`
+      : `Ibas a llegar el ${fechaLarga(prometida)} y vas más rápido: a este ritmo llegás el ${fechaLarga(v.proyectada)}, ${cuanto} antes.`;
+  }
+
+  caja.appendChild(li);
+}
