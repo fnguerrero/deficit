@@ -144,7 +144,7 @@ function cabeza(med, cara, col, fase) {
     ${papada}
     ${chupada}
 
-    ${pelo(cy, rx, ry, fase)}
+    ${pelo(cy, rx, ry, fase, 'todo', med.figura || 'm')}
 
     ${ojo(60 - sep, ojoY, cara)}
     ${ojo(60 + sep, ojoY, cara)}

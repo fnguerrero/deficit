@@ -462,7 +462,10 @@ function cerrarTrasCargar() {
 let cerrarSoloT;
 
 function ponerAgua(cantidad) {
-  recordarCambio('el agua');
+  /* Sin "Deshacer": el agua se corrige tocando el vaso, que es mas directo que
+     el boton de abajo, y aparecia un cartel por cada vaso del dia. El deshacer
+     queda para lo que no se puede reescribir de un toque: comidas, peso,
+     ejercicio. */
   const d = dia();
   d.agua = Math.max(0, cantidad);
   d.act = Date.now();

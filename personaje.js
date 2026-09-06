@@ -84,7 +84,7 @@ const LINEA = 2.4;
  * que la que ese IMC hace esperar: el peso está en otro lado) a +1 (panza).
  * En 0 —que es lo que da sin el dato— el dibujo queda exactamente como antes.
  */
-function medidasDe(contextura, musculatura, poder = 0, demacrado = 0, forma = 0, grasa = null) {
+function medidasDe(contextura, musculatura, poder = 0, demacrado = 0, forma = 0, grasa = null, figura = 'm') {
   const c = contextura == null ? 0.42 : Math.min(1, Math.max(0, contextura));
   const m = Math.min(1, Math.max(0, musculatura || 0));
   const p = Math.min(1, Math.max(0, poder || 0));
@@ -102,8 +102,8 @@ function medidasDe(contextura, musculatura, poder = 0, demacrado = 0, forma = 0,
     ? c
     : Math.min(1, Math.max(0, Number(grasa)));
 
-  return {
-    c, m, p, d, fo, cGrasa,
+  return proporciones({
+    c, m, p, d, fo, cGrasa, figura,
     fuerza: Math.min(1, m + p),
     /* La segunda mitad del recorrido pega el doble: entre IMC 17 y 45 la
        curva de siempre, y de ahí a 90 el cuerpo se va de verdad. Sin el
@@ -117,7 +117,7 @@ function medidasDe(contextura, musculatura, poder = 0, demacrado = 0, forma = 0,
     cuello: 6 + c * 3 + c * c * 1.5 + (m + p) * 2.4 - d * 1.8,
     caraRx: 15 + c * 7 + c * c * 2.5 - d * 2.4,
     caraRy: 18.6
-  };
+  }, figura);
 }
 
 /** El medio ancho del torso a una altura cualquiera, interpolando. */
@@ -484,7 +484,8 @@ function svgPersonaje(animo = 'neutral', tam = 96, cuerpo = null, fase = null) {
     f ? (f.musculo || 0) : 0,
     cuerpo?.demacrado ?? 0,
     cuerpo?.forma ?? 0,
-    cuerpo?.grasa ?? null
+    cuerpo?.grasa ?? null,
+    cuerpo?.figura || 'm'
   );
 
   const pose = f ? posturaDePoder(base, f) : poseDelDia(base, cuerpo);

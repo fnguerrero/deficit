@@ -4763,3 +4763,41 @@ test('sin perfiles por alimento se conserva el del analisis', () => {
   esperar(perfilDeItems([], base).ultraprocesado, true);
   esperar(perfilDeItems([], null), null);
 });
+
+/* ---------------- la figura del personaje ---------------- */
+
+test('la figura sale del sexo del perfil salvo que se elija otra', () => {
+  esperar(figuraDe({ sexo: 'f' }, {}), 'f');
+  esperar(figuraDe({ sexo: 'm' }, {}), 'm');
+  esperar(figuraDe({}, {}), 'm', 'sin sexo cargado, la de siempre');
+  esperar(figuraDe({ sexo: 'f' }, { figura: 'm' }), 'm', 'lo elegido a mano manda');
+  esperar(figuraDe({ sexo: 'm' }, { figura: 'f' }), 'f');
+  esperar(figuraDe({ sexo: 'f' }, { figura: null }), 'f', 'null es "como el perfil"');
+});
+
+test('la figura femenina cambia las proporciones, no el cuerpo', () => {
+  /* El mismo IMC y el mismo musculo dan el mismo cuerpo: lo que cambia son los
+     anchos. Si cambiara algo mas, las dos siluetas se irian separando. */
+  const m = medidasDe(0.5, 0.4, 0, 0, 0, null, 'm');
+  const f = medidasDe(0.5, 0.4, 0, 0, 0, null, 'f');
+
+  esperarQue(f.hombro < m.hombro, 'hombros mas angostos');
+  esperarQue(f.cintura < m.cintura, 'cintura mas marcada');
+  esperarQue(f.cadera > m.cadera, 'cadera mas ancha');
+  esperar(f.c, m.c, 'la contextura es la misma');
+  esperar(f.fuerza, m.fuerza, 'y el musculo tambien');
+});
+
+test('sin figura elegida el dibujo es el de siempre', () => {
+  const m = medidasDe(0.5, 0.4);
+  const explicito = medidasDe(0.5, 0.4, 0, 0, 0, null, 'm');
+  esperar(m.cadera, explicito.cadera);
+  esperar(m.hombro, explicito.hombro);
+});
+
+test('el cuerpo del dia dice con que figura dibujarse', () => {
+  const hoy = '2026-09-06';
+  const dias = { [hoy]: { comidas: [], peso: 70 } };
+  esperar(cuerpoDe({ sexo: 'f', altura: 165, peso: 70 }, dias, hoy).figura, 'f');
+  esperar(cuerpoDe({ sexo: 'f', altura: 165, peso: 70 }, dias, hoy, { figura: 'm' }).figura, 'm');
+});
