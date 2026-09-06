@@ -112,7 +112,9 @@ const SCHEMA_COMIDA = {
         type: 'object',
         properties: {
           nombre: { type: 'string' },
-          porcion: { type: 'string', description: 'Cantidad estimada, ej: "150 g", "1 taza"' },
+          /* Con los gramos adelante: estimar el peso y despues las calorias es lo
+             que evita quedarse corto, que es el error tipico mirando una foto. */
+          porcion: { type: 'string', description: 'Peso aproximado en gramos y medida casera, ej: "180 g (1 taza)", "120 g (1 milanesa)"' },
           calorias: { type: 'number' },
           proteinas: { type: 'number' },
           carbohidratos: { type: 'number' },
@@ -259,6 +261,11 @@ Identificá cada alimento del plato y estimá su porción real usando las refere
 Pautas:
 - Contexto argentino: usá alimentos y preparaciones típicas de Argentina cuando corresponda.
 - Tené en cuenta el método de cocción y el aceite o la grasa visible: fritura, salteado, plancha, horno.
+- En "porcion" poné SIEMPRE el peso aproximado en gramos, además de la medida casera: "180 g (1 taza)". Estimar los gramos primero y las calorías después es lo que evita quedarse corto.
+- Contá TODOS los alimentos, incluidos los que quedan abajo o detrás: el arroz debajo del huevo, el pan debajo de la hamburguesa, la salsa que empapa la guarnición.
+- Lo frito absorbe aceite y eso cuenta: una papa, una milanesa o un plátano fritos suman entre 30% y 60% más que el mismo alimento al horno. La grasa visible de un chicharrón o de un corte de cerdo es casi toda calorías.
+- Ante la duda entre dos porciones, elegí la mayor: un plato servido en un restaurante o en una casa suele ser más grande que la porción de tabla, y quedarse corto es el error más común al mirar una foto.
+- Antes de responder, revisá el total: sumá las calorías de los alimentos y preguntate si ese número le corresponde a lo que se ve. Un plato con carne, guarnición y algo frito difícilmente baje de 1.000 kcal, y uno abundante con varias carnes puede pasar las 2.000.
 - Incluí también bebidas, aderezos y salsas visibles si aportan calorías.
 - Si algo no se ve con claridad, asumí la porción más probable y aclaralo en las notas.
 - Poné confianza "baja" si la foto es ambigua, tiene mala luz o el alimento está tapado.
