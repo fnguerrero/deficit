@@ -2079,6 +2079,15 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .act-uno small { font-size: 9.5px; opacity: .75; font-weight: 600; }
 .chip-nuevo { border-style: dashed; color: var(--txt2); }
 
+/* Con que cuenta estas entrado, arriba de Tus datos. */
+.cuenta-linea {
+  display: block; width: 100%; text-align: left; margin-bottom: 10px;
+  background: var(--card2); border: 1px solid var(--line); border-radius: 11px;
+  padding: 9px 12px; font-size: 12.5px; color: var(--txt); cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cuenta-linea.sin-cuenta { color: var(--dim); border-style: dashed; }
+
 /* La hora de cada momento, arriba de la tarjeta. La sugerida va mas apagada:
    es una propuesta, no un dato —y tiene que distinguirse de la hora real. */
 .momento-hora {

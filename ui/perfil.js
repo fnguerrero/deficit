@@ -4,7 +4,33 @@
 
 /* ---------------- render: PERFIL ---------------- */
 
+/*
+ * Con que cuenta estas entrado, arriba de tus datos.
+ *
+ * Nico tiene dos usuarios de Android con la app instalada en los dos: cuando
+ * algo no aparece en el otro, lo primero que hay que poder ver es si la sesion
+ * esta iniciada ahi —y hasta ahora eso estaba tres pantallas mas adentro, en
+ * Ajustes. Toca y lleva justo ahi.
+ */
+function renderLineaCuenta() {
+  const b = $('lineaCuenta');
+  if (!b) return;
+
+  const s = typeof sesionActual === 'function' ? sesionActual() : null;
+  b.hidden = false;
+  b.className = 'cuenta-linea' + (s ? '' : ' sin-cuenta');
+  b.textContent = s
+    ? `👤 ${s.usuario?.email || 'tu cuenta'}`
+    : '👤 Sin cuenta · los datos viven solo en este dispositivo';
+  b.onclick = () => {
+    irTab('ajustes');
+    $('cardCuenta')?.setAttribute('open', '');
+    $('cardCuenta')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+}
+
 function renderPerfil() {
+  renderLineaCuenta();
   renderPlanEtapas();
   const p = state.perfil;
   $('pSexo').value = p.sexo;
