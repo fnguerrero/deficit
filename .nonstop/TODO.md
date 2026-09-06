@@ -120,3 +120,9 @@ encontrar la tarjeta y tocar la lupa.
 - [x] La regla vieja sigue rigiendo el pasado (DESDE_PASOS_LIBRES = 2026-09-06) · verif: 2 tests, uno de cada lado del corte
 - [x] Sueño: la ventana se cierra sola cuando ya estan las horas Y la calidad · verif: tocar horas la deja abierta, tocar la carita la cierra
 
+## Ciclo 26 — que el casillero de Comidas diga la verdad (06/09/2026)
+
+- [x] El casillero de Comidas se pone rojo si te pasaste del objetivo o si no entro ninguna comida en el modo · verif: 6 tests de nivelComidas y el caso de Nico reproducido en la app viva (7.219 de 1.939, casillero nivel-mal) · archivos: chequeos.js, ui/objetivos.js, tests2.js
+- [x] El perfil del plato sale de los alimentos que QUEDARON, no de la foto · verif: 4 tests de perfilDeItems con la mesa criolla del caso · archivos: platos.js, claude.js, ui/edicion.js, tests2.js
+- [x] "Ultraprocesado" en el schema: producto industrial, no comida casera con un ingrediente procesado · verif: descripcion nueva en el schema del analisis
+

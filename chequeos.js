@@ -177,6 +177,28 @@ function planPorEtapas(peso, objetivo, kgPorSemana = 0.5) {
    un buen mes—, y sentirse mal tampoco: es información, no un error.
    ============================================================ */
 
+/*
+ * Como viene comiendo el dia, para el color del casillero de Comidas.
+ *
+ * El tilde queda —cargar las comidas es lo que se pide— pero un dia con un
+ * ultraprocesado de cinco mil calorias no puede verse igual que uno cumplido.
+ * Mismo criterio que el sueño: dormiste, si, tres horas y en rojo.
+ *
+ * Rojo si te pasaste del objetivo por mas del margen —lo unico que ya no tiene
+ * arreglo cuando pasa— o si no entro NINGUNA comida en el modo; ambar si algo
+ * se fue del modo pero el dia sigue en pie. Sin objetivo no se juzga por
+ * calorias: seria comparar contra nada.
+ */
+const MARGEN_EXCESO = 1.15;
+
+function nivelComidas({ cargadas = 0, entran = 0, kcal = 0, objetivo = 0 } = {}) {
+  if (!cargadas) return '';
+  const obj = Number(objetivo) || 0;
+  if (obj && Number(kcal) > obj * MARGEN_EXCESO) return 'mal';
+  if (!entran) return 'mal';
+  return entran < cargadas ? 'flojo' : 'bien';
+}
+
 /* Menos de seis horas es privación de sueño con todas las letras. Y dormir
    diez o más tampoco es "bien": o se está enfermo o se venía muy en deuda. */
 function nivelSueno(horas) {

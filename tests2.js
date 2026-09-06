@@ -4661,3 +4661,85 @@ test('un recorte de verdad no se confunde con la foto entera', () => {
   esperar(esRecorteEntero({ x: 20, y: 0, w: 280, h: 200 }, 300, 200), false);
   esperar(esRecorteEntero({ x: 0, y: 0, w: 300, h: 150 }, 300, 200), false);
 });
+
+/* ---------------- el color del casillero de Comidas ---------------- */
+
+test('el casillero de Comidas se pone rojo si te pasaste del objetivo', () => {
+  /* El caso de Nico: cuatro comidas que entran y un snack ultraprocesado de
+     5.394 kcal. El tilde queda —cargó las comidas— pero el día no puede
+     verse igual que uno cumplido. */
+  esperar(nivelComidas({ cargadas: 5, entran: 4, kcal: 7219, objetivo: 1939 }), 'mal');
+  esperar(nivelComidas({ cargadas: 5, entran: 5, kcal: 7219, objetivo: 1939 }), 'mal',
+    'aunque todas entren en el modo');
+});
+
+test('pasarse por poco no es rojo', () => {
+  esperar(nivelComidas({ cargadas: 3, entran: 3, kcal: 2050, objetivo: 1939 }), 'bien');
+  esperar(nivelComidas({ cargadas: 3, entran: 3, kcal: 2300, objetivo: 1939 }), 'mal');
+});
+
+test('una comida fuera del modo deja el casillero en ambar', () => {
+  esperar(nivelComidas({ cargadas: 4, entran: 3, kcal: 1500, objetivo: 1939 }), 'flojo');
+  esperar(nivelComidas({ cargadas: 4, entran: 4, kcal: 1500, objetivo: 1939 }), 'bien');
+});
+
+test('sin ninguna comida en el modo, rojo', () => {
+  esperar(nivelComidas({ cargadas: 2, entran: 0, kcal: 900, objetivo: 1939 }), 'mal');
+});
+
+test('sin comidas cargadas el casillero no dice nada', () => {
+  esperar(nivelComidas({ cargadas: 0, entran: 0, kcal: 0, objetivo: 1939 }), '');
+  esperar(nivelComidas(), '');
+});
+
+test('sin objetivo calculado no se juzga por calorias', () => {
+  // sin perfil no hay contra que comparar: se mira solo el modo
+  esperar(nivelComidas({ cargadas: 2, entran: 2, kcal: 9000, objetivo: 0 }), 'bien');
+});
+
+/* ---------------- el perfil sale de lo que quedo en el plato ---------------- */
+
+const MESA_CRIOLLA = [
+  { nombre: 'Locro', calorias: 450, perfil: { legumbres: true, carneRoja: true, vegetales: true } },
+  { nombre: 'Parrillada', calorias: 700, perfil: { carneRoja: true } },
+  { nombre: 'Empanadas', calorias: 500, perfil: { carneRoja: true, cereales: true, gluten: true } },
+  { nombre: 'Gaseosa', calorias: 200, perfil: { ultraprocesado: true, azucarAgregada: true } }
+];
+
+test('sacar del plato lo ultraprocesado limpia la bandera', () => {
+  /* El caso de Nico: una mesa criolla editada hasta dejar un plato de locro
+     seguia figurando ultraprocesada, porque el perfil describia la foto. */
+  const todo = perfilDeItems(MESA_CRIOLLA);
+  esperar(todo.ultraprocesado, true);
+
+  const soloLocro = perfilDeItems([MESA_CRIOLLA[0]]);
+  esperar(soloLocro.ultraprocesado, false, 'el locro no tiene nada de ultraprocesado');
+  esperar(soloLocro.legumbres, true);
+  esperar(soloLocro.gluten, false, 'las empanadas ya no estan');
+});
+
+test('vegetariano se deduce, no se suma', () => {
+  const ensalada = { nombre: 'Ensalada', calorias: 90, perfil: { vegetales: true } };
+  esperar(perfilDeItems([ensalada]).vegetariano, true);
+  esperar(perfilDeItems([ensalada, MESA_CRIOLLA[1]]).vegetariano, false,
+    'con la parrillada al lado el plato no es vegetariano');
+});
+
+test('los cereales son integrales solo si lo son todos', () => {
+  const integral = { nombre: 'Pan integral', calorias: 120, perfil: { cereales: true, integral: true } };
+  const blanco = { nombre: 'Pan blanco', calorias: 120, perfil: { cereales: true } };
+  esperar(perfilDeItems([integral]).integral, true);
+  esperar(perfilDeItems([integral, blanco]).integral, false);
+  esperar(perfilDeItems([{ nombre: 'Bife', calorias: 300, perfil: { carneRoja: true } }]).integral, false,
+    'sin cereales no hay integral que valga');
+});
+
+test('sin perfiles por alimento se conserva el del analisis', () => {
+  /* Las comidas de antes de esto y las cargadas a mano: no saber de que estan
+     hechas no es lo mismo que saber que no tienen nada. */
+  const base = { ultraprocesado: true, vegetales: false };
+  const viejos = [{ nombre: 'Algo', calorias: 300 }];
+  esperar(perfilDeItems(viejos, base).ultraprocesado, true);
+  esperar(perfilDeItems([], base).ultraprocesado, true);
+  esperar(perfilDeItems([], null), null);
+});

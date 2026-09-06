@@ -259,14 +259,15 @@ $('btnGuardarComida').onclick = () => {
     const v = comidaApta({
       kcal: suma('calorias'), prot: suma('proteinas'),
       carb: suma('carbohidratos'), gras: suma('grasas'),
-      sodio: suma('sodio'), perfil: pendiente.perfil || null
+      sodio: suma('sodio'), perfil: perfilDeItems(items, pendiente.perfil)
     }, state.perfil.modo, calcular(), totalesDia());
 
     if (v.nivel === 'no') {
       pendiente.avisado = true;   // al segundo toque guarda sin repetir el aviso
       const arreglo = comoHacerlaApta({
         kcal: suma('calorias'), prot: suma('proteinas'), carb: suma('carbohidratos'),
-        gras: suma('grasas'), sodio: suma('sodio'), perfil: pendiente.perfil || null, items
+        gras: suma('grasas'), sodio: suma('sodio'),
+        perfil: perfilDeItems(items, pendiente.perfil), items
       }, state.perfil.modo, calcular(), totalesDia());
 
       $('avisoModo').textContent = `${etiquetaApta(v, state.perfil.modo)}: ${v.motivo}` +
@@ -355,8 +356,10 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
     thumb: pendiente.thumb || null,
     foto: pendiente.foto || null,
     notas: pendiente.notas || '',
-    // de qué está hecho el plato: es lo que permite decir si entra en el modo
-    perfil: pendiente.perfil || null,
+    /* De que esta hecho el plato: es lo que permite decir si entra en el modo.
+       Se arma con los alimentos que QUEDARON —ver perfilDeItems()— y no con el
+       que trajo el analisis, que describia la foto entera. */
+    perfil: perfilDeItems(items, pendiente.perfil),
     /* Y la duda que la foto no puede resolver, con sus variantes ya
        calculadas: se guarda para poder cambiar de opinión más tarde, no solo
        en el momento. */
@@ -383,7 +386,7 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
       prot: suma('proteinas'),
       carb: suma('carbohidratos'),
       gras: suma('grasas'),
-      perfil: pendiente.perfil || null,
+      perfil: perfilDeItems(items, pendiente.perfil),
       items,
       ambiguedad: pendiente.ambiguedad || null
     },

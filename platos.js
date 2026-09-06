@@ -367,3 +367,48 @@ function aplicarOpcion(comida, indice) {
 function hayQuePreguntar(amb) {
   return !!(amb && amb.pregunta && Array.isArray(amb.opciones) && amb.opciones.length >= 2);
 }
+
+/* ============================================================
+   De que esta hecho lo que QUEDA en el plato.
+   ============================================================ */
+
+/* Las que son "tiene esto": si algun alimento lo trae, el plato lo tiene. */
+const BANDERAS_QUE_SUMAN = [
+  'vegetales', 'frutas', 'legumbres', 'pescado', 'carneRoja', 'aveOHuevo',
+  'lacteos', 'cereales', 'aceiteOliva', 'frutosSecos', 'ultraprocesado',
+  'azucarAgregada', 'frito', 'gluten'
+];
+
+/**
+ * El perfil del plato armado desde sus alimentos.
+ *
+ * El perfil venia del analisis y describia LA FOTO, no el plato: sacar del
+ * editor la parrillada y las empanadas y dejar solo el locro no cambiaba nada,
+ * asi que una mesa criolla editada hasta dejar un plato de guiso seguia
+ * figurando como ultraprocesada. Los modos que juzgan por patron miran estas
+ * banderas, o sea que el veredicto hablaba de comida que ya no estaba ahi.
+ *
+ * `vegetariano` e `integral` no se suman, se deducen: un plato no es
+ * vegetariano porque uno de sus alimentos lo sea, sino porque NINGUNO trae
+ * carne; y los cereales son integrales si lo son todos los que hay.
+ *
+ * Si ningun alimento trae perfil propio —las comidas de antes de esto, y las
+ * cargadas a mano— se devuelve el de base sin tocar: no saber de que esta
+ * hecho no es lo mismo que saber que no tiene nada.
+ */
+function perfilDeItems(items, base = null) {
+  const conPerfil = (items || []).filter(i => i && i.perfil && typeof i.perfil === 'object');
+  if (!conPerfil.length) return base || null;
+
+  const salida = {};
+  for (const b of BANDERAS_QUE_SUMAN) {
+    salida[b] = conPerfil.some(i => i.perfil[b] === true);
+  }
+
+  salida.vegetariano = !salida.pescado && !salida.carneRoja && !salida.aveOHuevo;
+
+  const cereales = conPerfil.filter(i => i.perfil.cereales === true);
+  salida.integral = cereales.length > 0 && cereales.every(i => i.perfil.integral === true);
+
+  return salida;
+}
