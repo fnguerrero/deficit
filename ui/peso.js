@@ -61,14 +61,31 @@ function renderPesoTira() {
     el.classList.add('sin-pesar');
     return;
   }
-  $('pesoTiraKg').textContent = fmtNum(r.actual, 1) + ' kg';
+  /*
+   * El numero grande es el peso QUE CARGASTE, no la tendencia.
+   *
+   * Era al reves y no habia forma de entenderlo: cargabas 99, guardabas, y la
+   * tira seguia diciendo 88,9 —la media de los ultimos dias, que con un dato
+   * nuevo se mueve unos gramos—. Desde afuera eso es "no se guardo". La
+   * tendencia sigue estando, abajo y con su nombre, que es donde se puede leer
+   * como lo que es: el numero que no se mueve por medio kilo de agua.
+   */
+  const dePeso = typeof dia().peso === 'number' && dia().peso > 0 ? dia().peso : null;
+  const kg = dePeso ?? r.actual;
+
+  $('pesoTiraKg').textContent = fmtNum(kg, 1) + ' kg';
   /* Y el IMC al lado, que es el número que le da sentido a los kilos: 90 kg
-     no dicen nada sin la altura. Sale del peso de hoy, no de la tendencia. */
-  const imc = imcDe(r.actual, state.perfil?.altura);
+     no dicen nada sin la altura. */
+  const imc = imcDe(kg, state.perfil?.altura);
   const banda = bandaIMC(imc);
-  const meta = r.meta ? `objetivo ${fmtNum(r.meta, 1)}` : 'sin objetivo';
+  const partes = [r.meta ? `objetivo ${fmtNum(r.meta, 1)}` : 'sin objetivo'];
+  if (imc != null) partes.push(`IMC ${fmtNum(imc, 1)}`);
+  /* La tendencia solo cuando dice algo distinto del numero de arriba. */
+  if (dePeso != null && Math.abs(dePeso - r.actual) >= 0.1) {
+    partes.push(`tendencia ${fmtNum(r.actual, 1)}`);
+  }
   const el2 = $('pesoTiraMeta');
-  el2.textContent = imc == null ? meta : `${meta} · IMC ${fmtNum(imc, 1)}`;
+  el2.textContent = partes.join(' · ');
   el2.title = imc == null ? '' : `IMC ${fmtNum(imc, 1)} — ${banda ? banda.nombre : ''}`;
 
   const barra = $('pesoTiraBarra');
@@ -81,7 +98,7 @@ function renderPesoTira() {
    * Mostrar la tendencia y nada mas la convertia en un cartel: el numero de
    * arriba cambia solo cada varios dias y no se lee como algo que se toca.
    */
-  const hoyPesado = typeof dia().peso === 'number' && dia().peso > 0;
+  const hoyPesado = dePeso != null;
   $('pesoTiraCargar').textContent = hoyPesado ? '⚖️' : '⚖️+';
   el.classList.toggle('sin-pesar', !hoyPesado);
 

@@ -4801,3 +4801,57 @@ test('el cuerpo del dia dice con que figura dibujarse', () => {
   esperar(cuerpoDe({ sexo: 'f', altura: 165, peso: 70 }, dias, hoy).figura, 'f');
   esperar(cuerpoDe({ sexo: 'f', altura: 165, peso: 70 }, dias, hoy, { figura: 'm' }).figura, 'm');
 });
+
+/* ---------------- el horario de cada momento ---------------- */
+
+const DIA_HORA = (f, momento, h, m = 0) => ({
+  id: momento + f, ts: new Date(2026, 8, f, h, m).getTime(), momento, kcal: 400
+});
+
+test('la hora tipica sale de la mediana de tus comidas', () => {
+  const dias = {};
+  // cinco desayunos: 07:00, 07:30, 08:00, 08:30, 09:00 → mediana 08:00
+  [7, 7.5, 8, 8.5, 9].forEach((h, i) => {
+    dias['2026-09-0' + (i + 1)] = { comidas: [DIA_HORA(i + 1, 'desayuno', Math.floor(h), (h % 1) * 60)] };
+  });
+  esperar(horasTipicas(dias).desayuno, 8 * 60);
+});
+
+test('con menos de cinco comidas no se inventa un horario', () => {
+  const dias = {
+    '2026-09-01': { comidas: [DIA_HORA(1, 'cena', 22)] },
+    '2026-09-02': { comidas: [DIA_HORA(2, 'cena', 23)] }
+  };
+  esperar(horasTipicas(dias).cena, undefined, 'dos cenas no hacen una costumbre');
+  esperar(horaDelMomento('cena', dias), 21 * 60 + 30, 'y ahi vale la hora de referencia');
+});
+
+test('la hora de referencia de cada momento', () => {
+  esperar(horaDelMomento('desayuno', {}), 9 * 60);
+  esperar(horaDelMomento('almuerzo', {}), 13 * 60 + 30);
+  esperar(horaDelMomento('merienda', {}), 17 * 60 + 30);
+  esperar(horaDelMomento('cena', {}), 21 * 60 + 30);
+  esperar(horaDelMomento('snack', {}), null, 'el snack cae cuando cae');
+});
+
+test('la hora aprendida le gana a la de referencia', () => {
+  const dias = {};
+  for (let i = 1; i <= 6; i++) dias['2026-09-0' + i] = { comidas: [DIA_HORA(i, 'cena', 23, 30)] };
+  esperar(horaDelMomento('cena', dias), 23 * 60 + 30, 'si cenás a las 23:30, eso dice la tarjeta');
+});
+
+test('comoHora escribe hh:mm con dos digitos', () => {
+  esperar(comoHora(0), '00:00');
+  esperar(comoHora(9 * 60 + 5), '09:05');
+  esperar(comoHora(23 * 60 + 30), '23:30');
+  esperar(comoHora(null), '');
+});
+
+test('la tabla de horas es una sola para toda la app', () => {
+  /* horaDeMomento() arma el timestamp de una comida cargada a mano y sale de la
+     misma tabla que la sugerencia que se ve en el dia: dos tablas se habrian
+     ido separando. */
+  esperar(horaDeMomento('almuerzo'), 13);
+  esperar(horaDeMomento('cena'), 21);
+  esperar(horaDeMomento('snack'), 23, 'sin hora propia, la ultima del dia');
+});

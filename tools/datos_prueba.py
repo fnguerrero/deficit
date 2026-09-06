@@ -24,7 +24,7 @@ import argparse
 import json
 import os
 import random
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -162,9 +162,13 @@ def comidas_del_dia(fecha, finde, rnd):
         # La misma milanesa no pesa lo mismo dos veces.
         f = rnd.uniform(0.85, 1.15) * (1.12 if finde else 1.0) * RACION
         minutos = HORA[m] + rnd.randint(-35, 35)
-        ts = int(
-            (date.fromisoformat(fecha) - date(1970, 1, 1)).days * 86400000
-        ) + minutos * 60000
+        # En hora LOCAL, no en UTC. Contando dias desde epoca, un desayuno de
+        # las 09:00 se guardaba como 09:00 UTC y la app lo mostraba a las 06:00:
+        # con eso, los horarios tipicos que aprende de las comidas salian tres
+        # horas antes de lo que dice el dato.
+        d = date.fromisoformat(fecha)
+        ts = int(datetime(d.year, d.month, d.day,
+                          minutos // 60, minutos % 60).timestamp() * 1000)
 
         salida.append({
             'id': f'{fecha}-{m}-{rnd.randint(1000, 9999)}',
