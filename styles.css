@@ -1201,8 +1201,22 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   background: var(--card); border: 1px solid var(--line);
   border-radius: 14px; padding: 8px; z-index: 30;
   box-shadow: 0 12px 34px rgba(0, 0, 0, .3);
-  grid-template-columns: 1fr;
+  /* Dos columnas: en una sola, quince modos son ocho pantallas de scroll dentro
+     del panel para elegir uno. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
+
+/* Y sin el resumen: en la mitad del ancho no entra, y el nombre de cada modo ya
+   dice de que va. La explicacion sigue entera en Perfil, que es donde se los
+   compara; aca se viene a cambiar el que ya conoces. */
+.modos-barra .modo-btn small { display: none; }
+.modos-detalle {
+  grid-column: 1 / -1; margin: 2px 4px 6px;
+  font-size: 11.5px; line-height: 1.4; color: var(--dim);
+}
+.modos-barra .modo-btn { padding: 10px; align-items: center; }
+.modos-barra .modo-btn b { font-size: 13px; }
 
 /* La flecha del titulo, como la del modo en Perfil: sin ella el nombre no dice
    que se pueda tocar. */

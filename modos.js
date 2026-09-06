@@ -228,8 +228,20 @@ function modoDe(id) {
   return MODOS[id] || MODOS[MODO_DEFECTO];
 }
 
+/*
+ * Los dos que Nico usa, primeros.
+ *
+ * La lista sale en el orden en que estan escritos los modos, que es el orden en
+ * que se fueron agregando: mediterranea y keto quedaban en el medio y habia que
+ * buscarlos entre quince cada vez. Fijos y no por uso reciente a proposito: una
+ * lista que se reordena sola obliga a leerla entera todas las veces.
+ */
+const MODOS_ARRIBA = ['mediterranea', 'keto'];
+
 function listaModos() {
-  return Object.values(MODOS);
+  const todos = Object.values(MODOS);
+  const arriba = MODOS_ARRIBA.map(id => todos.find(m => m.id === id)).filter(Boolean);
+  return [...arriba, ...todos.filter(m => !MODOS_ARRIBA.includes(m.id))];
 }
 
 /* ---------------- el objetivo del día según el modo ---------------- */
