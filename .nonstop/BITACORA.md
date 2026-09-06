@@ -649,3 +649,11 @@ Nico sumo despues el veredicto honesto de si va bien.
 #214 — La hoja de sueño y animo ahora se cierra con las TRES cosas —cuanto dormiste, como dormiste, como estas— y no con dos: se iba antes de que Nico llegara al animo, que desde el ciclo 27 vive ahi adentro
 
 #215 — Y el agua dejo de ofrecer "Deshacer". Aparecia un cartel por cada vaso del dia para algo que se corrige tocando el mismo vaso, que es mas directo que el boton. El deshacer queda para lo que no se reescribe de un toque: comidas, peso, ejercicio. 1112 tests en verde
+
+#216 — Los ocho deportes, cuatro por fila: dos filas y se ven todos juntos sin scrollear. El chip paso de renglon a cuadrado —emoji arriba, nombre, y el rato con sus calorias abajo— porque en los 81 px que toca a cada uno no entra un renglon de texto. Ningun nombre se corta, "Funcional" incluido
+
+#217 — Los pasos: se fue el de 15.000 y los cinco que quedan entran en una fila. Estaban en dos renglones para cinco numeros de cuatro cifras
+
+#218 — Y el "Deshacer" tambien se fue del ejercicio, por lo mismo que del agua: cada rato cargado tiene su ✕ en el ticket de abajo, que ademas dice cual es cual. El boton general aparecia por cada ejercicio para hacer lo mismo con menos informacion
+
+#219 — Sobre la duda de Nico de si el tiempo de un deporte persiste: si. Verificado con recarga real —Futbol en 50′ sigue en 50′ y en 485 kcal despues de refrescar la pagina—, el ajuste vive en state.cfg.actividades y migrar() no lo toca. Si en el celular no persistia, era la version cacheada. 1112 tests en verde

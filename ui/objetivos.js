@@ -260,11 +260,11 @@ $('modalObjetivo').onclick = (e) => { if (e.target.id === 'modalObjetivo') cerra
  * Cuantos pasos se cargan de un toque.
  *
  * Es una lista fija y no una escala calculada sobre un objetivo, porque ya no
- * hay objetivo: los pasos se anotan, no se aprueban. Empieza en 4.000 —menos
- * que eso es lo que se camina yendo a la esquina— y llega a 15.000, que es mas
- * de lo que camina casi nadie; para cualquier otro numero esta el campo.
+ * hay objetivo: los pasos se anotan, no se aprueban. Cinco, los que entran en
+ * una fila: de 4.000 —menos que eso es lo que se camina yendo a la esquina— a
+ * 12.000. Para cualquier otro numero esta el campo de abajo.
  */
-const ESCALONES_PASOS = [4000, 6000, 8000, 10000, 12000, 15000];
+const ESCALONES_PASOS = [4000, 6000, 8000, 10000, 12000];
 
 function renderPasos() {
   const hechos = dia().pasos || 0;
@@ -396,7 +396,8 @@ function chipActividad(a, peso) {
 
   const b = document.createElement('button');
   b.className = 'chip act-uno';
-  b.innerHTML = `${a.emoji} ${a.nombre} <small>${minutos}′ · ${fmtNum(kcal)} kcal</small>`;
+  b.innerHTML = `<i aria-hidden="true">${a.emoji}</i><b>${a.nombre}</b>` +
+    `<small>${minutos}′ · ${fmtNum(kcal)}</small>`;
   b.setAttribute('aria-label', `${a.nombre}, ${minutos} minutos, ${fmtNum(kcal)} calorías. Mantenélo apretado para cambiar el tiempo.`);
 
   /* Mantener apretado abre el tiempo. El click de despues se ignora: al soltar
@@ -428,7 +429,9 @@ function chipActividad(a, peso) {
 const DEMORA_LARGO = 480;
 
 function cargarActividad(a, minutos, kcal) {
-  recordarCambio('el ejercicio');
+  /* Sin "Deshacer": cada rato cargado tiene su ✕ en el ticket de abajo, que
+     ademas dice cual es cual. El boton general aparecia por cada ejercicio para
+     hacer lo mismo con menos informacion. */
   anotarMovimiento({ nombre: a.nombre, emoji: a.emoji, minutos, kcal });
   renderHoy();
   toast(`${a.nombre} ${minutos}′: +${fmtNum(kcal)} kcal`);

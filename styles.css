@@ -2064,13 +2064,25 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* Un ejercicio con sus minutos al lado. El − y el + son lo que evita ir a
    Ajustes por el número que más cambia de un día a otro. */
-.act-todas { flex-wrap: wrap; gap: 6px; }
-/* Once ejercicios tienen que entrar sin volverse una lista larga: el chip se
-   arma en dos renglones —nombre arriba, kcal abajo— y entran de a tres en
-   375 px sin que ninguno corte su nombre. */
-.act-uno { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; line-height: 1.2; }
-.act-uno small { opacity: .75; font-weight: 600; }
+/* Cuatro por fila: los ocho deportes entran en dos filas y se ven todos juntos
+   sin scrollear. El chip pasa a ser un cuadrado —emoji arriba, nombre, y el
+   rato con sus calorias abajo— porque en 76 px no entra un renglon de texto. */
+.act-todas {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+}
+.act-uno {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  line-height: 1.15; padding: 8px 3px; text-align: center; min-width: 0;
+}
+.act-uno i { font-style: normal; font-size: 17px; }
+.act-uno b { font-size: 10.5px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-uno small { font-size: 9.5px; opacity: .75; font-weight: 600; }
 .chip-nuevo { border-style: dashed; color: var(--txt2); }
+
+/* Los cinco pasos, en una fila: envueltos ocupaban dos renglones para cinco
+   numeros de cuatro cifras. */
+#pasosEscalones { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+#pasosEscalones .chip { padding: 9px 2px; font-size: 12.5px; text-align: center; }
 
 /* Agregar un ejercicio no es elegir uno: era el cuarto chip de una fila de
    tres y se leia como uno mas de los de siempre. */
