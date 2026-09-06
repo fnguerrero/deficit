@@ -104,8 +104,9 @@ function objetivosDelDia() {
       id: 'pasos',
       emoji: '👟',
       nombre: 'Pasos',
-      listo: (d.pasos || 0) >= metaPasos(),
-      nivel: nivelPasos(d.pasos, metaPasos()),
+      /* Anotarlos alcanza: no hay objetivo contra el cual quedar corto. */
+      listo: (d.pasos || 0) > 0,
+      nivel: nivelPasos(d.pasos),
       valor: d.pasos ? fmtNum(d.pasos) : ''
     },
     {
@@ -266,73 +267,45 @@ $('modalObjetivo').onclick = (e) => { if (e.target.id === 'modalObjetivo') cerra
 /* ---------------- pasos ---------------- */
 
 /*
- * Los escalones, en vez de un teclado numerico.
+ * Cuantos pasos se cargan de un toque.
  *
- * El dato viene de mirar el reloj, no de contar: quien camino 9.847 lee "casi
- * 10 mil" y eso es lo que quiere anotar. Escribir cinco digitos para un dato
- * que se redondea igual es friccion pura, y la friccion es lo que hace que un
- * objetivo se abandone a la semana. El numero exacto sigue estando abajo para
- * el que lo tiene.
+ * Es una lista fija y no una escala calculada sobre un objetivo, porque ya no
+ * hay objetivo: los pasos se anotan, no se aprueban. Empieza en 4.000 —menos
+ * que eso es lo que se camina yendo a la esquina— y llega a 15.000, que es mas
+ * de lo que camina casi nadie; para cualquier otro numero esta el campo.
  */
-function escalonesPasos(meta) {
-  const paso = Math.max(1000, Math.round(meta / 5 / 500) * 500);
-  const lista = [];
-  /* Del segundo escalon a uno por ARRIBA de la meta. El primero —2.000 pasos
-     con la meta en 10.000— no lo toca nadie: es lo que se camina yendo a la
-     esquina, y quien abre esta pantalla ya camino algo. Y faltaba el de arriba:
-     los dias que te pasas de la meta no habia con que anotarlos sin escribir el
-     numero a mano. */
-  for (let n = paso * 2; n <= meta + paso; n += paso) lista.push(n);
-  /* Que la meta este siempre, aunque no caiga justo en un escalon: es el unico
-     que cierra el casillero. */
-  if (!lista.includes(meta)) lista.push(meta);
-  return [...new Set(lista)].sort((a, b) => a - b);
-}
+const ESCALONES_PASOS = [4000, 6000, 8000, 10000, 12000, 15000];
 
 function renderPasos() {
-  const meta = metaPasos();
   const hechos = dia().pasos || 0;
 
   const cont = $('pasosEscalones');
   if (!cont) return;
   cont.innerHTML = '';
 
-  for (const n of escalonesPasos(meta)) {
+  for (const n of ESCALONES_PASOS) {
     const b = document.createElement('button');
-    b.className = 'chip' + (hechos >= n ? ' activo' : '');
+    /* Se marca EL que cargaste, no todos los de abajo: no es una barra que se
+       llena hasta un objetivo, es cuanto caminaste. */
+    const puesto = hechos === n;
+    b.className = 'chip' + (puesto ? ' activo' : '');
     b.textContent = fmtNum(n);
-    b.setAttribute('aria-pressed', String(hechos >= n));
-    b.setAttribute('aria-label', `${fmtNum(n)} pasos, objetivo ${fmtNum(meta)}`);
-    /* Volver a tocar el escalon al que ya estabas lo baja al anterior: es la
-       unica forma de deshacer sin escribir el numero a mano. */
-    b.onclick = () => ponerPasos(hechos === n ? 0 : n);
+    b.setAttribute('aria-pressed', String(puesto));
+    b.setAttribute('aria-label', `${fmtNum(n)} pasos`);
+    /* Volver a tocar el que ya estaba lo borra: es la unica forma de deshacer
+       sin escribir el numero a mano. Y ahi no se cierra, que cerrarse despues
+       de borrar se lee como que se guardo algo. */
+    b.onclick = () => {
+      ponerPasos(puesto ? 0 : n);
+      if (!puesto) cerrarTrasCargar();
+    };
     cont.appendChild(b);
   }
 
   $('pasosHoy').value = hechos || '';
-  $('pasosInfo').textContent = hechos >= meta
-    ? `${fmtNum(hechos)} pasos — objetivo cumplido`
-    : (hechos
-      ? `${fmtNum(hechos)} de ${fmtNum(meta)}. Faltan ${fmtNum(meta - hechos)}.`
-      : 'Tocá hasta dónde llegaste, o escribí el número.');
-
-  pintarMetaPasos(meta);
-}
-
-function pintarMetaPasos(meta) {
-  if (!$('pasosMeta')) return;
-
-  $('pasosMeta').textContent = fmtNum(meta) + ' pasos';
-  $('pasosMenos').disabled = meta <= PASOS_MIN;
-  $('pasosMas').disabled = meta >= PASOS_MAX;
-
-  /* Los 10.000 no salen de ningun estudio: son de una campaña publicitaria
-     japonesa de 1965 para un podometro que se llamaba asi. Lo que si esta
-     medido es que el beneficio grande aparece bastante antes. Decirlo importa
-     porque un objetivo que no se alcanza nunca termina ignorado. */
-  $('pasosReco').textContent = meta > 8000
-    ? 'Los 10.000 son de una publicidad de 1965, no de un estudio. La mayor parte del beneficio está entre 6.000 y 8.000.'
-    : 'Entre 6.000 y 8.000 pasos está la mayor parte del beneficio medido.';
+  $('pasosInfo').textContent = hechos
+    ? `${fmtNum(hechos)} pasos anotados`
+    : 'Tocá cuántos caminaste, o escribí el número.';
 }
 
 function ponerPasos(n) {
@@ -343,17 +316,6 @@ function ponerPasos(n) {
   renderPasos();
   renderHoy();
 }
-
-function cambiarMetaPasos(delta) {
-  const meta = metaPasos() + delta;
-  state.cfg.pasosMeta = Math.min(PASOS_MAX, Math.max(PASOS_MIN, meta));
-  save();
-  renderPasos();
-  renderObjetivos();
-}
-
-$('pasosMenos').onclick = () => cambiarMetaPasos(-PASOS_SALTO);
-$('pasosMas').onclick = () => cambiarMetaPasos(PASOS_SALTO);
 
 $('btnPasos').onclick = () => {
   const v = Number($('pasosHoy').value);
@@ -584,6 +546,14 @@ const CALIDAD_SUENO = [
   { id: 'genial', emoji: '🌟', texto: 'De un tirón' }
 ];
 
+/* El sueño pide dos cosas —cuanto y como— y se guarda sola cada una: la
+   ventana se va cuando estan las dos, que ahi si termino. Cerrarla con la
+   primera obligaria a volver a abrirla para la segunda. */
+function cerrarSiElSuenoEstaCompleto() {
+  const s = dia().sueno;
+  if (s?.horas && s?.calidad) cerrarTrasCargar();
+}
+
 function renderSueno() {
   const d = dia();
   const s = d.sueno || {};
@@ -600,6 +570,7 @@ function renderSueno() {
       if (!dd.sueno.horas && !dd.sueno.calidad) dd.sueno = null;
       dd.act = Date.now();
       save(); renderSueno(); renderObjetivos(); renderMascota();
+      cerrarSiElSuenoEstaCompleto();
     };
     horas.appendChild(b);
   }
@@ -618,6 +589,7 @@ function renderSueno() {
       if (!dd.sueno.horas && !dd.sueno.calidad) dd.sueno = null;
       dd.act = Date.now();
       save(); renderSueno(); renderObjetivos(); renderMascota();
+      cerrarSiElSuenoEstaCompleto();
     };
     cal.appendChild(b);
   }

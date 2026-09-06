@@ -217,10 +217,14 @@ function nivelEjercicio(kcal) {
  * pocos pasos no es una falla, es un dia de escritorio. Y como el agua, mira
  * la hora: a las nueve de la mañana faltar 9.000 pasos no dice nada.
  */
-function nivelPasos(pasos, meta, hora = new Date().getHours()) {
+function nivelPasos(pasos, meta = 0, hora = new Date().getHours()) {
   const v = Number(pasos) || 0;
   const m = Number(meta) || 0;
-  if (!m || !v) return '';
+  if (!v) return '';
+  /* Sin meta —que es como quedaron los pasos: se anotan, no se aprueban—
+     cualquier numero cargado esta bien. La comparacion sigue existiendo para
+     los dias viejos, que se siguen leyendo con la regla que tenian. */
+  if (!m) return 'bien';
   if (v >= m) return 'bien';
   return hora >= 18 ? 'flojo' : '';
 }

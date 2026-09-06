@@ -105,7 +105,11 @@ $('recLienzo').addEventListener('pointerdown', (e) => {
   if (!esq && !dentro) return;
 
   arrastre = { esq: esq || null, desde: puntoDe(e) };
-  e.target.setPointerCapture?.(e.pointerId);
+  /* Capturar el puntero es lo que hace que el dedo pueda salirse del tirador
+     sin soltar el marco. Va envuelto porque si el puntero ya se levanto —o
+     nunca existio, como al simular el gesto— tira, y perder el arrastre por
+     eso seria peor que arrastrar sin captura. */
+  try { e.target.setPointerCapture?.(e.pointerId); } catch { /* sin captura */ }
   e.preventDefault();
 });
 
