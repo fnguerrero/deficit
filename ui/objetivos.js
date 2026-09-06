@@ -577,6 +577,19 @@ function renderSueno() {
   const d = dia();
   const s = d.sueno || {};
 
+  /* A que hora acostarte, contado hacia atras desde tu desayuno. La mas tarde
+     primero, que es la que se busca: la otra es la que se querria tener. */
+  const v = ventanaDeDormir(horaDelMomento('desayuno', state.dias));
+  const caja = $('suenoDormir');
+  if (caja) {
+    caja.hidden = !v;
+    if (v) {
+      caja.textContent = `Desayunás a las ${comoHora(horaDelMomento('desayuno', state.dias))}, ` +
+        `así que lo más tarde que te podés acostar es a las ${comoHora(v.tarde)} y dormís ${v.horas[0]} h. ` +
+        `Para dormir ${v.horas[1]}, a las ${comoHora(v.temprano)}.`;
+    }
+  }
+
   const horas = $('horasSueno');
   horas.innerHTML = '';
   for (const h of HORAS_SUENO) {

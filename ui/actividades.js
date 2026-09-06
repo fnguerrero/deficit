@@ -160,6 +160,20 @@ function renderEjercicio() {
     ? `Tu objetivo de hoy sube a ${fmtKcal(objetivoEfectivo(calcular()?.objetivo || 0, kcal))}.`
     : 'Lo que quemes se suma al objetivo del día.';
 
+  /* Contra que leer el numero del dia: cuanto pide la OMS, traducido a las
+     calorias de ESTA persona. Sin peso cargado no se puede, y ahi no se dice
+     nada en vez de inventar un numero de folleto. */
+  const ref = referenciaEjercicio(state.perfil.peso);
+  const cajaRef = $('ejercicioReferencia');
+  if (cajaRef) {
+    cajaRef.hidden = !ref;
+    if (ref) {
+      cajaRef.textContent = `La OMS pide ${ref.minutos[0]} a ${ref.minutos[1]} minutos de ejercicio ` +
+        `por semana: para tu peso son ${fmtNum(ref.semana[0])} a ${fmtNum(ref.semana[1])} kcal semanales, ` +
+        `unas ${fmtNum(ref.dia[0])} a ${fmtNum(ref.dia[1])} por día.`;
+    }
+  }
+
   const caja = $('ajusteTiempo');
   if (caja) {
     caja.hidden = !ajustando;

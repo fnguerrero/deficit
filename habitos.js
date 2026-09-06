@@ -294,3 +294,43 @@ function restoSinDesglosar(d) {
   return Math.max(0, (Number(d?.ejercicio) || 0) - kcalDeMovimientos(d));
 }
 
+
+/* ---------------- a que hora acostarse ---------------- */
+
+/*
+ * La hora de dormir no es una opinion: se cuenta hacia atras desde la hora en
+ * que te levantas.
+ *
+ * Y esa hora sale del desayuno, que es lo unico que la app sabe de tu manana:
+ * media hora entre abrir los ojos y sentarse a comer. Despues, las horas que
+ * quieras dormir mas el rato que se tarda en dormirse.
+ *
+ * `HORAS_SUENO_OK` son las mismas que usa nivelSueno() para pintar el
+ * casillero: si el rango de aca dijera otra cosa, la app estaria recomendando
+ * algo que despues marca en ambar.
+ */
+const HORAS_SUENO_OK = [7, 9];
+const MINUTOS_HASTA_DESAYUNAR = 30;
+const MINUTOS_EN_DORMIRSE = 15;
+
+function horaDeDormir(minutosDesayuno, horas) {
+  /* `null` aparte: Number(null) es 0, o sea medianoche, y sin esto un momento
+     sin hora —el snack— recomendaba acostarse a las 16:15. */
+  if (minutosDesayuno == null) return null;
+
+  const d = Number(minutosDesayuno);
+  const h = Number(horas);
+  if (!(d >= 0) || !(h > 0)) return null;
+
+  const levantarse = d - MINUTOS_HASTA_DESAYUNAR;
+  const acostarse = levantarse - h * 60 - MINUTOS_EN_DORMIRSE;
+  // el dia da la vuelta: acostarse a las 2:15 son 26:15 del dia anterior
+  return ((acostarse % 1440) + 1440) % 1440;
+}
+
+/** El rango: la mas temprano (9 h) y la mas tarde (7 h) que podés acostarte. */
+function ventanaDeDormir(minutosDesayuno) {
+  const tarde = horaDeDormir(minutosDesayuno, HORAS_SUENO_OK[0]);
+  const temprano = horaDeDormir(minutosDesayuno, HORAS_SUENO_OK[1]);
+  return (tarde == null || temprano == null) ? null : { temprano, tarde, horas: HORAS_SUENO_OK };
+}
