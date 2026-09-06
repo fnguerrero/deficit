@@ -657,3 +657,5 @@ Nico sumo despues el veredicto honesto de si va bien.
 #218 — Y el "Deshacer" tambien se fue del ejercicio, por lo mismo que del agua: cada rato cargado tiene su ✕ en el ticket de abajo, que ademas dice cual es cual. El boton general aparecia por cada ejercicio para hacer lo mismo con menos informacion
 
 #219 — Sobre la duda de Nico de si el tiempo de un deporte persiste: si. Verificado con recarga real —Futbol en 50′ sigue en 50′ y en 485 kcal despues de refrescar la pagina—, el ajuste vive en state.cfg.actividades y migrar() no lo toca. Si en el celular no persistia, era la version cacheada. 1112 tests en verde
+
+#220 — Los casilleros, en el orden que pidio Nico: pasos, ejercicio, agua, sueno. Es el orden en que pasan las cosas del dia —los pasos y el ejercicio se cargan mientras el dia corre, el agua se va llenando y el sueno se anota en las puntas— y no el orden en que se fueron programando, que es el que tenian. 1112 tests en verde
