@@ -4823,14 +4823,14 @@ test('con menos de cinco comidas no se inventa un horario', () => {
     '2026-09-02': { comidas: [DIA_HORA(2, 'cena', 23)] }
   };
   esperar(horasTipicas(dias).cena, undefined, 'dos cenas no hacen una costumbre');
-  esperar(horaDelMomento('cena', dias), 21 * 60 + 30, 'y ahi vale la hora de referencia');
+  esperar(horaDelMomento('cena', dias), 22 * 60 + 30, 'y ahi vale la hora de referencia');
 });
 
 test('la hora de referencia de cada momento', () => {
-  esperar(horaDelMomento('desayuno', {}), 9 * 60);
-  esperar(horaDelMomento('almuerzo', {}), 13 * 60 + 30);
+  esperar(horaDelMomento('desayuno', {}), 10 * 60);
+  esperar(horaDelMomento('almuerzo', {}), 14 * 60);
   esperar(horaDelMomento('merienda', {}), 17 * 60 + 30);
-  esperar(horaDelMomento('cena', {}), 21 * 60 + 30);
+  esperar(horaDelMomento('cena', {}), 22 * 60 + 30);
   esperar(horaDelMomento('snack', {}), null, 'el snack cae cuando cae');
 });
 
@@ -4851,7 +4851,7 @@ test('la tabla de horas es una sola para toda la app', () => {
   /* horaDeMomento() arma el timestamp de una comida cargada a mano y sale de la
      misma tabla que la sugerencia que se ve en el dia: dos tablas se habrian
      ido separando. */
-  esperar(horaDeMomento('almuerzo'), 13);
-  esperar(horaDeMomento('cena'), 21);
+  esperar(horaDeMomento('almuerzo'), 14);
+  esperar(horaDeMomento('cena'), 22);
   esperar(horaDeMomento('snack'), 23, 'sin hora propia, la ultima del dia');
 });

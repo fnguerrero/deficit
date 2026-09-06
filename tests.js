@@ -1670,8 +1670,8 @@ test('comidasCopiadas mueve la fecha pero respeta el momento', () => {
   const d0 = new Date(copias[0].ts), d1 = new Date(copias[1].ts);
   esperar(hoyISO(d0), '2026-08-20');
   esperar(hoyISO(d1), '2026-08-20');
-  esperar(d0.getHours(), 9, 'el desayuno sigue siendo a la mañana');
-  esperar(d1.getHours(), 13, 'y el almuerzo al mediodía');
+  esperar(d0.getHours(), 10, 'el desayuno sigue siendo a la mañana');
+  esperar(d1.getHours(), 14, 'y el almuerzo al mediodía');
   esperar(copias[0].momento, 'desayuno');
 });
 
@@ -2080,8 +2080,8 @@ test('horaDeMomento da una hora representativa', () => {
   /* Sale de HORA_SUGERIDA, la misma tabla que muestra el horario de cada
      momento en el dia: eran dos tablas distintas y el desayuno estaba a las 8
      en una y a las 9 en la otra. */
-  esperar(horaDeMomento('desayuno'), 9);
-  esperar(horaDeMomento('cena'), 21);
+  esperar(horaDeMomento('desayuno'), 10);
+  esperar(horaDeMomento('cena'), 22);
   esperar(horaDeMomento('lo que sea'), 23, 'lo que no es un momento, al final del dia');
 });
 
@@ -2095,7 +2095,7 @@ test('tsParaFecha fecha una comida de un día pasado en su momento', () => {
   const ts = tsParaFecha('2026-08-18', 'almuerzo', ahora);   // ...pero era el almuerzo del 18
   const d = new Date(ts);
   esperar(d.getDate(), 18);
-  esperar(d.getHours(), 13, 'tiene que quedar a la hora del almuerzo, no a las 23');
+  esperar(d.getHours(), 14, 'tiene que quedar a la hora del almuerzo, no a las 23');
 });
 
 test('una comida cargada a destiempo queda en el grupo correcto', () => {
