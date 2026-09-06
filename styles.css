@@ -820,13 +820,15 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .objetivos { display: flex; gap: 8px; margin-bottom: 12px; }
 .objetivos > * { flex: 1 1 0; min-width: 0; }
 .objetivo b, .objetivo small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Con cuatro casilleros en vez de siete sobra ancho, y lo que antes tenia que
+   entrar en 48 px ahora tiene 87: el texto crece hasta donde se lee comodo. */
 .objetivo {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 10px 2px; border-radius: 14px; border: 1px dashed var(--line);
-  background: transparent; color: var(--txt2); cursor: pointer; font-size: 17px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 12px 4px; border-radius: 14px; border: 1px dashed var(--line);
+  background: transparent; color: var(--txt2); cursor: pointer; font-size: 20px;
 }
-.objetivo b { font-size: 11px; font-weight: 600; }
-.objetivo small { font-size: 10px; color: var(--dim); }
+.objetivo b { font-size: 12.5px; font-weight: 600; }
+.objetivo small { font-size: 11.5px; color: var(--dim); }
 .objetivo.listo {
   border-style: solid; border-color: var(--acc);
   background: color-mix(in srgb, var(--acc) 12%, transparent); color: var(--txt);
@@ -932,9 +934,12 @@ textarea:focus { outline: none; border-color: var(--acc2); }
      siete conserven su NOMBRE, que es lo que los hace distinguibles de un
      vistazo. Sin nombre serian siete emojis y habria que aprenderselos. */
   #tab-hoy .objetivos { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
-  #tab-hoy .objetivo { padding: 6px 1px; gap: 1px; font-size: 14px; }
-  #tab-hoy .objetivo b { font-size: 8.5px; letter-spacing: -.3px; }
-  #tab-hoy .objetivo small { font-size: 7.5px; }
+  /* La pantalla de Hoy tiene que entrar sin scroll, asi que aca todo se
+     achicaba. Con cuatro casilleros el alto que se gano se reparte en el
+     texto: sigue siendo mas chico que en grande, pero se lee. */
+  #tab-hoy .objetivo { padding: 9px 2px; gap: 2px; font-size: 18px; }
+  #tab-hoy .objetivo b { font-size: 11px; letter-spacing: -.2px; }
+  #tab-hoy .objetivo small { font-size: 10px; }
   /* La lista de comidas NO tiene scroll propio.
      Lo tuvo, y era peor: con seis comidas cargadas la caja quedaba en 52 px y
      se veia una fila y media, mientras el resto de la pantalla estaba lleno de
