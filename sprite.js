@@ -158,7 +158,9 @@ function htmlPersonaje(animo = 'neutral', alto = 96, cuerpo = null, fase = null)
   const med = medidasDe(
     cuerpo && cuerpo.efectiva != null ? cuerpo.efectiva : null,
     cuerpo?.musculatura ?? 0,
-    f ? (f.musculo || 0) : 0
+    f ? (f.musculo || 0) : 0,
+    0, 0, null,
+    cuerpo?.figura || 'm'
   );
 
   /* El aura se dibuja en el sistema de siempre y se estira al alto del sprite:

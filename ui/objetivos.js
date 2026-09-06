@@ -334,6 +334,8 @@ function renderCaritas() {
       save();
       renderCaritas();
       renderObjetivos();
+      renderMascota();
+      cerrarSiElSuenoEstaCompleto();
     };
     cont.appendChild(b);
   }
@@ -557,12 +559,12 @@ const CALIDAD_SUENO = [
   { id: 'genial', emoji: '🌟', texto: 'De un tirón' }
 ];
 
-/* El sueño pide dos cosas —cuanto y como— y se guarda sola cada una: la
-   ventana se va cuando estan las dos, que ahi si termino. Cerrarla con la
-   primera obligaria a volver a abrirla para la segunda. */
+/* La hoja pide tres cosas —cuanto dormiste, como dormiste y como estas— y cada
+   una se guarda sola al tocarla: la ventana se va cuando estan las tres, que
+   ahi si termino. Cerrarla antes obligaria a volver a abrirla para el resto. */
 function cerrarSiElSuenoEstaCompleto() {
-  const s = dia().sueno;
-  if (s?.horas && s?.calidad) cerrarTrasCargar();
+  const d = dia();
+  if (d.sueno?.horas && d.sueno?.calidad && d.animo) cerrarTrasCargar();
 }
 
 function renderSueno() {

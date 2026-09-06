@@ -8,6 +8,21 @@
  * grasa es VOLUMEN que cuelga y el musculo es SEPARACION entre piezas.
  */
 
+/* La figura femenina, como FACTORES sobre la de siempre: hombros mas angostos,
+   cintura mas marcada, cadera mas ancha. Con dos siluetas escritas aparte, la
+   de menos uso se quedaria sin los arreglos de la otra. */
+const FIGURA_F = {
+  hombro: 0.93, pecho: 1.01, cintura: 0.93, cadera: 1.12,
+  cuello: 0.92, brazo: 0.95, pierna: 0.99, caraRx: 0.97
+};
+
+function proporciones(med, figura) {
+  if (figura !== 'f') return med;
+  const salida = { ...med };
+  for (const k in FIGURA_F) salida[k] = med[k] * FIGURA_F[k];
+  return salida;
+}
+
 /** Un miembro como trazo: contorno, relleno y una sombra corrida. */
 function miembro(d, ancho, col, sombra) {
   return `

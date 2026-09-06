@@ -373,6 +373,7 @@ function renderAjustes() {
   renderRecordatorios();
   renderAvisoDormir();
   renderTema();
+  renderFigura();
   renderPrecision();
   renderHistorialAnalisis();
   $('apiKey').value = state.cfg.apiKey || '';
@@ -510,6 +511,42 @@ function renderTema() {
   }
 
   $('temaDetalle').textContent = (TEMAS[actual] || TEMAS.auto).detalle;
+}
+
+/* Con que figura se dibuja el muñeco. Tres opciones y no dos: "como el perfil"
+   es la de siempre y tiene que poder volver a elegirse. */
+const FIGURAS = [
+  { id: null, nombre: 'Como el perfil' },
+  { id: 'm', nombre: '👨 Masculino' },
+  { id: 'f', nombre: '👩 Femenino' }
+];
+
+function renderFigura() {
+  const cont = $('selFigura');
+  if (!cont) return;
+
+  const actual = state.cfg.figura || null;
+  cont.innerHTML = '';
+
+  for (const f of FIGURAS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = f.nombre;
+    b.className = actual === f.id ? 'sel' : '';
+    b.setAttribute('aria-pressed', String(actual === f.id));
+    b.onclick = () => {
+      state.cfg.figura = f.id;
+      save();
+      renderFigura();
+      renderHoy();
+    };
+    cont.appendChild(b);
+  }
+
+  const usada = figuraDe(state.perfil, state.cfg);
+  $('figuraDetalle').textContent = actual
+    ? 'Elegida a mano.'
+    : `Sigue al sexo de tu perfil: ahora, ${usada === 'f' ? 'femenino' : 'masculino'}.`;
 }
 
 

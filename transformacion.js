@@ -46,7 +46,7 @@ function lineaDelPelo(cy, ry) {
  * va en la capa de atras —donde anatomicamente esta— y el resto adelante.
  * 'todo' es lo que usa el personaje dibujado entero, que no tiene capas.
  */
-function pelo(cy, rx, ry, fase, parte = 'todo') {
+function pelo(cy, rx, ry, fase, parte = 'todo', figura = 'm') {
   const color = fase && fase.pelo ? fase.color : PALETA.pelo;
   const sombra = fase && fase.pelo ? mezclar(color, PALETA.linea, 0.3) : PALETA.peloSombra;
   const brillo = fase && fase.pelo ? mezclar(color, '#ffffff', 0.45) : PALETA.peloBrillo;
@@ -177,7 +177,28 @@ function pelo(cy, rx, ry, fase, parte = 'todo') {
    * siguiente se come la mitad de adentro), y encima las mismas formas
    * rellenas y sin contorno. Sobrevive solo el borde de afuera.
    */
-  const formas = [formaCalota, ...formaMechon];
+  /*
+   * La melena de la figura femenina: dos cortinas que caen desde las sienes.
+   *
+   * Es lo que hace que el personaje se lea de un vistazo —las proporciones se
+   * ven cuando lo mirás, el pelo se ve de lejos— y va con las mismas dos
+   * pasadas que el resto, para que no le quede un contorno cruzando la cara.
+   * El borde de adentro sigue el ancho del craneo: metido, taparia la mejilla.
+   */
+  /* El borde de adentro va pegado al craneo y la cortina se abre HACIA AFUERA:
+     con el borde interior metido hacia el centro, el pelo caia sobre las
+     mejillas y le tapaba media cara. */
+  const cae = cy + ry * 1.5;
+  const melena = figura !== 'f' ? [] : [
+    `M${(izq + rx * 0.06).toFixed(1)} ${(sien - 3).toFixed(1)}
+      C${(izq - rx * 0.5).toFixed(1)} ${(cy + ry * 0.1).toFixed(1)} ${(izq - rx * 0.44).toFixed(1)} ${(cae - ry * 0.35).toFixed(1)} ${(izq - rx * 0.06).toFixed(1)} ${cae.toFixed(1)}
+      C${(izq + rx * 0.26).toFixed(1)} ${(cae - ry * 0.55).toFixed(1)} ${(izq + rx * 0.12).toFixed(1)} ${(cy + ry * 0.2).toFixed(1)} ${(izq + rx * 0.06).toFixed(1)} ${(sien - 1).toFixed(1)} Z`,
+    `M${(der - rx * 0.06).toFixed(1)} ${(sien - 3).toFixed(1)}
+      C${(der + rx * 0.5).toFixed(1)} ${(cy + ry * 0.1).toFixed(1)} ${(der + rx * 0.44).toFixed(1)} ${(cae - ry * 0.35).toFixed(1)} ${(der + rx * 0.06).toFixed(1)} ${cae.toFixed(1)}
+      C${(der - rx * 0.26).toFixed(1)} ${(cae - ry * 0.55).toFixed(1)} ${(der - rx * 0.12).toFixed(1)} ${(cy + ry * 0.2).toFixed(1)} ${(der - rx * 0.06).toFixed(1)} ${(sien - 1).toFixed(1)} Z`
+  ];
+
+  const formas = [...melena, formaCalota, ...formaMechon];
   const contorno = formas.map(d => `<path d="${d}" fill="${color}"
       stroke="${PALETA.linea}" stroke-width="${LINEA * 2}" stroke-linejoin="round"/>`).join('');
   const relleno = formas.map(d => `<path d="${d}" fill="${color}"/>`).join('');

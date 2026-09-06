@@ -177,7 +177,15 @@ function imcParaElDibujo(imc, musculatura) {
  * app pide el peso. Inventar una contextura sería mostrarle a Nico un cuerpo
  * que no es el suyo.
  */
-function cuerpoDe(perfil, dias, hasta = hoyISO()) {
+/* La figura del muñeco: la del sexo del perfil, salvo que se haya elegido otra
+   en Ajustes —ese sexo esta cargado por la formula del metabolismo. */
+function figuraDe(perfil, cfg) {
+  const elegida = cfg?.figura;
+  if (elegida === 'm' || elegida === 'f') return elegida;
+  return perfil?.sexo === 'f' ? 'f' : 'm';
+}
+
+function cuerpoDe(perfil, dias, hasta = hoyISO(), cfg = null) {
   const peso = ultimoPesoConocido(perfil, dias, hasta);
   const imc = imcDe(peso, perfil?.altura);
   const entrenados = diasEntrenados(dias, hasta);
@@ -200,6 +208,7 @@ function cuerpoDe(perfil, dias, hasta = hoyISO()) {
     : contexturaDe(+imcParaElDibujo(imc, musculatura).toFixed(1));
 
   return {
+    figura: figuraDe(perfil, cfg),
     peso, imc, entrenados, musculatura, contextura,
     demacrado: demacradoDe(imc),
     /* La que usa el dibujo: la del IMC ya corregida por lo que entrenaste. */
@@ -295,8 +304,8 @@ function descansoDe(dia) {
 /**
  * El cuerpo que se dibuja hoy: lo del peso y el ejercicio, más el resto del día.
  */
-function cuerpoDelDia(perfil, dias, hasta = hoyISO(), { meta = 8, hora = null } = {}) {
-  const base = cuerpoDe(perfil, dias, hasta);
+function cuerpoDelDia(perfil, dias, hasta = hoyISO(), { meta = 8, hora = null, cfg = null } = {}) {
+  const base = cuerpoDe(perfil, dias, hasta, cfg);
   const d = dias?.[hasta] || null;
   const h = hora == null ? new Date().getHours() : hora;
 

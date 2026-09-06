@@ -52,6 +52,9 @@ const DEFAULT_STATE = {
     vasosMeta: null,
     /* Pasos por día. En null usa los 10.000 de siempre: ver pasosObjetivo(). */
     pasosMeta: null,
+    /* Con que figura se dibuja el muñeco. En null sigue al sexo del perfil:
+       ver figuraDe() en cuerpo.js. */
+    figura: null,
     topeGasto: TOPE_DEFECTO,
     avisoKeyOculto: false, onboardingHecho: false
   }

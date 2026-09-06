@@ -145,3 +145,9 @@ encontrar la tarjeta y tocar la lupa.
 - [x] Mantener apretado abre el tiempo de ESE deporte, y el elegido queda guardado · verif: long press en Futbol abre "¿cuanto te dura?", elegir 90 carga 866 kcal y el chip queda en 90' · archivos: ui/objetivos.js, ui/actividades.js, index.html, styles.css
 - [x] habitos.js y ui/hoy.js pasados de limite: salio deportes.js · verif: 297 y 700 lineas, guardas OK con 63 scripts
 
+## Ciclo 30 — tres pedidos sueltos (06/09/2026)
+
+- [x] El muñeco puede ser masculino o femenino · verif: 4 tests de figuraDe y de las proporciones, y los dos dibujos comparados a 180 px · archivos: cuerpo.js, figura.js, personaje.js, transformacion.js, cara.js, sprite.js, ui/ajustes.js, ui/tarjeta.js, core.js, index.html, tests2.js
+- [x] Sueño y ánimo: la hoja se cierra con las TRES cosas cargadas · verif: horas y calidad la dejan abierta, la carita la cierra · archivos: ui/objetivos.js
+- [x] El agua ya no ofrece "Deshacer": se corrige tocando el vaso · archivos: ui/hoy.js
+
