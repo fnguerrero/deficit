@@ -324,6 +324,14 @@ function renderCaritas() {
   const d = dia();
   cont.innerHTML = '';
 
+  /* Igual que en el sueño: la carita elegida dice su nombre debajo. */
+  const nombre = $('animoNombre');
+  if (nombre) {
+    const elegida = CARITAS.find(c => c.id === d.animo);
+    nombre.textContent = elegida ? elegida.texto : '';
+    nombre.hidden = !elegida;
+  }
+
   for (const c of CARITAS) {
     const b = document.createElement('button');
     b.className = 'carita' + (d.animo === c.id ? ' elegida' : '');
@@ -557,12 +565,21 @@ $('btnAyuno').onclick = () => {
 
 const HORAS_SUENO = [4, 5, 6, 7, 8, 9, 10];
 
+/*
+ * Como dormiste, en cinco. El bostezo reemplazo a la cara con la burbuja de
+ * sueño: era casi igual a la de "Bien" —las dos son caras durmiendo— y no se
+ * entendia que queria decir. Bostezar se lee sin explicacion: dormiste, pero
+ * seguis cansado.
+ *
+ * Y el nombre de la que elegis se escribe debajo de la fila: en el celular no
+ * hay donde ver el `title`, asi que cinco caras parecidas eran una adivinanza.
+ */
 const CALIDAD_SUENO = [
-  { id: 'mal', emoji: '😵', texto: 'Pésimo' },
-  { id: 'flojo', emoji: '😪', texto: 'Cortado' },
-  { id: 'normal', emoji: '😐', texto: 'Normal' },
-  { id: 'bien', emoji: '😴', texto: 'Bien' },
-  { id: 'genial', emoji: '🌟', texto: 'De un tirón' }
+  { id: 'mal', emoji: '😵', texto: 'Pésimo — casi no pegué un ojo' },
+  { id: 'flojo', emoji: '🥱', texto: 'Cortado — me desperté varias veces' },
+  { id: 'normal', emoji: '😐', texto: 'Normal — ni bien ni mal' },
+  { id: 'bien', emoji: '😴', texto: 'Bien — descansé' },
+  { id: 'genial', emoji: '🌟', texto: 'De un tirón — me levanté entero' }
 ];
 
 /* La hoja pide tres cosas —cuanto dormiste, como dormiste y como estas— y cada
@@ -592,10 +609,18 @@ function renderSueno() {
 
   const horas = $('horasSueno');
   horas.innerHTML = '';
+
+  /* Los dos extremos son "o menos" y "o mas": el que durmio tres horas no tiene
+     donde marcarlas, y "4 h" a secas le pedia mentir hacia arriba. El de arriba
+     ya decia "10+"; al de abajo le faltaba su mitad. */
+  const menos = HORAS_SUENO[0];
+  const mas = HORAS_SUENO[HORAS_SUENO.length - 1];
+
   for (const h of HORAS_SUENO) {
     const b = document.createElement('button');
     b.className = 'chip' + (s.horas === h ? ' activo' : '');
-    b.textContent = h === 10 ? '10+ h' : h + ' h';
+    b.textContent = h === mas ? `${h}+ h` : (h === menos ? `${h}− h` : `${h} h`);
+    b.setAttribute('aria-label', h === mas ? `${h} horas o más` : (h === menos ? `${h} horas o menos` : `${h} horas`));
     b.onclick = () => {
       const dd = dia();
       dd.sueno = { ...(dd.sueno || {}), horas: dd.sueno?.horas === h ? null : h };
@@ -609,6 +634,12 @@ function renderSueno() {
 
   const cal = $('calidadSueno');
   cal.innerHTML = '';
+  const nombreCal = $('calidadNombre');
+  if (nombreCal) {
+    const elegida = CALIDAD_SUENO.find(c => c.id === s.calidad);
+    nombreCal.textContent = elegida ? elegida.texto : '';
+    nombreCal.hidden = !elegida;
+  }
   for (const c of CALIDAD_SUENO) {
     const b = document.createElement('button');
     b.className = 'carita' + (s.calidad === c.id ? ' elegida' : '');

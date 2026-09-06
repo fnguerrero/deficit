@@ -689,3 +689,7 @@ Nico sumo despues el veredicto honesto de si va bien.
 #233 — La hora de cada momento, legible y distinguible. Estaba en 9 px y con el mismo aspecto la real y la sugerida, asi que "19:41" y "16:37" se leian igual sin que nada dijera que uno era a que hora comio y el otro a que hora le toca. Ahora la real va en 10,5 px y en el color del texto; la sugerida, mas chica, gris y con "~" adelante. Y el emoji arranca 14 px mas abajo: pegado a la hora los dos se leian como una sola cosa
 
 #234 — La merienda dejo de ser una medialuna: ahora es una infusion. Era la unica de las cinco que proponia algo concreto, y encima lo que menos entra en cualquiera de los dieciseis modos
+
+#235 — El primer chip de horas de sueño dice "4− h" y no "4 h". Es el extremo de abajo y le faltaba su mitad: el de arriba ya decia "10+", pero el que durmio tres horas no tenia donde marcarlas y "4 h" a secas le pedia mentir hacia arriba. Sale de los extremos del array, no del numero escrito a mano
+
+#236 — Y las caritas de "¿Como dormiste?": la segunda era la cara con la burbuja de sueño, casi igual a la de "Bien" —las dos son caras durmiendo— y Nico no entendia que decia. Ahora es un bostezo, que se lee sin explicacion: dormiste, pero seguis cansado. Y las dos filas de caritas —sueño y animo— escriben debajo el nombre de la que elegiste: en el celular no hay hover, asi que cinco caras parecidas sin texto eran una adivinanza. El del sueño ademas dice que significa cada una: "Cortado — me desperte varias veces". 1126 tests en verde
