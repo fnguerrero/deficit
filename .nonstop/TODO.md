@@ -133,3 +133,8 @@ encontrar la tarjeta y tocar la lupa.
 - [x] El casillero de Comidas se va: abajo estan la barra de momentos, el color por momento y el anillo · verif: la grilla con cuatro, y las comidas siguen contando para el dia perfecto
 - [x] Las rachas pasan a cinco, con corte (DESDE_CINCO = 2026-09-06) · verif: 2 tests del corte, rachasDe da 5 hoy y 7 antes de ayer, y el XP de un dia viejo no se movio
 
+## Ciclo 28 — el vaso que volvia (reportado por Nico, 06/09/2026)
+
+- [x] Los contadores del dia (agua, ejercicio, pasos) se fusionaban por el mas alto y no habia forma de corregir hacia abajo · verif: 2 tests nuevos con el caso exacto y el del cero que no pisa · archivos: sync.js, fusion-dia.js (nuevo), tests2.js
+- [x] sync.js se paso de su limite con el arreglo: salio fusion-dia.js · verif: 576 lineas, guardas OK con 62 scripts
+
