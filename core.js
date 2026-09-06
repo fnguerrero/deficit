@@ -943,10 +943,13 @@ function msHastaMedianoche(ahora = new Date(), margenMs = 2000) {
 
 /* ---------------- recordatorios ---------------- */
 
+/* A la hora en que se come, mas un rato: el aviso sirve si llega cuando ya
+   deberias haber cargado. Salen de HORA_SUGERIDA —ver platos.js— para que no
+   haya dos horarios distintos para la misma comida. */
 const RECORDATORIOS_DEFAULT = [
-  { momento: 'desayuno', hora: '09:00' },
-  { momento: 'almuerzo', hora: '13:30' },
-  { momento: 'cena', hora: '21:30' }
+  { momento: 'desayuno', hora: '10:30' },
+  { momento: 'almuerzo', hora: '14:30' },
+  { momento: 'cena', hora: '23:00' }
 ];
 
 /* La hora de dormir no es un momento de comida, pero es el mismo mecanismo:

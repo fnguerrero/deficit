@@ -78,15 +78,15 @@ function horasTipicas(dias, minimo = MINIMO_PARA_APRENDER) {
 
 /*
  * La hora de referencia de cada momento, para el que todavia no tiene las
- * suyas. No sale de ninguna guia: es a que hora se come en Argentina, que es lo
- * unico que importa para que la sugerencia no se sienta ajena. El snack no
- * tiene: justamente es el que cae cuando cae.
+ * suyas. No sale de ninguna guia: son los horarios que Nico dijo que hace
+ * (06/09/2026), que es lo unico que importa para que la sugerencia no se sienta
+ * ajena. El snack no tiene: justamente es el que cae cuando cae.
  */
 const HORA_SUGERIDA = {
-  desayuno: 9 * 60,
-  almuerzo: 13 * 60 + 30,
+  desayuno: 10 * 60,
+  almuerzo: 14 * 60,
   merienda: 17 * 60 + 30,
-  cena: 21 * 60 + 30,
+  cena: 22 * 60 + 30,
   snack: null
 };
 
