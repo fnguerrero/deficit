@@ -606,6 +606,13 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 .lista .thumb { cursor: zoom-in; }
 
+/* La tira del peso es la unica forma de pesarse desde Hoy, asi que tiene que
+   verse tocable: la balanza a la derecha es esa señal. Con un "+" mientras hoy
+   no te pesaste, sola cuando ya esta. */
+.peso-tira-cargar { flex: 0 0 auto; font-size: 15px; opacity: .55; letter-spacing: -1px; }
+.peso-tira.sin-pesar .peso-tira-cargar { opacity: 1; }
+.peso-tira-delta.pesarte { color: var(--acc); font-weight: 650; }
+
 /* ---------- el recorte de la foto ---------- */
 
 /* El lienzo mide exactamente lo que la imagen mostrada: el marco es hijo suyo y
@@ -835,15 +842,6 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 .objetivo.listo b { color: var(--acc); }
 
-/* El peso no es un habito del dia: se carga desde el mismo lugar que los otros
-   pero no se pinta como uno cumplido, porque no cuenta para el dia perfecto ni
-   para ninguna racha. Cargado, se ve firme; sin cargar, igual que el resto. */
-.objetivo.opcional.listo {
-  border-style: solid; border-color: var(--line);
-  background: var(--card2); color: var(--txt);
-}
-.objetivo.opcional.listo b { color: var(--txt2); }
-.objetivo.opcional.listo small { color: var(--txt); font-weight: 600; }
 
 /* vasos de agua: se toca al que llegaste */
 .vasos { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 6px 0 10px; }

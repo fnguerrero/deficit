@@ -63,27 +63,6 @@ function objetivosDelDia() {
      * momento, con las mismas caritas.
      */
     {
-      /*
-       * El peso, primero y aparte.
-       *
-       * Es el unico que no es un habito del dia: no cuenta para el dia perfecto
-       * ni para ninguna racha —entre dos dias hay hasta un kilo de agua y sal, y
-       * exigirlo todos los dias empuja a mirar ruido— pero tiene que haber un
-       * lugar obvio para cargarlo en la pantalla que se abre quince veces al
-       * dia. La tira de arriba muestra la tendencia; esto es donde te pesas.
-       */
-      id: 'peso',
-      emoji: '⚖️',
-      nombre: 'Peso',
-      opcional: true,
-      listo: typeof d.peso === 'number' && d.peso > 0,
-      /* Sin color: si sube o baja lo dice la tira de arriba, que ademas mira la
-         tendencia y no el numero de hoy, que entre dos dias es medio kilo de
-         agua. Dos semaforos para el mismo dato, uno mirando el ruido. */
-      nivel: '',
-      valor: d.peso ? fmtNum(d.peso, 1) + ' kg' : ''
-    },
-    {
       id: 'agua',
       emoji: '💧',
       nombre: 'Agua',
