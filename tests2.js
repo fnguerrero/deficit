@@ -4855,3 +4855,63 @@ test('la tabla de horas es una sola para toda la app', () => {
   esperar(horaDeMomento('cena'), 22);
   esperar(horaDeMomento('snack'), 23, 'sin hora propia, la ultima del dia');
 });
+
+/* ---------------- la referencia de ejercicio ---------------- */
+
+test('la referencia de ejercicio sale del peso de cada uno', () => {
+  /* 150 min semanales a MET 5 y 83 kg: 5 x 83 x 2,5 h = 1.038 kcal. */
+  const r = referenciaEjercicio(83);
+  esperar(r.semana[0], 1038);
+  esperar(r.semana[1], 2075, 'y el doble con los 300 minutos');
+  esperar(r.dia[0], 148, 'repartido por dia');
+  esperar(r.minutos[0], 150);
+});
+
+test('mas peso, mas calorias para los mismos minutos', () => {
+  esperarQue(referenciaEjercicio(110).semana[0] > referenciaEjercicio(70).semana[0]);
+});
+
+test('sin peso cargado no hay referencia que dar', () => {
+  esperar(referenciaEjercicio(0), null);
+  esperar(referenciaEjercicio(null), null);
+  esperar(referenciaEjercicio(undefined), null);
+});
+
+/* ---------------- a que hora acostarse ---------------- */
+
+test('la hora de dormir se cuenta hacia atras desde el desayuno', () => {
+  /* Desayuno 10:00 → te levantas 9:30 → 7 h de sueño y 15 min en dormirte
+     ponen la hora mas tarde a las 2:15 de la madrugada. */
+  esperar(horaDeDormir(10 * 60, 7), 2 * 60 + 15);
+  esperar(horaDeDormir(10 * 60, 8), 1 * 60 + 15);
+  esperar(horaDeDormir(10 * 60, 9), 15);
+});
+
+test('el dia da la vuelta sin dar negativo', () => {
+  /* Con un desayuno temprano, dormir 9 h empuja la hora al dia anterior: tiene
+     que salir 22:15 y no un numero negativo. */
+  esperar(horaDeDormir(8 * 60, 9), 22 * 60 + 15);
+  esperarQue(horaDeDormir(6 * 60, 9) >= 0);
+});
+
+test('la ventana va de la mas temprano a la mas tarde', () => {
+  const v = ventanaDeDormir(10 * 60);
+  esperar(v.tarde, 2 * 60 + 15, 'durmiendo lo minimo, lo mas tarde');
+  esperar(v.temprano, 15, 'durmiendo nueve horas, lo mas temprano');
+  esperar(v.horas[0], 7);
+});
+
+test('sin hora de desayuno no se recomienda nada', () => {
+  esperar(horaDeDormir(null, 7), null);
+  esperar(ventanaDeDormir(null), null);
+  esperar(horaDeDormir(10 * 60, 0), null);
+});
+
+test('el rango de sueño recomendado es el mismo que pinta el casillero', () => {
+  /* Si nivelSueno marcara en ambar una hora que la app recomienda, la app se
+     estaria contradiciendo sola. */
+  esperar(nivelSueno(HORAS_SUENO_OK[0]), 'bien');
+  esperar(nivelSueno(HORAS_SUENO_OK[1]), 'bien');
+  esperar(nivelSueno(HORAS_SUENO_OK[0] - 1), 'flojo');
+  esperar(nivelSueno(HORAS_SUENO_OK[1] + 1), 'flojo');
+});

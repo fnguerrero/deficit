@@ -102,3 +102,23 @@ function caloriasActividad(actividad, pesoKg, minutos = null) {
   const mins = Number(minutos ?? actividad.minutos) || 0;
   return Math.round(actividad.met * Number(pesoKg) * (mins / 60));
 }
+
+/*
+ * Cuanto conviene moverse, para tener contra que leer el numero del dia.
+ *
+ * La OMS pide de 150 a 300 minutos semanales de actividad moderada. Eso son
+ * minutos, no calorias: se traduce con el MET de una actividad moderada y el
+ * peso de cada uno, que es lo que hace que la referencia sea suya y no un
+ * numero de folleto. Es una referencia de SALUD, no del deficit: lo que quemes
+ * ademas te sube el objetivo del dia, no lo baja.
+ */
+const MINUTOS_OMS = [150, 300];
+const MET_MODERADO = 5;
+
+function referenciaEjercicio(pesoKg) {
+  const p = Number(pesoKg) || 0;
+  if (p <= 0) return null;
+
+  const semana = MINUTOS_OMS.map(m => Math.round(MET_MODERADO * p * (m / 60)));
+  return { semana, dia: semana.map(k => Math.round(k / 7)), minutos: MINUTOS_OMS };
+}
