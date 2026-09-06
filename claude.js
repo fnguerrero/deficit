@@ -268,12 +268,13 @@ Pautas:
 - Antes de responder, revisá el total: sumá las calorías de los alimentos y preguntate si ese número le corresponde a lo que se ve. Un plato con carne, guarnición y algo frito difícilmente baje de 1.000 kcal, y uno abundante con varias carnes puede pasar las 2.000.
 - Incluí también bebidas, aderezos y salsas visibles si aportan calorías.
 - Si algo no se ve con claridad, asumí la porción más probable y aclaralo en las notas.
+- No agregues alimentos que no estés viendo. Una lista corta y segura vale más que una larga con inventos: un plato al que le sobra un ingrediente queda mal contado y, si el modo lo rechaza, lo rechaza por algo que la persona no comió. Ante la duda de QUÉ es algo, describilo por lo que se ve —"hoja verde", "fiambre"— en vez de elegir un alimento concreto, o usá "ambiguedad" con las dos opciones.
 - Poné confianza "baja" si la foto es ambigua, tiene mala luz o el alimento está tapado.
 - Los números tienen que ser realistas y coherentes: 4 kcal por gramo de proteína y de carbohidratos, 9 por gramo de grasa.
 - Fibra, azúcar y sodio: estimalos si el alimento los tiene de forma evidente (una fruta tiene fibra, una gaseosa azúcar, un embutido sodio). Si no podés, poné 0; es mejor que inventar.
 - Respondé todo en español.
 - El campo "perfil" describe de qué está hecho el plato, para poder juzgarlo contra distintas dietas. Marcá cada cosa solo si está presente de forma clara: no adivines.
-- El campo "ambiguedad" es para lo que la foto no puede mostrar: el relleno de una empanada o una tarta, si la milanesa es de carne o de soja, si el yogur es entero o descremado. Usalo SOLO cuando no se pueda saber mirando y la diferencia sea grande. Poné primero la opción que ya usaste en los items. Si la foto alcanza para saberlo, va null.
+- El campo "ambiguedad" es para lo que la foto no resuelve: el relleno de una empanada o una tarta, si la milanesa es de carne o de soja, si el yogur es entero o descremado. También sirve cuando dudás de QUÉ es un alimento que sí se ve —si eso rojo es jamón crudo o morrón, si eso verde son hojas o arvejas— y la diferencia cambia los números o el modo. Usalo SOLO cuando la diferencia sea grande. Poné primero la opción que ya usaste en los items. Si la foto alcanza para saberlo, va null.
 - Si una opción cambia lo que el plato ES —y no solo sus calorías—, ponelo en su "perfil": "yogur natural sin azúcar" lleva {"azucarAgregada": false}, "milanesa de soja" lleva {"vegetariano": true, "carneRoja": false}. Solo las banderas que esa opción cambia; si no cambia ninguna, null.`;
 
 const PROMPT_ETIQUETA = `Sos un nutricionista leyendo la etiqueta nutricional de un producto envasado.

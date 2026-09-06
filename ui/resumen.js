@@ -131,7 +131,19 @@ function mostrarResumenComida({ titulo, kcal, veredicto, etiqueta, id }) {
   const efecto = $('resumenEfecto');
   if (veredicto.nivel === 'no' && veredicto.comida) {
     const c = comoHacerlaApta(veredicto.comida, state.perfil.modo, calcular(), veredicto.previo);
-    consejo.textContent = c.texto;
+
+    /*
+     * Y la salida cuando el que se equivoco fue el analisis.
+     *
+     * El consejo dice "saca el morron y entra" sobre una lista que puede tener
+     * un alimento que no estaba en el plato: la foto de una tortilla con jamon
+     * crudo volvio con "morron rojo grillado" y "arveja grillada", y el rechazo
+     * era por dos cosas que Nico no comio. Sin esta linea, el unico camino era
+     * aceptar un veredicto sobre comida inventada; borrar el item ahora
+     * recalcula tambien de que esta hecho el plato —ver perfilDeItems().
+     */
+    const sacando = /^Sacá |^Dejá /.test(c.texto || '');
+    consejo.textContent = c.texto + (sacando ? ' Si eso no estaba, editá la comida y borralo.' : '');
     consejo.className = 'consejo-apta' + (c.posible ? '' : ' sin-vuelta');
     consejo.hidden = !c.texto;
 
