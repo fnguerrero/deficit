@@ -301,6 +301,7 @@ $('btnGuardarTope').onclick = () => {
 /* Lo borrado, por si el numero no era el que se esperaba. Vive en memoria: es
    para el minuto siguiente al toque, no para manana. */
 let diasAntesDeLimpiar = null;
+let juegoAntesDeLimpiar = null;
 
 /**
  * El boton para sacar las comidas que vinieron del archivo de prueba.
@@ -321,14 +322,26 @@ function renderBorrarPrueba() {
   b.textContent = `Borrar los datos de prueba · ${plural(dias, 'día')}, ${plural(comidas, 'comida')}`;
   b.onclick = () => {
     diasAntesDeLimpiar = clonar(state.dias);
+    juegoAntesDeLimpiar = clonar(state.juego);
     state.dias = sinDatosDePrueba(state.dias);
+
+    /* Y con ellos se va el XP que pagaron.
+       Sin esto quedaba un nivel 12 y doce logros ganados con dias que ya no
+       existen, o sea un premio por un historial que la app misma acaba de
+       decir que no era tuyo. Solo cuando NO queda ningun dia con comidas: si
+       el historial tenia dias reales mezclados, ese XP si se gano. */
+    const quedan = Object.values(state.dias).some(d => (d.comidas || []).length);
+    if (!quedan) state.juego = clonar(DEFAULT_STATE.juego);
+
     save(); renderAll();
     toast(`Datos de prueba borrados: ${plural(dias, 'día')}`, {
       texto: 'Deshacer',
       accion: () => {
         if (!diasAntesDeLimpiar) return;
         state.dias = diasAntesDeLimpiar;
+        state.juego = juegoAntesDeLimpiar || state.juego;
         diasAntesDeLimpiar = null;
+        juegoAntesDeLimpiar = null;
         save(); renderAll();
         toast('Se volvieron a poner');
       }
