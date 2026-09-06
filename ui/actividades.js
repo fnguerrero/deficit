@@ -286,7 +286,6 @@ function pintarChips(cont, opciones, elegido, alTocar) {
 $('btnEjercicio').onclick = () => {
   const v = parseInt($('ejercicioHoy').value, 10);
   if (isNaN(v) || v < 0 || v > 5000) { toast('Valor inválido'); return; }
-  recordarCambio('el ejercicio');
   /* Un total puesto a mano manda sobre los renglones: no se puede decir "500"
      y a la vez mostrar tres ratos que suman 583. Los anotados se borran y el
      numero queda como lo que es, uno solo sin desglose. */
