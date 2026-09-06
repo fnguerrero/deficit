@@ -126,3 +126,10 @@ encontrar la tarjeta y tocar la lupa.
 - [x] El perfil del plato sale de los alimentos que QUEDARON, no de la foto · verif: 4 tests de perfilDeItems con la mesa criolla del caso · archivos: platos.js, claude.js, ui/edicion.js, tests2.js
 - [x] "Ultraprocesado" en el schema: producto industrial, no comida casera con un ingrediente procesado · verif: descripcion nueva en el schema del analisis
 
+## Ciclo 27 — cuatro casilleros (propuesta de Nico, 06/09/2026)
+
+- [x] El peso sale de la grilla y queda arriba, en la tira que ya tenia; la tira ahora se ve siempre y abre el editor · verif: sin peso cargado la tira invita a pesarse, con peso muestra la tendencia, y tocarla abre "Peso de hoy" · archivos: ui/objetivos.js, ui/hoy.js
+- [x] El animo se mete adentro del sueño: un solo casillero y una sola hoja con las horas, como dormiste y como estas · verif: la hoja "Sueño y ánimo" con 7 chips, 5 caritas de calidad, 5 de animo y la nota; el casillero muestra "7 h 😄" · archivos: index.html, ui/objetivos.js, ui/tarjeta.js
+- [x] El casillero de Comidas se va: abajo estan la barra de momentos, el color por momento y el anillo · verif: la grilla con cuatro, y las comidas siguen contando para el dia perfecto
+- [x] Las rachas pasan a cinco, con corte (DESDE_CINCO = 2026-09-06) · verif: 2 tests del corte, rachasDe da 5 hoy y 7 antes de ayer, y el XP de un dia viejo no se movio
+

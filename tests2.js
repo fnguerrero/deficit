@@ -474,10 +474,17 @@ test('una racha que no existe no rompe nada', () => {
   esperar(rachaDe({}, 'inventada', OPTS_J).actual, 0);
 });
 
-test('las siete se pueden pedir de un saque', () => {
+test('las que cuentan hoy se piden de un saque', () => {
   const todas = todasLasRachas(diasJ({ 0: 'todo' }), OPTS_J);
-  esperar(todas.length, 7);
-  esperarQue(todas.every(r => r.hoyCumplido), 'un dia completo cumple las siete');
+  esperar(todas.length, 5, 'el peso y el animo dejaron de contar');
+  esperarQue(todas.every(r => r.hoyCumplido), 'un dia completo las cumple todas');
+  esperarQue(!todas.some(r => r.id === 'peso'), 'la racha de peso ya no se muestra');
+});
+
+test('el peso y el animo salieron del dia perfecto, pero no del pasado', () => {
+  esperar(rachasDe(DESDE_CINCO).length, 5);
+  esperar(rachasDe(sumarDias(DESDE_CINCO, -1)).length, 7,
+    'lo que se vivio con siete se sigue contando con siete');
 });
 
 /* ---- la fecha de corte ---- */
@@ -599,7 +606,7 @@ test('cumplir paga mas que solo registrar', () => {
 
 test('el dia completo tiene su premio aparte', () => {
   const completo = xpDelDia(diaJ('todo'), HOY_JUEGO, OPTS_J);
-  esperar(completo, XP.registrar + 7 * XP.objetivo + XP.diaCompleto);
+  esperar(completo, XP.registrar + 5 * XP.objetivo + XP.diaCompleto);
 });
 
 test('un dia viejo cobra por las rachas que habia ese dia', () => {

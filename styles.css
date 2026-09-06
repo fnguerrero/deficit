@@ -814,7 +814,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    así que un valor largo —"16.000 kcal"— ensancha su columna y empuja a las
    demás fuera de la pantalla. Con el 0 se reparten el ancho parejo pase lo que
    pase adentro. */
-.objetivos { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+/* Tantas columnas como casilleros haya, sin numero fijo: eran siete, quedaron
+   cuatro, y con repeat(7) los cuatro se apretaban en la mitad izquierda de la
+   pantalla dejando media fila vacia. */
+.objetivos { display: flex; gap: 8px; margin-bottom: 12px; }
+.objetivos > * { flex: 1 1 0; min-width: 0; }
 .objetivo b, .objetivo small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .objetivo {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -963,7 +967,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .ayuno-reloj { font-size: 40px; font-weight: 700; text-align: center; margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
 .ayuno-reloj.completo { color: var(--acc); }
 /* Los siete, en una sola fila. Ver la nota de la version movil, mas abajo. */
-.objetivos { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+/* el reparto por columnas automaticas ya vale para cualquier cantidad */
 .chip.activo { border-color: var(--acc); color: var(--acc); }
 
 /* El veredicto: lo primero que se ve al entrar al historial. */
