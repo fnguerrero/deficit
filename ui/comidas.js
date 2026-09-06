@@ -453,7 +453,20 @@ const recibirFotos = async (e) => {
     const pesa = avisoPorPeso(file.size);
     if (pesa) { toast(pesa); return; }
 
-    const original = await leerArchivo(file);
+    const leida = await leerArchivo(file);
+
+    /* Con una sola foto se pasa por el encuadre: se ve lo que se va a mandar y
+       se puede dejar solo el plato. Con varias no, que serian cuatro pantallas
+       de recorte seguidas para algo que casi siempre es una foto de cada cosa. */
+    const original = archivos.length === 1 ? await pedirRecorte(leida) : leida;
+    if (!original) {
+      /* Cancelo: la foto se tira antes de gastar el analisis. El input se
+         limpia o elegir de nuevo la MISMA foto no vuelve a disparar onchange,
+         y quien cancela por error se queda sin poder reintentar. */
+      e.target.value = '';
+      return;
+    }
+
     procesadas.push({
       /* 768 px alcanza para ver un plato: la porción se estima por el tamaño
          relativo a los cubiertos, no por el detalle fino. Bajar de 1024 a 768
