@@ -2091,7 +2091,9 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* Los cinco pasos, en una fila: envueltos ocupaban dos renglones para cinco
    numeros de cuatro cifras. */
 #pasosEscalones { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
-#pasosEscalones .chip { padding: 9px 2px; font-size: 12.5px; text-align: center; }
+/* `.chips button` es flex, asi que el numero se centra con justify-content y no
+   con text-align: con text-align quedaban los cinco pegados a su izquierda. */
+#pasosEscalones .chip { padding: 9px 2px; font-size: 12.5px; justify-content: center; }
 
 /* Agregar un ejercicio no es elegir uno: era el cuarto chip de una fila de
    tres y se leia como uno mas de los de siempre. */
