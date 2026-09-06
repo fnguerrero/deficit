@@ -35,8 +35,6 @@ function objetivosDelDia() {
    * Mezclarlos rompería el juego: tres horas de sueño están mal, pero el día
    * quedó registrado igual, y esa racha se ganó.
    */
-  const ref = referenciaDePeso(state.dias, fecha);
-
   /* Cuantas comidas del dia entran en el modo. Se pregunta una sola vez: la
      cuenta recorre todas las comidas del dia y el casillero se repinta seguido.
      Con la fecha del dia que se esta mirando, no la de hoy: un dia anterior al
@@ -64,6 +62,27 @@ function objetivosDelDia() {
      * veces —como estuvo la noche y como estas— y se contestan en el mismo
      * momento, con las mismas caritas.
      */
+    {
+      /*
+       * El peso, primero y aparte.
+       *
+       * Es el unico que no es un habito del dia: no cuenta para el dia perfecto
+       * ni para ninguna racha —entre dos dias hay hasta un kilo de agua y sal, y
+       * exigirlo todos los dias empuja a mirar ruido— pero tiene que haber un
+       * lugar obvio para cargarlo en la pantalla que se abre quince veces al
+       * dia. La tira de arriba muestra la tendencia; esto es donde te pesas.
+       */
+      id: 'peso',
+      emoji: '⚖️',
+      nombre: 'Peso',
+      opcional: true,
+      listo: typeof d.peso === 'number' && d.peso > 0,
+      /* Sin color: si sube o baja lo dice la tira de arriba, que ademas mira la
+         tendencia y no el numero de hoy, que entre dos dias es medio kilo de
+         agua. Dos semaforos para el mismo dato, uno mirando el ruido. */
+      nivel: '',
+      valor: d.peso ? fmtNum(d.peso, 1) + ' kg' : ''
+    },
     {
       id: 'agua',
       emoji: '💧',
@@ -154,30 +173,35 @@ function renderObjetivos() {
    * render y la pantalla explotaría de confeti cada vez que tocás un vaso.
    */
   const yaEstaban = listosAhora;
-  listosAhora = new Set(objetivosDelDia().filter(o => o.listo).map(o => o.id));
+  /* Los opcionales no festejan: el confeti es del habito cumplido, y pesarse no
+     es uno. Tampoco entran en la cuenta de "cuantos van". */
+  listosAhora = new Set(objetivosDelDia().filter(o => o.listo && !o.opcional).map(o => o.id));
   const recien = [...listosAhora].filter(id => !yaEstaban.has(id));
 
   /* Cuántos hábitos van, ahora en el título de la fila y no en un renglón
      propio: los casilleros ya dicen cuáles están y cuáles no, así que era una
      segunda copia de lo mismo ocupando alto en la pantalla que tiene que
      entrar entera. */
-  cont.title = resumenHabitos(objetivosDelDia()).texto || '';
+  cont.title = resumenHabitos(objetivosDelDia().filter(o => !o.opcional)).texto || '';
 
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {
     const b = document.createElement('button');
     /* El color sale del nivel; `listo` solo pone el tilde y el estado. Un
        casillero cargado con un dato malo tiene que verse malo. */
-    b.className = 'objetivo' + (o.listo ? ' listo' : '') + (o.nivel ? ' nivel-' + o.nivel : '');
+    b.className = 'objetivo' + (o.listo ? ' listo' : '') + (o.nivel ? ' nivel-' + o.nivel : '') +
+      (o.opcional ? ' opcional' : '');
     /* El color no puede ser el único que lo diga: quien no lo distingue, o usa
        un lector de pantalla, se perdería justo el aviso. */
     const comoEstuvo = { bien: '', flojo: ', flojo', mal: ', mal' }[o.nivel] || '';
     b.setAttribute('aria-label', `${o.nombre}${o.valor ? ': ' + o.valor : ', sin cargar'}${comoEstuvo}`);
     /* El casillero es un interruptor con estado, no un boton suelto: sin esto un
        lector de pantalla no distingue el cumplido del pendiente. */
-    b.setAttribute('role', 'switch');
-    b.setAttribute('aria-checked', String(!!o.listo));
-    b.innerHTML = `<span aria-hidden="true">${o.listo ? '✓' : o.emoji}</span>` +
+    b.setAttribute('role', o.opcional ? 'button' : 'switch');
+    if (!o.opcional) b.setAttribute('aria-checked', String(!!o.listo));
+    /* El opcional no lleva tilde aunque este cargado: el tilde dice "casillero
+       del dia hecho", y este no es uno. */
+    b.innerHTML = `<span aria-hidden="true">${o.listo && !o.opcional ? '✓' : o.emoji}</span>` +
       `<b>${o.nombre}</b><small>${o.valor || '—'}</small>`;
     b.onclick = () => abrirObjetivo(o.id);
     cont.appendChild(b);

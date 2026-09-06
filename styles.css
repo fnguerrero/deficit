@@ -835,6 +835,16 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 .objetivo.listo b { color: var(--acc); }
 
+/* El peso no es un habito del dia: se carga desde el mismo lugar que los otros
+   pero no se pinta como uno cumplido, porque no cuenta para el dia perfecto ni
+   para ninguna racha. Cargado, se ve firme; sin cargar, igual que el resto. */
+.objetivo.opcional.listo {
+  border-style: solid; border-color: var(--line);
+  background: var(--card2); color: var(--txt);
+}
+.objetivo.opcional.listo b { color: var(--txt2); }
+.objetivo.opcional.listo small { color: var(--txt); font-weight: 600; }
+
 /* vasos de agua: se toca al que llegaste */
 .vasos { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 6px 0 10px; }
 .vaso {
