@@ -51,7 +51,14 @@ function medianaDe(lista) {
  * Si alguno todavía no tiene suficientes comidas, ese corte se deja como está:
  * mejor un horario de tabla que uno inventado con tres datos.
  */
-function momentosSegun(dias, base = MOMENTOS) {
+/*
+ * A que hora hace cada comida ESTA persona, en minutos desde medianoche.
+ *
+ * La mediana de lo cargado, y solo cuando hay suficientes: con tres comidas,
+ * una cena tardia daria una hora que no es la de nadie. Lo usan los cortes
+ * entre momentos y el horario que muestra cada tarjeta del dia.
+ */
+function horasTipicas(dias, minimo = MINIMO_PARA_APRENDER) {
   const horas = {};
 
   for (const d of Object.values(dias || {})) {
@@ -64,8 +71,41 @@ function momentosSegun(dias, base = MOMENTOS) {
 
   const tipica = {};
   for (const [id, lista] of Object.entries(horas)) {
-    if (lista.length >= MINIMO_PARA_APRENDER) tipica[id] = medianaDe(lista);
+    if (lista.length >= minimo) tipica[id] = medianaDe(lista);
   }
+  return tipica;
+}
+
+/*
+ * La hora de referencia de cada momento, para el que todavia no tiene las
+ * suyas. No sale de ninguna guia: es a que hora se come en Argentina, que es lo
+ * unico que importa para que la sugerencia no se sienta ajena. El snack no
+ * tiene: justamente es el que cae cuando cae.
+ */
+const HORA_SUGERIDA = {
+  desayuno: 9 * 60,
+  almuerzo: 13 * 60 + 30,
+  merienda: 17 * 60 + 30,
+  cena: 21 * 60 + 30,
+  snack: null
+};
+
+/** La tuya si ya se aprendio, la de referencia si no. En minutos, o null. */
+function horaDelMomento(id, dias) {
+  const t = horasTipicas(dias)[id];
+  return t == null ? (HORA_SUGERIDA[id] ?? null) : t;
+}
+
+/** hh:mm desde minutos. */
+function comoHora(minutos) {
+  if (minutos == null) return '';
+  const h = Math.floor(minutos / 60) % 24;
+  const m = Math.round(minutos % 60);
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+
+function momentosSegun(dias, base = MOMENTOS) {
+  const tipica = horasTipicas(dias);
 
   // en orden cronológico, que es como se suceden los cortes
   const salida = [...base].map(m => ({ ...m })).sort((a, b) => a.desde - b.desde);

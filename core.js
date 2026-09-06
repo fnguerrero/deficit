@@ -1011,9 +1011,12 @@ function conArticulo(id) {
 }
 
 /** Hora representativa de un momento, para fechar comidas cargadas a destiempo. */
+/* La hora entera, para armar el timestamp de una comida cargada a mano. Sale de
+   la misma tabla que la sugerencia que se muestra en el dia —ver HORA_SUGERIDA
+   en platos.js—: dos tablas de horarios se habrian ido separando. */
 function horaDeMomento(id) {
-  const horas = { desayuno: 8, almuerzo: 13, merienda: 17, cena: 21, snack: 23 };
-  return horas[id] != null ? horas[id] : 12;
+  const m = HORA_SUGERIDA[id];
+  return m == null ? 23 : Math.floor(m / 60);
 }
 
 /** Timestamp del día `iso` a la hora típica de ese momento. */

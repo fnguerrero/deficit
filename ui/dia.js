@@ -64,6 +64,24 @@ function pintarComidasDelDia(comidas, cont) {
       card.appendChild(emoji);
     }
 
+    /*
+     * La hora, arriba de la tarjeta.
+     *
+     * Cargado, la hora REAL de lo que comiste; vacio, a que hora lo hacés vos
+     * —la mediana de tus comidas de ese momento— o la de referencia si todavia
+     * no hay suficientes. Es lo que convierte la fila en una agenda: se ve de
+     * un vistazo si la cena viene tarde o si el desayuno se salteo.
+     */
+    const cuando = g.comidas.length
+      ? new Date(Math.min(...g.comidas.map(c => c.ts || 0)))
+      : null;
+    const hora = document.createElement('em');
+    hora.className = 'momento-hora' + (cuando ? '' : ' sugerida');
+    hora.textContent = cuando
+      ? comoHora(cuando.getHours() * 60 + cuando.getMinutes())
+      : comoHora(horaDelMomento(g.id, state.dias));
+    if (hora.textContent) card.appendChild(hora);
+
     const pie = document.createElement('span');
     pie.className = 'momento-pie';
     pie.innerHTML = (g.comidas.length ? `<b>${fmtNum(Math.round(g.kcal))}</b>` : '') +

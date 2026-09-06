@@ -1670,7 +1670,7 @@ test('comidasCopiadas mueve la fecha pero respeta el momento', () => {
   const d0 = new Date(copias[0].ts), d1 = new Date(copias[1].ts);
   esperar(hoyISO(d0), '2026-08-20');
   esperar(hoyISO(d1), '2026-08-20');
-  esperar(d0.getHours(), 8, 'el desayuno sigue siendo a la mañana');
+  esperar(d0.getHours(), 9, 'el desayuno sigue siendo a la mañana');
   esperar(d1.getHours(), 13, 'y el almuerzo al mediodía');
   esperar(copias[0].momento, 'desayuno');
 });
@@ -2077,9 +2077,12 @@ test('agruparPorMomento con lista vacía no rompe', () => {
 });
 
 test('horaDeMomento da una hora representativa', () => {
-  esperar(horaDeMomento('desayuno'), 8);
+  /* Sale de HORA_SUGERIDA, la misma tabla que muestra el horario de cada
+     momento en el dia: eran dos tablas distintas y el desayuno estaba a las 8
+     en una y a las 9 en la otra. */
+  esperar(horaDeMomento('desayuno'), 9);
   esperar(horaDeMomento('cena'), 21);
-  esperar(horaDeMomento('lo que sea'), 12);
+  esperar(horaDeMomento('lo que sea'), 23, 'lo que no es un momento, al final del dia');
 });
 
 test('tsParaFecha usa la hora real si es hoy', () => {
