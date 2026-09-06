@@ -4570,3 +4570,77 @@ test('migrar conserva de que esta hecha la comida y su duda abierta', () => {
   esperar(vieja.dias['2026-09-05'].comidas[0].perfil, null);
   esperar(vieja.dias['2026-09-05'].comidas[0].ambiguedad, null);
 });
+
+/* ---------------- el marco de recorte ---------------- */
+
+test('el encuadre arranca abarcando toda la foto', () => {
+  const m = encuadreInicial(300, 200);
+  esperar(esRecorteEntero(m, 300, 200), true, 'sin tocar nada se manda la foto entera');
+});
+
+test('mover el marco lo frena contra el borde sin achicarlo', () => {
+  const m = { x: 10, y: 10, w: 100, h: 80 };
+  const der = moverMarco(m, 500, 0, 300, 200);
+  esperar(der.x, 200, 'se frena donde termina la imagen');
+  esperar(der.w, 100, 'y sigue midiendo lo mismo');
+
+  const izq = moverMarco(m, -500, -500, 300, 200);
+  esperar(izq.x, 0);
+  esperar(izq.y, 0);
+  esperar(izq.h, 80);
+});
+
+test('estirar de una esquina deja clavada la opuesta', () => {
+  const m = { x: 50, y: 50, w: 100, h: 100 };
+
+  const se = redimensionarMarco(m, 'se', 20, 30, 300, 300);
+  esperar(se.x, 50); esperar(se.y, 50);
+  esperar(se.w, 120); esperar(se.h, 130);
+
+  const no = redimensionarMarco(m, 'no', 20, 20, 300, 300);
+  esperar(no.x, 70); esperar(no.y, 70);
+  esperar(no.w, 80, 'la esquina de abajo a la derecha no se movio');
+  esperar(no.h, 80);
+});
+
+test('el marco no se puede dar vuelta ni achicar hasta desaparecer', () => {
+  const m = { x: 50, y: 50, w: 100, h: 100 };
+  const chico = redimensionarMarco(m, 'se', -500, -500, 300, 300, 48);
+  esperar(chico.w, 48);
+  esperar(chico.h, 48);
+  esperar(chico.x, 50, 'y sigue anclado donde estaba');
+
+  const dadoVuelta = redimensionarMarco(m, 'no', 500, 500, 300, 300, 48);
+  esperar(dadoVuelta.x, 102, 'no puede pasar de largo la esquina opuesta');
+  esperar(dadoVuelta.w, 48);
+});
+
+test('estirar contra el borde no se sale de la imagen', () => {
+  const m = { x: 200, y: 100, w: 80, h: 80 };
+  const r = redimensionarMarco(m, 'se', 500, 500, 300, 200);
+  esperar(r.x + r.w, 300, 'llega justo al borde derecho');
+  esperar(r.y + r.h, 200);
+});
+
+test('el marco se traduce a pixeles de la imagen original', () => {
+  // se ve a 300x200 una foto que en realidad mide 1200x800: escala 4
+  const r = marcoEnImagen({ x: 30, y: 20, w: 100, h: 50 },
+    { ancho: 300, alto: 200 }, { ancho: 1200, alto: 800 });
+  esperar(r.x, 120); esperar(r.y, 80);
+  esperar(r.w, 400); esperar(r.h, 200);
+});
+
+test('un marco pegado al borde no pide un pixel que no existe', () => {
+  /* Por redondeo, el ancho daba uno mas que la imagen y drawImage dibujaba una
+     franja transparente en el sobrante. */
+  const r = marcoEnImagen({ x: 0, y: 0, w: 300.4, h: 200.4 },
+    { ancho: 300, alto: 200 }, { ancho: 1201, alto: 801 });
+  esperar(r.x + r.w <= 1201, true);
+  esperar(r.y + r.h <= 801, true);
+});
+
+test('un recorte de verdad no se confunde con la foto entera', () => {
+  esperar(esRecorteEntero({ x: 0, y: 0, w: 300, h: 200 }, 300, 200), true);
+  esperar(esRecorteEntero({ x: 20, y: 0, w: 280, h: 200 }, 300, 200), false);
+  esperar(esRecorteEntero({ x: 0, y: 0, w: 300, h: 150 }, 300, 200), false);
+});

@@ -606,6 +606,43 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 .lista .thumb { cursor: zoom-in; }
 
+/* ---------- el recorte de la foto ---------- */
+
+/* El lienzo mide exactamente lo que la imagen mostrada: el marco es hijo suyo y
+   se posiciona en pixeles de pantalla, que es en lo que piensa recorte.js. */
+.recortador .rec-lienzo { position: relative; line-height: 0; touch-action: none; }
+.recortador img { max-height: 64vh; display: block; }
+
+.rec-marco {
+  position: absolute; box-sizing: border-box;
+  border: 2px solid #fff; border-radius: 4px; cursor: move;
+  /* La sombra hacia afuera es lo que oscurece el resto de la foto sin tapar
+     nada: sin ella no se ve que es lo que queda adentro. */
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55);
+}
+.rec-marco[hidden] { display: none; }
+
+/* Los tiradores son mas grandes que su dibujo: 12 px se ven bien y 12 px no se
+   agarran con el dedo. El recuadro transparente de 34 es lo que se toca. */
+.rec-marco i {
+  position: absolute; width: 34px; height: 34px;
+}
+.rec-marco i::after {
+  content: ''; position: absolute; width: 14px; height: 14px;
+  border: 3px solid #fff;
+}
+.rec-marco i[data-esq="no"] { top: -17px; left: -17px; cursor: nwse-resize; }
+.rec-marco i[data-esq="no"]::after { top: 8px; left: 8px; border-right: 0; border-bottom: 0; border-radius: 3px 0 0 0; }
+.rec-marco i[data-esq="ne"] { top: -17px; right: -17px; cursor: nesw-resize; }
+.rec-marco i[data-esq="ne"]::after { top: 8px; right: 8px; border-left: 0; border-bottom: 0; border-radius: 0 3px 0 0; }
+.rec-marco i[data-esq="so"] { bottom: -17px; left: -17px; cursor: nesw-resize; }
+.rec-marco i[data-esq="so"]::after { bottom: 8px; left: 8px; border-right: 0; border-top: 0; border-radius: 0 0 0 3px; }
+.rec-marco i[data-esq="se"] { bottom: -17px; right: -17px; cursor: nwse-resize; }
+.rec-marco i[data-esq="se"]::after { bottom: 8px; right: 8px; border-left: 0; border-top: 0; border-radius: 0 0 3px 0; }
+
+#recAyuda { color: var(--dim); font-size: 13px; text-align: center; margin: 0; }
+.rec-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
 /* ---------- precision del analisis ---------- */
 .bloque-precision { margin-bottom: 14px; }
 .bloque-precision .etiqueta { display: block; font-size: 12px; color: var(--dim); margin-bottom: 6px; }

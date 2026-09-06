@@ -108,3 +108,9 @@ encontrar la tarjeta y tocar la lupa.
 - [x] La barra no daba para las cuatro cosas con el icono nuevo: el modo se escribe corto ("Moderado", no "Déficit moderado") y a 320 px la palabra "Ayuno" cede · verif: nombre entero a 375 y a 320, una fila de 56 px, sin scroll horizontal · archivos: ui/barra.js, styles.css
 - [x] ui/objetivos.js se paso de su limite con el desplegable: salio ui/barra.js con la barra de arriba entera · verif: 664 y 109 lineas, guardas OK con 59 scripts
 
+## Ciclo 24 — recortar la foto (pedido de Nico, 06/09/2026)
+
+- [x] Marco de recorte antes de analizar: aritmetica pura en recorte.js y el dedo en ui/recorte.js · verif: 8 tests de limites + recorte real de una imagen 1200x800 que devolvio 555x800 del lado correcto · archivos: recorte.js, ui/recorte.js, ui/comidas.js, index.html, styles.css, sw.js, tests2.js, tests.html
+- [x] Cancelar tira la foto antes de gastar el analisis, y limpia el input para poder reelegir la misma · verif: change real del input, cancelar, y el input vacio
+- [x] El atras de Android cierra el recortador · verif: history.back() con el recortador abierto
+
