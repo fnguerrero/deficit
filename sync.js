@@ -206,6 +206,11 @@ function comidaAFila(comida, fecha, llave, subido = Date.now(), userId = null) {
     azucar: Number(comida.azucar) || 0,
     sodio: Number(comida.sodio) || 0,
     porcion_factor: Number(comida.porcionFactor) > 0 ? Number(comida.porcionFactor) : 1,
+    /* De qué está hecha y la pregunta que quedó abierta: sin esto los modos que
+       juzgan por patrón se quedan sin nada que mirar y el mismo plato figura
+       "no apto" donde se sacó la foto y "apto" en el otro dispositivo. */
+    perfil: comida.perfil || null,
+    ambiguedad: comida.ambiguedad || null,
     borrada: false,
     act: comida.act || comida.ts || 0
   };
@@ -230,6 +235,10 @@ function filaAComida(fila, comidaLocal = null) {
     azucar: Number(fila.azucar) || 0,
     sodio: Number(fila.sodio) || 0,
     porcionFactor: Number(fila.porcion_factor) > 0 ? Number(fila.porcion_factor) : 1,
+    /* Una fila subida antes de estas columnas llega en undefined: ahí vale lo de
+       acá, como con la foto. Pisarla con null cambia el veredicto del modo. */
+    perfil: fila.perfil || comidaLocal?.perfil || null,
+    ambiguedad: fila.ambiguedad || comidaLocal?.ambiguedad || null,
     // la foto vive solo en el dispositivo donde se sacó
     thumb: comidaLocal?.thumb || null,
     foto: comidaLocal?.foto || null,
@@ -266,7 +275,7 @@ function diaAFila(dia, fecha, llave, subido = Date.now(), userId = null) {
 
 /** Los campos que la base puede no tener todavía, si falta correr la migración. */
 const CAMPOS_NUEVOS_DIA = ['sueno_horas', 'sueno_calidad', 'animo', 'cintura', 'pasos'];
-const CAMPOS_NUEVOS_COMIDA = ['fibra', 'azucar', 'sodio', 'porcion_factor'];
+const CAMPOS_NUEVOS_COMIDA = ['fibra', 'azucar', 'sodio', 'porcion_factor', 'perfil', 'ambiguedad'];
 
 /** La misma fila sin los campos nuevos, para reintentar contra una base vieja. */
 function filaSinCamposNuevos(fila, campos = CAMPOS_NUEVOS_DIA) {

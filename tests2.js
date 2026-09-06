@@ -3452,6 +3452,29 @@ test('una base sin las columnas nuevas no rompe la bajada', () => {
   esperar(v.porcionFactor, 1);
 });
 
+test('el perfil y la duda de la comida viajan en el sync', () => {
+  const perfil = { azucarAgregada: true, ultraprocesado: false };
+  const ambiguedad = { item: 'yogur', opciones: [{ etiqueta: 'con azúcar' }], elegida: null };
+  const f = __sync.comidaAFila({ id: 'a', ts: 1, kcal: 100, perfil, ambiguedad }, '2026-09-05', 'k');
+  esperar(f.perfil.azucarAgregada, true);
+  esperar(f.ambiguedad.item, 'yogur');
+  const v = __sync.filaAComida(f);
+  esperar(v.perfil.azucarAgregada, true, 'sin esto el modo por patrón se queda sin nada que mirar');
+  esperar(v.ambiguedad.elegida, null);
+});
+
+test('una fila vieja sin perfil no le borra el perfil a la comida de acá', () => {
+  const local = { id: 'a', ts: 1, kcal: 100, perfil: { azucarAgregada: true } };
+  const v = __sync.filaAComida({ id: 'a', ts: 2, kcal: 100 }, local);
+  esperar(v.perfil.azucarAgregada, true);
+});
+
+test('lo remoto pisa el perfil local cuando trae uno propio', () => {
+  const local = { id: 'a', ts: 1, kcal: 100, perfil: { azucarAgregada: true } };
+  const v = __sync.filaAComida({ id: 'a', ts: 2, kcal: 100, perfil: { azucarAgregada: false } }, local);
+  esperar(v.perfil.azucarAgregada, false);
+});
+
 test('una comida sin fecha no crea el dia "undefined"', () => {
   const estado = { perfil: {}, cfg: {}, borradas: [], dias: {} };
   const r = __sync.aplicarRemoto(estado, { comidas: [{ id: 'c', ts: 1, titulo: 'Sin fecha', kcal: 50, act: 1 }] });
