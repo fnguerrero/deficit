@@ -606,20 +606,16 @@ function renderFaltaSiempre() {
  * La tira del peso, arriba de todo.
  *
  * Muestra la tendencia y no el peso de hoy: entre dos días hay hasta un kilo de
- * diferencia por sal y agua, y poner ese número arriba invita a mirarlo todas
- * las mañanas y a sacar conclusiones del ruido.
- *
- * Sin nada cargado no desaparece: desde que el peso dejo de tener casillero,
- * esta tira es el unico lugar desde donde pesarse, y una app de peso que no
- * ofrece donde cargarlo hasta que ya cargaste uno es una puerta cerrada por
- * dentro. Sin datos muestra la invitacion y nada mas.
+ * diferencia por sal y agua, y ese número arriba invita a sacar conclusiones
+ * del ruido. Sin nada cargado no desaparece: desde que el peso dejo de tener
+ * casillero, esta tira es el unico lugar desde donde pesarse, y esconderla
+ * hasta tener un peso seria una puerta cerrada por dentro.
  */
 function renderPesoTira() {
   const el = $('pesoTira');
   if (!el) return;
 
-  /* Toca donde se carga, no donde se mira: la tendencia esta a un toque en
-     Historial y pesarse es lo que se viene a hacer. */
+  // toca donde se carga: la tendencia esta a un toque en Historial
   el.onclick = (e) => { if (e.detail > 0) e.currentTarget.blur(); abrirObjetivo('peso'); };
 
   const r = resumenPeso(state.dias, state.perfil, { rango: rangoActual().dias || 30 });
@@ -632,10 +628,8 @@ function renderPesoTira() {
     $('pesoTiraBarra').parentElement.hidden = true;
     $('pesoTiraDelta').textContent = '';
     $('pesoTiraDelta').className = 'peso-tira-delta';
-    el.title = 'Cargá tu peso para ver la tendencia';
     return;
   }
-
   $('pesoTiraKg').textContent = fmtNum(r.actual, 1) + ' kg';
   /* Y el IMC al lado, que es el número que le da sentido a los kilos: 90 kg
      no dicen nada sin la altura. Sale del peso de hoy, no de la tendencia. */

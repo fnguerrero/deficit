@@ -230,7 +230,9 @@ function abrirObjetivo(id) {
   if (id === 'pasos') renderPasos();
   if (id === 'peso') renderPeso();
   if (id === 'agua') renderAgua();
-  if (id === 'ejercicio') { renderEjercicio(); renderActividades(); }
+  /* El ajuste de tiempo arranca cerrado en cada visita: quedo abierto de la vez
+     pasada seria una pregunta que nadie hizo. */
+  if (id === 'ejercicio') { ajustando = null; renderEjercicio(); renderActividades(); }
   if (id === 'ayuno') renderAyuno();
   if (id === 'sueno') { renderSueno(); renderCaritas(); }
 
@@ -374,43 +376,64 @@ $('btnOtroEjercicio').onclick = (e) => {
   abrirAltaActividad();
 };
 
-/**
- * Un ejercicio, con sus minutos editables ahí mismo.
+/*
+ * Un ejercicio, un toque.
  *
- * Los minutos son lo que más cambia de un día para el otro —hoy corriste 30 y
- * ayer 50— y eran justo lo único que había que ir a cambiar a Ajustes. Con el
- * − y el + al lado, las calorías se recalculan solas y el chip queda listo
- * para tocarlo.
- */
-/**
- * Un ejercicio: tocarlo lo carga y cierra, sin paso de confirmacion.
- *
- * Los − y + de minutos que tenia cada chip se fueron: el tiempo es uno solo y
- * esta arriba, igual para todos. Tener las dos cosas significaba que el mismo
- * dato se pedia en dos lugares y ganaba el de mas abajo.
+ * El chip dice lo que quema en su rato —una hora, o media si es correr— y
+ * tocarlo lo carga. El tiempo dejo de estar arriba, igual para todos: era un
+ * dato que habia que decidir antes de poder cargar nada, y la respuesta era
+ * siempre la misma. Quien entrena distinto lo cambia manteniendo apretado el
+ * ejercicio, y queda guardado para la proxima.
  */
 function chipActividad(a, peso) {
-  const minutos = typeof ejMinutos === 'number' ? ejMinutos : a.minutos;
+  const minutos = minutosActividad(state, a);
   const kcal = caloriasActividad(a, peso, minutos);
 
   const b = document.createElement('button');
   b.className = 'chip act-uno';
-  b.innerHTML = `${a.emoji} ${a.nombre} <small>${fmtNum(kcal)} kcal</small>`;
-  b.setAttribute('aria-label', `${a.nombre}, ${minutos} minutos, ${fmtNum(kcal)} calorías`);
+  b.innerHTML = `${a.emoji} ${a.nombre} <small>${minutos}′ · ${fmtNum(kcal)} kcal</small>`;
+  b.setAttribute('aria-label', `${a.nombre}, ${minutos} minutos, ${fmtNum(kcal)} calorías. Mantenélo apretado para cambiar el tiempo.`);
+
+  /* Mantener apretado abre el tiempo. El click de despues se ignora: al soltar
+     el dedo el navegador lo dispara igual, y sin esto abrir el tiempo cargaria
+     el ejercicio al mismo tiempo. */
+  let largo = null;
+  let abrio = false;
+
+  const empezar = () => {
+    abrio = false;
+    clearTimeout(largo);
+    largo = setTimeout(() => { abrio = true; abrirTiempoDe(a); }, DEMORA_LARGO);
+  };
+  const soltar = () => clearTimeout(largo);
+
+  b.addEventListener('pointerdown', empezar);
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, soltar);
+  // en el celular, mantener apretado abre el menu del navegador arriba de todo
+  b.addEventListener('contextmenu', (e) => e.preventDefault());
+
   b.onclick = () => {
-    recordarCambio('el ejercicio');
-    anotarMovimiento({ nombre: a.nombre, emoji: a.emoji, minutos, kcal });
-    renderHoy();
-    toast(`${a.nombre} ${minutos}′: +${fmtNum(kcal)} kcal`);
-    /* Cierra, como el peso, el agua y lo que hacia el boton Sumar: cargar el
-       ejercicio es el tramite entero. Los dos ratos de un dia se anotan
-       entrando dos veces, y el ticket de adentro los muestra sumados. */
-    cerrarObjetivo();
+    if (abrio) { abrio = false; return; }
+    cargarActividad(a, minutos, kcal);
   };
   return b;
 }
 
-/*
+/* Medio segundo: menos se dispara al tocar rapido, mas se siente colgado. */
+const DEMORA_LARGO = 480;
+
+function cargarActividad(a, minutos, kcal) {
+  recordarCambio('el ejercicio');
+  anotarMovimiento({ nombre: a.nombre, emoji: a.emoji, minutos, kcal });
+  renderHoy();
+  toast(`${a.nombre} ${minutos}′: +${fmtNum(kcal)} kcal`);
+  /* Cierra, como el peso, el agua y lo que hacia el boton Sumar: cargar el
+     ejercicio es el tramite entero. Los dos ratos de un dia se anotan
+     entrando dos veces, y el ticket de adentro los muestra sumados. */
+  cerrarObjetivo();
+}
+
+/**
  * El alta de un ejercicio nuevo, dentro del mismo modal.
  *
  * Se usa `prompt` a propósito y no un formulario más: son dos datos, se usa
@@ -428,9 +451,9 @@ function abrirAltaActividad() {
   let n = 2;
   while (usados.includes(id)) id = base + n++;
 
-  /* Un solo dato: el nombre. Los minutos se eligen arriba y valen para todos,
-     asi que preguntarlos en el alta era pedir algo que despues no se usaba. */
-  state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, met: 6, emoji: '⭐' }];
+  /* Un solo dato: el nombre. Una hora, como todos —y si dura otra cosa se
+     cambia manteniendolo apretado, igual que los del catalogo. */
+  state.cfg.actividades = [...(state.cfg.actividades || []), { id, nombre, met: 6, minutos: 60, emoji: '⭐' }];
 
   /* Y queda adelante: si ya hay tres, entra sacando el más viejo. */
   const favs = [...(state.cfg.favoritasActividad || FAVORITAS_DEFECTO)];

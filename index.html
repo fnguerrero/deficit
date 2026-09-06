@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=527">
+<link rel="stylesheet" href="styles.css?v=531">
 </head>
 <body>
 
@@ -508,14 +508,18 @@
         </section>
 
         <section data-obj="ejercicio" hidden>
-          <!-- Dos pasos y ninguno de confirmacion: cuanto tiempo, y que
-               hiciste. El nombre de la actividad ES la intensidad —cada una
-               trae su MET— asi que la escala generica de suave/medio/fuerte y
-               el boton Sumar se fueron: tocar el ejercicio ya es cargarlo. -->
-          <p class="hint">¿Cuánto te moviste?</p>
-          <div class="chips" id="minutosEjercicio"></div>
-          <p class="hint" style="margin-top:10px">¿Qué hiciste?</p>
+          <!-- Un paso y ninguno de confirmacion: tocar el ejercicio ya es
+               cargarlo. El nombre de la actividad ES la intensidad —cada una
+               trae su MET— y el tiempo dejo de preguntarse: una hora, o media
+               si es correr. Se cambia manteniendo apretado, y queda guardado. -->
+          <p class="hint">¿Qué hiciste? <small>Mantené apretado uno para cambiarle el tiempo.</small></p>
           <div class="chips act-todas" id="listaActividades"></div>
+
+          <!-- Aparece al mantener apretado un ejercicio, con su nombre. -->
+          <div id="ajusteTiempo" hidden>
+            <p class="hint" id="ajusteTiempoTitulo"></p>
+            <div class="chips" id="minutosEjercicio"></div>
+          </div>
           <!-- Aparte y no como un chip mas al final de la fila: agregar un
                ejercicio es otra cosa que elegir uno de los que ya tenes. -->
           <button id="btnOtroEjercicio" class="otro-ejercicio">
@@ -1132,67 +1136,68 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=527"></script>
-<script src="core.js?v=527"></script>
-<script src="platos.js?v=527"></script>
-<script src="animar.js?v=527"></script>
-<script src="fotos.js?v=527"></script>
-<script src="calibracion.js?v=527"></script>
-<script src="modos.js?v=527"></script>
-<script src="arreglos.js?v=527"></script>
-<script src="consecuencias.js?v=527"></script>
-<script src="recorte.js?v=527"></script>
-<script src="habitos.js?v=527"></script>
-<script src="mascota.js?v=527"></script>
-<script src="cuerpo.js?v=527"></script>
-<script src="cintura.js?v=527"></script>
-<script src="figura.js?v=527"></script>
-<script src="cara.js?v=527"></script>
-<script src="personaje.js?v=527"></script>
-<script src="relieve.js?v=527"></script>
-<script src="sprite-datos.js?v=527"></script>
-<script src="sprite.js?v=527"></script>
-<script src="transformacion.js?v=527"></script>
-<script src="aura.js?v=527"></script>
-<script src="juego.js?v=527"></script>
-<script src="sonidos.js?v=527"></script>
-<script src="voz.js?v=527"></script>
-<script src="graficos.js?v=527"></script>
-<script src="plazo.js?v=527"></script>
-<script src="compartir.js?v=527"></script>
-<script src="sugerencias.js?v=527"></script>
-<script src="analisis.js?v=527"></script>
-<script src="chequeos.js?v=527"></script>
-<script src="claude.js?v=527"></script>
-<script src="productos.js?v=527"></script>
-<script src="sync-perfil.js?v=527"></script>
-<script src="fusion-dia.js?v=527"></script>
-<script src="sync.js?v=527"></script>
-<script src="estado-sync.js?v=527"></script>
-<script src="auth.js?v=527"></script>
-<script src="app.js?v=527"></script>
-<script src="ui/general.js?v=527"></script>
-<script src="ui/hoy.js?v=527"></script>
-<script src="ui/dia.js?v=527"></script>
-<script src="ui/objetivos.js?v=527"></script>
-<script src="ui/barra.js?v=527"></script>
-<script src="ui/recorte.js?v=527"></script>
-<script src="ui/tarjeta.js?v=527"></script>
-<script src="ui/logros.js?v=527"></script>
-<script src="ui/comidas.js?v=527"></script>
-<script src="ui/edicion.js?v=527"></script>
-<script src="ui/resumen.js?v=527"></script>
-<script src="ui/escaner.js?v=527"></script>
-<script src="ui/asistente.js?v=527"></script>
-<script src="ui/historial.js?v=527"></script>
-<script src="ui/progreso.js?v=527"></script>
-<script src="ui/perfil.js?v=527"></script>
-<script src="ui/sincronizacion.js?v=527"></script>
-<script src="ui/cuenta.js?v=527"></script>
-<script src="ui/calibracion.js?v=527"></script>
-<script src="ui/actividades.js?v=527"></script>
-<script src="ui/recordatorios.js?v=527"></script>
-<script src="ui/ajustes.js?v=527"></script>
-<script src="arranque.js?v=527"></script>
+<script src="config.js?v=531"></script>
+<script src="core.js?v=531"></script>
+<script src="platos.js?v=531"></script>
+<script src="animar.js?v=531"></script>
+<script src="fotos.js?v=531"></script>
+<script src="calibracion.js?v=531"></script>
+<script src="modos.js?v=531"></script>
+<script src="arreglos.js?v=531"></script>
+<script src="consecuencias.js?v=531"></script>
+<script src="recorte.js?v=531"></script>
+<script src="deportes.js?v=531"></script>
+<script src="habitos.js?v=531"></script>
+<script src="mascota.js?v=531"></script>
+<script src="cuerpo.js?v=531"></script>
+<script src="cintura.js?v=531"></script>
+<script src="figura.js?v=531"></script>
+<script src="cara.js?v=531"></script>
+<script src="personaje.js?v=531"></script>
+<script src="relieve.js?v=531"></script>
+<script src="sprite-datos.js?v=531"></script>
+<script src="sprite.js?v=531"></script>
+<script src="transformacion.js?v=531"></script>
+<script src="aura.js?v=531"></script>
+<script src="juego.js?v=531"></script>
+<script src="sonidos.js?v=531"></script>
+<script src="voz.js?v=531"></script>
+<script src="graficos.js?v=531"></script>
+<script src="plazo.js?v=531"></script>
+<script src="compartir.js?v=531"></script>
+<script src="sugerencias.js?v=531"></script>
+<script src="analisis.js?v=531"></script>
+<script src="chequeos.js?v=531"></script>
+<script src="claude.js?v=531"></script>
+<script src="productos.js?v=531"></script>
+<script src="sync-perfil.js?v=531"></script>
+<script src="fusion-dia.js?v=531"></script>
+<script src="sync.js?v=531"></script>
+<script src="estado-sync.js?v=531"></script>
+<script src="auth.js?v=531"></script>
+<script src="app.js?v=531"></script>
+<script src="ui/general.js?v=531"></script>
+<script src="ui/hoy.js?v=531"></script>
+<script src="ui/dia.js?v=531"></script>
+<script src="ui/objetivos.js?v=531"></script>
+<script src="ui/barra.js?v=531"></script>
+<script src="ui/recorte.js?v=531"></script>
+<script src="ui/tarjeta.js?v=531"></script>
+<script src="ui/logros.js?v=531"></script>
+<script src="ui/comidas.js?v=531"></script>
+<script src="ui/edicion.js?v=531"></script>
+<script src="ui/resumen.js?v=531"></script>
+<script src="ui/escaner.js?v=531"></script>
+<script src="ui/asistente.js?v=531"></script>
+<script src="ui/historial.js?v=531"></script>
+<script src="ui/progreso.js?v=531"></script>
+<script src="ui/perfil.js?v=531"></script>
+<script src="ui/sincronizacion.js?v=531"></script>
+<script src="ui/cuenta.js?v=531"></script>
+<script src="ui/calibracion.js?v=531"></script>
+<script src="ui/actividades.js?v=531"></script>
+<script src="ui/recordatorios.js?v=531"></script>
+<script src="ui/ajustes.js?v=531"></script>
+<script src="arranque.js?v=531"></script>
 </body>
 </html>

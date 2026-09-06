@@ -4410,10 +4410,10 @@ test('el pie no inventa partes que no estan', () => {
 /* ---------------- los ejercicios, todos juntos (ciclo 20) ---------------- */
 
 test('las actividades salen todas, con las favoritas adelante', () => {
-  const est = { cfg: { favoritasActividad: ['caminata', 'boxeo'] } };
+  const est = { cfg: { favoritasActividad: ['yoga', 'boxeo'] } };
   const orden = actividadesOrdenadas(est).map(a => a.id);
 
-  esperar(orden.slice(0, 2).join(','), 'caminata,boxeo', 'las favoritas primero y en su orden');
+  esperar(orden.slice(0, 2).join(','), 'yoga,boxeo', 'las favoritas primero y en su orden');
   esperar(orden.length, ACTIVIDADES.length, 'y despues el resto, sin perder ninguna');
   esperar(new Set(orden).size, orden.length, 'sin repetir las favoritas abajo');
 });
@@ -4435,15 +4435,12 @@ test('sin favoritas guardadas manda el orden por defecto', () => {
   esperar(orden.length, ACTIVIDADES.length);
 });
 
-test('las calorias de un ejercicio salen del tiempo elegido arriba', () => {
-  /* El chip ya no muestra la duracion propia de la actividad: muestra lo que
-     quema en el rato que elegiste, que es el numero que estas por cargar. */
-  const caminata = ACTIVIDADES.find(a => a.id === 'caminata');   // MET 3,5
-  esperar(caloriasActividad(caminata, 80, 60), 280, 'una hora de caminata a 80 kg');
-  esperar(caloriasActividad(caminata, 80, 30), 140, 'media hora, la mitad');
-  esperar(caloriasActividad(caminata, 80), Math.round(3.5 * 80 * (caminata.minutos / 60)),
-    'sin minutos sigue valiendo la duracion propia');
-  esperar(caloriasActividad(caminata, 0, 60), 0, 'sin peso no se estima nada');
+test('las calorias de un ejercicio salen del rato que dura', () => {
+  const yoga = ACTIVIDADES.find(a => a.id === 'yoga');   // MET 3,0
+  esperar(caloriasActividad(yoga, 80, 60), 240, 'una hora de yoga a 80 kg');
+  esperar(caloriasActividad(yoga, 80, 30), 120, 'media hora, la mitad');
+  esperar(caloriasActividad(yoga, 80), 240, 'sin minutos vale la duracion de la actividad');
+  esperar(caloriasActividad(yoga, 0, 60), 0, 'sin peso no se estima nada');
 });
 
 test('el informe del mes usa el objetivo del modo, no el del ritmo', () => {
