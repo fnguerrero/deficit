@@ -100,13 +100,14 @@ function tabActiva() {
 }
 
 function hayAlgoQueCerrar() {
-  return hayModalAbierto() || tabActiva() !== 'hoy';
+  return hayModalAbierto() || modosBarraAbierta || tabActiva() !== 'hoy';
 }
 
 /** Cierra la capa de más arriba. Devuelve false si no había nada. */
 function cerrarLoDeArriba() {
   /* En orden de "qué está más arriba": el visor tapa al resumen, el resumen al
      modal de análisis, y las pestañas están abajo de todo. */
+  if (modosBarraAbierta) { cerrarModosBarra(); return true; }
   if (!$('visorFoto').hidden) { cerrarVisor(); return true; }
   if ($('modalResumen').classList.contains('open')) { cerrarResumen(); return true; }
   if ($('modalOrigenFoto').classList.contains('open')) { cerrarOrigenFoto(); return true; }

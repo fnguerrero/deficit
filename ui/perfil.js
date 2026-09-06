@@ -259,6 +259,42 @@ $('pFecha').onchange = () => {
 
 /* ---------------- el modo ---------------- */
 
+/**
+ * Los dieciséis como botones adentro de `cont`, menos el que ya está en uso:
+ * ese se ve arriba, y repetirlo era mostrar dieciséis para elegir entre quince.
+ *
+ * La usan Perfil y la barra de Hoy. Es la misma decisión tomada desde dos
+ * lugares, y con dos listas separadas una se iba a quedar vieja.
+ */
+function pintarListaDeModos(cont, despues = null) {
+  if (!cont) return;
+  const actual = modoDe(state.perfil.modo || MODO_DEFECTO).id;
+  cont.innerHTML = '';
+
+  for (const m of listaModos()) {
+    if (m.id === actual) continue;
+    const b = document.createElement('button');
+    b.className = 'modo-btn';
+    pintarModo(b, m);
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = () => elegirModo(m, despues);
+    cont.appendChild(b);
+  }
+}
+
+/* Cambiar de modo mueve el objetivo del dia, los macros y el veredicto de cada
+   comida cargada: se repinta todo, no solo la pantalla donde se toco. */
+function elegirModo(m, despues = null) {
+  state.perfil.modo = m.id;
+  modosAbiertos = false;
+  save();
+  renderModos();
+  renderPerfil();
+  renderHoy();
+  toast(`Modo ${m.nombre}`);
+  if (despues) despues();
+}
+
 /* Los quince que no estás usando arrancan plegados y se despliegan a un toque.
    No se van: los dieciséis siguen estando, pero elegir uno no puede costar la
    pantalla entera. */
@@ -295,27 +331,7 @@ function renderModos() {
     };
   }
   cont.hidden = !modosAbiertos;
-
-  for (const m of listaModos()) {
-    /* El que está en uso ya se ve arriba: repetirlo en la lista era mostrar
-       dieciséis para elegir entre quince. */
-    if (m.id === actual) continue;
-
-    const b = document.createElement('button');
-    b.className = 'modo-btn';
-    pintarModo(b, m);
-    b.setAttribute('aria-pressed', 'false');
-    b.onclick = () => {
-      state.perfil.modo = m.id;
-      modosAbiertos = false;
-      save();
-      renderModos();
-      renderPerfil();
-      renderHoy();
-      toast(`Modo ${m.nombre}`);
-    };
-    cont.appendChild(b);
-  }
+  pintarListaDeModos(cont);
 
   const calc = calcular();
   /* El objetivo y los macros no se repiten acá: viven en "Tu cálculo", que es

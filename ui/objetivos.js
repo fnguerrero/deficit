@@ -147,65 +147,6 @@ function pintarFase(fase, perfectos, enRiesgo = false) {
   chip.style.borderColor = fase.color;
 }
 
-/**
- * Los chips de arriba: en qué modo estás y si hay un ayuno corriendo.
- *
- * El modo decidía el objetivo del día y las comidas aptas sin aparecer en
- * ningún lado de Hoy: había que entrar a Perfil para saber en cuál estabas.
- */
-function renderTiras() {
-  const cont = $('tirasHoy');
-  if (!cont) return;
-
-  const m = modoDe(state.perfil.modo);
-  const enCurso = enCursoAyuno();
-  const d = dia();
-
-  const ayunoTexto = enCurso
-    ? estadoAyuno(state.cfg.ayunoInicio, Date.now(), horasAyuno()).texto
-    : (d.ayuno ? d.ayuno.horas.toFixed(1) + ' h' : 'Ayuno');
-
-  cont.innerHTML = '';
-
-  /*
-   * El modo se lee arriba de todo, donde antes decia "Deficit".
-   *
-   * El nombre de la app no aporta nada: quien la abre ya sabe cual es. En que
-   * modo estas, en cambio, decide el objetivo del dia y si una comida entra o
-   * no, y estaba en un chip que competia con el ayuno por el mismo renglon.
-   */
-  const titulo = $('tituloModo');
-  if (titulo) {
-    titulo.textContent = m?.nombre || 'Déficit';
-    titulo.title = m?.detalle || m?.resumen || 'Tocá para cambiar de modo';
-    // el chip llevaba a Perfil; el título hereda eso, que es de donde se cambia
-    titulo.onclick = () => irTab('perfil');
-    titulo.style.cursor = 'pointer';
-  }
-
-  /*
-   * El ayuno, siempre.
-   *
-   * Estuvo un tiempo escondido hasta que hubiera uno corriendo, y así no había
-   * forma de arrancarlo desde Hoy: había que entrar a Perfil para algo que se
-   * decide justo cuando se está mirando la pantalla del día.
-   */
-  cont.hidden = false;
-
-  const chipAyuno = document.createElement('button');
-  chipAyuno.className = 'tira' + (enCurso ? ' corriendo' : '');
-  /* El "tocá para arrancar" se fue al subir la tira a la barra del titulo:
-     comia setenta pixeles del renglon para decir lo que un boton ya dice, y los
-     que faltaban eran justo los que le cortaban el nombre al modo. El "hecho"
-     queda, porque ese si informa —distingue las 16 h que llevas de las 16 h que
-     cerraste— y va solo cuando hay un ayuno del dia. */
-  chipAyuno.innerHTML = `<i>⏱️</i>${ayunoTexto}` +
-    (!enCurso && d.ayuno ? '<small>hecho</small>' : '');
-  chipAyuno.title = enCurso ? 'Ayuno en curso' : (d.ayuno ? 'Ayuno de hoy, ya cerrado' : 'Tocá para arrancar un ayuno');
-  chipAyuno.onclick = () => abrirObjetivo('ayuno');
-  cont.appendChild(chipAyuno);
-}
-
 function renderObjetivos() {
   renderPrimerosPasos();
 
