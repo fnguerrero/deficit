@@ -62,9 +62,16 @@ function objetivosDelDia() {
       /* Verde solo si ademas algo entro en el modo. La misma cuenta que hace
          la racha —ver RACHAS en juego.js— porque si las dos midieran distinto
          volveria el problema del ciclo 17: la grilla en verde y el dia sin
-         completar. Ambar es "cargaste, pero no entro nada". */
+         completar. */
       listo: entranHoy > 0,
-      nivel: !(d.comidas || []).length ? '' : (entranHoy > 0 ? 'bien' : 'flojo'),
+      /* El color mira ademas cuanto comiste: ver nivelComidas(). El tilde dice
+         que cargaste; el color, como viene el dia. */
+      nivel: nivelComidas({
+        cargadas: comidasDeHoy.length,
+        entran: entranHoy,
+        kcal: sumarComidas(comidasDeHoy).kcal,
+        objetivo: calcular() ? objetivoEfectivo(calcular().objetivo, d.ejercicio) : 0
+      }),
       valor: (d.comidas || []).length ? String((d.comidas || []).length) : ''
     },
     {

@@ -119,9 +119,33 @@ const SCHEMA_COMIDA = {
           grasas: { type: 'number' },
           fibra: { type: 'number', description: 'Gramos de fibra; 0 si no se puede estimar' },
           azucar: { type: 'number', description: 'Gramos de azúcar; 0 si no se puede estimar' },
-          sodio: { type: 'number', description: 'Miligramos de sodio; 0 si no se puede estimar' }
+          sodio: { type: 'number', description: 'Miligramos de sodio; 0 si no se puede estimar' },
+          /*
+           * De que esta hecho ESTE alimento, no el plato.
+           *
+           * Sin esto el perfil describia la foto y no lo que quedaba: borrar
+           * del editor la parrillada y las empanadas y dejar el locro no
+           * limpiaba nada, y el plato seguia figurando ultraprocesado por algo
+           * que ya no estaba. Van solo las banderas que este alimento aporta;
+           * las que no, se omiten.
+           */
+          perfil: {
+            type: ['object', 'null'],
+            description: 'Solo las banderas que aporta ESTE alimento, en true. Ej: una gaseosa {"ultraprocesado": true, "azucarAgregada": true}; un locro {"legumbres": true, "carneRoja": true, "vegetales": true}. Las que no aporta se omiten. null si ninguna.',
+            properties: {
+              vegetales: { type: 'boolean' }, frutas: { type: 'boolean' },
+              legumbres: { type: 'boolean' }, pescado: { type: 'boolean' },
+              carneRoja: { type: 'boolean' }, aveOHuevo: { type: 'boolean' },
+              lacteos: { type: 'boolean' }, cereales: { type: 'boolean' },
+              integral: { type: 'boolean' }, aceiteOliva: { type: 'boolean' },
+              frutosSecos: { type: 'boolean' }, ultraprocesado: { type: 'boolean' },
+              azucarAgregada: { type: 'boolean' }, frito: { type: 'boolean' },
+              gluten: { type: 'boolean' }
+            },
+            additionalProperties: false
+          }
         },
-        required: ['nombre', 'porcion', 'calorias', 'proteinas', 'carbohidratos', 'grasas', 'fibra', 'azucar', 'sodio'],
+        required: ['nombre', 'porcion', 'calorias', 'proteinas', 'carbohidratos', 'grasas', 'fibra', 'azucar', 'sodio', 'perfil'],
         additionalProperties: false
       }
     },
@@ -143,7 +167,7 @@ const SCHEMA_COMIDA = {
         integral: { type: 'boolean', description: 'Los cereales que hay son integrales' },
         aceiteOliva: { type: 'boolean' },
         frutosSecos: { type: 'boolean' },
-        ultraprocesado: { type: 'boolean', description: 'Fiambres, snacks de paquete, gaseosa, congelados listos' },
+        ultraprocesado: { type: 'boolean', description: 'Producto industrial listo para comer: snack de paquete, gaseosa, golosina, fiambre, congelado listo. Una comida casera NO lo es aunque lleve un ingrediente procesado: un asado con chorizo, unas empanadas o un guiso no son ultraprocesados' },
         azucarAgregada: { type: 'boolean', description: 'Azúcar, dulce, postre, bebida azucarada' },
         frito: { type: 'boolean' },
         gluten: { type: 'boolean', description: 'Trigo, avena, cebada o centeno' },
