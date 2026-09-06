@@ -138,3 +138,10 @@ encontrar la tarjeta y tocar la lupa.
 - [x] Los contadores del dia (agua, ejercicio, pasos) se fusionaban por el mas alto y no habia forma de corregir hacia abajo · verif: 2 tests nuevos con el caso exacto y el del cero que no pisa · archivos: sync.js, fusion-dia.js (nuevo), tests2.js
 - [x] sync.js se paso de su limite con el arreglo: salio fusion-dia.js · verif: 576 lineas, guardas OK con 62 scripts
 
+## Ciclo 29 — el ejercicio, mas simple (pedido de Nico, 06/09/2026)
+
+- [x] Ocho deportes —funcional, futbol, boxeo, natacion, padel, yoga, pilates, running— y una hora cada uno salvo running · verif: los ocho chips con su tiempo en la app viva y 3 tests del catalogo · archivos: deportes.js (nuevo), habitos.js, tests.js
+- [x] Fuera la fila de minutos de arriba: tocar el deporte lo carga con su tiempo · verif: tocar Running carga 404 kcal de 30' y cierra
+- [x] Mantener apretado abre el tiempo de ESE deporte, y el elegido queda guardado · verif: long press en Futbol abre "¿cuanto te dura?", elegir 90 carga 866 kcal y el chip queda en 90' · archivos: ui/objetivos.js, ui/actividades.js, index.html, styles.css
+- [x] habitos.js y ui/hoy.js pasados de limite: salio deportes.js · verif: 297 y 700 lineas, guardas OK con 63 scripts
+

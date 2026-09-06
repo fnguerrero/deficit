@@ -4369,11 +4369,35 @@ test('las calorias del ejercicio salen de MET x peso x horas', () => {
   esperar(caloriasActividad(running, 85, 60), Math.round(9.8 * 85));
 });
 
-test('cada actividad trae su duracion habitual', () => {
-  const porId = (id) => ACTIVIDADES.find(a => a.id === id);
-  esperar(porId('funcional').minutos, 60);
-  esperar(porId('running').minutos, 30);
-  esperar(porId('futbol').minutos, 60);
+test('una hora cada una, media si es correr', () => {
+  /* Toda la regla del tiempo: un rato de deporte dura una hora salvo que
+     corras. Antes cada actividad traia su propia duracion —30, 45, 60— y
+     habia que recordarla o mirarla. */
+  const otras = ACTIVIDADES.filter(a => a.id !== 'running');
+  esperarQue(otras.every(a => a.minutos === 60), 'todas menos running duran una hora');
+  esperar(ACTIVIDADES.find(a => a.id === 'running').minutos, 30);
+});
+
+test('el tiempo que elegis manteniendo apretado queda guardado', () => {
+  const futbol = ACTIVIDADES.find(a => a.id === 'futbol');
+  esperar(minutosActividad({ cfg: {} }, futbol), 60, 'sin tocar nada, el del catalogo');
+
+  const cfg = { actividades: conMinutos([], futbol, 90) };
+  esperar(minutosActividad({ cfg }, futbol), 90);
+  esperar(caloriasActividad(futbol, 80, minutosActividad({ cfg }, futbol)),
+    Math.round(7.0 * 80 * 1.5), 'y las calorias salen de ese rato');
+
+  // cambiarlo otra vez no acumula entradas
+  const cfg2 = { actividades: conMinutos(cfg.actividades, futbol, 45) };
+  esperar(cfg2.actividades.filter(a => a.id === 'futbol').length, 1);
+  esperar(minutosActividad({ cfg: cfg2 }, futbol), 45);
+});
+
+test('el ajuste de una actividad no toca a las otras', () => {
+  const futbol = ACTIVIDADES.find(a => a.id === 'futbol');
+  const yoga = ACTIVIDADES.find(a => a.id === 'yoga');
+  const cfg = { actividades: conMinutos([], futbol, 90) };
+  esperar(minutosActividad({ cfg }, yoga), 60);
 });
 
 test('sin minutos usa la duracion por defecto de la actividad', () => {

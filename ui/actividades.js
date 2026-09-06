@@ -138,9 +138,20 @@ function borrarMovimiento(ts) {
   renderHoy();
 }
 
-/* El tiempo elegido arriba, que es lo unico que hay que decir antes de tocar
-   el ejercicio. Vive fuera del render para que sobreviva a repintar la lista. */
-let ejMinutos = 30;
+/*
+ * El ejercicio al que le estan cambiando el tiempo, o null.
+ *
+ * Aparece al mantener apretado y se va al elegir: el tiempo dejo de ser una
+ * pregunta que hay que contestar antes de cargar nada —la respuesta era
+ * siempre la misma— y paso a ser un ajuste que se hace una vez.
+ */
+let ajustando = null;
+
+function abrirTiempoDe(a) {
+  ajustando = a;
+  renderEjercicio();
+  $('ajusteTiempo')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
 
 function renderEjercicio() {
   const kcal = dia().ejercicio || 0;
@@ -149,12 +160,27 @@ function renderEjercicio() {
     ? `Tu objetivo de hoy sube a ${fmtKcal(objetivoEfectivo(calcular()?.objetivo || 0, kcal))}.`
     : 'Lo que quemes se suma al objetivo del día.';
 
-  pintarChips($('minutosEjercicio'), MINUTOS_EJERCICIO.map(m => ({
-    id: m, texto: m + ' min'
-  })), ejMinutos, (id) => { ejMinutos = id; renderEjercicio(); });
+  const caja = $('ajusteTiempo');
+  if (caja) {
+    caja.hidden = !ajustando;
+    if (ajustando) {
+      const a = ajustando;
+      $('ajusteTiempoTitulo').textContent = `${a.emoji} ${a.nombre}: ¿cuánto te dura?`;
+      pintarChips($('minutosEjercicio'), MINUTOS_EJERCICIO.map(m => ({
+        id: m, texto: m + ' min'
+      })), minutosActividad(state, a), (m) => {
+        /* Queda guardado: el que entrena cuarenta minutos lo dice una vez y no
+           vuelve a mantener apretado nunca mas. */
+        state.cfg.actividades = conMinutos(state.cfg.actividades, a, m);
+        ajustando = null;
+        save();
+        renderEjercicio();
+        const peso = state.perfil.peso;
+        if (peso) cargarActividad(a, m, caloriasActividad(a, peso, m));
+      });
+    }
+  }
 
-  /* Cambiar el tiempo repinta los ejercicios: cada uno muestra lo que quema en
-     ESE rato, que es el numero que se esta por cargar. */
   renderActividades();
   renderCarritoEjercicio();
 }
