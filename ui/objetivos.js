@@ -46,7 +46,10 @@ function objetivosDelDia() {
 
   return [
     /*
-     * Cuatro casilleros, no siete.
+     * Cuatro casilleros, no siete, y en el orden en que pasan las cosas: los
+     * pasos y el ejercicio se cargan durante el dia, el agua se va llenando y
+     * el sueno se anota a la mañana o de noche.
+     *
      *
      * Las comidas salieron de la grilla: estan justo abajo, con su barra de
      * momentos, su color por momento y el anillo con las calorias del dia. El
@@ -63,12 +66,14 @@ function objetivosDelDia() {
      * momento, con las mismas caritas.
      */
     {
-      id: 'agua',
-      emoji: '💧',
-      nombre: 'Agua',
-      listo: (d.agua || 0) >= metaVasos(),
-      nivel: nivelAgua(d.agua, metaVasos()),
-      valor: `${d.agua || 0}/${metaVasos()}`
+      /* Los pasos van a mano: ver pasosObjetivo() en habitos.js. */
+      id: 'pasos',
+      emoji: '👟',
+      nombre: 'Pasos',
+      /* Anotarlos alcanza: no hay objetivo contra el cual quedar corto. */
+      listo: (d.pasos || 0) > 0,
+      nivel: nivelPasos(d.pasos),
+      valor: d.pasos ? fmtNum(d.pasos) : ''
     },
     {
       id: 'ejercicio',
@@ -77,6 +82,14 @@ function objetivosDelDia() {
       listo: (d.ejercicio || 0) > 0,
       nivel: nivelEjercicio(d.ejercicio),
       valor: d.ejercicio ? fmtNum(d.ejercicio) + ' kcal' : ''
+    },
+    {
+      id: 'agua',
+      emoji: '💧',
+      nombre: 'Agua',
+      listo: (d.agua || 0) >= metaVasos(),
+      nivel: nivelAgua(d.agua, metaVasos()),
+      valor: `${d.agua || 0}/${metaVasos()}`
     },
     {
       id: 'sueno',
@@ -91,16 +104,6 @@ function objetivosDelDia() {
         d.sueno?.horas ? d.sueno.horas + ' h' : '',
         d.animo ? (CARITAS.find(c => c.id === d.animo)?.emoji || '') : ''
       ].filter(Boolean).join(' ')
-    },
-    {
-      /* Los pasos van a mano: ver pasosObjetivo() en habitos.js. */
-      id: 'pasos',
-      emoji: '👟',
-      nombre: 'Pasos',
-      /* Anotarlos alcanza: no hay objetivo contra el cual quedar corto. */
-      listo: (d.pasos || 0) > 0,
-      nivel: nivelPasos(d.pasos),
-      valor: d.pasos ? fmtNum(d.pasos) : ''
     }
   ];
 }
