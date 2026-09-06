@@ -6,7 +6,6 @@
 
 function renderPerfil() {
   renderPlanEtapas();
-  renderModos();
   const p = state.perfil;
   $('pSexo').value = p.sexo;
   $('pEdad').value = p.edad ?? '';
@@ -256,93 +255,6 @@ $('pFecha').onchange = () => {
     toast(`Esa fecha pedía comer de menos: la moví al ${fechaLarga(plan.fechaMinima)}`);
   }
 };
-
-/* ---------------- el modo ---------------- */
-
-/**
- * Los dieciséis como botones adentro de `cont`, menos el que ya está en uso:
- * ese se ve arriba, y repetirlo era mostrar dieciséis para elegir entre quince.
- *
- * La usan Perfil y la barra de Hoy. Es la misma decisión tomada desde dos
- * lugares, y con dos listas separadas una se iba a quedar vieja.
- */
-function pintarListaDeModos(cont, despues = null) {
-  if (!cont) return;
-  const actual = modoDe(state.perfil.modo || MODO_DEFECTO).id;
-  cont.innerHTML = '';
-
-  for (const m of listaModos()) {
-    if (m.id === actual) continue;
-    const b = document.createElement('button');
-    b.className = 'modo-btn';
-    pintarModo(b, m);
-    b.setAttribute('aria-pressed', 'false');
-    b.onclick = () => elegirModo(m, despues);
-    cont.appendChild(b);
-  }
-}
-
-/* Cambiar de modo mueve el objetivo del dia, los macros y el veredicto de cada
-   comida cargada: se repinta todo, no solo la pantalla donde se toco. */
-function elegirModo(m, despues = null) {
-  state.perfil.modo = m.id;
-  modosAbiertos = false;
-  save();
-  renderModos();
-  renderPerfil();
-  renderHoy();
-  toast(`Modo ${m.nombre}`);
-  if (despues) despues();
-}
-
-/* Los quince que no estás usando arrancan plegados y se despliegan a un toque.
-   No se van: los dieciséis siguen estando, pero elegir uno no puede costar la
-   pantalla entera. */
-let modosAbiertos = false;
-
-/** El adentro de un botón de modo: el emoji y el par nombre/resumen. */
-function pintarModo(b, m) {
-  b.innerHTML = `<i aria-hidden="true">${m.emoji || '🎯'}</i>` +
-    `<span><b>${m.nombre}</b><small>${m.resumen}</small></span>`;
-}
-
-/**
- * Elegir el modo es la decisión que más cambia la app: de acá salen el objetivo
- * del día, el reparto de macros, qué comida entra y qué se recomienda.
- */
-function renderModos() {
-  const cont = $('listaModos');
-  if (!cont) return;
-
-  /* El id que se pinta arriba, no el que está guardado: con un modo viejo que
-     ya no existe modoDe() cae al de siempre, y comparar contra el guardado
-     dejaba al de siempre repetido en la lista. */
-  const elModo = modoDe(state.perfil.modo || MODO_DEFECTO);
-  const actual = elModo.id;
-  cont.innerHTML = '';
-
-  const cabecera = $('modoActual');
-  if (cabecera) {
-    pintarModo(cabecera, elModo);
-    cabecera.setAttribute('aria-expanded', String(modosAbiertos));
-    cabecera.onclick = () => {
-      modosAbiertos = !modosAbiertos;
-      renderModos();
-    };
-  }
-  cont.hidden = !modosAbiertos;
-  pintarListaDeModos(cont);
-
-  const calc = calcular();
-  /* El objetivo y los macros no se repiten acá: viven en "Tu cálculo", que es
-     la tarjeta que los explica. Queda lo que solo dice este modo. */
-  const partes = [elModo.detalle];
-
-  if (calc?.ajustado && calc.motivo) partes.push(calc.motivo);
-  if (elModo.aviso) partes.push(elModo.aviso);
-
-  $('detalleModo').textContent = partes.join(' ');
-}
 
 /*
  * El plan por etapas, cuando la meta esta lejos.

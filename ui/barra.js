@@ -103,7 +103,16 @@ function abrirModosBarra(abrir = !modosBarraAbierta) {
   const h1 = $('tituloModo');
   h1?.setAttribute('aria-expanded', String(abrir));
   h1?.parentElement?.classList.toggle('abierta', abrir);
-  if (abrir) pintarListaDeModos(caja, cerrarModosBarra);
+  if (abrir) {
+    pintarListaDeModos(caja, cerrarModosBarra);
+    /* Arriba, que dice el que tenes puesto. Estaba en Perfil, abajo del
+       selector que se fue: sin esto la explicacion del modo no vivia en ningun
+       lado, y es lo unico que distingue "definicion" de "deficit agresivo". */
+    const nota = document.createElement('p');
+    nota.className = 'modos-detalle';
+    nota.textContent = detalleDelModo();
+    caja.prepend(nota);
+  }
   marcarAtras();
 }
 
@@ -127,3 +136,59 @@ document.addEventListener('click', (e) => {
 /* Los datos de la persona, aparte: se cargan una vez cada tanto y no tienen
    nada que ver con mirar el dia. */
 $('btnDatos').onclick = () => { cerrarModosBarra(); irTab('perfil'); };
+
+/* ---------------- el modo ---------------- */
+
+/** Que dice el modo que tenes puesto, con el ajuste si el objetivo toco piso. */
+function detalleDelModo() {
+  const m = modoDe(state.perfil.modo || MODO_DEFECTO);
+  const calc = calcular();
+  const partes = [`${m.emoji || '🎯'} ${m.nombre}: ${m.detalle}`];
+  if (calc?.ajustado && calc.motivo) partes.push(calc.motivo);
+  if (m.aviso) partes.push(m.aviso);
+  return partes.join(' ');
+}
+
+/**
+ * Los quince que no estas usando, en dos columnas.
+ *
+ * El que esta puesto no se repite: se lee arriba, en el titulo. La lista sale
+ * con mediterranea y keto primero —ver MODOS_ARRIBA en modos.js— porque son
+ * los que se usan, y estaban en el medio de quince.
+ */
+function pintarListaDeModos(cont, despues = null) {
+  if (!cont) return;
+  const actual = modoDe(state.perfil.modo || MODO_DEFECTO).id;
+  cont.innerHTML = '';
+
+  for (const m of listaModos()) {
+    if (m.id === actual) continue;
+    const b = document.createElement('button');
+    b.className = 'modo-btn';
+    pintarModo(b, m);
+    b.setAttribute('aria-pressed', 'false');
+    /* El resumen no se dibuja en dos columnas —no entra— pero sigue estando
+       para quien lea con lector de pantalla o pase el mouse. */
+    b.title = m.resumen || '';
+    b.onclick = () => elegirModo(m, despues);
+    cont.appendChild(b);
+  }
+}
+
+/* Cambiar de modo mueve el objetivo del dia, los macros y el veredicto de cada
+   comida cargada: se repinta todo, no solo la pantalla donde se toco. */
+function elegirModo(m, despues = null) {
+  state.perfil.modo = m.id;
+  save();
+  renderPerfil();
+  renderHoy();
+  toast(`Modo ${m.nombre}`);
+  if (despues) despues();
+}
+
+
+/** El adentro de un botón de modo: el emoji y el par nombre/resumen. */
+function pintarModo(b, m) {
+  b.innerHTML = `<i aria-hidden="true">${m.emoji || '🎯'}</i>` +
+    `<span><b>${m.nombre}</b><small>${m.resumen}</small></span>`;
+}
