@@ -2080,6 +2080,13 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .act-uno small { font-size: 9.5px; opacity: .75; font-weight: 600; }
 .chip-nuevo { border-style: dashed; color: var(--txt2); }
 
+/* Cada aviso con su interruptor. Apagado se ve, en gris: esconderlo obligaria a
+   buscar donde volver a prenderlo. */
+.fila-aviso { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.fila-aviso span { flex: 1 1 auto; min-width: 0; }
+.fila-aviso.apagada span { color: var(--dim); }
+.fila-aviso.apagada input[type="time"] { opacity: .5; }
+
 /* El nombre de la carita elegida: en el celular no hay hover, asi que cinco
    caras parecidas sin texto son una adivinanza. */
 .carita-nombre { margin: 6px 0 0; font-size: 12.5px; font-weight: 600; color: var(--acc); }

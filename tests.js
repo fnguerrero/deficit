@@ -1998,14 +1998,20 @@ test('textoRecordatorio menciona la comida y lo que queda', () => {
 
 test('migrar deja los horarios por defecto si no hay', () => {
   const s = migrar({});
-  esperar(s.cfg.horarios.length, 3);
+  esperar(s.cfg.horarios.length, 4, 'las cuatro comidas, con la merienda');
   esperar(s.cfg.recordatorios, false, 'nunca arrancan activados');
 });
 
 test('migrar respeta los horarios que ya configuró', () => {
   const s = migrar({ cfg: { horarios: [{ momento: 'cena', hora: '20:00' }] } });
-  esperar(s.cfg.horarios.length, 1);
-  esperar(s.cfg.horarios[0].hora, '20:00');
+  const cena = s.cfg.horarios.find(r => r.momento === 'cena');
+  esperar(cena.hora, '20:00', 'la hora elegida no se toca');
+  esperar(cena.activo, true);
+  /* La merienda se suma —es una comida que antes no tenia aviso— pero apagada:
+     agregarle uno prendido a quien ya habia configurado los suyos es decidir
+     por el. */
+  esperar(s.cfg.horarios.length, 2);
+  esperar(s.cfg.horarios.find(r => r.momento === 'merienda').activo, false);
 });
 
 /* ============================================================

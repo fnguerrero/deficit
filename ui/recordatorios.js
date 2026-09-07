@@ -208,7 +208,8 @@ function renderRecordatorios() {
   const soportado = typeof Notification !== 'undefined';
   const permiso = soportado ? Notification.permission : 'no-soportado';
 
-  $('recordatoriosPill').textContent = activos ? `${state.cfg.horarios.length} avisos` : '';
+  const prendidos = state.cfg.horarios.filter(r => r.activo !== false).length;
+  $('recordatoriosPill').textContent = activos ? `${prendidos} avisos` : '';
 
   if (!soportado) {
     $('recordatoriosInfo').textContent = 'Este navegador no permite notificaciones.';
@@ -225,8 +226,21 @@ function renderRecordatorios() {
   if (!activos) return;
 
   for (const r of state.cfg.horarios) {
-    const fila = document.createElement('div');
-    fila.className = 'fila';
+    const fila = document.createElement('label');
+    fila.className = 'fila fila-aviso' + (r.activo === false ? ' apagada' : '');
+
+    /* Cada aviso se prende y se apaga aparte: no todos meriendan, y quien no lo
+       hace no tiene por que recibir un aviso de algo que no come. Apagado se
+       deja ver —con su hora— para poder volver a prenderlo sin buscarlo. */
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = r.activo !== false;
+    check.setAttribute('aria-label', 'Avisarme ' + conArticulo(r.momento));
+    check.onchange = () => {
+      r.activo = check.checked;
+      save(); programarRecordatorios(); renderRecordatorios();
+      if (typeof renderPush === 'function') actualizarPushSiEstaPrendido();
+    };
 
     const nombre = document.createElement('span');
     nombre.textContent = nombreMomento(r.momento);
@@ -234,14 +248,16 @@ function renderRecordatorios() {
     const hora = document.createElement('input');
     hora.type = 'time';
     hora.value = r.hora;
+    hora.disabled = r.activo === false;
     hora.setAttribute('aria-label', 'Hora del aviso de ' + nombreMomento(r.momento));
     hora.onchange = () => {
       if (!minutosDeHora(hora.value)) { hora.value = r.hora; return; }
       r.hora = hora.value;
       save(); programarRecordatorios(); renderRecordatorios();
+      if (typeof renderPush === 'function') actualizarPushSiEstaPrendido();
     };
 
-    fila.append(nombre, hora);
+    fila.append(check, nombre, hora);
     cont.appendChild(fila);
   }
 }
