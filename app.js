@@ -101,10 +101,28 @@ function marcarPerfil() {
   firmaPerfil = firma;
 }
 
+/*
+ * Lo mismo para la configuracion, que tiene su propio reloj.
+ *
+ * Va aca y no en cada interruptor de Ajustes por un motivo practico: la cfg se
+ * toca desde una docena de lugares —los vasos, los pasos, el tiempo de un
+ * deporte, los horarios— y basta olvidarse de uno para que ese cambio no viaje
+ * nunca y nadie se entere. Comparar la firma al guardar los cubre a todos.
+ */
+let firmaCfg = null;
+
+function marcarCfg() {
+  const c = state.cfg || {};
+  const firma = JSON.stringify(CFG_QUE_VIAJA.map(k => c[k] ?? null));
+  if (firmaCfg !== null && firma !== firmaCfg) state.cfg.act = Date.now();
+  firmaCfg = firma;
+}
+
 function guardarYa() {
   clearTimeout(relojGuardado);
   relojGuardado = null;
   marcarPerfil();
+  marcarCfg();
   const texto = JSON.stringify(state);
 
   try {

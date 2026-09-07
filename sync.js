@@ -495,9 +495,10 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
      porque es UNO solo y se resuelve entero — ver sync-perfil.js — y no puede
      tumbar el resto si la tabla todavía no existe. */
   const perfil = await sincronizarPerfil({
-    cliente, perfil: fusionado.perfil, llave, ultimoSync, ahora, userId
+    cliente, perfil: fusionado.perfil, cfg: fusionado.cfg, llave, ultimoSync, ahora, userId
   });
   fusionado.perfil = perfil.perfil;
+  if (perfil.cfg) fusionado.cfg = perfil.cfg;
 
   return {
     estado: fusionado,
@@ -512,6 +513,7 @@ async function sincronizar({ cliente, estado, llave, ultimoSync = 0, ahora = Dat
       subidasDias: filasDias.length,
       perfilBajado: perfil.cambio,
       perfilSubido: perfil.subido,
+      cfgBajada: perfil.cambioCfg,
       /* Que la pantalla pueda decir que falta correr la migración: fallar en
          silencio deja a alguien esperando un dato que no va a llegar nunca. */
       faltaTablaPerfil: perfil.migrar,
@@ -568,6 +570,19 @@ async function guardarTolerante(cliente, tabla, filas, campos) {
 function fusionarAlFinal(estadoVivo, resultado) {
   const remotas = resultado?.remotas || { comidas: [], dias: [] };
 
+  /* El perfil y la configuracion se aplican SIEMPRE, antes del atajo de abajo.
+     Se resolvieron enteros en sincronizarPerfil() y no dependen de que haya
+     comidas nuevas: sin esto, cambiar la altura en el celular no llegaba nunca
+     a la compu si ese dia no se habia cargado ninguna comida. */
+  if (resultado?.resumen?.perfilBajado && resultado?.estado?.perfil) {
+    estadoVivo.perfil = resultado.estado.perfil;
+  }
+  if (resultado?.resumen?.cfgBajada && resultado?.estado?.cfg) {
+    /* Solo lo que viaja: `cfg` tambien guarda las credenciales del sync de ESTE
+       dispositivo, que pudieron escribirse mientras la ronda estaba en el aire. */
+    estadoVivo.cfg = { ...estadoVivo.cfg, ...cfgQueViaja(resultado.estado.cfg) };
+  }
+
   /* Sin nada que bajar no hay nada que fusionar, y el clon de aplicarRemoto es
      un JSON.stringify del historial entero: caro para repetirlo al pedo cada
      vez que se guarda un vaso de agua. */
@@ -585,6 +600,7 @@ if (typeof window !== 'undefined') {
     generarLlave, llaveValida, llaveLegible, clienteSupabase,
     comidaAFila, filaAComida, diaAFila, filaSinCamposNuevos, faltaMigracion, guardarDias, guardarComidas,
     cambiosLocales, aplicarRemoto, fusionarDia, sincronizar, fusionarAlFinal,
-    TABLA_PERFIL, perfilAFila, filaAPerfil, fusionarPerfil, perfilVacio, sincronizarPerfil
+    TABLA_PERFIL, perfilAFila, filaAPerfil, fusionarPerfil, perfilVacio, sincronizarPerfil,
+    CFG_QUE_VIAJA, cfgQueViaja, fusionarCfg
   };
 }

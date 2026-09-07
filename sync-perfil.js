@@ -36,11 +36,52 @@ const COLUMNA = {
 
 const NUMERICOS = ['edad', 'altura', 'peso', 'pesoObj', 'cintura', 'actividad', 'ritmo', 'manual'];
 
-function perfilAFila(perfil, llave, subido = Date.now(), userId = null) {
+/*
+ * Que parte de la configuracion viaja.
+ *
+ * Mismo criterio que arriba, y por el mismo motivo: `cfg` mezcla decisiones de
+ * la PERSONA —cuantos vasos se propuso, cuanto le dura una salida a correr, a
+ * quien le manda la comida— con cosas de ESTE aparato: la clave de la API, si
+ * ya dio permiso de notificar, si vio el onboarding. Mandar el objeto entero
+ * haria que aceptar las notificaciones en la compu las prendiera en el celular
+ * sin que nadie se lo pida, y que un dispositivo sin permiso las apagara alla.
+ */
+const CFG_QUE_VIAJA = [
+  'vasosMeta', 'pasosMeta', 'figura', 'actividades', 'horarios',
+  'topeGasto', 'whatsapp', 'modelo', 'precision', 'tema'
+];
+
+/** Solo lo que viaja, y solo lo que esta cargado. */
+function cfgQueViaja(cfg) {
+  const salida = {};
+  for (const c of CFG_QUE_VIAJA) {
+    if (cfg?.[c] !== undefined) salida[c] = cfg[c];
+  }
+  salida.act = Number(cfg?.act) || 0;
+  return salida;
+}
+
+/**
+ * La configuracion se resuelve entera, no campo por campo.
+ *
+ * Es a proposito: los horarios y las actividades son listas, y fusionarlas
+ * elemento por elemento daria mezclas que nadie configuro —un horario de un
+ * aparato y dos del otro—. Gana la ultima que alguien toco, que es lo que
+ * pasaria si los dos fueran la misma pantalla.
+ */
+function fusionarCfg(local, remota) {
+  const actLocal = Number(local?.act) || 0;
+  const actRemota = Number(remota?.act) || 0;
+  if (!remota || actRemota <= actLocal) return { cfg: local, cambio: false };
+  return { cfg: { ...local, ...cfgQueViaja(remota) }, cambio: true };
+}
+
+function perfilAFila(perfil, llave, subido = Date.now(), userId = null, cfg = null) {
   const fila = {
     llave,
     subido,
     ...(userId ? { user_id: userId } : {}),
+    ...(cfg ? { cfg: cfgQueViaja(cfg) } : {}),
     act: Number(perfil?.act) || 0
   };
 
@@ -62,6 +103,9 @@ function filaAPerfil(fila) {
     if (v === null || v === undefined) { perfil[campo] = null; continue; }
     perfil[campo] = NUMERICOS.includes(campo) ? Number(v) : v;
   }
+  /* La cfg viaja aparte del perfil y con su propio reloj: una base sin migrar
+     la trae en undefined, que es lo mismo que "este dispositivo manda". */
+  if (fila?.cfg) perfil.cfg = fila.cfg;
   return perfil;
 }
 
@@ -115,12 +159,12 @@ function perfilVacio(perfil) {
  * que la pantalla pueda decir que el perfil no está viajando en vez de dejar a
  * alguien esperando un dato que no va a llegar nunca.
  */
-async function sincronizarPerfil({ cliente, perfil, llave, ultimoSync = 0, ahora = Date.now(), userId = null }) {
+async function sincronizarPerfil({ cliente, perfil, cfg = null, llave, ultimoSync = 0, ahora = Date.now(), userId = null }) {
   let remotas = [];
   try {
     remotas = await cliente.traer(TABLA_PERFIL, llave, ultimoSync);
   } catch (e) {
-    return { perfil, cambio: false, migrar: true, subido: false, error: mensajeDe(e) };
+    return { perfil, cfg, cambio: false, cambioCfg: false, migrar: true, subido: false, error: mensajeDe(e) };
   }
 
   /* Puede volver más de una fila si dos dispositivos subieron entre dos
@@ -130,24 +174,49 @@ async function sincronizarPerfil({ cliente, perfil, llave, ultimoSync = 0, ahora
     .sort((a, b) => (Number(b.act) || 0) - (Number(a.act) || 0))[0] || null;
 
   const { perfil: fusionado, cambio } = fusionarPerfil(perfil, masNueva);
+  const { cfg: cfgFusionada, cambio: cambioCfg } = fusionarCfg(cfg, masNueva?.cfg);
 
   /* Solo se sube si acá hay algo más nuevo que lo que ya está arriba, y si hay
      algo que subir: un perfil en blanco pisando uno cargado sería la peor
-     manera de estrenar un dispositivo. */
-  const debeSubir = !perfilVacio(fusionado) &&
+     manera de estrenar un dispositivo.
+
+     La cfg tiene su propio reloj y se mira aparte: cambiar los vasos del día no
+     toca el perfil, y si dependiera de él la configuración no subiría nunca. */
+  const perfilMasNuevo = !perfilVacio(fusionado) &&
     (Number(fusionado.act) || 0) > (Number(masNueva?.act) || 0);
+  const cfgMasNueva = !!cfg && (Number(cfgFusionada?.act) || 0) > (Number(masNueva?.cfg?.act) || 0);
+  const debeSubir = perfilMasNuevo || cfgMasNueva;
 
   if (debeSubir) {
+    const fila = perfilAFila(fusionado, llave, ahora, userId, cfgFusionada);
     try {
-      await cliente.guardar(TABLA_PERFIL, [perfilAFila(fusionado, llave, ahora, userId)]);
+      await cliente.guardar(TABLA_PERFIL, [fila]);
     } catch (e) {
+      /* Una base sin la columna `cfg` hace fallar el POST entero, y con él se
+         cae también el perfil, que sí tiene dónde guardarse. Se reintenta sin
+         ella: lo viejo sigue viajando y lo nuevo espera a que se corra el SQL. */
+      if (fila.cfg && faltaColumnaCfg(e?.message)) {
+        const { cfg: _fuera, ...sinCfg } = fila;
+        try {
+          await cliente.guardar(TABLA_PERFIL, [sinCfg]);
+          return { perfil: fusionado, cfg: cfgFusionada, cambio, cambioCfg, migrar: true, subido: true, error: null };
+        } catch (e2) {
+          return { perfil: fusionado, cfg: cfgFusionada, cambio, cambioCfg, migrar: true, subido: false, error: mensajeDe(e2) };
+        }
+      }
       /* Lo que se bajó ya está fusionado y vale: se devuelve igual, aunque la
          subida no haya salido. */
-      return { perfil: fusionado, cambio, migrar: true, subido: false, error: mensajeDe(e) };
+      return { perfil: fusionado, cfg: cfgFusionada, cambio, cambioCfg, migrar: true, subido: false, error: mensajeDe(e) };
     }
   }
 
-  return { perfil: fusionado, cambio, migrar: false, subido: debeSubir, error: null };
+  return { perfil: fusionado, cfg: cfgFusionada, cambio, cambioCfg, migrar: false, subido: debeSubir, error: null };
+}
+
+/** Si el 400 se queja justo de `cfg`, falta correr supabase-cfg.sql. */
+function faltaColumnaCfg(mensaje) {
+  const m = String(mensaje || '');
+  return /cfg/.test(m) && /column|columna|schema cache/i.test(m);
 }
 
 function mensajeDe(e) {

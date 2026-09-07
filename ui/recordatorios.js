@@ -98,13 +98,29 @@ const TAG_OBJETIVOS = 'deficit-objetivos';
 function rachasDelDia() {
   const valores = {};
   const niveles = {};
+  /* Y en el MISMO orden que la grilla de la app.
+
+     Las rachas vienen en el orden de RACHAS —comidas, agua, ejercicio, sueño,
+     pasos— y los casilleros de la app estan en otro: pasos, ejercicio, agua,
+     sueño, con las comidas abajo y aparte. Ver la misma fila en dos ordenes
+     obliga a leerla de nuevo cada vez en vez de reconocerla de un vistazo.
+
+     El orden se toma de objetivosDelDia() y no se copia a mano: si mañana
+     cambia la grilla, el aviso la sigue solo. Lo que la grilla no tiene —las
+     comidas, que en la app van abajo— queda al final, que es donde estan. */
+  const orden = [];
   if (typeof objetivosDelDia === 'function') {
     for (const o of objetivosDelDia()) {
       const id = o.id === 'ejercicio' ? 'entrenamiento' : o.id;
       valores[id] = o.valor;
       niveles[id] = o.nivel;
+      orden.push(id);
     }
   }
+  const puesto = (id) => {
+    const i = orden.indexOf(id);
+    return i === -1 ? orden.length : i;
+  };
 
   /* Las comidas ya no tienen casillero en la grilla —se ven abajo, en la fila de
      momentos— asi que su numero no sale de ahi: se cuenta aca. */
@@ -121,7 +137,8 @@ function rachasDelDia() {
          ambar y en el dibujo salia gris. */
       nivel: niveles[r.id === 'entrenamiento' ? 'entrenamiento' : r.id] || '',
       valor: r.id === 'registro' ? (comidas ? String(comidas) : '') : (valores[r.id] || '')
-    }));
+    }))
+    .sort((a, b) => puesto(a.id) - puesto(b.id));
 }
 
 /** Que falta hoy, en el orden de la grilla. */
@@ -137,25 +154,39 @@ function faltanteDelDia() {
 }
 
 function textoObjetivos() {
-  const { total, hechas, faltan } = faltanteDelDia();
+  const { faltan } = faltanteDelDia();
   const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
   /*
    * Todo en el titulo y el cuerpo VACIO: abajo va la fila dibujada, que dice
    * lo mismo mejor.
    *
-   * El texto que habia —que falta y cuanto queda— era lo mismo que la imagen
-   * con menos informacion, y desplegada quedaban las dos cosas peleandose. La
-   * hora se muda al titulo porque es lo unico que la imagen no puede decir y
-   * hace falta: este aviso lo escribe la app, asi que muestra el estado de la
-   * ultima vez que corrio, y un cartel viejo que se hace pasar por actual es
-   * peor que no tenerlo.
+   * En el titulo va lo que QUEDA y no el progreso del tablero.
+   *
+   * Decia "3 de 5", que es exactamente lo que la grilla de abajo ya dibuja —y
+   * mejor, porque ahi ademas se ve cual falta. Sin desplegar, en cambio, la
+   * imagen no se ve: esa linea es todo lo que hay, y gastarla en repetir el
+   * dibujo la desperdicia. Las calorias que quedan son el unico numero con el
+   * que se decide que comer, y no estan en ningun otro lado del aviso.
+   *
+   * La hora se queda porque es lo unico que la imagen no puede decir y hace
+   * falta: este aviso lo escribe la app cuando se la abre, asi que muestra el
+   * estado de la ultima vez que corrio, y un cartel viejo que se hace pasar
+   * por actual es peor que no tenerlo.
    */
-  const titulo = faltan.length
-    ? `Déficit · ${hechas.length} de ${total} · ${hora}`
-    : `Déficit · día completo ✨ · ${hora}`;
+  const calc = typeof calcular === 'function' ? calcular() : null;
+  const t = typeof totalesDia === 'function' ? totalesDia() : null;
+  const d = typeof dia === 'function' ? dia() : null;
+  const objetivo = (calc && typeof objetivoEfectivo === 'function')
+    ? objetivoEfectivo(calc.objetivo, d?.ejercicio) : 0;
 
-  return { titulo, cuerpo: '', faltan: faltan.length };
+  /* Pasarse tambien se dice, y por cuanto: con el objetivo cumplido "quedan 0"
+     y "te pasaste por 600" son la misma linea, y son cosas distintas. */
+  const sobra = objetivo ? Math.round(objetivo - (t?.kcal || 0)) : 0;
+  const margen = !objetivo ? 'Déficit'
+    : (sobra >= 0 ? `Quedan ${fmtNum(sobra)} kcal` : `${fmtNum(-sobra)} kcal de más`);
+
+  return { titulo: `${margen} · ${hora}`, cuerpo: '', faltan: faltan.length };
 }
 
 /* Lo ultimo que se mostro, para no repintar el mismo cartel en cada render.
