@@ -32,9 +32,13 @@ function hacerDesdeElAviso(accion) {
   if (accion === 'agua') {
     ponerAgua((dia().agua || 0) + 1);
     toast('Vaso anotado');
-    return;
+  } else if (accion === 'foto') {
+    setTimeout(() => $('btnFoto').click(), 200);
   }
-  if (accion === 'foto') setTimeout(() => $('btnFoto').click(), 200);
+
+  /* Y el aviso vuelve: el sistema lo cierra al tocar un boton, y sin esto se
+     perdia el tablero justo despues de usarlo. */
+  if (typeof refrescarAvisoFijo === 'function') refrescarAvisoFijo();
 }
 
 const pedido = new URLSearchParams(location.search).get('hacer');
