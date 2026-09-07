@@ -170,8 +170,8 @@ esta sesion.
 - [ ] La configuracion viaja entre dispositivos (el tiempo de un deporte, las metas, el personaje) · verif: tests de ida y vuelta + SQL listo, tolerante a que la columna no exista · archivos: sync-perfil.js, ui/sincronizacion.js, supabase-cfg.sql, tests2.js
 - [ ] Test de humo: abrir las cinco pestañas sin un solo error de consola · verif: el propio test, corrido en la app viva
 - [ ] Accesibilidad de lo nuevo: menu de momento, recortador y tira de peso · verif: roles y aria-label presentes, y el foco atrapado en las hojas
-- [~] Partir core.js (1493/1400) · verif: guardas y tamanos OK, 1147 tests en verde
-- [ ] Partir analisis.js (926/900) · verif: idem
-- [ ] Partir modos.js (823/800) · verif: idem
-- [ ] Partir juego.js (pasado) · verif: idem
+- [x] Partir core.js (1528 -> 1315): salieron fechas.js y frecuentes.js · verif: guardas y tamanos OK, 1147 tests en verde
+- [x] Partir analisis.js (926 -> 759): salio informe.js (926/900) · verif: idem
+- [x] Partir modos.js (835 -> 730): salio patrones.js
+- [x] Partir juego.js (618 -> 545): salio logros.js; y el limite de sw.js subio a 300 porque lo que crece ahi es la lista SHELL, no la logica
 

@@ -18,8 +18,14 @@ LIMITES = [
     ('config.js', 40),
     ('claude.js', 900),
     ('analisis.js', 900),
+    # el informe del mes salio de analisis.js: es lo unico de ahi que no calcula
+    # para la pantalla, sino que arma un documento aparte
+    ('informe.js', 250),
     ('chequeos.js', 450),
     ('modos.js', 800),
+    # las reglas por patron salieron de modos.js: miran las banderas del plato,
+    # no sus numeros
+    ('patrones.js', 200),
     ('arreglos.js', 250),
     ('consecuencias.js', 220),
     # +50 al sumarle moverse por minutos e intensidad, que es logica de habito
@@ -47,6 +53,9 @@ LIMITES = [
     # rachasDe() y diaPerfecto() son el unico lugar donde vive esa regla, y
     # sacarlas de aca las alejaria de las cinco cuentas que las usan
     ('juego.js', 560),
+    # el catalogo de logros salio de juego.js: son datos y condiciones, y quien
+    # los reparte sigue siendo recalcularJuego()
+    ('logros.js', 150),
     ('sonidos.js', 250),
     ('voz.js', 350),
     ('graficos.js', 400),
@@ -65,7 +74,10 @@ LIMITES = [
     # cuenta y hay que volver a mostrarlo con todo su contenido. Este archivo no
     # se parte: importScripts sumaria un archivo mas al arranque del service
     # worker, que es la parte mas delicada de la PWA.
-    ('sw.js', 265),
+    # +35 porque lo que crece no es la logica sino la lista SHELL: cada archivo
+    # que sale de una particion suma una linea aca. Partir el sw seria pagar un
+    # importScripts mas en el arranque para ahorrar lineas de datos.
+    ('sw.js', 300),
     # +40 por el editor de pasos. Va con la grilla y no en ui/hoy.js, que ya
     # esta en 660: los pasos son el sexto casillero y su editor es el mismo
     # patron que el del sueño y el del animo, que ya viven aca.
