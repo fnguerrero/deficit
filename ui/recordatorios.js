@@ -86,6 +86,27 @@ function programarRecordatorios() {
  */
 const TAG_OBJETIVOS = 'deficit-objetivos';
 
+/*
+ * Los casilleros del dia con su estado, para escribirlos en el aviso.
+ *
+ * Las rachas saben si estan cumplidas y los objetivos saben con que numero: la
+ * racha de agua dice "no" y el objetivo dice "0/4", y en la barra de
+ * notificaciones lo que sirve es el numero. El id de la racha del ejercicio es
+ * `entrenamiento` y el del casillero `ejercicio`: son la misma cosa con dos
+ * nombres, de cuando eran dos listas distintas.
+ */
+function rachasDelDia() {
+  const valores = {};
+  if (typeof objetivosDelDia === 'function') {
+    for (const o of objetivosDelDia()) {
+      valores[o.id === 'ejercicio' ? 'entrenamiento' : o.id] = o.valor;
+    }
+  }
+
+  return todasLasRachas(state.dias, { ...metasDelJuego(), juego: state.juego })
+    .map(r => ({ ...r, valor: valores[r.id] || '' }));
+}
+
 /** Que falta hoy, en el orden de la grilla. */
 function faltanteDelDia() {
   const rachas = todasLasRachas(state.dias, {
@@ -106,14 +127,20 @@ function textoObjetivos() {
     ? `Déficit · ${hechas.length} de ${total}`
     : 'Déficit · día completo ✨';
 
-  /* Con más de tres pendientes la lista con nombres no entra: Android corta el
-     cuerpo en dos renglones y se pierde justo el final. Ahí van solo los
-     iconos, que es lo que se lee de un vistazo desde la barra. */
+  /*
+   * El cuerpo es la MISMA fila de casilleros que se ve en Hoy: cada uno con su
+   * emoji y su estado, los hechos con un tilde y los que faltan con su valor.
+   *
+   * Antes decia "Falta 💧 🏃" y habia que abrir la app para saber por cuanto.
+   * Asi, la barra de notificaciones muestra el dia entero sin tocar nada, que
+   * es de lo que se trata un aviso fijo.
+   */
+  const fila = rachasDelDia().map(r => `${r.icono} ${r.hoyCumplido ? '✓' : (r.valor || '—')}`).join('  ');
+
   const cuerpo = !faltan.length
-    ? 'Nada pendiente. Mañana se empieza de nuevo.'
-    : faltan.length <= 3
-      ? 'Falta ' + faltan.map(r => r.icono + ' ' + r.nombre.toLowerCase()).join(', ')
-      : 'Falta ' + faltan.map(r => r.icono).join(' ');
+    ? `${fila}
+Nada pendiente. Mañana se empieza de nuevo.`
+    : fila;
 
   return { titulo, cuerpo: `${cuerpo}
 Al ${hora}`, faltan: faltan.length };
@@ -161,6 +188,19 @@ async function actualizarObjetivosFijos() {
       /* El tag es lo que la hace UNA: cada aviso nuevo reemplaza al anterior en
          vez de apilar veinte carteles iguales a lo largo del dia. */
       tag: TAG_OBJETIVOS,
+      /*
+       * Los dos botones. Android muestra como maximo dos —Notification.maxActions—
+       * asi que van los dos que se usan de verdad: el vaso de agua, que es el
+       * gesto mas repetido del dia, y la foto, que es a lo que se entra.
+       *
+       * No se puede cargar SIN abrir la app: el estado vive en localStorage y un
+       * service worker no lo ve. Lo que hacen es abrirla con la accion ya hecha,
+       * que es un toque contra tres.
+       */
+      actions: [
+        { action: 'agua', title: '💧 +1 vaso' },
+        { action: 'foto', title: '📷 Cargar comida' }
+      ],
       /* Y renotify apagado es lo que la hace soportable: reemplaza en silencio,
          sin vibrar ni sonar cada vez que se toca un vaso de agua. */
       renotify: false,
