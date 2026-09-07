@@ -5050,3 +5050,23 @@ test('los horarios viejos sin la marca cuentan como prendidos', () => {
   const migrados = migrar({ cfg: { horarios } }).cfg.horarios;
   esperar(migrados.find(r => r.momento === 'cena').activo, true);
 });
+
+/* ---------------- la accion que dejo la notificacion ---------------- */
+
+test('lo anotado se toma una sola vez', async () => {
+  await anotarPendiente('agua');
+  esperar(await tomarPendiente(), 'agua');
+  esperar(await tomarPendiente(), null, 'la segunda ya no esta: si no, sumaria otro vaso');
+});
+
+test('una accion vieja no se aplica', async () => {
+  /* Una notificacion que quedo colgada de anoche no puede sumarle un vaso al
+     dia de hoy cuando se abre la app. */
+  await anotarPendiente('agua', Date.now() - 60 * 60 * 1000);
+  esperar(await tomarPendiente(), null);
+});
+
+test('sin nada anotado no pasa nada', async () => {
+  await tomarPendiente();
+  esperar(await tomarPendiente(), null);
+});

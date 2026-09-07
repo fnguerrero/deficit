@@ -50,3 +50,23 @@ if (pedido) {
 navigator.serviceWorker?.addEventListener('message', (e) => {
   if (e.data?.tipo === 'hacer') hacerDesdeElAviso(e.data.accion);
 });
+
+/*
+ * Y el camino que no falla: la accion anotada en IndexedDB por el service
+ * worker.
+ *
+ * Los otros dos dependen de algo que puede no pasar —que el sistema conserve el
+ * parametro de la URL, que la ventana abierta tenga el listener puesto—. Esto
+ * se mira al arrancar y cada vez que la app vuelve al frente, que es
+ * exactamente cuando se vuelve de tocar una notificacion.
+ */
+async function aplicarPendiente() {
+  if (typeof tomarPendiente !== 'function') return;
+  const accion = await tomarPendiente();
+  if (accion) hacerDesdeElAviso(accion);
+}
+
+aplicarPendiente();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') aplicarPendiente();
+});

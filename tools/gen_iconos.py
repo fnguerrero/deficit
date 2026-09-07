@@ -44,6 +44,37 @@ def dibujar(size, maskable=False):
     return img.resize((size, size), Image.LANCZOS)
 
 
+def badge(size=96):
+    """El icono chico de la barra de estado de Android.
+
+    Va SOLO en blanco sobre transparente: Android lo pinta como silueta y
+    descarta el color. Con el icono a color queda una mancha gris donde no se
+    distingue nada, que es lo que pasaba usando icon-192 como badge.
+
+    Y sin el anillo: a 24 px reales, el aro y la flecha se funden en un borron.
+    Queda la flecha sola, que es lo que la app significa.
+    """
+    S = 1024
+    img = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+
+    blanco = (255, 255, 255, 255)
+    cx = cy = S / 2
+    a = S * 0.30
+    grosor = int(S * 0.15)
+
+    d.line([(cx, cy - a * 1.15), (cx, cy + a * 0.15)], fill=blanco, width=grosor)
+    d.polygon([
+        (cx - a * 0.95, cy + a * 0.05),
+        (cx + a * 0.95, cy + a * 0.05),
+        (cx, cy + a * 1.15)
+    ], fill=blanco)
+
+    return img.resize((size, size), Image.LANCZOS)
+
+
+badge().save(os.path.join(BASE, 'badge-96.png'))
+
 for size in (192, 512):
     dibujar(size).save(os.path.join(BASE, f'icon-{size}.png'))
     dibujar(size, maskable=True).save(os.path.join(BASE, f'icon-{size}-maskable.png'))

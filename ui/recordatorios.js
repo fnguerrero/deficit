@@ -138,19 +138,27 @@ function textoObjetivos() {
     : 'Déficit · día completo ✨';
 
   /*
-   * El cuerpo es la MISMA fila de casilleros que se ve en Hoy: cada uno con su
-   * emoji y su estado, los hechos con un tilde y los que faltan con su valor.
+   * El cuerpo dice lo que la IMAGEN no puede decir.
    *
-   * Antes decia "Falta 💧 🏃" y habia que abrir la app para saber por cuanto.
-   * Asi, la barra de notificaciones muestra el dia entero sin tocar nada, que
-   * es de lo que se trata un aviso fijo.
+   * La fila de casilleros va dibujada abajo —ver tiraDelDiaPNG—, asi que
+   * repetirla aca en emojis era decir dos veces lo mismo y encima peor. Con la
+   * notificacion contraida el cuerpo es lo unico que se ve, asi que lleva las
+   * dos cosas que se miran de reojo: que falta y cuanto queda para comer.
    */
-  const fila = rachasDelDia().map(r => `${r.icono} ${r.hoyCumplido ? '✓' : (r.valor || '—')}`).join('  ');
+  const calc = calcular();
+  const d = dia(hoyISO());
+  const quedan = calc
+    ? objetivoEfectivo(calc.objetivo, d.ejercicio) - sumarComidas(d.comidas || []).kcal
+    : null;
 
-  const cuerpo = !faltan.length
-    ? `${fila}
-Nada pendiente. Mañana se empieza de nuevo.`
-    : fila;
+  const nombres = faltan.map(r => r.nombre.toLowerCase());
+  const queFalta = nombres.length > 2
+    ? `Faltan ${nombres.length} de ${total}`
+    : (nombres.length ? 'Falta ' + nombres.join(' y ') : 'Día completo');
+
+  const cuerpo = quedan != null
+    ? `${queFalta} · quedan ${fmtNum(Math.round(quedan))} kcal`
+    : queFalta;
 
   return { titulo, cuerpo: `${cuerpo}
 Al ${hora}`, faltan: faltan.length };
@@ -199,7 +207,11 @@ async function actualizarObjetivosFijos() {
     await reg.showNotification(titulo, {
       body: cuerpo,
       icon: 'icons/icon-192.png',
-      badge: 'icons/icon-192.png',
+      /* El badge es la silueta de la barra de estado: Android le tira el color
+         y deja la forma, asi que tiene que ser blanco sobre transparente. Con
+         el icono a color quedaba una mancha gris donde no se distinguia nada;
+         este es la flecha sola, que a 24 px se lee. */
+      badge: 'icons/badge-96.png',
       ...(tira ? { image: tira } : {}),
       /* El tag es lo que la hace UNA: cada aviso nuevo reemplaza al anterior en
          vez de apilar veinte carteles iguales a lo largo del dia. */
