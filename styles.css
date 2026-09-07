@@ -1795,6 +1795,51 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 .objetivo.nivel-mal b { color: var(--bad); }
 
+/* ---------------- el optimo ---------------- */
+
+/*
+ * El dorado del dia completo.
+ *
+ * `--oro` es el mismo tono en los dos temas a proposito: el dorado es un
+ * premio y tiene que leerse igual de noche que de dia. Lo unico que cambia es
+ * cuanto se lo diluye contra el fondo.
+ */
+:root { --oro: #d4a017; --oro-txt: #fcd34d; }
+@media (prefers-color-scheme: light) { :root { --oro-txt: #a37200; } }
+
+/* Un casillero que llego a su optimo: dorado aunque el resto del dia no este.
+   El nivel pierde contra esto, porque un optimo nunca es un dato flojo. */
+.objetivo.optimo {
+  border-style: solid; border-color: var(--oro);
+  background: color-mix(in srgb, var(--oro) 14%, transparent); color: var(--txt);
+}
+.objetivo.optimo b { color: var(--oro-txt); }
+.objetivo.optimo small { color: var(--oro-txt); opacity: .85; }
+
+/* Y el dia entero, marco incluido: la fila deja de ser cuatro casilleros
+   sueltos y pasa a ser una sola cosa terminada. */
+.objetivos.dia-completo {
+  padding: 8px; margin: -8px -8px 4px; border-radius: 18px;
+  background: color-mix(in srgb, var(--oro) 10%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--oro) 45%, transparent);
+}
+.objetivos.dia-completo .objetivo {
+  border-style: solid; border-color: color-mix(in srgb, var(--oro) 60%, transparent);
+}
+.objetivos.dia-completo .objetivo b { color: var(--oro-txt); }
+
+/* El renglon que dice como se gana la estrella, arriba del editor. */
+.optimo-obj {
+  margin: 0 0 12px; padding: 8px 11px; border-radius: 10px;
+  background: var(--card2); border: 1px solid var(--line);
+  font-size: 12.5px; line-height: 1.35; color: var(--dim);
+}
+.optimo-obj.cumplido {
+  color: var(--oro-txt);
+  border-color: color-mix(in srgb, var(--oro) 55%, transparent);
+  background: color-mix(in srgb, var(--oro) 12%, transparent);
+}
+
 /* "No entra" tiene que leerse de lejos: es lo único de la pantalla que pide
    una decisión antes de comer. */
 .marca-apta.grande.no { font-size: 15px; padding: 6px 14px; letter-spacing: -.2px; }

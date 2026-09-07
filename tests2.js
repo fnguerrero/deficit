@@ -5340,3 +5340,112 @@ test('sin bajada, el perfil de aca no se toca', () => {
   esperar(r.estado.perfil.altura, 170);
   esperar(r.estado.cfg.vasosMeta, 4);
 });
+
+/* ---------------- el optimo: el techo, no el piso ---------------- */
+
+test('el sueno optimo es una franja, no un minimo', () => {
+  /* Dormir doce horas no es mejor que dormir ocho: la franja tiene tope. */
+  esperarQue(esOptimo('sueno', { sueno: { horas: 8 } }), '8 h entra');
+  esperarQue(esOptimo('sueno', { sueno: { horas: 7 } }), '7 h es el borde de abajo');
+  esperarQue(esOptimo('sueno', { sueno: { horas: 9 } }), '9 h es el borde de arriba');
+  esperarQue(!esOptimo('sueno', { sueno: { horas: 6.5 } }), '6,5 h no');
+  esperarQue(!esOptimo('sueno', { sueno: { horas: 11 } }), '11 h tampoco');
+  esperarQue(!esOptimo('sueno', {}), 'sin cargar no se regala');
+});
+
+test('los pasos optimos son un piso', () => {
+  esperarQue(esOptimo('pasos', { pasos: 6000 }), 'justo alcanza');
+  esperarQue(esOptimo('pasos', { pasos: 14000 }), 'de mas sigue estando bien');
+  esperarQue(!esOptimo('pasos', { pasos: 5999 }), 'por poco no es');
+  esperarQue(!esOptimo('pasos', {}), 'sin cargar no');
+});
+
+test('el ejercicio pide tiempo Y calorias', () => {
+  /* Cada condicion sola se cumple sin entrenar: una caminata larga junta el
+     tiempo, y un rato corto muy intenso junta las calorias. */
+  const conMov = (minutos, kcal) => ({ ejercicio: kcal, movimientos: [{ minutos, kcal }] });
+  esperarQue(esOptimo('ejercicio', conMov(30, 300)), '30 min y 300 kcal');
+  esperarQue(!esOptimo('ejercicio', conMov(90, 200)), 'mucho tiempo flojo no alcanza');
+  esperarQue(!esOptimo('ejercicio', conMov(10, 400)), 'diez minutos intensos tampoco');
+});
+
+test('un ejercicio cargado a mano no da la estrella', () => {
+  /* Un total escrito a mano no dice cuanto duro, y la estrella no se da por las
+     dudas: es la diferencia entre no saber y saber que si. */
+  esperarQue(!esOptimo('ejercicio', { ejercicio: 500 }), 'sin minutos anotados, no');
+});
+
+test('el optimo de comidas mira el dia que le pasan, no el que esta en pantalla', () => {
+  /* El bug del vaso de agua otra vez: el aviso pregunta siempre por hoy
+     mientras la app puede estar abierta en el martes pasado. */
+  const calcularPrevio = globalThis.calcular;
+  globalThis.calcular = () => ({ objetivo: 2000 });
+  try {
+    const comida = (kcal) => ({ kcal, prot: 0, carb: 0, gras: 0 });
+    const cuatro = [comida(400), comida(500), comida(300), comida(500)];
+
+    esperarQue(esOptimo('comidas', { comidas: cuatro }), '4 comidas y 1700 de 2000');
+    esperarQue(!esOptimo('comidas', { comidas: [...cuatro, comida(900)] }),
+      'pasarse del tope lo saca, aunque sean cinco');
+    esperarQue(!esOptimo('comidas', { comidas: cuatro.slice(0, 3) }),
+      'tres comidas holgadas tampoco: saltearse el almuerzo no es comer bien');
+  } finally {
+    if (calcularPrevio === undefined) delete globalThis.calcular;
+    else globalThis.calcular = calcularPrevio;
+  }
+});
+
+test('sin objetivo calculado no hay estrella de comidas', () => {
+  const calcularPrevio = globalThis.calcular;
+  globalThis.calcular = () => ({ objetivo: 0 });
+  try {
+    const c = { kcal: 100 };
+    esperarQue(!esOptimo('comidas', { comidas: [c, c, c, c] }), 'sin tope no se puede saber');
+  } finally {
+    if (calcularPrevio === undefined) delete globalThis.calcular;
+    else globalThis.calcular = calcularPrevio;
+  }
+});
+
+test('un id que no es un objetivo del dia no da estrella', () => {
+  esperarQue(!esOptimo('peso', { peso: 82 }), 'el peso no es un casillero del dia');
+  esperarQue(!esOptimo('pasos', null), 'sin dia no hay nada que juzgar');
+});
+
+test('el texto dice como se gana la estrella', () => {
+  esperarQue(/7 y 9/.test(textoOptimo('sueno')), textoOptimo('sueno'));
+  esperarQue(/30/.test(textoOptimo('ejercicio')) && /300/.test(textoOptimo('ejercicio')),
+    'el de ejercicio nombra las dos condiciones');
+  esperar(textoOptimo('peso'), '', 'lo que no tiene optimo no inventa una regla');
+  esperar(textoOptimo('agua', 6), 'Óptimo: llegar a los 6 vasos del día.');
+  esperarQue(/la meta del día/.test(textoOptimo('agua', 0)), 'sin meta lo dice sin numero');
+});
+
+test('el dorado se enciende con todos en su optimo, no con todos cargados', () => {
+  /* Cargados alcanzaba para dorar un dia de 3.000 pasos y cinco horas de sueno,
+     con un casillero en rojo adentro del marco dorado. */
+  const estrella = (n) => ({ icono: '💧', nombre: n, valor: '1', listo: true, optimo: true });
+  esperarQue(todoOptimo([estrella('a'), estrella('b')]), 'los dos con estrella');
+  esperarQue(!todoOptimo([estrella('a'), { ...estrella('b'), optimo: false }]),
+    'uno sin estrella alcanza para que no sea un dia completo');
+  esperarQue(!todoOptimo([{ icono: '👟', nombre: 'Pasos', listo: true, nivel: 'mal' }]),
+    'cargado con un dato malo no dora nada');
+  esperarQue(!todoOptimo([]), 'una fila vacia no es un dia completo');
+});
+
+test('la fila dorada se dibuja distinto de la misma fila sin dorar', () => {
+  const fila = (optimo) => [
+    { icono: '💧', nombre: 'Agua', valor: '4/4', listo: true, nivel: 'bien', optimo },
+    { icono: '👟', nombre: 'Pasos', valor: '8.000', listo: true, nivel: 'bien', optimo }
+  ];
+  const oro = tiraDelDiaPNG(fila(true));
+  const comun = tiraDelDiaPNG(fila(false));
+  esperarQue(oro !== comun, 'el dia completo no se ve igual que el incompleto');
+});
+
+test('la estrella entra en la firma del cache de la tira', () => {
+  /* Sin esto, ganar la estrella no volvia a dibujar: la fila decia lo mismo. */
+  const base = [{ icono: '👟', nombre: 'Pasos', valor: '8.000', listo: true, nivel: 'bien' }];
+  const conEstrella = [{ ...base[0], optimo: true }];
+  esperarQue(tiraDelDiaPNG(base) !== tiraDelDiaPNG(conEstrella), 'la estrella cambia el dibujo');
+});
