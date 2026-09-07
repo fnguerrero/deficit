@@ -180,7 +180,13 @@ function renderObjetivos() {
      Optimo y no "cargado": con cargado, un dia de 3.000 pasos y cinco horas de
      sueno se doraba entero, con un casillero en rojo adentro del marco. */
   const delDia = objetivosDelDia().filter(o => !o.opcional);
-  cont.classList.toggle('dia-completo', delDia.length > 0 && delDia.every(o => o.optimo));
+  const completo = delDia.length > 0 && delDia.every(o => o.optimo);
+  cont.classList.toggle('dia-completo', completo);
+  /* Y la fila de comidas acompaña. Es solo el festejo: las comidas no deciden
+     si el dia esta completo —no tienen casillero en la grilla— pero que la
+     pantalla se dore por la mitad hacia arriba y siga verde abajo hacia que el
+     premio se leyera como un error de pintura. */
+  $('cardComidas')?.classList.toggle('dia-completo', completo);
 
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {

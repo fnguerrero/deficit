@@ -232,14 +232,26 @@ async function actualizarObjetivosFijos() {
   if (!reg?.showNotification) return;
 
   const { titulo, cuerpo } = textoObjetivos();
-  const firma = titulo + '|' + cuerpo;
+
+  /*
+   * La firma incluye la FILA, no solo el texto.
+   *
+   * El titulo dice las calorias que quedan y el cuerpo esta vacio: tomar un
+   * vaso de agua no mueve ninguno de los dos, asi que la firma daba igual y el
+   * aviso no se repintaba. El agua llegaba a su meta en la app y la
+   * notificacion seguia mostrando el dibujo viejo, sin la estrella. Lo mismo
+   * con los pasos, el sueño y cualquier casillero que no sean calorias.
+   */
+  const fila = rachasDelDia();
+  const firma = titulo + '|' + cuerpo + '|' +
+    (typeof firmaDeTira === 'function' ? firmaDeTira(fila, TIRA_ANCHO, TIRA_ALTO) : '');
   if (firma === ultimoAvisoObjetivos) return;
   ultimoAvisoObjetivos = firma;
 
   /* La fila dibujada, que es lo unico "propio" que se puede meter en una
      notificacion: Android la muestra al desplegarla. Si el navegador no la
      acepta, el aviso sigue igual con su texto. */
-  const tira = typeof tiraDelDiaPNG === 'function' ? tiraDelDiaPNG(rachasDelDia()) : null;
+  const tira = typeof tiraDelDiaPNG === 'function' ? tiraDelDiaPNG(fila) : null;
 
   try {
     await reg.showNotification(titulo, {
