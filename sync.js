@@ -132,6 +132,21 @@ function clienteSupabase({ url, anonKey, fetchFn, señal = null, intentos = 3, d
   }
 
   return {
+    /**
+     * Borra las filas que cumplan el filtro. Se usa para apagar los avisos con
+     * la app cerrada: la suscripcion cancelada en el navegador tiene que dejar
+     * de existir tambien del lado servidor, o el servidor sigue golpeando una
+     * direccion muerta hasta que el fabricante la da de baja.
+     */
+    async borrar(tabla, filtro = {}) {
+      const partes = Object.entries(filtro).map(([k, v]) => `${k}=eq.${encodeURIComponent(v)}`);
+      if (!partes.length) return [];
+      return pedir(`${tabla}?${partes.join('&')}`, {
+        method: 'DELETE',
+        headers: { Prefer: 'return=minimal' }
+      });
+    },
+
     /** Inserta o actualiza filas (upsert por la clave primaria de la tabla). */
     async guardar(tabla, filas) {
       if (!filas || !filas.length) return [];

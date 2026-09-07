@@ -1,33 +1,34 @@
 /* Service worker — cachea el shell de la app para que ande offline.
    Subir la versión al cambiar cualquier archivo. */
 
-const VERSION = 'deficit-v570';
+const VERSION = 'deficit-v574';
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=570',
-  './config.js?v=570',
-  './core.js?v=570',
-  './platos.js?v=570',
-  './animar.js?v=570',
-  './fotos.js?v=570',
-  './calibracion.js?v=570',
-  './modos.js?v=570',
-  './arreglos.js?v=570',
-  './consecuencias.js?v=570',
-  './recorte.js?v=570',
-  './deportes.js?v=570',
-  './habitos.js?v=570',
-  './mascota.js?v=570',
-  './cuerpo.js?v=570',
-  './cintura.js?v=570',
-  './figura.js?v=570',
-  './cara.js?v=570',
-  './personaje.js?v=570',
-  './relieve.js?v=570',
-  './sprite-datos.js?v=570',
-  './sprite.js?v=570',
+  './styles.css?v=574',
+  './config.js?v=574',
+  './core.js?v=574',
+  './platos.js?v=574',
+  './animar.js?v=574',
+  './fotos.js?v=574',
+  './calibracion.js?v=574',
+  './modos.js?v=574',
+  './arreglos.js?v=574',
+  './consecuencias.js?v=574',
+  './recorte.js?v=574',
+  './push.js?v=574',
+  './deportes.js?v=574',
+  './habitos.js?v=574',
+  './mascota.js?v=574',
+  './cuerpo.js?v=574',
+  './cintura.js?v=574',
+  './figura.js?v=574',
+  './cara.js?v=574',
+  './personaje.js?v=574',
+  './relieve.js?v=574',
+  './sprite-datos.js?v=574',
+  './sprite.js?v=574',
   './img/cuerpo-0.webp',
   './img/cuerpo-1.webp',
   './img/cuerpo-2.webp',
@@ -35,49 +36,50 @@ const SHELL = [
   './img/cuerpo-4.webp',
   './img/cuerpo-5.webp',
   './img/cuerpo-6.webp',
-  './transformacion.js?v=570',
-  './aura.js?v=570',
-  './juego.js?v=570',
-  './sonidos.js?v=570',
-  './voz.js?v=570',
-  './graficos.js?v=570',
-  './plazo.js?v=570',
-  './compartir.js?v=570',
-  './sugerencias.js?v=570',
-  './analisis.js?v=570',
-  './chequeos.js?v=570',
-  './claude.js?v=570',
-  './productos.js?v=570',
-  './sync-perfil.js?v=570',
-  './fusion-dia.js?v=570',
-  './sync.js?v=570',
-  './estado-sync.js?v=570',
-  './auth.js?v=570',
-  './app.js?v=570',
-  './ui/general.js?v=570',
-  './ui/hoy.js?v=570',
-  './ui/peso.js?v=570',
-  './ui/dia.js?v=570',
-  './ui/objetivos.js?v=570',
-  './ui/barra.js?v=570',
-  './ui/recorte.js?v=570',
-  './ui/tarjeta.js?v=570',
-  './ui/comidas.js?v=570',
-  './ui/edicion.js?v=570',
-  './ui/resumen.js?v=570',
-  './ui/escaner.js?v=570',
-  './ui/asistente.js?v=570',
-  './ui/historial.js?v=570',
-  './ui/progreso.js?v=570',
-  './ui/logros.js?v=570',
-  './ui/perfil.js?v=570',
-  './ui/sincronizacion.js?v=570',
-  './ui/cuenta.js?v=570',
-  './ui/calibracion.js?v=570',
-  './ui/actividades.js?v=570',
-  './ui/recordatorios.js?v=570',
-  './ui/ajustes.js?v=570',
-  './arranque.js?v=570',
+  './transformacion.js?v=574',
+  './aura.js?v=574',
+  './juego.js?v=574',
+  './sonidos.js?v=574',
+  './voz.js?v=574',
+  './graficos.js?v=574',
+  './plazo.js?v=574',
+  './compartir.js?v=574',
+  './sugerencias.js?v=574',
+  './analisis.js?v=574',
+  './chequeos.js?v=574',
+  './claude.js?v=574',
+  './productos.js?v=574',
+  './sync-perfil.js?v=574',
+  './fusion-dia.js?v=574',
+  './sync.js?v=574',
+  './estado-sync.js?v=574',
+  './auth.js?v=574',
+  './app.js?v=574',
+  './ui/general.js?v=574',
+  './ui/hoy.js?v=574',
+  './ui/peso.js?v=574',
+  './ui/dia.js?v=574',
+  './ui/objetivos.js?v=574',
+  './ui/barra.js?v=574',
+  './ui/recorte.js?v=574',
+  './ui/push.js?v=574',
+  './ui/tarjeta.js?v=574',
+  './ui/comidas.js?v=574',
+  './ui/edicion.js?v=574',
+  './ui/resumen.js?v=574',
+  './ui/escaner.js?v=574',
+  './ui/asistente.js?v=574',
+  './ui/historial.js?v=574',
+  './ui/progreso.js?v=574',
+  './ui/logros.js?v=574',
+  './ui/perfil.js?v=574',
+  './ui/sincronizacion.js?v=574',
+  './ui/cuenta.js?v=574',
+  './ui/calibracion.js?v=574',
+  './ui/actividades.js?v=574',
+  './ui/recordatorios.js?v=574',
+  './ui/ajustes.js?v=574',
+  './arranque.js?v=574',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -130,6 +132,47 @@ self.addEventListener('notificationclick', (e) => {
       return self.clients.openWindow('./');
     })
   );
+});
+
+/*
+ * El aviso que llega con la app cerrada: el unico camino real en una PWA, donde
+ * los `setTimeout` mueren al cerrarse y nadie despierta al telefono.
+ *
+ * Viaja SIN texto a proposito: mandarlo con contenido obliga a encriptar el
+ * cuerpo con la clave del dispositivo (RFC 8291), y lo que hay que decir se
+ * arma igual de bien aca con la hora del telefono. Menos codigo del lado
+ * servidor, y ningun dato de comidas saliendo a un tercero.
+ */
+const MOMENTOS_SW = [
+  { hasta: 11 * 60 + 29, texto: '¿Ya desayunaste? Cargá la foto y seguí con lo tuyo.' },
+  { hasta: 16 * 60 + 29, texto: '¿Ya almorzaste? Una foto y listo.' },
+  { hasta: 20 * 60 + 29, texto: '¿Merendaste algo? Anotalo antes de que se te pase.' },
+  { hasta: 24 * 60, texto: '¿Y la cena? Con eso el día queda cerrado.' }
+];
+
+function textoDelAviso(datos) {
+  if (datos) {
+    try {
+      const j = datos.json();
+      if (j && j.cuerpo) return { titulo: j.titulo || 'Déficit', cuerpo: j.cuerpo };
+    } catch { /* sin json usable, se arma abajo */ }
+  }
+
+  const ahora = new Date();
+  const minutos = ahora.getHours() * 60 + ahora.getMinutes();
+  const m = MOMENTOS_SW.find(x => minutos <= x.hasta) || MOMENTOS_SW[MOMENTOS_SW.length - 1];
+  return { titulo: 'Déficit', cuerpo: m.texto };
+}
+
+self.addEventListener('push', (e) => {
+  const { titulo, cuerpo } = textoDelAviso(e.data);
+  e.waitUntil(self.registration.showNotification(titulo, {
+    body: cuerpo,
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    // reemplaza al anterior en vez de apilar cuatro carteles en el dia
+    tag: 'deficit-recordatorio'
+  }));
 });
 
 self.addEventListener('activate', (e) => {

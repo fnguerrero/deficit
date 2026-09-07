@@ -21,5 +21,17 @@ const CONFIG_APP = {
   supabase: {
     url: 'https://qjpcpjjcppwuufmsafbu.supabase.co',
     anonKey: 'sb_publishable_MIWjqN2Od5-fXQNjH214CQ_Qja_9MiM'
-  }
+  },
+
+  /*
+   * Avisos con la app cerrada.
+   *
+   * Esta es la mitad PUBLICA del par VAPID: identifica quien manda los avisos y
+   * no autoriza nada por si sola —la privada vive como secreto del Worker—.
+   * Se genera una vez con `py -3 tools/vapid.py` y se pega aca.
+   *
+   * Vacia = la app no ofrece los avisos de fondo y sigue con los de siempre,
+   * que solo corren con la app abierta.
+   */
+  vapidPublica: ''
 };

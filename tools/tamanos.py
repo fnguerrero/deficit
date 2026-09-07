@@ -59,8 +59,11 @@ LIMITES = [
     ('auth.js', 300),
     ('tests.js', 6000),   # la suite crece con cada feature
     ('tests2.js', 6000),  # se partio en el ciclo 6, al pasarse la primera
-    # +20 por notificationclick, que hace que el aviso fijo lleve a la app
-    ('sw.js', 170),
+    # +20 por notificationclick, que hace que el aviso fijo lleve a la app.
+    # +45 por el push, que es lo que hace que un aviso llegue con la app
+    # cerrada. Este archivo no se parte: importScripts sumaria un archivo mas al
+    # arranque del service worker, que es la parte mas delicada de la PWA.
+    ('sw.js', 215),
     # +40 por el editor de pasos. Va con la grilla y no en ui/hoy.js, que ya
     # esta en 660: los pasos son el sexto casillero y su editor es el mismo
     # patron que el del sueño y el del animo, que ya viven aca.

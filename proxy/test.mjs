@@ -5,6 +5,7 @@
    la pena aunque sean cien líneas. */
 
 import worker from './worker.js';
+import { aQuienAvisar } from './push.js';
 
 let fallos = 0;
 const PENDIENTES = [];
@@ -141,3 +142,41 @@ test('no rompe si la API no responde', async () => {
 });
 
 await correr();
+
+/* ---------------- el reloj de los avisos ---------------- */
+
+const SUB = (tz, horas) => ({
+  endpoint: 'https://fcm.googleapis.com/' + tz,
+  tz,
+  horarios: horas.map(h => ({ momento: 'x', hora: h }))
+});
+
+test('avisa al que le toca en SU huso, no en el del servidor', async () => {
+  /* Las 14:30 en Buenos Aires son las 17:30 UTC. El mismo instante no le toca a
+     alguien en Madrid, donde son las 19:30. */
+  const ahora = new Date('2026-09-07T17:30:00Z');
+  const filas = [
+    SUB('America/Argentina/Buenos_Aires', ['14:30']),
+    SUB('Europe/Madrid', ['14:30'])
+  ];
+  const toca = aQuienAvisar(filas, ahora);
+  esperar(toca.length, 1, 'solo uno de los dos');
+  esperar(toca[0].tz, 'America/Argentina/Buenos_Aires');
+});
+
+test('el aviso cae en su ventana de quince minutos y en ninguna otra', async () => {
+  const bsas = tz => new Date(tz);
+  const filas = [SUB('America/Argentina/Buenos_Aires', ['14:30'])];
+  esperar(aQuienAvisar(filas, bsas('2026-09-07T17:30:00Z')).length, 1, 'a las 14:30');
+  esperar(aQuienAvisar(filas, bsas('2026-09-07T17:44:00Z')).length, 1, 'a las 14:44 todavia');
+  esperar(aQuienAvisar(filas, bsas('2026-09-07T17:45:00Z')).length, 0, 'a las 14:45 ya no');
+  esperar(aQuienAvisar(filas, bsas('2026-09-07T17:29:00Z')).length, 0, 'un minuto antes tampoco');
+});
+
+test('una suscripcion sin horarios o con huso invalido no molesta a nadie', async () => {
+  const ahora = new Date('2026-09-07T17:30:00Z');
+  esperar(aQuienAvisar([SUB('America/Argentina/Buenos_Aires', [])], ahora).length, 0);
+  esperar(aQuienAvisar([{ endpoint: 'x', tz: 'Marte/Olympus', horarios: [{ hora: '14:30' }] }], ahora).length, 0);
+  esperar(aQuienAvisar([], ahora).length, 0);
+  esperar(aQuienAvisar(null, ahora).length, 0);
+});

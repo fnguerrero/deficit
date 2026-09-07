@@ -46,7 +46,18 @@ function error(mensaje, status, origen) {
   });
 }
 
+import { correrAvisos } from './push.js';
+
 export default {
+  /*
+   * El reloj de los avisos. Cloudflare lo llama por el cron de wrangler.toml, y
+   * es lo unico que puede despertar a un telefono con la app cerrada: adentro
+   * del navegador no hay nada que siga corriendo.
+   */
+  async scheduled(evento, env, ctx) {
+    ctx.waitUntil(correrAvisos(env, new Date(evento.scheduledTime)));
+  },
+
   async fetch(request, env) {
     const origen = request.headers.get('Origin') || '';
     const permitido = ORIGENES.includes(origen);

@@ -80,3 +80,48 @@ cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler tail
 
 Poné `proxyUrl: ''` en `config.js` y cada dispositivo vuelve a usar su propia clave desde
 Ajustes. El Worker se borra con `npx wrangler delete`.
+
+## Los avisos con la app cerrada
+
+Los recordatorios de la app son temporizadores del navegador: **mueren cuando la
+app se cierra**. Para que el aviso llegue con el teléfono guardado hace falta que
+alguien golpee desde afuera, y ese alguien es este Worker.
+
+Son cuatro pasos y se hacen una vez.
+
+**1. Generá tu par de claves.** Corré esto en tu consola: la privada se imprime
+en pantalla y no tiene que pasar por ningún lado más.
+
+```bash
+cd "W:\Working Folder Personal\DeficitCalorico" && py -3 tools/vapid.py
+```
+
+**2. Pegá la pública en `config.js`**, en `vapidPublica`. Es pública de verdad:
+identifica quién manda los avisos y no autoriza nada por sí sola. Mientras esté
+vacía, la app no ofrece la opción.
+
+**3. Cargá los secretos del Worker** (la privada, la pública y las credenciales
+de Supabase, que es de donde salen las suscripciones):
+
+```bash
+cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler secret put VAPID_PRIVADA
+```
+
+Y lo mismo con `VAPID_PUBLICA`, `SUPABASE_URL` y `SUPABASE_ANON`.
+
+**4. Creá la tabla y desplegá.** El SQL está en `supabase-push.sql`, se pega en
+el editor de Supabase. Después:
+
+```bash
+cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler deploy
+```
+
+El cron queda andando cada quince minutos (está en `wrangler.toml`). Desde ahí,
+en Ajustes → Recordatorios aparece **"Avisarme aunque tenga la app cerrada"**.
+
+### Qué viaja y qué no
+
+A Supabase va la dirección que da el navegador, los horarios y el huso. **No va
+ninguna comida, ni el peso, ni el mail.** El aviso sale vacío —sin texto— y el
+teléfono arma la frase según la hora: además de ser menos código, evita que el
+contenido de los recordatorios pase por un tercero.
