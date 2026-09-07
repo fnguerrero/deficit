@@ -97,9 +97,12 @@ const TAG_OBJETIVOS = 'deficit-objetivos';
  */
 function rachasDelDia() {
   const valores = {};
+  const niveles = {};
   if (typeof objetivosDelDia === 'function') {
     for (const o of objetivosDelDia()) {
-      valores[o.id === 'ejercicio' ? 'entrenamiento' : o.id] = o.valor;
+      const id = o.id === 'ejercicio' ? 'entrenamiento' : o.id;
+      valores[id] = o.valor;
+      niveles[id] = o.nivel;
     }
   }
 
@@ -113,6 +116,10 @@ function rachasDelDia() {
       /* `listo` es como lo llaman los casilleros y `hoyCumplido` como lo llaman
          las rachas: se deja el de los casilleros porque es el que usa el dibujo. */
       listo: r.hoyCumplido,
+      /* Y el nivel, que es lo que decide el color: dos vasos de cuatro no estan
+         cumplidos, pero tampoco son lo mismo que cero. En la app eso se ve en
+         ambar y en el dibujo salia gris. */
+      nivel: niveles[r.id === 'entrenamiento' ? 'entrenamiento' : r.id] || '',
       valor: r.id === 'registro' ? (comidas ? String(comidas) : '') : (valores[r.id] || '')
     }));
 }
@@ -204,15 +211,14 @@ async function actualizarObjetivosFijos() {
          vez de apilar veinte carteles iguales a lo largo del dia. */
       tag: TAG_OBJETIVOS,
       /*
-       * Un solo boton, y es el que ahorra pasos de verdad.
+       * Sin botones: es un tablero, no un panel de control.
        *
-       * Habia otro de "+1 vaso" y se fue: sumaba bien, pero abria la app igual
-       * —el estado vive en localStorage y un service worker no lo ve— y el vaso
-       * se toca adentro en dos segundos. Un boton que promete una interaccion
-       * que no es tal vale menos que el lugar que ocupa. La foto si: sin el
-       * atajo hay que abrir la app y buscar el boton.
+       * Estuvieron los dos —"+1 vaso" y "Cargar comida"— y los dos terminaban
+       * abriendo la app, porque el estado vive en localStorage y el service
+       * worker no lo ve. Un boton que promete una interaccion que no es tal
+       * vale menos que el lugar que ocupa, y ocupaban bastante: sin ellos, la
+       * fila dibujada respira.
        */
-      actions: [{ action: 'foto', title: '📷 Cargar comida' }],
       /* Y renotify apagado es lo que la hace soportable: reemplaza en silencio,
          sin vibrar ni sonar cada vez que se toca un vaso de agua. */
       renotify: false,
