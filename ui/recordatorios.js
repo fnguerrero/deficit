@@ -250,7 +250,18 @@ async function actualizarObjetivosFijos() {
   const fila = rachasDelDia();
   const firma = titulo + '|' + cuerpo + '|' +
     (typeof firmaDeTira === 'function' ? firmaDeTira(fila, TIRA_ANCHO, TIRA_ALTO) : '');
-  if (firma === ultimoAvisoObjetivos) return;
+
+  /*
+   * La segunda red para que el aviso no se pueda sacar.
+   *
+   * El service worker lo repone cuando lo descartan, pero ese evento puede no
+   * llegar: el worker estaba dormido, el sistema mato el proceso, o el aviso se
+   * fue por un "Borrar todo" que Android no siempre reporta. Asi que antes de
+   * saltear por firma repetida se mira si el cartel sigue puesto: si no esta,
+   * se vuelve a mostrar aunque no haya cambiado una sola letra.
+   */
+  const puestas = await reg.getNotifications?.({ tag: TAG_OBJETIVOS }).catch(() => []) || [];
+  if (!hayQueRepintarAviso(firma, ultimoAvisoObjetivos, puestas.length)) return;
   ultimoAvisoObjetivos = firma;
 
   /* La fila dibujada, que es lo unico "propio" que se puede meter en una

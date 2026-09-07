@@ -5634,3 +5634,22 @@ test('una foto nueva no hereda los intentos de otra', () => {
   esperar(cola.find(x => x.id === 'c2').intentos, 0);
   esperar(cola.find(x => x.id === 'c1').intentos, 2);
 });
+
+/* ---------------- el aviso que no se puede sacar ---------------- */
+
+test('el aviso vuelve si ya no esta, aunque el dia no haya cambiado', () => {
+  /* Es la segunda red: el service worker lo repone cuando lo descartan, pero
+     ese evento puede no llegar —worker dormido, proceso matado, un "Borrar
+     todo" que Android no reporta—. */
+  esperarQue(hayQueRepintarAviso('a', 'a', 0), 'sin cartel puesto se repinta igual');
+  esperarQue(!hayQueRepintarAviso('a', 'a', 1), 'con el cartel puesto y nada nuevo, no');
+  esperarQue(hayQueRepintarAviso('b', 'a', 1), 'y si la fila cambio, siempre');
+  esperarQue(hayQueRepintarAviso('b', 'a', 0), 'las dos cosas juntas tambien');
+});
+
+test('la primera vez siempre se muestra', () => {
+  /* `ultimaFirma` arranca vacia: sin esto el primer aviso del dia dependeria de
+     que la fila fuera distinta de un string vacio. */
+  esperarQue(hayQueRepintarAviso('lo que sea', '', 0));
+  esperarQue(hayQueRepintarAviso('lo que sea', '', 1));
+});

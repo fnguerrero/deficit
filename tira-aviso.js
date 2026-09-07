@@ -54,6 +54,19 @@ const TIRA_ORO = {
 };
 
 /*
+ * Si hay que volver a mostrar el aviso fijo.
+ *
+ * Dos motivos, y el segundo es el que lo hace irrompible: o la fila dice algo
+ * distinto, o el cartel ya no esta puesto. Sin mirar lo segundo, el guard por
+ * firma repetida dejaba afuera justo el caso de alguien que lo descarto y no
+ * cambio nada del dia: el aviso no volvia hasta el proximo vaso de agua.
+ */
+function hayQueRepintarAviso(firma, ultimaFirma, puestas = 1) {
+  if (firma !== ultimaFirma) return true;
+  return !puestas;
+}
+
+/*
  * Lo ultimo que se dibujo, para no volver a dibujarlo igual.
  *
  * Son 60 KB de PNG y el aviso se refresca en cada cambio del dia: sin esto, un

@@ -187,3 +187,4 @@ esta sesion.
 - [x] Recordatorios compactos: de 791 a 421 px, seis filas de 34 px: una fila por momento en vez de tres renglones · verif: alto del bloque medido en 375x812, antes y despues · archivos: index.html, styles.css, ui/recordatorios.js
 - [x] El runner contaba EN VERDE los tests async escritos con test() en vez de testAsync(): ahora los encola y los espera · verif: aparecieron 2 rojos que estaban ocultos, los dos arreglados
 - [x] Bytes backspace (0x08) en tres regex, por el escape del heredoc: /cfg/ nunca matcheaba y el reintento sin la columna cfg no corria · verif: 0 bytes 0x08 en el repo, y el test de la columna en verde
+- [x] Segunda red del aviso fijo: se repone si no esta, no solo cuando lo descartan · verif: 2 tests de hayQueRepintarAviso + el enganche al volver al frente
