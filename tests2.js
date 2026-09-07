@@ -5186,3 +5186,157 @@ test('la fila del aviso no se vuelve a dibujar si dice lo mismo', () => {
   const otra = tiraDelDiaPNG([{ ...fila[0], valor: '3/4' }, fila[1]]);
   esperarQue(otra !== a, 'un valor distinto vuelve a dibujar');
 });
+
+/* ---------------- la configuracion viaja entre dispositivos ---------------- */
+
+test('de la cfg viaja lo de la persona, no lo del aparato', () => {
+  const c = cfgQueViaja({
+    vasosMeta: 6, pasosMeta: 12000, figura: 'f', tema: 'oscuro',
+    apiKey: 'sk-secreta', recordatorios: true, avisoObjetivos: true,
+    onboardingHecho: true, act: 500
+  });
+  esperar(c.vasosMeta, 6);
+  esperar(c.pasosMeta, 12000);
+  esperar(c.tema, 'oscuro');
+  esperar(c.act, 500);
+  esperar(c.apiKey, undefined);
+  esperar(c.recordatorios, undefined);
+  esperar(c.onboardingHecho, undefined);
+});
+
+test('la cfg se resuelve entera: gana la ultima que alguien toco', () => {
+  const local = { vasosMeta: 4, pasosMeta: 10000, apiKey: 'sk-mia', act: 100 };
+  const remota = { vasosMeta: 8, pasosMeta: 12000, act: 200 };
+
+  const g = fusionarCfg(local, remota);
+  esperarQue(g.cambio, 'la remota es mas nueva');
+  esperar(g.cfg.vasosMeta, 8);
+  esperar(g.cfg.pasosMeta, 12000);
+  /* Lo que no viaja se queda: bajar la cfg del celular no puede borrar la clave
+     de la API de esta compu. */
+  esperar(g.cfg.apiKey, 'sk-mia');
+});
+
+test('una cfg remota mas vieja no pisa la de aca', () => {
+  const local = { vasosMeta: 8, act: 300 };
+  const g = fusionarCfg(local, { vasosMeta: 4, act: 100 });
+  esperarQue(!g.cambio, 'no cambia nada');
+  esperar(g.cfg.vasosMeta, 8);
+});
+
+test('sin cfg remota (base sin migrar) manda la local', () => {
+  const local = { vasosMeta: 8, act: 300 };
+  const g = fusionarCfg(local, undefined);
+  esperarQue(!g.cambio, 'no hay con que comparar');
+  esperar(g.cfg.vasosMeta, 8);
+});
+
+test('el tiempo de un deporte y los horarios viajan enteros', () => {
+  /* Las listas se copian tal cual: fusionarlas elemento por elemento daria
+     mezclas que nadie configuro. */
+  const remota = {
+    actividades: [{ id: 'running', nombre: 'Running', emoji: '🏃', met: 9.8, minutos: 45 }],
+    horarios: [{ momento: 'cena', hora: '22:30', activo: true }],
+    act: 200
+  };
+  const g = fusionarCfg({ act: 100 }, remota);
+  esperar(g.cfg.actividades.length, 1);
+  esperar(g.cfg.actividades[0].minutos, 45);
+  esperar(g.cfg.horarios[0].hora, '22:30');
+});
+
+test('la cfg sube aunque el perfil no haya cambiado', async () => {
+  /* Cambiar los vasos del dia no toca el perfil: si la subida dependiera de el,
+     la configuracion no viajaria nunca. */
+  const subidas = [];
+  const cliente = {
+    traer: async () => [{ llave: 'k'.repeat(32), act: 900, altura: 178, cfg: { vasosMeta: 4, act: 100 } }],
+    guardar: async (_t, filas) => { subidas.push(...filas); }
+  };
+  const r = await sincronizarPerfil({
+    cliente, perfil: { altura: 178, act: 900 }, cfg: { vasosMeta: 8, act: 500 },
+    llave: 'k'.repeat(32), ahora: 1234
+  });
+  esperarQue(r.subido, 'se subio');
+  esperar(subidas.length, 1);
+  esperar(subidas[0].cfg.vasosMeta, 8);
+  esperar(subidas[0].cfg.act, 500);
+});
+
+test('si la base no tiene la columna cfg, el perfil viaja igual', async () => {
+  const intentos = [];
+  const cliente = {
+    traer: async () => [],
+    guardar: async (_t, filas) => {
+      intentos.push(filas[0]);
+      if (filas[0].cfg) throw new Error("Could not find the 'cfg' column of 'perfil' in the schema cache");
+    }
+  };
+  const r = await sincronizarPerfil({
+    cliente, perfil: { altura: 178, act: 900 }, cfg: { vasosMeta: 8, act: 500 },
+    llave: 'k'.repeat(32), ahora: 1234
+  });
+  esperar(intentos.length, 2);
+  esperar(intentos[1].cfg, undefined);
+  esperar(intentos[1].altura, 178);
+  esperarQue(r.subido, 'el perfil subio igual');
+  esperarQue(r.migrar, 'y avisa que falta correr el SQL');
+});
+
+test('un error que no es la columna cfg no se reintenta', async () => {
+  let veces = 0;
+  const cliente = {
+    traer: async () => [],
+    guardar: async () => { veces++; throw new Error('network error'); }
+  };
+  const r = await sincronizarPerfil({
+    cliente, perfil: { altura: 178, act: 900 }, cfg: { vasosMeta: 8, act: 500 },
+    llave: 'k'.repeat(32)
+  });
+  esperar(veces, 1);
+  esperarQue(!r.subido, 'no subio');
+  esperarQue(/network/.test(r.error || ''), r.error);
+});
+
+test('la cfg que baja llega al estado fusionado', () => {
+  /* El puente entre lo que devuelve sincronizarPerfil y lo que ve la pantalla. */
+  const fusionado = { cfg: { vasosMeta: 4, apiKey: 'sk-mia', act: 100 } };
+  const g = fusionarCfg(fusionado.cfg, { vasosMeta: 8, figura: 'f', act: 700 });
+  fusionado.cfg = g.cfg;
+  esperar(fusionado.cfg.vasosMeta, 8);
+  esperar(fusionado.cfg.figura, 'f');
+  esperar(fusionado.cfg.apiKey, 'sk-mia');
+});
+
+test('el perfil y la cfg que bajaron llegan aunque no haya comidas nuevas', () => {
+  /* Antes se perdian: fusionarAlFinal cortaba de entrada si no habia nada que
+     bajar, y cambiar la altura en el celular no llegaba nunca a la compu si ese
+     dia no se habia cargado ninguna comida. */
+  const vivo = {
+    perfil: { altura: 170, act: 100 },
+    cfg: { vasosMeta: 4, act: 100, sync: { url: 'la de esta compu' } },
+    dias: {}
+  };
+  const r = fusionarAlFinal(vivo, {
+    remotas: { comidas: [], dias: [] },
+    estado: {
+      perfil: { altura: 178, act: 900 },
+      cfg: { vasosMeta: 8, act: 900, sync: { url: 'la vieja del clon' } }
+    },
+    resumen: { perfilBajado: true, cfgBajada: true }
+  });
+  esperar(r.estado.perfil.altura, 178);
+  esperar(r.estado.cfg.vasosMeta, 8);
+  esperar(r.estado.cfg.sync.url, 'la de esta compu');
+});
+
+test('sin bajada, el perfil de aca no se toca', () => {
+  const vivo = { perfil: { altura: 170, act: 100 }, cfg: { vasosMeta: 4 }, dias: {} };
+  const r = fusionarAlFinal(vivo, {
+    remotas: { comidas: [], dias: [] },
+    estado: { perfil: { altura: 178 }, cfg: { vasosMeta: 8 } },
+    resumen: { perfilBajado: false, cfgBajada: false }
+  });
+  esperar(r.estado.perfil.altura, 170);
+  esperar(r.estado.cfg.vasosMeta, 4);
+});

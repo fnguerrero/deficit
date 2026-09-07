@@ -167,7 +167,7 @@ esta sesion.
 - [x] Compartir el DIA entero por WhatsApp, no solo una comida · verif: 3 tests del texto y el boton en la app viva · archivos: compartir.js, ui/dia.js, index.html, tests2.js
 - [x] Un contacto guardado para mandar directo por wa.me, sin pasar por el selector · verif: 3 tests del armado del link y el campo en Ajustes · archivos: compartir.js, ui/ajustes.js, core.js, index.html, tests2.js
 - [x] La imagen del aviso, cacheada: 61 KB regenerados en cada render · verif: test de que la misma fila no vuelve a dibujar · archivos: tira-aviso.js, ui/recordatorios.js, tests2.js
-- [ ] La configuracion viaja entre dispositivos (el tiempo de un deporte, las metas, el personaje) · verif: tests de ida y vuelta + SQL listo, tolerante a que la columna no exista · archivos: sync-perfil.js, ui/sincronizacion.js, supabase-cfg.sql, tests2.js
+- [x] La configuracion viaja entre dispositivos (11 tests; y de paso: el perfil bajado se perdia si no habia comidas nuevas) (el tiempo de un deporte, las metas, el personaje) · verif: tests de ida y vuelta + SQL listo, tolerante a que la columna no exista · archivos: sync-perfil.js, ui/sincronizacion.js, supabase-cfg.sql, tests2.js
 - [ ] Test de humo: abrir las cinco pestañas sin un solo error de consola · verif: el propio test, corrido en la app viva
 - [ ] Accesibilidad de lo nuevo: menu de momento, recortador y tira de peso · verif: roles y aria-label presentes, y el foco atrapado en las hojas
 - [x] Partir core.js (1528 -> 1315): salieron fechas.js y frecuentes.js · verif: guardas y tamanos OK, 1147 tests en verde
