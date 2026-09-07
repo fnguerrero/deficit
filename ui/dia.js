@@ -80,11 +80,15 @@ function pintarComidasDelDia(comidas, cont) {
     /* Con "~" adelante cuando es la sugerida: es la diferencia entre "comiste a
        esta hora" y "a esta hora te toca", y sin marcarla los dos numeros se
        leian igual. */
+    const exacta = cuando ? cuando.getHours() * 60 + cuando.getMinutes() : null;
+    const sugerida = comoHora(horaDelMomento(g.id, state.dias));
     hora.textContent = cuando
-      ? comoHora(cuando.getHours() * 60 + cuando.getMinutes())
-      : (comoHora(horaDelMomento(g.id, state.dias)) ? '~' + comoHora(horaDelMomento(g.id, state.dias)) : '');
+      ? comoHora(redondearHora(exacta))
+      : (sugerida ? '~' + sugerida : '');
+    /* La hora al minuto queda en el title: en la tarjeta se redondea para que
+       se lea como una costumbre y no como una medicion. */
     hora.title = cuando
-      ? `${g.nombre} cargado a las ${comoHora(cuando.getHours() * 60 + cuando.getMinutes())}`
+      ? `${g.nombre} cargado a las ${comoHora(exacta)}`
       : `A esta hora solés ${g.nombre.toLowerCase() === 'desayuno' ? 'desayunar' : 'comer ' + g.nombre.toLowerCase()}`;
     if (hora.textContent) card.appendChild(hora);
 

@@ -90,10 +90,25 @@ const HORA_SUGERIDA = {
   snack: null
 };
 
+/*
+ * Al cuarto de hora mas cercano.
+ *
+ * La mediana de las comidas da numeros como 16:37 o 05:41, que se leen como una
+ * medicion y no como una costumbre: nadie merienda "a las 16:37". Redondear es
+ * lo que convierte el dato en una referencia. Al cuarto y no a la media hora
+ * para no correr una comida quince minutos de donde de verdad esta.
+ */
+function redondearHora(minutos, paso = 15) {
+  if (minutos == null) return null;
+  const m = Number(minutos);
+  if (!(m >= 0)) return null;
+  return (Math.round(m / paso) * paso) % 1440;
+}
+
 /** La tuya si ya se aprendio, la de referencia si no. En minutos, o null. */
 function horaDelMomento(id, dias) {
   const t = horasTipicas(dias)[id];
-  return t == null ? (HORA_SUGERIDA[id] ?? null) : t;
+  return t == null ? (HORA_SUGERIDA[id] ?? null) : redondearHora(t);
 }
 
 /** hh:mm desde minutos. */
