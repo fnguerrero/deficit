@@ -92,7 +92,9 @@ function objetivosDelDia() {
       id: 'agua',
       emoji: '💧',
       nombre: 'Agua',
-      listo: (d.agua || 0) >= metaVasos(),
+      /* A un vaso de la meta ya cuenta: ver aguaCumplida(). La meta entera es la
+         que da la estrella. */
+      listo: aguaCumplida(d.agua, metaVasos()),
       nivel: nivelAgua(d.agua, metaVasos()),
       optimo: esOptimo('agua', d),
       valor: `${d.agua || 0}/${metaVasos()}`
@@ -107,10 +109,11 @@ function objetivosDelDia() {
       listo: !!(d.sueno && d.sueno.horas),
       nivel: nivelSueno(d.sueno?.horas),
       optimo: esOptimo('sueno', d),
-      valor: [
-        d.sueno?.horas ? d.sueno.horas + ' h' : '',
-        d.animo ? (CARITAS.find(c => c.id === d.animo)?.emoji || '') : ''
-      ].filter(Boolean).join(' ')
+      /* Solo las horas. La carita del animo vivia aca al lado y no aportaba: el
+         casillero ya dice como estuvo el sueno con su color, y un emoji pegado
+         al numero se lee como parte del dato. El animo se ve —y se carga— al
+         abrir el casillero, que es donde se decide. */
+      valor: d.sueno?.horas ? d.sueno.horas + ' h' : ''
     }
   ];
 }

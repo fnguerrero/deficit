@@ -31,6 +31,24 @@ function vasosObjetivo(pesoKg, elegido = null) {
   return VASOS_DEFECTO;
 }
 
+/*
+ * El agua se da por cumplida a un vaso de la meta.
+ *
+ * No es regalar nada: la meta es redonda y elegida a mano, y quedarse a un vaso
+ * no es lo mismo que no tomar agua. El casillero en gris por ese vaso decia lo
+ * contrario de lo que el dia merecia. La meta entera sigue valiendo: es la que
+ * da la estrella, y ahi no hay tolerancia.
+ *
+ * Con una meta de un solo vaso no hay tolerancia posible: cero vasos no es un
+ * dia con agua.
+ */
+function aguaCumplida(vasos, meta) {
+  const v = Number(vasos) || 0;
+  const m = Number(meta) || 0;
+  if (m <= 1) return v >= m && v > 0;
+  return v >= m - 1;
+}
+
 /* ---------------- pasos ---------------- */
 
 /*
