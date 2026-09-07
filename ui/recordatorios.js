@@ -103,8 +103,18 @@ function rachasDelDia() {
     }
   }
 
+  /* Las comidas ya no tienen casillero en la grilla —se ven abajo, en la fila de
+     momentos— asi que su numero no sale de ahi: se cuenta aca. */
+  const comidas = (dia(hoyISO()).comidas || []).length;
+
   return todasLasRachas(state.dias, { ...metasDelJuego(), juego: state.juego })
-    .map(r => ({ ...r, valor: valores[r.id] || '' }));
+    .map(r => ({
+      ...r,
+      /* `listo` es como lo llaman los casilleros y `hoyCumplido` como lo llaman
+         las rachas: se deja el de los casilleros porque es el que usa el dibujo. */
+      listo: r.hoyCumplido,
+      valor: r.id === 'registro' ? (comidas ? String(comidas) : '') : (valores[r.id] || '')
+    }));
 }
 
 /** Que falta hoy, en el orden de la grilla. */
@@ -180,11 +190,17 @@ async function actualizarObjetivosFijos() {
   if (firma === ultimoAvisoObjetivos) return;
   ultimoAvisoObjetivos = firma;
 
+  /* La fila dibujada, que es lo unico "propio" que se puede meter en una
+     notificacion: Android la muestra al desplegarla. Si el navegador no la
+     acepta, el aviso sigue igual con su texto. */
+  const tira = typeof tiraDelDiaPNG === 'function' ? tiraDelDiaPNG(rachasDelDia()) : null;
+
   try {
     await reg.showNotification(titulo, {
       body: cuerpo,
       icon: 'icons/icon-192.png',
       badge: 'icons/icon-192.png',
+      ...(tira ? { image: tira } : {}),
       /* El tag es lo que la hace UNA: cada aviso nuevo reemplaza al anterior en
          vez de apilar veinte carteles iguales a lo largo del dia. */
       tag: TAG_OBJETIVOS,
