@@ -264,7 +264,8 @@ Pautas:
 - En "porcion" poné SIEMPRE el peso aproximado en gramos, además de la medida casera: "180 g (1 taza)". Estimar los gramos primero y las calorías después es lo que evita quedarse corto.
 - Contá TODOS los alimentos, incluidos los que quedan abajo o detrás: el arroz debajo del huevo, el pan debajo de la hamburguesa, la salsa que empapa la guarnición.
 - Lo frito absorbe aceite y eso cuenta: una papa, una milanesa o un plátano fritos suman entre 30% y 60% más que el mismo alimento al horno. La grasa visible de un chicharrón o de un corte de cerdo es casi toda calorías.
-- Ante la duda entre dos porciones, elegí la mayor: un plato servido en un restaurante o en una casa suele ser más grande que la porción de tabla, y quedarse corto es el error más común al mirar una foto.
+- Ante la duda entre dos porciones DE ALGO QUE SE VE ENTERO, elegí la mayor: un plato servido en un restaurante o en una casa suele ser más grande que la porción de tabla, y quedarse corto es el error más común al mirar una foto. Esto no es permiso para inflar: si se ve poca comida, va poca.
+- Mirá si el plato está servido o ya comido. Restos desparramados, salsa corrida, el fondo del plato a la vista, los cubiertos apoyados adentro: eso es lo que SOBRÓ, no una porción. Contá lo que se ve —que puede ser muy poco—, ponelo así en las notas y bajá la confianza. Nunca reconstruyas la porción original de un plato terminado: ese número no está en la foto.
 - Antes de responder, revisá el total: sumá las calorías de los alimentos y preguntate si ese número le corresponde a lo que se ve. Un plato con carne, guarnición y algo frito difícilmente baje de 1.000 kcal, y uno abundante con varias carnes puede pasar las 2.000.
 - Incluí también bebidas, aderezos y salsas visibles si aportan calorías.
 - Si algo no se ve con claridad, asumí la porción más probable y aclaralo en las notas.
