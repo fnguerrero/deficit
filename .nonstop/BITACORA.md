@@ -699,3 +699,13 @@ Nico sumo despues el veredicto honesto de si va bien.
 #238 — Y con la confianza en baja el cartel dice ahora que hacer: "Estimacion poco confiable · revisa los gramos". Decir solo que no es confiable deja a la persona mirando un numero que ya sabe que esta mal, sin el paso siguiente. 1126 tests en verde
 
 #239 — Los horarios de las comidas, redondeados al cuarto de hora: "16:37" se lee como una medicion y "16:30" como una costumbre, que es lo que la tarjeta quiere decir. Al cuarto y no a la media para no correr una comida quince minutos de donde de verdad esta. La mediana fina se sigue usando para los cortes entre momentos —ahi la precision si importa— y la hora al minuto queda en el title. 1129 tests en verde
+
+## Ciclo 32 — los avisos, de verdad
+
+#240 — Web Push, entero. Lo que habia eran `setTimeout` con la app abierta, y esta escrito en el propio codigo: "sin servidor no hay push, y prometerlo seria mentir". Ahora el navegador da una direccion propia, esa direccion se guarda en Supabase con los horarios y el huso, y un cron en el Worker de Cloudflare —cada quince minutos— mira a quien le toca y le golpea. El telefono despierta al service worker aunque la app este cerrada hace dias
+
+#241 — Dos decisiones que ahorran mucho codigo y un problema de privacidad. El aviso viaja VACIO: mandar texto obliga a encriptar el cuerpo con la clave del dispositivo (RFC 8291, aes128gcm), y la frase se arma igual de bien en el service worker con la hora del telefono — asi ningun contenido de comidas pasa por el servidor. Y a la tabla no va el mail sino la llave de sincronizacion de 32 caracteres, que es la que ya identifica al dispositivo para las comidas: cero datos personales nuevos
+
+#242 — El reloj decide en el huso de CADA suscripcion, no en el del servidor: las 14:30 en Buenos Aires y las 14:30 en Madrid son dos instantes distintos, y con una sola cuenta global uno de los dos come solo. Tres tests en Node lo fijan, incluido el de la ventana de quince minutos — un aviso de las 14:30 se dispara en la corrida de las 14:30 y en ninguna otra
+
+#243 — Y la clave privada VAPID no la genero yo: la genera Nico con `py -3 tools/vapid.py` en su consola. El par que salio mientras armaba esto quedo impreso en el chat y por eso se descarta — una clave que paso por un tercero ya no es privada. El script lo dice en su docstring. 1135 tests en la app + 13 en el Worker, todo en verde

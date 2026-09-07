@@ -13,3 +13,14 @@ name = "LIMITE"
 type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 30, period = 60 }
+
+# El reloj de los avisos: cada quince minutos mira si a alguien le toca un
+# recordatorio. Es lo unico que puede avisar con la app cerrada.
+#
+# Los otros secretos van igual que la clave de Claude:
+#   npx wrangler secret put VAPID_PRIVADA     (la que genera tools/vapid.py)
+#   npx wrangler secret put VAPID_PUBLICA
+#   npx wrangler secret put SUPABASE_URL
+#   npx wrangler secret put SUPABASE_ANON
+[triggers]
+crons = ["*/15 * * * *"]

@@ -4938,3 +4938,54 @@ test('la hora tipica que se muestra ya viene redondeada', () => {
   esperar(horasTipicas(dias).merienda, 16 * 60 + 37, 'la mediana queda fina para los cortes');
   esperar(horaDelMomento('merienda', dias), 16 * 60 + 30, 'y lo que se muestra, redondo');
 });
+
+/* ---------------- los avisos con la app cerrada ---------------- */
+
+test('la clave VAPID se convierte a los bytes que pide el navegador', () => {
+  /* 65 bytes: 0x04 y los dos puntos de la curva. Si esto se rompe, el navegador
+     rechaza la suscripcion con un error que no dice nada. */
+  const publica = 'BECPge6IMjpdJfamxhWD_wm8i6mBuVa21-RHpasaTO_XN_xnYVsMMLGC3fktWQMkNb0u4BJDDCGko40HuG5Hcow';
+  const bytes = claveAplicacion(publica);
+  esperar(bytes.length, 65);
+  esperar(bytes[0], 4, 'el punto va sin comprimir');
+  esperar(claveAplicacion(''), null, 'sin clave no se intenta suscribir');
+  esperar(claveAplicacion('no es base64 !!'), null);
+});
+
+test('la suscripcion se guarda con la llave del sync, no con el mail', () => {
+  const sub = { endpoint: 'https://fcm.googleapis.com/x', keys: { p256dh: 'abc', auth: 'def' } };
+  const f = filaDeSuscripcion(sub, {
+    llave: 'K'.repeat(32),
+    horarios: [{ momento: 'almuerzo', hora: '14:30' }, { momento: 'roto', hora: 'ayer' }],
+    tz: 'America/Argentina/Buenos_Aires',
+    ahora: 1000
+  });
+  esperar(f.llave.length, 32);
+  esperar(f.endpoint, 'https://fcm.googleapis.com/x');
+  esperar(f.horarios.length, 1, 'el horario invalido no viaja');
+  esperar(f.act, 1000);
+});
+
+test('sin endpoint o sin llave no hay nada que guardar', () => {
+  esperar(filaDeSuscripcion({}, { llave: 'K'.repeat(32) }), null);
+  esperar(filaDeSuscripcion({ endpoint: 'https://x' }, {}), null);
+});
+
+test('el reloj del servidor dispara el aviso en su ventana y en ninguna otra', () => {
+  esperar(tocaAvisar('14:30', 14 * 60 + 30), true, 'justo a la hora');
+  esperar(tocaAvisar('14:30', 14 * 60 + 44), true, 'catorce minutos despues, la misma corrida');
+  esperar(tocaAvisar('14:30', 14 * 60 + 45), false, 'la corrida siguiente ya no');
+  esperar(tocaAvisar('14:30', 14 * 60 + 29), false, 'un minuto antes tampoco');
+});
+
+test('un aviso de medianoche no se pierde al dar la vuelta el dia', () => {
+  esperar(tocaAvisar('00:00', 0), true);
+  esperar(tocaAvisar('23:55', 5), true, '23:55 sigue vigente a las 00:05');
+  esperar(tocaAvisar('23:55', 20), false);
+});
+
+test('una hora mal escrita no dispara nada', () => {
+  esperar(tocaAvisar('', 600), false);
+  esperar(tocaAvisar('25:99', 600), false);
+  esperar(tocaAvisar('14:30', null), false);
+});

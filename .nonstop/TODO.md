@@ -151,3 +151,9 @@ encontrar la tarjeta y tocar la lupa.
 - [x] Sueño y ánimo: la hoja se cierra con las TRES cosas cargadas · verif: horas y calidad la dejan abierta, la carita la cierra · archivos: ui/objetivos.js
 - [x] El agua ya no ofrece "Deshacer": se corrige tocando el vaso · archivos: ui/hoy.js
 
+## Ciclo 32 — avisos con la app cerrada (elegido por Nico, 07/09/2026)
+
+- [x] Web Push de punta a punta: claves, suscripcion, service worker, tabla y el reloj del servidor · verif: 6 tests de la parte pura + 3 del reloj del Worker en Node, y el interruptor apareciendo solo con la clave puesta · archivos: push.js, ui/push.js, sw.js, config.js, sync.js, proxy/push.js, proxy/worker.js, proxy/wrangler.toml, proxy/test.mjs, supabase-push.sql, tools/vapid.py, index.html, tests2.js
+- [ ] PENDIENTE DE NICO, cuatro pasos de una vez (ver proxy/README.md): generar el par VAPID con `py -3 tools/vapid.py`, pegar la publica en config.js, cargar los cuatro secretos del Worker y correr supabase-push.sql + `npx wrangler deploy`
+- [!] Probar la notificacion fija en el celular con permiso concedido — sigue bloqueado, pero con el push andando deja de importar tanto: el aviso fijo era el parche a que no hubiera servidor
+

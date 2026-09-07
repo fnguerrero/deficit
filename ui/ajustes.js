@@ -384,6 +384,7 @@ function renderAjustes() {
   renderAtajos();
   renderSonido();
   renderRecordatorios();
+  if (typeof renderPush === 'function') renderPush();
   renderAvisoDormir();
   renderTema();
   renderFigura();
