@@ -204,18 +204,15 @@ async function actualizarObjetivosFijos() {
          vez de apilar veinte carteles iguales a lo largo del dia. */
       tag: TAG_OBJETIVOS,
       /*
-       * Los dos botones. Android muestra como maximo dos —Notification.maxActions—
-       * asi que van los dos que se usan de verdad: el vaso de agua, que es el
-       * gesto mas repetido del dia, y la foto, que es a lo que se entra.
+       * Un solo boton, y es el que ahorra pasos de verdad.
        *
-       * No se puede cargar SIN abrir la app: el estado vive en localStorage y un
-       * service worker no lo ve. Lo que hacen es abrirla con la accion ya hecha,
-       * que es un toque contra tres.
+       * Habia otro de "+1 vaso" y se fue: sumaba bien, pero abria la app igual
+       * —el estado vive en localStorage y un service worker no lo ve— y el vaso
+       * se toca adentro en dos segundos. Un boton que promete una interaccion
+       * que no es tal vale menos que el lugar que ocupa. La foto si: sin el
+       * atajo hay que abrir la app y buscar el boton.
        */
-      actions: [
-        { action: 'agua', title: '💧 +1 vaso' },
-        { action: 'foto', title: '📷 Cargar comida' }
-      ],
+      actions: [{ action: 'foto', title: '📷 Cargar comida' }],
       /* Y renotify apagado es lo que la hace soportable: reemplaza en silencio,
          sin vibrar ni sonar cada vez que se toca un vaso de agua. */
       renotify: false,

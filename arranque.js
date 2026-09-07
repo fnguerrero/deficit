@@ -30,23 +30,22 @@ if (new URLSearchParams(location.search).get('accion') === 'foto') {
  */
 function hacerDesdeElAviso(accion) {
   /*
-   * Sobre HOY, siempre.
-   *
-   * `ponerAgua` escribe en el dia que la pantalla esta mostrando, y quien dejo
-   * la app abierta mirando el lunes —o la dejo abierta cruzando la medianoche—
-   * le sumaba el vaso a ese dia. El aviso habla del dia de hoy: si la vista
-   * estaba en otro, primero se vuelve.
+   * Sobre HOY, siempre: el aviso habla del dia de hoy, y quien dejo la app
+   * abierta mirando otro dia —o cruzando la medianoche— le cargaria las cosas
+   * a ese. Si la vista estaba en otro, primero se vuelve.
    */
   if (fecha !== hoyISO()) {
     fecha = hoyISO();
     renderAll();
   }
 
+  if (accion === 'foto') setTimeout(() => $('btnFoto').click(), 200);
+
+  /* `agua` ya no es un boton del aviso, pero se sigue atendiendo: una
+     notificacion vieja, todavia en la barra, puede mandarla. */
   if (accion === 'agua') {
     ponerAgua((dia().agua || 0) + 1);
     toast('Vaso anotado');
-  } else if (accion === 'foto') {
-    setTimeout(() => $('btnFoto').click(), 200);
   }
 
   /* Y el aviso vuelve: el sistema lo cierra al tocar un boton, y sin esto se
