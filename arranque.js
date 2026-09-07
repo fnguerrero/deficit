@@ -29,6 +29,19 @@ if (new URLSearchParams(location.search).get('accion') === 'foto') {
  * ventana —ahi no hay recarga, asi que el parametro nunca llegaria.
  */
 function hacerDesdeElAviso(accion) {
+  /*
+   * Sobre HOY, siempre.
+   *
+   * `ponerAgua` escribe en el dia que la pantalla esta mostrando, y quien dejo
+   * la app abierta mirando el lunes —o la dejo abierta cruzando la medianoche—
+   * le sumaba el vaso a ese dia. El aviso habla del dia de hoy: si la vista
+   * estaba en otro, primero se vuelve.
+   */
+  if (fecha !== hoyISO()) {
+    fecha = hoyISO();
+    renderAll();
+  }
+
   if (accion === 'agua') {
     ponerAgua((dia().agua || 0) + 1);
     toast('Vaso anotado');
