@@ -228,6 +228,19 @@ async function actualizarObjetivosFijos() {
   } catch { /* si el navegador la rechaza, no pasa nada mas */ }
 }
 
+/*
+ * Volver a pintarlo aunque diga lo mismo.
+ *
+ * Al tocar un boton del aviso, Android lo cierra por su cuenta: si ademas lo
+ * que se hizo no cambia el texto —abrir la camara, por ejemplo— el guard de
+ * `ultimoAvisoObjetivos` impedia repintarlo y el aviso fijo desaparecia hasta
+ * el proximo cambio del dia.
+ */
+async function refrescarAvisoFijo() {
+  ultimoAvisoObjetivos = '';
+  await actualizarObjetivosFijos();
+}
+
 /** Saca el aviso y el numerito, al apagar el interruptor. */
 async function borrarObjetivosFijos() {
   ultimoAvisoObjetivos = '';
