@@ -1,35 +1,35 @@
 /* Service worker — cachea el shell de la app para que ande offline.
    Subir la versión al cambiar cualquier archivo. */
 
-const VERSION = 'deficit-v589';
+const VERSION = 'deficit-v590';
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=589',
-  './config.js?v=589',
-  './core.js?v=589',
-  './platos.js?v=589',
-  './animar.js?v=589',
-  './fotos.js?v=589',
-  './calibracion.js?v=589',
-  './modos.js?v=589',
-  './arreglos.js?v=589',
-  './consecuencias.js?v=589',
-  './recorte.js?v=589',
-  './push.js?v=589',
-  './tira-aviso.js?v=589',
-  './deportes.js?v=589',
-  './habitos.js?v=589',
-  './mascota.js?v=589',
-  './cuerpo.js?v=589',
-  './cintura.js?v=589',
-  './figura.js?v=589',
-  './cara.js?v=589',
-  './personaje.js?v=589',
-  './relieve.js?v=589',
-  './sprite-datos.js?v=589',
-  './sprite.js?v=589',
+  './styles.css?v=590',
+  './config.js?v=590',
+  './core.js?v=590',
+  './platos.js?v=590',
+  './animar.js?v=590',
+  './fotos.js?v=590',
+  './calibracion.js?v=590',
+  './modos.js?v=590',
+  './arreglos.js?v=590',
+  './consecuencias.js?v=590',
+  './recorte.js?v=590',
+  './push.js?v=590',
+  './tira-aviso.js?v=590',
+  './deportes.js?v=590',
+  './habitos.js?v=590',
+  './mascota.js?v=590',
+  './cuerpo.js?v=590',
+  './cintura.js?v=590',
+  './figura.js?v=590',
+  './cara.js?v=590',
+  './personaje.js?v=590',
+  './relieve.js?v=590',
+  './sprite-datos.js?v=590',
+  './sprite.js?v=590',
   './img/cuerpo-0.webp',
   './img/cuerpo-1.webp',
   './img/cuerpo-2.webp',
@@ -37,50 +37,50 @@ const SHELL = [
   './img/cuerpo-4.webp',
   './img/cuerpo-5.webp',
   './img/cuerpo-6.webp',
-  './transformacion.js?v=589',
-  './aura.js?v=589',
-  './juego.js?v=589',
-  './sonidos.js?v=589',
-  './voz.js?v=589',
-  './graficos.js?v=589',
-  './plazo.js?v=589',
-  './compartir.js?v=589',
-  './sugerencias.js?v=589',
-  './analisis.js?v=589',
-  './chequeos.js?v=589',
-  './claude.js?v=589',
-  './productos.js?v=589',
-  './sync-perfil.js?v=589',
-  './fusion-dia.js?v=589',
-  './sync.js?v=589',
-  './estado-sync.js?v=589',
-  './auth.js?v=589',
-  './app.js?v=589',
-  './ui/general.js?v=589',
-  './ui/hoy.js?v=589',
-  './ui/peso.js?v=589',
-  './ui/dia.js?v=589',
-  './ui/objetivos.js?v=589',
-  './ui/barra.js?v=589',
-  './ui/recorte.js?v=589',
-  './ui/push.js?v=589',
-  './ui/tarjeta.js?v=589',
-  './ui/comidas.js?v=589',
-  './ui/edicion.js?v=589',
-  './ui/resumen.js?v=589',
-  './ui/escaner.js?v=589',
-  './ui/asistente.js?v=589',
-  './ui/historial.js?v=589',
-  './ui/progreso.js?v=589',
-  './ui/logros.js?v=589',
-  './ui/perfil.js?v=589',
-  './ui/sincronizacion.js?v=589',
-  './ui/cuenta.js?v=589',
-  './ui/calibracion.js?v=589',
-  './ui/actividades.js?v=589',
-  './ui/recordatorios.js?v=589',
-  './ui/ajustes.js?v=589',
-  './arranque.js?v=589',
+  './transformacion.js?v=590',
+  './aura.js?v=590',
+  './juego.js?v=590',
+  './sonidos.js?v=590',
+  './voz.js?v=590',
+  './graficos.js?v=590',
+  './plazo.js?v=590',
+  './compartir.js?v=590',
+  './sugerencias.js?v=590',
+  './analisis.js?v=590',
+  './chequeos.js?v=590',
+  './claude.js?v=590',
+  './productos.js?v=590',
+  './sync-perfil.js?v=590',
+  './fusion-dia.js?v=590',
+  './sync.js?v=590',
+  './estado-sync.js?v=590',
+  './auth.js?v=590',
+  './app.js?v=590',
+  './ui/general.js?v=590',
+  './ui/hoy.js?v=590',
+  './ui/peso.js?v=590',
+  './ui/dia.js?v=590',
+  './ui/objetivos.js?v=590',
+  './ui/barra.js?v=590',
+  './ui/recorte.js?v=590',
+  './ui/push.js?v=590',
+  './ui/tarjeta.js?v=590',
+  './ui/comidas.js?v=590',
+  './ui/edicion.js?v=590',
+  './ui/resumen.js?v=590',
+  './ui/escaner.js?v=590',
+  './ui/asistente.js?v=590',
+  './ui/historial.js?v=590',
+  './ui/progreso.js?v=590',
+  './ui/logros.js?v=590',
+  './ui/perfil.js?v=590',
+  './ui/sincronizacion.js?v=590',
+  './ui/cuenta.js?v=590',
+  './ui/calibracion.js?v=590',
+  './ui/actividades.js?v=590',
+  './ui/recordatorios.js?v=590',
+  './ui/ajustes.js?v=590',
+  './arranque.js?v=590',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -128,15 +128,46 @@ self.addEventListener('message', (e) => {
    el service worker no comparte codigo con ella. */
 const TAG_FIJO = 'deficit-objetivos';
 
+/*
+ * Vuelve a poner el aviso fijo, identico, apenas se lo toca.
+ *
+ * Android CIERRA la notificacion al tocarla y eso no se puede evitar: no
+ * alcanza con no llamar a close(), lo hace el sistema. Lo unico que queda es
+ * volver a mostrarla, y se puede porque el evento trae la notificacion que se
+ * esta yendo con todo adentro —titulo, cuerpo, imagen y botones—. Mismo tag,
+ * asi que ocupa el lugar de la anterior en vez de apilarse.
+ */
+function reponerAviso(n) {
+  return self.registration.showNotification(n.title, {
+    body: n.body,
+    icon: n.icon,
+    badge: n.badge,
+    image: n.image,
+    tag: n.tag,
+    actions: n.actions,
+    data: n.data,
+    renotify: false,
+    silent: true,
+    requireInteraction: true
+  });
+}
+
 self.addEventListener('notificationclick', (e) => {
-  /*
-   * El aviso fijo NO se cierra al tocarlo: es un tablero, no un mensaje.
-   * Cerrarlo era el comportamiento por defecto y lo hacia desaparecer justo
-   * cuando se lo usaba —y para volver a verlo habia que abrir la app y esperar
-   * a que lo reescribiera—. Los recordatorios puntuales si se cierran: esos
-   * dicen una cosa una vez.
-   */
-  if (e.notification.tag !== TAG_FIJO) e.notification.close();
+  /* Los recordatorios puntuales se cierran y listo: dicen una cosa una vez. El
+     fijo es un tablero y tiene que seguir ahi despues de usarlo. */
+  const fijo = e.notification.tag === TAG_FIJO;
+  const copia = fijo ? {
+    title: e.notification.title,
+    body: e.notification.body,
+    icon: e.notification.icon,
+    badge: e.notification.badge,
+    image: e.notification.image,
+    tag: e.notification.tag,
+    actions: e.notification.actions,
+    data: e.notification.data
+  } : null;
+
+  e.notification.close();
 
   /* Los botones del aviso. El service worker no puede tocar el estado —vive en
      localStorage y aca no existe—, asi que la accion viaja en la URL y la app
@@ -145,16 +176,17 @@ self.addEventListener('notificationclick', (e) => {
   const accion = e.action || '';
   const destino = accion ? `./?hacer=${accion}` : './';
 
-  e.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(lista => {
-      const abierta = lista.find(c => c.url.includes(self.registration.scope));
-      if (abierta) {
-        if (accion) abierta.postMessage({ tipo: 'hacer', accion });
-        return abierta.focus();
-      }
-      return self.clients.openWindow(destino);
-    })
-  );
+  e.waitUntil((async () => {
+    if (copia) await reponerAviso(copia);
+
+    const lista = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const abierta = lista.find(c => c.url.includes(self.registration.scope));
+    if (abierta) {
+      if (accion) abierta.postMessage({ tipo: 'hacer', accion });
+      return abierta.focus();
+    }
+    return self.clients.openWindow(destino);
+  })());
 });
 
 /*
