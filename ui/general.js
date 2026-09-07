@@ -439,10 +439,23 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   let registro = null;
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(reg => {
+    /*
+     * `updateViaCache: 'none'` y un update() apenas arranca.
+     *
+     * Sin las dos cosas, la version nueva podia tardar dias en llegar al
+     * celular: el navegador servia el sw.js viejo de su propio cache HTTP, y el
+     * unico chequeo que habia corria al volver a la app —no al abrirla—, asi
+     * que quien la cierra y la abre una vez por dia no disparaba ninguno.
+     */
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
       registro = reg;
       // ya había una esperando de una visita anterior
       if (reg.waiting && navigator.serviceWorker.controller) avisarActualizacion(reg.waiting);
+
+      /* Y se pregunta por una nueva en el mismo arranque: con la app ociosa
+         —que es como se abre— se toma sola y se recarga antes de que nadie
+         empiece a cargar nada. */
+      reg.update().catch(() => { /* sin red no pasa nada */ });
 
       reg.addEventListener('updatefound', () => {
         const nuevo = reg.installing;

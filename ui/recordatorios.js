@@ -231,6 +231,11 @@ async function actualizarObjetivosFijos() {
   const reg = await navigator.serviceWorker?.getRegistration();
   if (!reg?.showNotification) return;
 
+  /* Y el aviso vuelve a ser irrompible: el service worker pudo reiniciarse —o
+     quedar apagado de la ultima vez que se saco a mano— y esta es la unica
+     señal de que el interruptor esta prendido otra vez. */
+  (reg.active || navigator.serviceWorker?.controller)?.postMessage('prender-aviso-fijo');
+
   const { titulo, cuerpo } = textoObjetivos();
 
   /*
@@ -305,6 +310,10 @@ async function borrarObjetivosFijos() {
   try { await navigator.clearAppBadge?.(); } catch { /* ver arriba */ }
 
   const reg = await navigator.serviceWorker?.getRegistration();
+  /* Primero se le avisa al service worker que este cierre es a proposito: sin
+     esto lo lee como un descarte y repone el aviso justo cuando se pidio no
+     verlo mas. */
+  (reg?.active || navigator.serviceWorker?.controller)?.postMessage('apagar-aviso-fijo');
   const abiertas = await reg?.getNotifications?.({ tag: TAG_OBJETIVOS });
   (abiertas || []).forEach(n => n.close());
 }

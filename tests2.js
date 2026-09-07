@@ -893,7 +893,7 @@ test('la frase de pasos trae los numeros de los pasos', () => {
     pasos: 0, peso: 80, animo: 'bien' };
   const r = reclamoDelDia(d, { vasos: 8, pasos: 10000, hora: 19, memoria: {} });
   esperar(r.falta, 'pasos');
-  esperarQue(!/4/.test(r.texto), 'no puede colarse el objetivo de agua: ' + r.texto);
+  esperarQue(!/\b4\b/.test(r.texto), 'no puede colarse el objetivo de agua: ' + r.texto);
 });
 
 test('celebrar un logro lo nombra', () => {
@@ -4556,7 +4556,7 @@ test('con una respuesta que la salva, el consejo manda a la pregunta', () => {
   const r = comoHacerlaApta(LICUADO(), ID_MED, null, null);
   esperar(r.posible, true, 'hay una salida, y decir "no hay forma" seria mentir');
   esperarQue(/«Yogur natural sin azúcar»/.test(r.texto), 'nombra el boton que hay que tocar: ' + r.texto);
-  esperarQue(!/el licuado/i.test(r.texto), 'sin articulo delante del alimento, que se equivoca de genero');
+  esperarQue(!/\bel licuado\b/i.test(r.texto), 'sin articulo delante del alimento, que se equivoca de genero');
   esperarQue(!/no hay forma/.test(r.texto), r.texto);
 });
 
@@ -5393,33 +5393,20 @@ test('un ejercicio cargado a mano no da la estrella', () => {
 test('el optimo de comidas mira el dia que le pasan, no el que esta en pantalla', () => {
   /* El bug del vaso de agua otra vez: el aviso pregunta siempre por hoy
      mientras la app puede estar abierta en el martes pasado. */
-  const calcularPrevio = globalThis.calcular;
-  globalThis.calcular = () => ({ objetivo: 2000 });
-  try {
-    const comida = (kcal) => ({ kcal, prot: 0, carb: 0, gras: 0 });
-    const cuatro = [comida(400), comida(500), comida(300), comida(500)];
+  const comida = (kcal) => ({ kcal, prot: 0, carb: 0, gras: 0 });
+  const cuatro = [comida(400), comida(500), comida(300), comida(500)];
 
-    esperarQue(esOptimo('comidas', { comidas: cuatro }), '4 comidas y 1700 de 2000');
-    esperarQue(!esOptimo('comidas', { comidas: [...cuatro, comida(900)] }),
-      'pasarse del tope lo saca, aunque sean cinco');
-    esperarQue(!esOptimo('comidas', { comidas: cuatro.slice(0, 3) }),
-      'tres comidas holgadas tampoco: saltearse el almuerzo no es comer bien');
-  } finally {
-    if (calcularPrevio === undefined) delete globalThis.calcular;
-    else globalThis.calcular = calcularPrevio;
-  }
+  esperarQue(esOptimo('comidas', { comidas: cuatro }, { tope: 2000 }), '4 comidas y 1700 de 2000');
+  esperarQue(!esOptimo('comidas', { comidas: [...cuatro, comida(900)] }, { tope: 2000 }),
+    'pasarse del tope lo saca, aunque sean cinco');
+  esperarQue(!esOptimo('comidas', { comidas: cuatro.slice(0, 3) }, { tope: 2000 }),
+    'tres comidas holgadas tampoco: saltearse el almuerzo no es comer bien');
 });
 
 test('sin objetivo calculado no hay estrella de comidas', () => {
-  const calcularPrevio = globalThis.calcular;
-  globalThis.calcular = () => ({ objetivo: 0 });
-  try {
-    const c = { kcal: 100 };
-    esperarQue(!esOptimo('comidas', { comidas: [c, c, c, c] }), 'sin tope no se puede saber');
-  } finally {
-    if (calcularPrevio === undefined) delete globalThis.calcular;
-    else globalThis.calcular = calcularPrevio;
-  }
+  const c = { kcal: 100 };
+  esperarQue(!esOptimo('comidas', { comidas: [c, c, c, c] }, { tope: 0 }),
+    'sin tope no se puede saber');
 });
 
 test('un id que no es un objetivo del dia no da estrella', () => {
@@ -5527,26 +5514,19 @@ test('una comida fuera del modo saca la estrella, aunque las cuentas cierren', (
   /* La app marcaba el snack en rojo en la pantalla y le daba la estrella en la
      notificacion, al mismo tiempo. En un modo que juzga QUE se come, el numero
      de comidas y las calorias no alcanzan. */
-  const calcularPrevio = globalThis.calcular;
-  globalThis.calcular = () => ({ objetivo: 2000 });
-  try {
-    const ok = (kcal, carb) => ({ kcal, carb, fibra: 0, prot: 20, gras: 10, ts: Date.now() });
-    const cuatro = [ok(400, 2), ok(500, 3), ok(300, 2), ok(400, 3)];
-    esperarQue(esOptimo('comidas', { comidas: cuatro }, { modo: 'keto' }),
-      'cuatro comidas keto dentro del tope: estrella');
+  const ok = (kcal, carb) => ({ kcal, carb, fibra: 0, prot: 20, gras: 10, ts: Date.now() });
+  const cuatro = [ok(400, 2), ok(500, 3), ok(300, 2), ok(400, 3)];
+  esperarQue(esOptimo('comidas', { comidas: cuatro }, { modo: 'keto', tope: 2000 }),
+    'cuatro comidas keto dentro del tope: estrella');
 
-    /* El snack de la prueba de Nico: 33 g de carbos netos con el techo en 30. */
-    const conSnack = [...cuatro, ok(200, 33)];
-    esperarQue(!esOptimo('comidas', { comidas: conSnack }, { modo: 'keto' }),
-      'con una sola comida que no entra en el modo, no hay estrella');
+  /* El snack de la prueba de Nico: 33 g de carbos netos con el techo en 30. */
+  const conSnack = [...cuatro, ok(200, 33)];
+  esperarQue(!esOptimo('comidas', { comidas: conSnack }, { modo: 'keto', tope: 2000 }),
+    'con una sola comida que no entra en el modo, no hay estrella');
 
-    /* Y el mismo dia en un modo que no juzga el contenido sigue estando bien. */
-    esperarQue(esOptimo('comidas', { comidas: conSnack }, { modo: 'mantenimiento' }),
-      'en mantenimiento ese mismo dia entra');
-  } finally {
-    if (calcularPrevio === undefined) delete globalThis.calcular;
-    else globalThis.calcular = calcularPrevio;
-  }
+  /* Y el mismo dia en un modo que no juzga el contenido sigue estando bien. */
+  esperarQue(esOptimo('comidas', { comidas: conSnack }, { modo: 'mantenimiento', tope: 2000 }),
+    'en mantenimiento ese mismo dia entra');
 });
 
 test('el texto de comidas nombra las tres condiciones', () => {
@@ -5592,15 +5572,8 @@ test('con una meta de un vaso no hay tolerancia posible', () => {
 });
 
 test('la meta entera sigue siendo la que da la estrella', () => {
-  const metaPrevia = globalThis.metaVasos;
-  globalThis.metaVasos = () => 4;
-  try {
-    esperarQue(!esOptimo('agua', { agua: 3 }), 'a un vaso hay tilde, no estrella');
-    esperarQue(esOptimo('agua', { agua: 4 }), 'la meta entera si');
-  } finally {
-    if (metaPrevia === undefined) delete globalThis.metaVasos;
-    else globalThis.metaVasos = metaPrevia;
-  }
+  esperarQue(!esOptimo('agua', { agua: 3 }, { metaAgua: 4 }), 'a un vaso hay tilde, no estrella');
+  esperarQue(esOptimo('agua', { agua: 4 }, { metaAgua: 4 }), 'la meta entera si');
 });
 
 test('la tolerancia del agua no regala dias del historial', () => {
@@ -5629,4 +5602,35 @@ test('el muñeco no reclama lo que el casillero da por hecho', () => {
   const r = reclamoDelDia(d, { vasos: 4, pasos: 10000, hora: 19, memoria: {} });
   esperarQue(r.falta !== 'agua', 'a un vaso de la meta no se reclama: ' + r.falta);
   esperarQue(r.falta !== 'pasos', 'y los pasos anotados tampoco: ' + r.falta);
+});
+
+/* ---------------- la foto que falla siempre ---------------- */
+
+test('los intentos se acumulan al reencolar la misma foto', () => {
+  /* Se conserva el id, asi que el contador no arranca de cero en cada vuelta. */
+  let cola = encolarAnalisis([], { imagenes: ['A'], momento: 'cena' }, 1000);
+  esperar(cola[0].intentos, 0);
+  cola = encolarAnalisis(cola, conUnIntentoMas(cola[0]), 2000);
+  esperar(cola.length, 1, 'sigue siendo la misma foto');
+  esperar(cola[0].intentos, 1);
+  cola = encolarAnalisis(cola, conUnIntentoMas(cola[0]), 3000);
+  esperar(cola[0].intentos, 2);
+});
+
+test('a los tres intentos la foto se suelta', () => {
+  esperarQue(!reintentosAgotados({ intentos: 0 }), 'recien encolada, no');
+  esperarQue(!reintentosAgotados({ intentos: 2 }), 'con dos todavia se prueba');
+  esperarQue(reintentosAgotados({ intentos: 3 }), 'con tres se suelta');
+  esperarQue(reintentosAgotados({ intentos: 9 }), 'y con mas tambien');
+  esperarQue(!reintentosAgotados({}), 'sin contador es una foto nueva');
+});
+
+test('una foto nueva no hereda los intentos de otra', () => {
+  const cola = encolarAnalisis(
+    encolarAnalisis([], { id: 'c1', imagenes: ['A'], intentos: 2 }, 1000),
+    { id: 'c2', imagenes: ['B'] }, 2000
+  );
+  esperar(cola.length, 2);
+  esperar(cola.find(x => x.id === 'c2').intentos, 0);
+  esperar(cola.find(x => x.id === 'c1').intentos, 2);
 });

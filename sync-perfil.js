@@ -216,7 +216,7 @@ async function sincronizarPerfil({ cliente, perfil, cfg = null, llave, ultimoSyn
 /** Si el 400 se queja justo de `cfg`, falta correr supabase-cfg.sql. */
 function faltaColumnaCfg(mensaje) {
   const m = String(mensaje || '');
-  return /cfg/.test(m) && /column|columna|schema cache/i.test(m);
+  return /\bcfg\b/.test(m) && /column|columna|schema cache/i.test(m);
 }
 
 function mensajeDe(e) {

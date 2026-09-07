@@ -393,7 +393,19 @@ async function correrAnalisis(intento) {
      * no se registra nunca.
      */
     if (!navigator.onLine || /red|conexi|fetch|network/i.test(err.message || '')) {
-      state.colaAnalisis = encolarAnalisis(state.colaAnalisis, intento);
+      /* Con un intento mas encima, y si ya se probo bastante se suelta: una foto
+         que falla siempre volvia a la cola en cada vuelta y se reintentaba cada
+         vez que la conexion aparecia, para siempre. */
+      const otraVez = conUnIntentoMas(intento);
+      if (reintentosAgotados(otraVez)) {
+        state.colaAnalisis = sacarDeCola(state.colaAnalisis, otraVez.id);
+        save();
+        cerrarModal(true);
+        toast('Esa foto falló ' + MAX_INTENTOS + ' veces: la saqué de la cola');
+        pintarCola();
+        return;
+      }
+      state.colaAnalisis = encolarAnalisis(state.colaAnalisis, otraVez);
       save();
       cerrarModal(true);
       toast(textoCola(state.colaAnalisis));

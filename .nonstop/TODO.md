@@ -176,3 +176,14 @@ esta sesion.
 - [x] Partir juego.js (618 -> 545): salio logros.js; y el limite de sw.js subio a 300 porque lo que crece ahi es la lista SHELL, no la logica
 - [x] El optimo de cada objetivo: estrella por casillero y fila dorada con el dia completo · verif: 12 tests + la app viva en 375x812 · archivos: optimo.js, chequeos.js, tira-aviso.js, ui/objetivos.js, ui/recordatorios.js, styles.css, index.html
 - [x] Las comidas que aparecian solas: la foto encolada se acuerda de su dia y su momento, y el vaciado de la cola lo dice · verif: 3 tests + guardado de una foto de ayer en la app viva
+
+## Ciclo 35 — las cuatro mejoras + la notificacion fija + recordatorios
+
+- [x] La fila se calcula una sola vez por render (de 4 llamadas a 1, medido con un espia en la app viva) (hoy objetivosDelDia() corre 4 veces y cada una juzga las comidas contra el modo) · verif: espia en la app viva que cuente las llamadas · archivos: ui/objetivos.js
+- [x] Tope de intentos en la cola de fotos (3 intentos, contador que viaja con la entrada; 3 tests): una foto rota se reintenta para siempre · verif: tests de encolarAnalisis con el contador y el descarte · archivos: fotos.js, ui/comidas.js, tests2.js
+- [x] El service worker toma el control (updateViaCache: 'none' + update() al abrir; verificado: tomo la 635 sin banner) al abrir la app, sin esperar a que quede ociosa · verif: en la app viva, la version nueva entra en el primer arranque · archivos: sw.js, ui/actualizacion.js o donde viva el banner
+- [x] Limpieza: vasosObjetivo sin el peso y esOptimo con {modo, metaAgua, tope} por parametro; los tests dejaron de stubear globals no usa el peso, y esOptimo lee state y calcular() por global · verif: guardas + los tests que ya existen en verde · archivos: habitos.js, optimo.js
+- [x] La barra de notificaciones no se puede cerrar: notificationclose la repone, salvo cuando la apaga el interruptor de Ajustes: si la descartan, se repone · verif: notificationclose en el sw y la logica probada · archivos: sw.js, ui/recordatorios.js
+- [ ] Recordatorios compactos: una fila por momento en vez de tres renglones · verif: alto del bloque medido en 375x812, antes y despues · archivos: index.html, styles.css, ui/recordatorios.js
+- [x] El runner contaba EN VERDE los tests async escritos con test() en vez de testAsync(): ahora los encola y los espera · verif: aparecieron 2 rojos que estaban ocultos, los dos arreglados
+- [x] Bytes backspace (0x08) en tres regex, por el escape del heredoc: /cfg/ nunca matcheaba y el reintento sin la columna cfg no corria · verif: 0 bytes 0x08 en el repo, y el test de la columna en verde

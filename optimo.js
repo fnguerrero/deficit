@@ -59,7 +59,7 @@ function topeDelDia(d) {
  * Devuelve false, y no null, cuando no se puede saber: el ejercicio cargado
  * como total a mano no dice cuanto duro, y una estrella no se da por las dudas.
  */
-function esOptimo(id, d, { modo = null } = {}) {
+function esOptimo(id, d, { modo = null, metaAgua = null, tope = null } = {}) {
   if (!d) return false;
 
   if (id === 'sueno') {
@@ -69,7 +69,7 @@ function esOptimo(id, d, { modo = null } = {}) {
   }
 
   if (id === 'agua') {
-    const meta = typeof metaVasos === 'function' ? metaVasos() : 0;
+    const meta = metaAgua ?? (typeof metaVasos === 'function' ? metaVasos() : 0);
     return !!meta && (Number(d.agua) || 0) >= meta;
   }
 
@@ -87,8 +87,8 @@ function esOptimo(id, d, { modo = null } = {}) {
      almuerzo para llegar holgado a la noche. */
   if (id === 'comidas' || id === 'registro') {
     if ((d.comidas || []).length < OPTIMO_COMIDAS) return false;
-    const tope = topeDelDia(d);
-    if (!tope) return false;
+    const topeHoy = tope ?? topeDelDia(d);
+    if (!topeHoy) return false;
 
     /*
      * Y ninguna comida afuera del modo.
@@ -103,7 +103,7 @@ function esOptimo(id, d, { modo = null } = {}) {
       || (typeof state !== 'undefined' ? state?.perfil?.modo : null)
       || (typeof MODO_DEFECTO !== 'undefined' ? MODO_DEFECTO : null);
     if (idModo && typeof comidasQueEntran === 'function'
-      && comidasQueEntran(d.comidas, idModo, tope) !== d.comidas.length) {
+      && comidasQueEntran(d.comidas, idModo, topeHoy) !== d.comidas.length) {
       return false;
     }
     /* Las kcal salen del dia que llega, NO de totalesDia(), que devuelve las del
@@ -111,7 +111,7 @@ function esOptimo(id, d, { modo = null } = {}) {
        mientras la app puede estar abierta en el martes pasado, y ahi la estrella
        se ganaba o se perdia con las comidas de otro dia. */
     const t = typeof sumarComidas === 'function' ? sumarComidas(d.comidas) : null;
-    return !!t && (Number(t.kcal) || 0) <= tope;
+    return !!t && (Number(t.kcal) || 0) <= topeHoy;
   }
 
   return false;
