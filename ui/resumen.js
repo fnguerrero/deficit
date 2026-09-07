@@ -220,10 +220,19 @@ function pintarPorciones(id, kcalOriginal) {
 
       const escalada = escalarComida(base, p.f);
       d.comidas[pos] = { ...escalada, id, ts: d.comidas[pos].ts, porcionFactor: p.f, act: Date.now() };
+      d.act = Date.now();
       save(); renderHoy(); renderHistorial();
 
-      contarHasta($('resumenKcal'), escalada.kcal, { formato: (v) => fmtNum(Math.round(v)) });
-      cont.querySelectorAll('button').forEach(x => x.classList.toggle('elegida', x === b));
+      /*
+       * Y el veredicto se vuelve a calcular, como al elegir una opcion.
+       *
+       * Antes solo cambiaba el numero grande: un bizcocho de 1.950 kcal seguia
+       * diciendo "98 g de carbos netos, el techo es 30" despues de bajarlo a un
+       * octavo —244 kcal y 12 g—, o sea que rechazaba una comida que ya entraba.
+       * La porcion cambia lo que comiste, y con eso cambia todo lo demas.
+       */
+      const c = d.comidas[pos];
+      avisarComidaGuardada({ titulo: c.titulo, kcal: c.kcal, comida: c, id });
       pop(b);
     };
     cont.appendChild(b);
