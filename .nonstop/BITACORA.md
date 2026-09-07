@@ -763,3 +763,11 @@ Nico sumo despues el veredicto honesto de si va bien.
 #268 — Las celdas del dibujo, mas bajas: eran cuadrados de 360 px de alto para decir tres renglones y se comian media notificacion. Ahora 250, con el emoji y las tipografias ajustadas
 
 #269 — Y el agua salia gris cuando en la app se ve en ambar: el dibujo miraba solo si el casillero estaba CUMPLIDO, y dos vasos de cuatro no lo estan pero tampoco son lo mismo que cero. Ahora viaja el `nivel` de cada casillero y el dibujo usa los mismos tres colores que la app —verde, ambar, rojo—, que es la mitad de lo que un casillero dice. Verif: con 2/4 de agua, la celda sale ambar en el dibujo y ambar en la app. 1147 tests en verde
+
+## Ciclo 34 — diez mejoras
+
+#270 — Compartir el DIA entero, no solo una comida: las que tienen algo cargado, en orden, con sus alimentos, y el total al final. Los momentos vacios no se nombran —"Merienda: nada" ocupa lugar para decir que no hay nada que decir— y el total va ultimo porque es lo unico numerico del mensaje: le sirve a quien lleva la cuenta y no le estorba a quien solo quiere la lista. Vive en el mismo menu que compartir una comida: misma intencion, distinto alcance. 3 tests
+
+#271 — Un numero guardado en Ajustes y compartir va derecho a ese chat: un toque contra tres —abrir el selector, elegir WhatsApp, buscar el contacto— y en el uso real la comida se le manda siempre a la misma persona. Sin numero, todo sigue como estaba. La conversion tiene la trampa argentina resuelta: los celulares se escriben con un 15 que NO va en el numero internacional —11 15 2345-6789 es +54 9 11 2345-6789— asi que ese 15 se saca y entra el 9 que WhatsApp pide para moviles. Se guarda lo que Nico escribio y no lo normalizado: si mañana se corrige la conversion, el original sigue estando para volver a convertirlo. 4 tests
+
+#272 — La imagen del aviso, cacheada por lo que muestra: son 60 KB de PNG y el aviso se refresca en cada cambio del dia, asi que un dia con veinte toques la dibujaba veinte veces igual. La firma es exactamente lo que se ve —icono, nombre, valor, nivel y si esta cumplido—: si nada de eso cambio, el dibujo tampoco. 1 test

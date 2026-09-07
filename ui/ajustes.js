@@ -385,6 +385,7 @@ function renderAjustes() {
   renderSonido();
   renderRecordatorios();
   if (typeof renderPush === 'function') renderPush();
+  renderWhatsApp();
   renderAvisoDormir();
   renderTema();
   renderFigura();
@@ -590,5 +591,39 @@ function renderSonido() {
     save();
     if (chk.checked) sonidos.probar();
     renderSonido();
+  };
+}
+
+/* ---------------- a quien se le manda la comida ---------------- */
+
+/*
+ * Un numero guardado y nada mas.
+ *
+ * Sin el, compartir abre el selector del sistema y hay que buscar el contacto
+ * cada vez; con el, va derecho a ese chat. No es una agenda: es la persona a la
+ * que se le manda siempre, que en el uso real es una sola.
+ */
+function renderWhatsApp() {
+  const inp = $('waNumero');
+  if (!inp) return;
+
+  inp.value = state.cfg.whatsapp || '';
+  const limpio = numeroWhatsApp(state.cfg.whatsapp);
+  $('waInfo').textContent = limpio
+    ? `Compartir va a abrir el chat de +${limpio}.`
+    : 'Sin número, compartir abre el selector y elegís a mano.';
+}
+
+if ($('btnWaGuardar')) {
+  $('btnWaGuardar').onclick = () => {
+    const txt = $('waNumero').value.trim();
+    /* Se guarda lo que escribio, no lo normalizado: si mañana se corrige la
+       conversion, el numero original sigue estando para volver a convertirlo. */
+    if (txt && !numeroWhatsApp(txt)) { toast('Ese número no parece de teléfono'); return; }
+
+    state.cfg.whatsapp = txt;
+    save();
+    renderWhatsApp();
+    toast(txt ? 'Listo, le mando a ese número' : 'Vuelve el selector de contactos');
   };
 }

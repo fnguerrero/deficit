@@ -36,15 +36,33 @@ const TIRA_NIVEL = {
   mal: { texto: '#f87171', celda: '#3a1d1d', borde: '#8f3b3b' }
 };
 
+/*
+ * Lo ultimo que se dibujo, para no volver a dibujarlo igual.
+ *
+ * Son 60 KB de PNG y el aviso se refresca en cada cambio del dia: sin esto, un
+ * dia con veinte toques dibuja veinte veces la misma fila. La firma es lo que
+ * se ve, asi que si nada de eso cambio, el dibujo tampoco.
+ */
+let ultimaTira = { firma: '', png: null };
+
+function firmaDeTira(lista, ancho, alto) {
+  return `${ancho}x${alto}|` + lista
+    .map(i => `${i.icono}:${i.nombre}:${i.valor}:${i.nivel || ''}:${i.listo ? 1 : 0}`)
+    .join('|');
+}
+
 /**
  * Dibuja la fila y devuelve un PNG en dataURL, o null si no se puede dibujar.
  *
- * `items` es [{ icono, nombre, valor, listo }], que es lo que ya arma
- * rachasDelDia() para el texto del aviso.
+ * `items` es [{ icono, nombre, valor, nivel, listo }], que es lo que ya arma
+ * rachasDelDia() para el aviso.
  */
 function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
   const lista = (items || []).filter(Boolean);
   if (!lista.length || typeof document === 'undefined') return null;
+
+  const firma = firmaDeTira(lista, ancho, alto);
+  if (firma === ultimaTira.firma && ultimaTira.png) return ultimaTira.png;
 
   const cv = document.createElement('canvas');
   cv.width = ancho;
@@ -100,7 +118,9 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
   });
 
   try {
-    return cv.toDataURL('image/png');
+    const png = cv.toDataURL('image/png');
+    ultimaTira = { firma, png };
+    return png;
   } catch {
     return null;
   }

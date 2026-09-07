@@ -158,3 +158,20 @@ encontrar la tarjeta y tocar la lupa.
 - [x] La tabla push_subs, creada por Nico el 07/09/2026 · verif: guardar una suscripcion de prueba devuelve ok, la fila queda con su llave, huso y horarios, y borrarla devuelve 204. El push esta completo de punta a punta · lo que sigue es probarlo en el celular. (Era: correr `supabase-push.sql` en el editor de Supabase.) Es lo unico que no se puede hacer sin la credencial de administrador —la anon key no crea tablas y no hay token de la CLI en el equipo. Mientras tanto la app lo dice con todas las letras: "Falta crear la tabla push_subs en Supabase (supabase-push.sql)"
 - [!] Probar la notificacion fija en el celular con permiso concedido — sigue bloqueado, pero con el push andando deja de importar tanto: el aviso fijo era el parche a que no hubiera servidor
 
+## Ciclo 34 — diez mejoras (elegidas por criterio propio, 07/09/2026)
+
+Seis de producto y cuatro de deuda. Las de deuda son las que la herramienta viene
+reclamando en cada cambio: cuatro archivos pasados de su limite desde antes de
+esta sesion.
+
+- [x] Compartir el DIA entero por WhatsApp, no solo una comida · verif: 3 tests del texto y el boton en la app viva · archivos: compartir.js, ui/dia.js, index.html, tests2.js
+- [x] Un contacto guardado para mandar directo por wa.me, sin pasar por el selector · verif: 3 tests del armado del link y el campo en Ajustes · archivos: compartir.js, ui/ajustes.js, core.js, index.html, tests2.js
+- [x] La imagen del aviso, cacheada: 61 KB regenerados en cada render · verif: test de que la misma fila no vuelve a dibujar · archivos: tira-aviso.js, ui/recordatorios.js, tests2.js
+- [ ] La configuracion viaja entre dispositivos (el tiempo de un deporte, las metas, el personaje) · verif: tests de ida y vuelta + SQL listo, tolerante a que la columna no exista · archivos: sync-perfil.js, ui/sincronizacion.js, supabase-cfg.sql, tests2.js
+- [ ] Test de humo: abrir las cinco pestañas sin un solo error de consola · verif: el propio test, corrido en la app viva
+- [ ] Accesibilidad de lo nuevo: menu de momento, recortador y tira de peso · verif: roles y aria-label presentes, y el foco atrapado en las hojas
+- [~] Partir core.js (1493/1400) · verif: guardas y tamanos OK, 1147 tests en verde
+- [ ] Partir analisis.js (926/900) · verif: idem
+- [ ] Partir modos.js (823/800) · verif: idem
+- [ ] Partir juego.js (pasado) · verif: idem
+

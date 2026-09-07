@@ -55,6 +55,9 @@ const DEFAULT_STATE = {
     /* Con que figura se dibuja el muñeco. En null sigue al sexo del perfil:
        ver figuraDe() en cuerpo.js. */
     figura: null,
+    /* A quien se le manda la comida, para no elegir el contacto cada vez.
+       Vacio = se abre el selector del sistema, como hasta ahora. */
+    whatsapp: '',
     topeGasto: TOPE_DEFECTO,
     avisoKeyOculto: false, onboardingHecho: false
   }
