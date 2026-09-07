@@ -192,10 +192,16 @@ const NOMBRE_ACTIVIDAD = {
 function reclamoDelDia(d, { vasos = 8, pasos = 10000, hora = new Date().getHours(), memoria = ULTIMAS_FRASES } = {}) {
   const hechas = {
     comida: (d?.comidas || []).length > 0,
-    agua: (d?.agua || 0) >= vasos,
+    /* La misma vara que el casillero: a un vaso de la meta ya esta hecho. Sin
+       esto el muñeco decia "vas 3 de 4 vasos, ese numero duele" al lado de un
+       casillero verde con un tilde. */
+    agua: typeof aguaCumplida === 'function' ? aguaCumplida(d?.agua, vasos) : (d?.agua || 0) >= vasos,
     entrenamiento: (d?.ejercicio || 0) > 0,
     sueno: Number(d?.sueno?.horas) > 0,
-    pasos: (d?.pasos || 0) >= pasos,
+    /* Los pasos se cumplen anotandolos, no llegando a un numero: ver
+       DESDE_PASOS_LIBRES. Reclamarlos con el dato cargado era pedir dos veces
+       lo mismo. */
+    pasos: (d?.pasos || 0) > 0,
     /* El peso y el animo entraron cuando la grilla y las rachas se volvieron
        una sola lista: sin esto la voz festejaba el dia completo mientras el
        chip de la fase avisaba que faltaban dos casilleros. */

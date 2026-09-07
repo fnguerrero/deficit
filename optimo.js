@@ -117,6 +117,30 @@ function esOptimo(id, d, { modo = null } = {}) {
   return false;
 }
 
+/*
+ * Y que pone el casillero en verde, que es la otra mitad de la explicacion.
+ *
+ * Sin esto, la pantalla decia como ganar la estrella y no como quedar cumplido:
+ * quien veia el casillero verde sin estrella no tenia forma de saber si le
+ * faltaba poco o mucho. Las horas del sueno salen de nivelSueno(), que es donde
+ * vive el limite del rojo.
+ */
+function textoCumplido(id, metaAgua = null) {
+  if (id === 'agua') {
+    const meta = metaAgua ?? (typeof metaVasos === 'function' ? metaVasos() : 0);
+    if (!meta) return '';
+    return meta > 1
+      ? `Cumplido: ${meta - 1} vasos, uno menos que la meta.`
+      : 'Cumplido: un vaso.';
+  }
+  return {
+    sueno: 'Cumplido: 6 horas o más. Menos que eso se marca en rojo.',
+    pasos: 'Cumplido: con anotar los pasos del día.',
+    ejercicio: 'Cumplido: con anotar cualquier movimiento.',
+    comidas: 'Cumplido: con cargar lo que comiste.'
+  }[id] || '';
+}
+
 /**
  * Que hay que hacer para ganarse la estrella, dicho en la app.
  *

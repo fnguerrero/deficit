@@ -884,9 +884,13 @@ test('cuando falta una sola cosa insiste con esa', () => {
 
 test('la frase de pasos trae los numeros de los pasos', () => {
   /* {n} y {meta} estaban fijos en el agua: la frase de pasos decia "vas 3
-     pasos, la meta son 4". */
+     pasos, la meta son 4".
+
+     Los pasos van en cero y no en 3.000 porque la regla cambio: se cumplen
+     anotandolos —ver DESDE_PASOS_LIBRES— asi que con 3.000 cargados ya no hay
+     nada que reclamar. */
   const d = { comidas: [{ kcal: 500 }], agua: 10, ejercicio: 200, sueno: { horas: 8 },
-    pasos: 3000, peso: 80, animo: 'bien' };
+    pasos: 0, peso: 80, animo: 'bien' };
   const r = reclamoDelDia(d, { vasos: 8, pasos: 10000, hora: 19, memoria: {} });
   esperar(r.falta, 'pasos');
   esperarQue(!/4/.test(r.texto), 'no puede colarse el objetivo de agua: ' + r.texto);
@@ -5607,4 +5611,22 @@ test('la tolerancia del agua no regala dias del historial', () => {
     'antes del corte hacia falta la meta entera');
   esperarQue(racha.cumple({ agua: 3 }, { vasos: 4, fecha: DESDE_AGUA_JUSTA }),
     'desde el corte alcanza con quedarse a un vaso');
+});
+
+test('la app explica las dos mitades: que es verde y que es dorado', () => {
+  esperarQue(/6 horas/.test(textoCumplido('sueno')), textoCumplido('sueno'));
+  esperarQue(/rojo/.test(textoCumplido('sueno')), 'y donde empieza el rojo');
+  esperar(textoCumplido('agua', 4), 'Cumplido: 3 vasos, uno menos que la meta.');
+  esperar(textoCumplido('agua', 1), 'Cumplido: un vaso.');
+  esperar(textoCumplido('peso'), '', 'lo que no es casillero del dia no inventa reglas');
+});
+
+test('el muñeco no reclama lo que el casillero da por hecho', () => {
+  /* Decia "vas 3 de 4 vasos, ese numero duele" al lado de un casillero verde
+     con un tilde: la voz tiene que usar la misma vara que la grilla. */
+  const d = { comidas: [{ kcal: 500 }], agua: 3, ejercicio: 200, sueno: { horas: 8 },
+    pasos: 4000, peso: 80, animo: 'bien' };
+  const r = reclamoDelDia(d, { vasos: 4, pasos: 10000, hora: 19, memoria: {} });
+  esperarQue(r.falta !== 'agua', 'a un vaso de la meta no se reclama: ' + r.falta);
+  esperarQue(r.falta !== 'pasos', 'y los pasos anotados tampoco: ' + r.falta);
 });

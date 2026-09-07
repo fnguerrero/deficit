@@ -271,8 +271,12 @@ function abrirObjetivo(id) {
   const optimo = $('optimoObjetivo');
   if (optimo) {
     const texto = typeof textoOptimo === 'function' ? textoOptimo(id) : '';
-    optimo.textContent = texto;
-    optimo.hidden = !texto;
+    /* Las dos mitades: que lo da por hecho y que lo pone en dorado. Con una sola
+       —la del optimo— el casillero verde sin estrella no decia si faltaba poco
+       o mucho. */
+    const verde = typeof textoCumplido === 'function' ? textoCumplido(id) : '';
+    optimo.textContent = [verde, texto].filter(Boolean).join(' ');
+    optimo.hidden = !texto && !verde;
     /* Si ya esta cumplido lo dice el color, que es la misma estrella del
        casillero puesta en palabras. */
     optimo.classList.toggle('cumplido', !!texto && esOptimo(id, dia()));
