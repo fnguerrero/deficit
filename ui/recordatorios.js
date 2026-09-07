@@ -146,7 +146,10 @@ function rachasDelDia() {
       valor: r.id === 'registro' ? (comidas ? String(comidas) : '') : (valores[r.id] || ''),
       /* La estrella del aviso. Las comidas tambien la tienen aunque no esten en
          la grilla: en la barra de notificaciones si son un casillero mas. */
-      optimo: typeof esOptimo === 'function' && esOptimo(idDeObjetivo[r.id] || r.id, hoy)
+      optimo: typeof esOptimo === 'function' && esOptimo(idDeObjetivo[r.id] || r.id, hoy),
+      /* Pero no cuentan para el dorado del dia: la app lo decide con los cuatro
+         casilleros que se ven en la grilla, y las comidas no estan ahi. */
+      opcional: r.id === 'registro'
     }))
     .sort((a, b) => puesto(a.id) - puesto(b.id));
 }

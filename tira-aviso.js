@@ -64,7 +64,7 @@ let ultimaTira = { firma: '', png: null };
 
 function firmaDeTira(lista, ancho, alto) {
   return `${ancho}x${alto}|` + (todoOptimo(lista) ? 'oro|' : '') + lista
-    .map(i => `${i.icono}:${i.nombre}:${i.valor}:${i.nivel || ''}:${i.listo ? 1 : 0}:${i.optimo ? 1 : 0}`)
+    .map(i => `${i.icono}:${i.nombre}:${i.valor}:${i.nivel || ''}:${i.listo ? 1 : 0}:${i.optimo ? 1 : 0}:${i.opcional ? 1 : 0}`)
     .join('|');
 }
 
@@ -77,7 +77,11 @@ function firmaDeTira(lista, ancho, alto) {
  * para que no sea un dia completo, aunque los otros cuatro esten impecables.
  */
 function todoOptimo(lista) {
-  const items = (lista || []).filter(Boolean);
+  /* Los `opcional` no cuentan, igual que en la grilla de la app. Las comidas
+     salen en el aviso pero no tienen casillero en la pantalla: sin sacarlas de
+     la cuenta, la app se doraba entera y la notificacion de al lado no, con los
+     mismos cuatro datos y en el mismo segundo. */
+  const items = (lista || []).filter(i => i && !i.opcional);
   return items.length > 0 && items.every(i => i.optimo);
 }
 
@@ -114,9 +118,14 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
     const x = margen + i * (anchoCelda + hueco);
     const y = margen;
 
-    /* El nivel manda sobre el tilde: un casillero cargado con un dato malo se
-       ve malo, igual que en la app. Sin nivel, cumplido es verde. */
-    const tono = oro ? TIRA_ORO : (TIRA_NIVEL[it.nivel] || (it.listo ? TIRA_NIVEL.bien : null));
+    /* El optimo manda sobre todo lo demas, celda por celda: en la app cada
+       casillero con estrella ya se pinta dorado, y en el aviso salian con la
+       estrella adentro de una celda verde.
+       Despues el nivel manda sobre el tilde: un casillero cargado con un dato
+       malo se ve malo. Sin nivel, cumplido es verde. */
+    const tono = (oro || it.optimo)
+      ? TIRA_ORO
+      : (TIRA_NIVEL[it.nivel] || (it.listo ? TIRA_NIVEL.bien : null));
 
     c.fillStyle = tono ? tono.celda : TIRA_COLORES.celda;
     c.strokeStyle = tono ? tono.borde : TIRA_COLORES.borde;

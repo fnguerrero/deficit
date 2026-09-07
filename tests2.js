@@ -5496,3 +5496,25 @@ test('un dato flojo pero cargado se ve cumplido, no ambar', () => {
   esperarQue(!!TIRA_NIVEL.mal, 'lo que estuvo mal sigue teniendo su color');
   esperarQue(!!TIRA_NIVEL.bien, 'y lo cumplido tambien');
 });
+
+test('las comidas no deciden el dorado del aviso', () => {
+  /* La app dora con los cuatro casilleros de la grilla, donde las comidas no
+     estan. Sin sacarlas de la cuenta, la app se doraba entera y la notificacion
+     de al lado no, con los mismos datos y en el mismo segundo. */
+  const conEstrella = (n) => ({ icono: '👟', nombre: n, valor: '1', listo: true, optimo: true });
+  const comidas = { icono: '🍽', nombre: 'Comidas', valor: '7', listo: true, optimo: false, opcional: true };
+  esperarQue(todoOptimo([conEstrella('Pasos'), conEstrella('Agua'), comidas]),
+    'los cuatro con estrella doran aunque las comidas no lleguen');
+  esperarQue(!todoOptimo([conEstrella('Pasos'), { ...conEstrella('Agua'), optimo: false }, comidas]),
+    'y uno de los que si cuentan alcanza para que no');
+});
+
+test('una celda con estrella se dibuja dorada aunque el dia no este completo', () => {
+  const base = [
+    { icono: '👟', nombre: 'Pasos', valor: '12.000', listo: true, nivel: 'bien' },
+    { icono: '🍽', nombre: 'Comidas', valor: '7', listo: true, opcional: true }
+  ];
+  const conEstrella = [{ ...base[0], optimo: true }, base[1]];
+  esperarQue(tiraDelDiaPNG(base) !== tiraDelDiaPNG(conEstrella),
+    'la estrella dorada de una celda cambia el dibujo');
+});
