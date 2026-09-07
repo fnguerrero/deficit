@@ -11,7 +11,10 @@ const CARITAS = [
   { id: 'flojo', emoji: '😕', texto: 'Flojo' },
   { id: 'normal', emoji: '🙂', texto: 'Normal' },
   { id: 'bien', emoji: '😄', texto: 'Bien' },
-  { id: 'genial', emoji: '💪', texto: 'Genial' }
+  /* Una cara y no la manito: 💪 al lado de las horas de sueno se leia como
+     ejercicio, y ademas era la unica de las cinco que no era una cara. La
+     escala se entiende cuando todas hablan el mismo idioma. */
+  { id: 'genial', emoji: '🤩', texto: 'Genial' }
 ];
 
 /*

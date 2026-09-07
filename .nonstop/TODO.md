@@ -175,3 +175,4 @@ esta sesion.
 - [x] Partir modos.js (835 -> 730): salio patrones.js
 - [x] Partir juego.js (618 -> 545): salio logros.js; y el limite de sw.js subio a 300 porque lo que crece ahi es la lista SHELL, no la logica
 - [x] El optimo de cada objetivo: estrella por casillero y fila dorada con el dia completo · verif: 12 tests + la app viva en 375x812 · archivos: optimo.js, chequeos.js, tira-aviso.js, ui/objetivos.js, ui/recordatorios.js, styles.css, index.html
+- [x] Las comidas que aparecian solas: la foto encolada se acuerda de su dia y su momento, y el vaciado de la cola lo dice · verif: 3 tests + guardado de una foto de ayer en la app viva
