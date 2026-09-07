@@ -5,14 +5,56 @@
 
 const R = { total: 0, fallos: 0, detalle: [] };
 
+/*
+ * Los tests asincronos, que se esperan al final. Se declara ACA arriba y no al
+ * lado de testAsync() porque test() lo necesita desde el primer test del
+ * archivo: con la const mas abajo, el primero que devolviera una promesa se
+ * comia un ReferenceError por la zona muerta.
+ */
+const pendientesAsync = [];
+
+/*
+ * Un test. Si la funcion devuelve una promesa, se espera.
+ *
+ * Ese chequeo no es un adorno: habia tests `async` escritos con test() en vez
+ * de testAsync(), y el try/catch no ve un rechazo que llega despues. Fallaban
+ * en la consola como "Uncaught (in promise)" y el runner los contaba EN VERDE,
+ * que es la peor forma de tener un test: uno que dice que si sin haber mirado.
+ */
 function test(nombre, fn) {
+  /*
+   * Una funcion async NO se ejecuta aca: se encola tal cual, para que corra
+   * cuando le toque.
+   *
+   * Arrancarlas todas de una las pone a competir por el mismo recurso. Los tres
+   * tests de la accion pendiente escriben la misma clave de IndexedDB, y con
+   * las tres promesas en el aire el primero leia lo que habia dejado el
+   * tercero. Encolar la funcion —y no la promesa ya corriendo— las deja en fila,
+   * que es como corrian con testAsync().
+   */
+  if (fn && fn.constructor && fn.constructor.name === 'AsyncFunction') {
+    pendientesAsync.push({ nombre, fn });
+    return;
+  }
+
+  let r;
   try {
-    fn();
-    R.detalle.push({ ok: true, nombre });
+    r = fn();
   } catch (e) {
     R.fallos++;
     R.detalle.push({ ok: false, nombre, error: e.message });
+    R.total++;
+    return;
   }
+
+  if (r && typeof r.then === 'function') {
+    /* Ya esta corriendo: se encola la promesa, no la funcion. El total se suma
+       cuando termina, alla abajo. */
+    pendientesAsync.push({ nombre, fn: () => r });
+    return;
+  }
+
+  R.detalle.push({ ok: true, nombre });
   R.total++;
 }
 
@@ -2242,7 +2284,6 @@ const COMIDA_OK = {
 };
 
 /* --- tests asíncronos: se registran y se esperan al final --- */
-const pendientesAsync = [];
 function testAsync(nombre, fn) {
   pendientesAsync.push({ nombre, fn });
 }
@@ -4447,29 +4488,34 @@ test('las favoritas por defecto son tres', () => {
    mano cuando ya se cumple sin esfuerzo. */
 
 test('el objetivo de vasos arranca bajo y no depende del peso', () => {
-  esperar(vasosObjetivo(85), VASOS_DEFECTO);
-  esperar(vasosObjetivo(50), VASOS_DEFECTO);
-  esperar(vasosObjetivo(140), VASOS_DEFECTO);
+  /* La firma ya ni siquiera recibe el peso: salio cuando el objetivo dejo de
+     calcularse con el. */
+  esperar(vasosObjetivo(), VASOS_DEFECTO);
+  esperar(vasosObjetivo(null), VASOS_DEFECTO);
   esperarQue(VASOS_DEFECTO <= 5, 'tiene que ser cumplible desde el primer dia');
+  /* El primer parametro AHORA es la eleccion a mano. Si alguien volviera a
+     pasarle el peso, entraria como objetivo y este test lo delata: 85 kg se
+     recortan al maximo de vasos en vez de devolver el default. */
+  esperar(vasosObjetivo(85), VASOS_MAX, 'el primer parametro es el elegido, no el peso');
 });
 
 test('el objetivo elegido a mano manda', () => {
-  esperar(vasosObjetivo(85, 6), 6);
-  esperar(vasosObjetivo(85, 1), 1);
+  esperar(vasosObjetivo(6), 6);
+  esperar(vasosObjetivo(1), 1);
 });
 
 test('el objetivo elegido se mantiene entre limites', () => {
-  esperar(vasosObjetivo(85, 0), VASOS_DEFECTO, 'cero no es un objetivo');
-  esperar(vasosObjetivo(85, -3), VASOS_DEFECTO);
-  esperar(vasosObjetivo(85, 99), VASOS_MAX);
-  esperar(vasosObjetivo(85, 'hola'), VASOS_DEFECTO);
+  esperar(vasosObjetivo(0), VASOS_DEFECTO, 'cero no es un objetivo');
+  esperar(vasosObjetivo(-3), VASOS_DEFECTO);
+  esperar(vasosObjetivo(99), VASOS_MAX);
+  esperar(vasosObjetivo('hola'), VASOS_DEFECTO);
 });
 
 test('la referencia por peso sigue existiendo, como dato al costado', () => {
   esperar(vasosRecomendados(85), Math.round((85 * 35) / 250));
   esperarQue(vasosRecomendados(50) >= 6, 'con un piso razonable');
   esperarQue(vasosRecomendados(200) <= 14, 'y un techo');
-  esperarQue(vasosRecomendados(85) > vasosObjetivo(85), 'la referencia es mas alta que el objetivo inicial');
+  esperarQue(vasosRecomendados(85) > vasosObjetivo(), 'la referencia es mas alta que el objetivo inicial');
 });
 
 

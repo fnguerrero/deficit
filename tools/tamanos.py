@@ -24,7 +24,9 @@ LIMITES = [
     ('chequeos.js', 450),
     # el optimo salio de chequeos.js: es la otra pregunta —el techo y no el
     # piso— y el archivo ya estaba en el limite
-    ('optimo.js', 150),
+    # +50 por textoCumplido(): la otra mitad de la explicacion —que pone el
+    # casillero en verde— vive al lado de la que dice que da la estrella
+    ('optimo.js', 200),
     ('modos.js', 800),
     # las reglas por patron salieron de modos.js: miran las banderas del plato,
     # no sus numeros
@@ -33,7 +35,8 @@ LIMITES = [
     ('consecuencias.js', 220),
     # +50 al sumarle moverse por minutos e intensidad, que es logica de habito
     # como el resto del archivo: partirlo por nueve lineas seria peor.
-    ('habitos.js', 350),
+    # +30 por aguaCumplida(), que vive pegada a la meta que compara
+    ('habitos.js', 380),
     ('mascota.js', 400),
     # +30 por el eje demacrado y el dia en el cuerpo: es la misma familia de
     # traducciones dato->dibujo que ya vivia aca.
@@ -80,11 +83,14 @@ LIMITES = [
     # +35 porque lo que crece no es la logica sino la lista SHELL: cada archivo
     # que sale de una particion suma una linea aca. Partir el sw seria pagar un
     # importScripts mas en el arranque para ahorrar lineas de datos.
-    ('sw.js', 300),
+    ('sw.js', 340),
     # +40 por el editor de pasos. Va con la grilla y no en ui/hoy.js, que ya
     # esta en 660: los pasos son el sexto casillero y su editor es el mismo
     # patron que el del sueño y el del animo, que ya viven aca.
     ('ui/objetivos.js', 740),
+    # el ayuno salio de ui/objetivos.js: es lo unico de ahi que no es un
+    # casillero del dia, no suma a la racha ni se cumple, solo corre
+    ('ui/ayuno.js', 150),
     ('ui/*.js', 700),
     # Lo especifico va ANTES del comodin: el primero que matchea manda, y si
     # `tools/*.py` viniera primero se llevaria puesto este limite.

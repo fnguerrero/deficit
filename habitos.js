@@ -25,7 +25,10 @@ const VASOS_DEFECTO = 4;
 const VASOS_MIN = 1;
 const VASOS_MAX = 16;
 
-function vasosObjetivo(pesoKg, elegido = null) {
+/* Sin el peso: la firma lo pedia de cuando el objetivo salia de ahi, y quedo
+   como un parametro que nadie mira. La referencia por peso sigue existiendo en
+   vasosRecomendados(), que es donde tiene sentido. */
+function vasosObjetivo(elegido = null) {
   const n = Number(elegido);
   if (n > 0) return Math.min(VASOS_MAX, Math.max(VASOS_MIN, Math.round(n)));
   return VASOS_DEFECTO;

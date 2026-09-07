@@ -87,13 +87,36 @@ function leerDeCache(cache, huella, ts = Date.now(), diasValidez = 90) {
  */
 const MAX_COLA = 4;
 
+/*
+ * Cuantas veces se reintenta una foto antes de soltarla.
+ *
+ * Sin tope, una foto que falla siempre —una imagen que el proxy rechaza, un
+ * error que se ve como de red pero no lo es— vuelve a la cola en cada intento y
+ * se reintenta cada vez que la conexion aparece, para siempre. Tres veces
+ * alcanza para cubrir la mala señal, que es el caso real, y corta el bucle.
+ */
+const MAX_INTENTOS = 3;
+
+/** Si ya se probo bastante. Al llegar aca la foto se suelta, y se dice. */
+function reintentosAgotados(entrada) {
+  return (Number(entrada?.intentos) || 0) >= MAX_INTENTOS;
+}
+
+/** La misma entrada, con un intento mas encima. */
+function conUnIntentoMas(entrada) {
+  return { ...entrada, intentos: (Number(entrada?.intentos) || 0) + 1 };
+}
+
 function encolarAnalisis(cola, entrada, ts = Date.now()) {
   if (!entrada || !Array.isArray(entrada.imagenes) || !entrada.imagenes.length) return cola || [];
 
   const id = entrada.id || 'c' + ts.toString(36) + Math.random().toString(36).slice(2, 6);
   /* Las mas nuevas primero y con tope: sin limite, tres dias sin señal dejan el
      localStorage lleno de fotos y no entra ni el dia de hoy. */
-  return [{ ...entrada, id, ts }, ...(cola || []).filter(x => x.id !== id)].slice(0, MAX_COLA);
+  /* Los intentos viajan con la entrada: al reencolar despues de un fallo se
+     conserva el id, asi que el contador se acumula en vez de arrancar de cero
+     en cada vuelta. */
+  return [{ intentos: 0, ...entrada, id, ts }, ...(cola || []).filter(x => x.id !== id)].slice(0, MAX_COLA);
 }
 
 function sacarDeCola(cola, id) {

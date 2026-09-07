@@ -65,7 +65,7 @@ const DEFAULT_STATE = {
 
 /** El objetivo de vasos de hoy: el que eligió Nico, o el default bajo. */
 function metaVasos() {
-  return vasosObjetivo(state.perfil.peso, state.cfg.vasosMeta);
+  return vasosObjetivo(state.cfg.vasosMeta);
 }
 
 /** Los pasos que hacen el día, configurables desde el mismo casillero. */

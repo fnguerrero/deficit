@@ -5,39 +5,39 @@
    y la app comparten de verdad. */
 importScripts('./pendiente.js');
 
-const VERSION = 'deficit-v632';
+const VERSION = 'deficit-v643';
 
 const SHELL = [
   './',
   './index.html',
-  './styles.css?v=632',
-  './config.js?v=632',
-  './fechas.js?v=632',
-  './frecuentes.js?v=632',
-  './core.js?v=632',
-  './platos.js?v=632',
-  './animar.js?v=632',
-  './fotos.js?v=632',
-  './calibracion.js?v=632',
-  './modos.js?v=632',
-  './patrones.js?v=632',
-  './arreglos.js?v=632',
-  './consecuencias.js?v=632',
-  './recorte.js?v=632',
-  './push.js?v=632',
-  './tira-aviso.js?v=632',
-  './pendiente.js?v=632',
-  './deportes.js?v=632',
-  './habitos.js?v=632',
-  './mascota.js?v=632',
-  './cuerpo.js?v=632',
-  './cintura.js?v=632',
-  './figura.js?v=632',
-  './cara.js?v=632',
-  './personaje.js?v=632',
-  './relieve.js?v=632',
-  './sprite-datos.js?v=632',
-  './sprite.js?v=632',
+  './styles.css?v=643',
+  './config.js?v=643',
+  './fechas.js?v=643',
+  './frecuentes.js?v=643',
+  './core.js?v=643',
+  './platos.js?v=643',
+  './animar.js?v=643',
+  './fotos.js?v=643',
+  './calibracion.js?v=643',
+  './modos.js?v=643',
+  './patrones.js?v=643',
+  './arreglos.js?v=643',
+  './consecuencias.js?v=643',
+  './recorte.js?v=643',
+  './push.js?v=643',
+  './tira-aviso.js?v=643',
+  './pendiente.js?v=643',
+  './deportes.js?v=643',
+  './habitos.js?v=643',
+  './mascota.js?v=643',
+  './cuerpo.js?v=643',
+  './cintura.js?v=643',
+  './figura.js?v=643',
+  './cara.js?v=643',
+  './personaje.js?v=643',
+  './relieve.js?v=643',
+  './sprite-datos.js?v=643',
+  './sprite.js?v=643',
   './img/cuerpo-0.webp',
   './img/cuerpo-1.webp',
   './img/cuerpo-2.webp',
@@ -45,53 +45,54 @@ const SHELL = [
   './img/cuerpo-4.webp',
   './img/cuerpo-5.webp',
   './img/cuerpo-6.webp',
-  './transformacion.js?v=632',
-  './aura.js?v=632',
-  './logros.js?v=632',
-  './juego.js?v=632',
-  './sonidos.js?v=632',
-  './voz.js?v=632',
-  './graficos.js?v=632',
-  './plazo.js?v=632',
-  './compartir.js?v=632',
-  './sugerencias.js?v=632',
-  './analisis.js?v=632',
-  './informe.js?v=632',
-  './chequeos.js?v=632',
-  './optimo.js?v=632',
-  './claude.js?v=632',
-  './productos.js?v=632',
-  './sync-perfil.js?v=632',
-  './fusion-dia.js?v=632',
-  './sync.js?v=632',
-  './estado-sync.js?v=632',
-  './auth.js?v=632',
-  './app.js?v=632',
-  './ui/general.js?v=632',
-  './ui/hoy.js?v=632',
-  './ui/peso.js?v=632',
-  './ui/dia.js?v=632',
-  './ui/objetivos.js?v=632',
-  './ui/barra.js?v=632',
-  './ui/recorte.js?v=632',
-  './ui/push.js?v=632',
-  './ui/tarjeta.js?v=632',
-  './ui/comidas.js?v=632',
-  './ui/edicion.js?v=632',
-  './ui/resumen.js?v=632',
-  './ui/escaner.js?v=632',
-  './ui/asistente.js?v=632',
-  './ui/historial.js?v=632',
-  './ui/progreso.js?v=632',
-  './ui/logros.js?v=632',
-  './ui/perfil.js?v=632',
-  './ui/sincronizacion.js?v=632',
-  './ui/cuenta.js?v=632',
-  './ui/calibracion.js?v=632',
-  './ui/actividades.js?v=632',
-  './ui/recordatorios.js?v=632',
-  './ui/ajustes.js?v=632',
-  './arranque.js?v=632',
+  './transformacion.js?v=643',
+  './aura.js?v=643',
+  './logros.js?v=643',
+  './juego.js?v=643',
+  './sonidos.js?v=643',
+  './voz.js?v=643',
+  './graficos.js?v=643',
+  './plazo.js?v=643',
+  './compartir.js?v=643',
+  './sugerencias.js?v=643',
+  './analisis.js?v=643',
+  './informe.js?v=643',
+  './chequeos.js?v=643',
+  './optimo.js?v=643',
+  './claude.js?v=643',
+  './productos.js?v=643',
+  './sync-perfil.js?v=643',
+  './fusion-dia.js?v=643',
+  './sync.js?v=643',
+  './estado-sync.js?v=643',
+  './auth.js?v=643',
+  './app.js?v=643',
+  './ui/general.js?v=643',
+  './ui/hoy.js?v=643',
+  './ui/peso.js?v=643',
+  './ui/dia.js?v=643',
+  './ui/objetivos.js?v=643',
+  './ui/ayuno.js?v=643',
+  './ui/barra.js?v=643',
+  './ui/recorte.js?v=643',
+  './ui/push.js?v=643',
+  './ui/tarjeta.js?v=643',
+  './ui/comidas.js?v=643',
+  './ui/edicion.js?v=643',
+  './ui/resumen.js?v=643',
+  './ui/escaner.js?v=643',
+  './ui/asistente.js?v=643',
+  './ui/historial.js?v=643',
+  './ui/progreso.js?v=643',
+  './ui/logros.js?v=643',
+  './ui/perfil.js?v=643',
+  './ui/sincronizacion.js?v=643',
+  './ui/cuenta.js?v=643',
+  './ui/calibracion.js?v=643',
+  './ui/actividades.js?v=643',
+  './ui/recordatorios.js?v=643',
+  './ui/ajustes.js?v=643',
+  './arranque.js?v=643',
   './manifest.json',
   './icons/icon-192.png',
   './icons/badge-96.png',
@@ -120,8 +121,19 @@ self.addEventListener('install', (e) => {
   );
 });
 
+/*
+ * Si el aviso fijo tiene que volver cuando lo descartan.
+ *
+ * La app lo apaga antes de cerrarlo a proposito —al destildar el interruptor de
+ * Ajustes—, porque si no el cierre se leeria como un descarte y lo repondriamos
+ * justo cuando alguien pidio no verlo mas.
+ */
+let reponerElFijo = true;
+
 self.addEventListener('message', (e) => {
   if (e.data === 'actualizar') self.skipWaiting();
+  if (e.data === 'apagar-aviso-fijo') reponerElFijo = false;
+  if (e.data === 'prender-aviso-fijo') reponerElFijo = true;
 
   // Qué versión está sirviendo REALMENTE quien contesta. Mirar los caches no
   // sirve: con una versión esperando, su cache ya existe y el diagnóstico diría
@@ -163,6 +175,31 @@ function reponerAviso(n) {
     requireInteraction: true
   });
 }
+
+/*
+ * Descartarlo tampoco lo saca: es una barra de estado, no un aviso.
+ *
+ * Android no tiene notificaciones web "ongoing" —eso es solo para apps
+ * nativas—, asi que lo mas cerca que se puede estar de una que no se cierra es
+ * volver a ponerla cuando la descartan. Un deslizado al costado, o el "Borrar
+ * todo" del panel, y el tablero del dia vuelve. La unica forma de sacarlo es el
+ * interruptor de Ajustes, que es donde tiene que estar esa decision.
+ */
+self.addEventListener('notificationclose', (e) => {
+  if (e.notification.tag !== TAG_FIJO || !reponerElFijo) return;
+
+  const copia = {
+    title: e.notification.title,
+    body: e.notification.body,
+    icon: e.notification.icon,
+    badge: e.notification.badge,
+    image: e.notification.image,
+    tag: e.notification.tag,
+    actions: e.notification.actions,
+    data: e.notification.data
+  };
+  e.waitUntil(reponerAviso(copia));
+});
 
 self.addEventListener('notificationclick', (e) => {
   /* Los recordatorios puntuales se cierran y listo: dicen una cosa una vez. El
