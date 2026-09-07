@@ -5557,3 +5557,16 @@ test('el dia dorado no dora las comidas si no llegaron a su optimo', () => {
   esperarQue(tiraDelDiaPNG([estrella('Pasos'), comidasFlojas]) !== tiraDelDiaPNG([estrella('Pasos'), conOptimo]),
     'la celda de comidas no se ve igual con estrella que sin ella');
 });
+
+test('un vaso mas cambia la firma del aviso aunque las kcal sean las mismas', () => {
+  /* El titulo del aviso dice las calorias que quedan y el cuerpo esta vacio:
+     con la firma armada solo con eso, tomar el ultimo vaso no repintaba nada y
+     la notificacion se quedaba con el dibujo viejo, sin la estrella. */
+  const fila = (vasos, optimo) => [
+    { icono: '👟', nombre: 'Pasos', valor: '12.000', listo: true, nivel: 'bien', optimo: true },
+    { icono: '💧', nombre: 'Agua', valor: `${vasos}/5`, listo: optimo, nivel: 'bien', optimo }
+  ];
+  const antes = firmaDeTira(fila(4, false), TIRA_ANCHO, TIRA_ALTO);
+  const despues = firmaDeTira(fila(5, true), TIRA_ANCHO, TIRA_ALTO);
+  esperarQue(antes !== despues, 'la firma tiene que cambiar con el vaso');
+});
