@@ -37,6 +37,21 @@ const TIRA_NIVEL = {
 };
 
 /*
+ * El dia completo se ve distinto, no un poco mas verde.
+ *
+ * Con todos los casilleros cumplidos la fila entera pasa a dorado, marco
+ * incluido: es el unico estado que se mira de lejos y sin leer nada, y verde
+ * con un casillero mas verde no se distingue de verde con uno menos. El fondo
+ * tambien cambia porque el premio es del dia, no de cada casillero.
+ */
+const TIRA_ORO = {
+  fondo: '#241d08',
+  texto: '#fcd34d',
+  celda: '#3a2e0b',
+  borde: '#b08900'
+};
+
+/*
  * Lo ultimo que se dibujo, para no volver a dibujarlo igual.
  *
  * Son 60 KB de PNG y el aviso se refresca en cada cambio del dia: sin esto, un
@@ -46,16 +61,29 @@ const TIRA_NIVEL = {
 let ultimaTira = { firma: '', png: null };
 
 function firmaDeTira(lista, ancho, alto) {
-  return `${ancho}x${alto}|` + lista
-    .map(i => `${i.icono}:${i.nombre}:${i.valor}:${i.nivel || ''}:${i.listo ? 1 : 0}`)
+  return `${ancho}x${alto}|` + (todoOptimo(lista) ? 'oro|' : '') + lista
+    .map(i => `${i.icono}:${i.nombre}:${i.valor}:${i.nivel || ''}:${i.listo ? 1 : 0}:${i.optimo ? 1 : 0}`)
     .join('|');
+}
+
+/*
+ * Lo que enciende el dorado: todos en su OPTIMO, no todos cargados.
+ *
+ * Cargados alcanzaba para dorar un dia de 3.000 pasos y cinco horas de sueno,
+ * con un casillero en rojo adentro del marco dorado. El premio dejaba de ser un
+ * premio: se ganaba anotando, no haciendo. Un casillero sin la estrella alcanza
+ * para que no sea un dia completo, aunque los otros cuatro esten impecables.
+ */
+function todoOptimo(lista) {
+  const items = (lista || []).filter(Boolean);
+  return items.length > 0 && items.every(i => i.optimo);
 }
 
 /**
  * Dibuja la fila y devuelve un PNG en dataURL, o null si no se puede dibujar.
  *
- * `items` es [{ icono, nombre, valor, nivel, listo }], que es lo que ya arma
- * rachasDelDia() para el aviso.
+ * `items` es [{ icono, nombre, valor, nivel, listo, optimo }], que es lo que ya
+ * arma rachasDelDia() para el aviso.
  */
 function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
   const lista = (items || []).filter(Boolean);
@@ -70,7 +98,9 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
   const c = cv.getContext('2d');
   if (!c) return null;
 
-  c.fillStyle = TIRA_COLORES.fondo;
+  const oro = todoOptimo(lista);
+
+  c.fillStyle = oro ? TIRA_ORO.fondo : TIRA_COLORES.fondo;
   c.fillRect(0, 0, ancho, alto);
 
   const margen = 14;
@@ -84,7 +114,7 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
 
     /* El nivel manda sobre el tilde: un casillero cargado con un dato malo se
        ve malo, igual que en la app. Sin nivel, cumplido es verde. */
-    const tono = TIRA_NIVEL[it.nivel] || (it.listo ? TIRA_NIVEL.bien : null);
+    const tono = oro ? TIRA_ORO : (TIRA_NIVEL[it.nivel] || (it.listo ? TIRA_NIVEL.bien : null));
 
     c.fillStyle = tono ? tono.celda : TIRA_COLORES.celda;
     c.strokeStyle = tono ? tono.borde : TIRA_COLORES.borde;
@@ -103,8 +133,11 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
     const centro = x + anchoCelda / 2;
     c.textAlign = 'center';
 
+    /* La estrella reemplaza al icono cuando el objetivo llego a su optimo: es
+       la unica marca de la fila que dice "esto no solo esta hecho, esta bien
+       hecho", y puesta al lado del emoji competia con el en vez de decirlo. */
     c.font = '52px system-ui, "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
-    c.fillText(it.icono || '', centro, y + altoCelda * 0.44);
+    c.fillText(it.optimo ? '⭐' : (it.icono || ''), centro, y + altoCelda * 0.44);
 
     c.fillStyle = tono ? tono.texto : TIRA_COLORES.texto;
     c.font = '600 25px system-ui, sans-serif';

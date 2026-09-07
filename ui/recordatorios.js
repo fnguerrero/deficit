@@ -124,7 +124,14 @@ function rachasDelDia() {
 
   /* Las comidas ya no tienen casillero en la grilla —se ven abajo, en la fila de
      momentos— asi que su numero no sale de ahi: se cuenta aca. */
-  const comidas = (dia(hoyISO()).comidas || []).length;
+  const hoy = dia(hoyISO());
+  const comidas = (hoy.comidas || []).length;
+
+  /* Las rachas usan sus propios nombres —`registro` por las comidas,
+     `entrenamiento` por el ejercicio— y el optimo se pregunta con los de la
+     grilla. La traduccion vive aca y no en esOptimo(): el que tiene dos juegos
+     de nombres es el aviso, no la regla. */
+  const idDeObjetivo = { registro: 'comidas', entrenamiento: 'ejercicio' };
 
   return todasLasRachas(state.dias, { ...metasDelJuego(), juego: state.juego })
     .map(r => ({
@@ -136,7 +143,10 @@ function rachasDelDia() {
          cumplidos, pero tampoco son lo mismo que cero. En la app eso se ve en
          ambar y en el dibujo salia gris. */
       nivel: niveles[r.id === 'entrenamiento' ? 'entrenamiento' : r.id] || '',
-      valor: r.id === 'registro' ? (comidas ? String(comidas) : '') : (valores[r.id] || '')
+      valor: r.id === 'registro' ? (comidas ? String(comidas) : '') : (valores[r.id] || ''),
+      /* La estrella del aviso. Las comidas tambien la tienen aunque no esten en
+         la grilla: en la barra de notificaciones si son un casillero mas. */
+      optimo: typeof esOptimo === 'function' && esOptimo(idDeObjetivo[r.id] || r.id, hoy)
     }))
     .sort((a, b) => puesto(a.id) - puesto(b.id));
 }

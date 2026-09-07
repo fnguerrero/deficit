@@ -73,6 +73,7 @@ function objetivosDelDia() {
       /* Anotarlos alcanza: no hay objetivo contra el cual quedar corto. */
       listo: (d.pasos || 0) > 0,
       nivel: nivelPasos(d.pasos),
+      optimo: esOptimo('pasos', d),
       valor: d.pasos ? fmtNum(d.pasos) : ''
     },
     {
@@ -81,6 +82,7 @@ function objetivosDelDia() {
       nombre: 'Ejercicio',
       listo: (d.ejercicio || 0) > 0,
       nivel: nivelEjercicio(d.ejercicio),
+      optimo: esOptimo('ejercicio', d),
       valor: d.ejercicio ? fmtNum(d.ejercicio) + ' kcal' : ''
     },
     {
@@ -89,6 +91,7 @@ function objetivosDelDia() {
       nombre: 'Agua',
       listo: (d.agua || 0) >= metaVasos(),
       nivel: nivelAgua(d.agua, metaVasos()),
+      optimo: esOptimo('agua', d),
       valor: `${d.agua || 0}/${metaVasos()}`
     },
     {
@@ -100,6 +103,7 @@ function objetivosDelDia() {
          y eso no es un dia incompleto. */
       listo: !!(d.sueno && d.sueno.horas),
       nivel: nivelSueno(d.sueno?.horas),
+      optimo: esOptimo('sueno', d),
       valor: [
         d.sueno?.horas ? d.sueno.horas + ' h' : '',
         d.animo ? (CARITAS.find(c => c.id === d.animo)?.emoji || '') : ''
@@ -166,24 +170,40 @@ function renderObjetivos() {
      entrar entera. */
   cont.title = resumenHabitos(objetivosDelDia().filter(o => !o.opcional)).texto || '';
 
+  /* El dia completo se ve de otro color, igual que en el aviso: con los cuatro
+     casilleros en su OPTIMO la fila entera pasa a dorado. Verde con un casillero
+     mas verde no se distingue; dorado se ve sin leer nada.
+
+     Optimo y no "cargado": con cargado, un dia de 3.000 pasos y cinco horas de
+     sueno se doraba entero, con un casillero en rojo adentro del marco. */
+  const delDia = objetivosDelDia().filter(o => !o.opcional);
+  cont.classList.toggle('dia-completo', delDia.length > 0 && delDia.every(o => o.optimo));
+
   cont.innerHTML = '';
   for (const o of objetivosDelDia()) {
     const b = document.createElement('button');
     /* El color sale del nivel; `listo` solo pone el tilde y el estado. Un
        casillero cargado con un dato malo tiene que verse malo. */
     b.className = 'objetivo' + (o.listo ? ' listo' : '') + (o.nivel ? ' nivel-' + o.nivel : '') +
-      (o.opcional ? ' opcional' : '');
+      (o.optimo ? ' optimo' : '') + (o.opcional ? ' opcional' : '');
     /* El color no puede ser el único que lo diga: quien no lo distingue, o usa
        un lector de pantalla, se perdería justo el aviso. */
     const comoEstuvo = { bien: '', flojo: ', flojo', mal: ', mal' }[o.nivel] || '';
-    b.setAttribute('aria-label', `${o.nombre}${o.valor ? ': ' + o.valor : ', sin cargar'}${comoEstuvo}`);
+    /* La estrella no puede ser solo un dibujo: quien usa un lector de pantalla
+       se perderia justo lo que la fila festeja. */
+    b.setAttribute('aria-label',
+      `${o.nombre}${o.valor ? ': ' + o.valor : ', sin cargar'}${comoEstuvo}${o.optimo ? ', en el óptimo' : ''}`);
     /* El casillero es un interruptor con estado, no un boton suelto: sin esto un
        lector de pantalla no distingue el cumplido del pendiente. */
     b.setAttribute('role', o.opcional ? 'button' : 'switch');
     if (!o.opcional) b.setAttribute('aria-checked', String(!!o.listo));
     /* El opcional no lleva tilde aunque este cargado: el tilde dice "casillero
        del dia hecho", y este no es uno. */
-    b.innerHTML = `<span aria-hidden="true">${o.listo && !o.opcional ? '✓' : o.emoji}</span>` +
+    /* La estrella manda sobre el tilde. El tilde dice "cargado" y lo dice de
+       todos igual; la estrella dice que ademas llego al optimo, que es lo que
+       vale la pena mirar de un dia terminado. */
+    const marca = o.optimo ? '⭐' : (o.listo && !o.opcional ? '✓' : o.emoji);
+    b.innerHTML = `<span aria-hidden="true">${marca}</span>` +
       `<b>${o.nombre}</b><small>${o.valor || '—'}</small>`;
     b.onclick = () => abrirObjetivo(o.id);
     cont.appendChild(b);
@@ -232,6 +252,19 @@ function abrirObjetivo(id) {
 
   $('tituloObjetivo').textContent = TITULOS_OBJ[id] || 'Objetivo';
   secciones.forEach(s => { s.hidden = s.dataset.obj !== id; });
+
+  /* El optimo del objetivo que se esta abriendo. El peso y el ayuno no tienen
+     —no son casilleros del dia— y ahi el renglon no aparece en vez de decir
+     una regla inventada. */
+  const optimo = $('optimoObjetivo');
+  if (optimo) {
+    const texto = typeof textoOptimo === 'function' ? textoOptimo(id) : '';
+    optimo.textContent = texto;
+    optimo.hidden = !texto;
+    /* Si ya esta cumplido lo dice el color, que es la misma estrella del
+       casillero puesta en palabras. */
+    optimo.classList.toggle('cumplido', !!texto && esOptimo(id, dia()));
+  }
 
   if (id === 'pasos') renderPasos();
   if (id === 'peso') renderPeso();

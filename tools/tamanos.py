@@ -22,6 +22,9 @@ LIMITES = [
     # para la pantalla, sino que arma un documento aparte
     ('informe.js', 250),
     ('chequeos.js', 450),
+    # el optimo salio de chequeos.js: es la otra pregunta —el techo y no el
+    # piso— y el archivo ya estaba en el limite
+    ('optimo.js', 150),
     ('modos.js', 800),
     # las reglas por patron salieron de modos.js: miran las banderas del plato,
     # no sus numeros
