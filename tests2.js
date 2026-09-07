@@ -5570,3 +5570,41 @@ test('un vaso mas cambia la firma del aviso aunque las kcal sean las mismas', ()
   const despues = firmaDeTira(fila(5, true), TIRA_ANCHO, TIRA_ALTO);
   esperarQue(antes !== despues, 'la firma tiene que cambiar con el vaso');
 });
+
+/* ---------------- el agua, a un vaso de la meta ---------------- */
+
+test('quedarse a un vaso ya cuenta como cumplido', () => {
+  esperarQue(aguaCumplida(3, 4), '3 de 4 cuenta');
+  esperarQue(aguaCumplida(4, 4), 'y la meta entera obviamente');
+  esperarQue(aguaCumplida(6, 4), 'de mas tambien');
+  esperarQue(!aguaCumplida(2, 4), 'dos de cuatro no');
+  esperarQue(!aguaCumplida(0, 4), 'y cero menos');
+});
+
+test('con una meta de un vaso no hay tolerancia posible', () => {
+  /* Cero vasos no es un dia con agua, por mas baja que este la meta. */
+  esperarQue(!aguaCumplida(0, 1), 'cero no alcanza');
+  esperarQue(aguaCumplida(1, 1), 'uno si');
+});
+
+test('la meta entera sigue siendo la que da la estrella', () => {
+  const metaPrevia = globalThis.metaVasos;
+  globalThis.metaVasos = () => 4;
+  try {
+    esperarQue(!esOptimo('agua', { agua: 3 }), 'a un vaso hay tilde, no estrella');
+    esperarQue(esOptimo('agua', { agua: 4 }), 'la meta entera si');
+  } finally {
+    if (metaPrevia === undefined) delete globalThis.metaVasos;
+    else globalThis.metaVasos = metaPrevia;
+  }
+});
+
+test('la tolerancia del agua no regala dias del historial', () => {
+  /* Aflojar la regla hacia atras daria por cumplidos dias que en su momento no
+     lo estuvieron, y la racha del historial diria algo que no paso. */
+  const racha = RACHAS.find(r => r.id === 'agua');
+  esperarQue(!racha.cumple({ agua: 3 }, { vasos: 4, fecha: '2026-08-01' }),
+    'antes del corte hacia falta la meta entera');
+  esperarQue(racha.cumple({ agua: 3 }, { vasos: 4, fecha: DESDE_AGUA_JUSTA }),
+    'desde el corte alcanza con quedarse a un vaso');
+});

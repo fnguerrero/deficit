@@ -45,7 +45,15 @@ const RACHAS = [
   },
   {
     id: 'agua', nombre: 'Agua', icono: '💧',
-    cumple: (d, ctx) => (d?.agua || 0) >= (ctx?.vasos || 8)
+    /* Desde DESDE_AGUA_JUSTA alcanza con quedarse a un vaso. La fecha de corte
+       es por lo mismo que las otras, pero al reves: aflojar la regla hacia
+       atras REGALARIA dias que en su momento no estuvieron cumplidos, y las
+       rachas del historial dirian algo que no paso. */
+    cumple: (d, ctx) => {
+      const meta = ctx?.vasos || 8;
+      if ((ctx?.fecha || '') < DESDE_AGUA_JUSTA) return (d?.agua || 0) >= meta;
+      return aguaCumplida(d?.agua, meta);
+    }
   },
   {
     id: 'entrenamiento', nombre: 'Ejercicio', icono: '🏃',
@@ -122,6 +130,9 @@ const DESDE_PASOS_LIBRES = '2026-09-06';
  */
 const RACHAS_CINCO = ['registro', 'agua', 'entrenamiento', 'sueno', 'pasos'];
 const DESDE_CINCO = '2026-09-06';
+
+/* Y desde cuando el agua se da por cumplida a un vaso de la meta. */
+const DESDE_AGUA_JUSTA = '2026-09-07';
 
 /** Que rachas hacen un dia perfecto en esa fecha. */
 function rachasDe(fecha) {
