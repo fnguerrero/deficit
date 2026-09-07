@@ -49,7 +49,11 @@ function abrirLoQueSeMira() {
   if (progresoAbierto) return;
   progresoAbierto = true;
 
-  for (const sel of ['#cardBrecha', '#cardSemana', '#cardVeredicto', '#cardComoVenis']) {
+  /* `#cardComoVenis` salio de la lista: con datos cargados mide 655 px —casi la
+     pantalla entera— y adentro tiene cuatro bloques que se leen de a uno. Su
+     pastilla ya dice cuantos dias resume, que es lo que hace falta para decidir
+     si abrirla. */
+  for (const sel of ['#cardBrecha', '#cardSemana', '#cardVeredicto']) {
     document.querySelector(sel)?.closest('.plegable')?.setAttribute('open', '');
   }
 }
