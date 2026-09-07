@@ -4989,3 +4989,25 @@ test('una hora mal escrita no dispara nada', () => {
   esperar(tocaAvisar('25:99', 600), false);
   esperar(tocaAvisar('14:30', null), false);
 });
+
+test('los horarios de aviso viejos se actualizan si nunca se tocaron', () => {
+  /* Eran media hora ANTES de cuando Nico come. Quien los tenga exactamente
+     iguales a los tres viejos es que nunca los edito. */
+  const guardado = { cfg: { horarios: [
+    { momento: 'desayuno', hora: '09:00' },
+    { momento: 'almuerzo', hora: '13:30' },
+    { momento: 'cena', hora: '21:30' }
+  ] } };
+  const h = migrar(guardado).cfg.horarios;
+  esperar(h[0].hora, '10:30');
+  esperar(h[2].hora, '23:00');
+});
+
+test('unos horarios elegidos a mano no se tocan', () => {
+  const guardado = { cfg: { horarios: [
+    { momento: 'desayuno', hora: '09:00' },
+    { momento: 'almuerzo', hora: '12:00' },
+    { momento: 'cena', hora: '21:30' }
+  ] } };
+  esperar(migrar(guardado).cfg.horarios[1].hora, '12:00', 'el que cambio uno decidio los tres');
+});

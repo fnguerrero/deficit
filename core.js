@@ -167,6 +167,15 @@ function migrar(guardado) {
   if (!s.juego.fechasLogros || typeof s.juego.fechasLogros !== 'object') s.juego.fechasLogros = {};
   if (!s.cfg.sonidoElegido) s.cfg.sonido = DEFAULT_STATE.cfg.sonido;
   if (!Array.isArray(s.cfg.horarios) || !s.cfg.horarios.length) s.cfg.horarios = clonar(RECORDATORIOS_DEFAULT);
+
+  /* Los horarios de aviso viejos, para el que nunca los toco.
+     Eran 09:00, 13:30 y 21:30 —media hora ANTES de cuando se come— y se
+     movieron cuando Nico dijo a que hora come de verdad. Solo se cambian si
+     estan exactamente los tres viejos: eso es no haberlos tocado nunca. */
+  const viejos = [['desayuno', '09:00'], ['almuerzo', '13:30'], ['cena', '21:30']];
+  const sinTocar = s.cfg.horarios.length === viejos.length &&
+    viejos.every(([m, h], i) => s.cfg.horarios[i]?.momento === m && s.cfg.horarios[i]?.hora === h);
+  if (sinTocar) s.cfg.horarios = clonar(RECORDATORIOS_DEFAULT);
   s.dias = {};
 
   for (const [f, d] of Object.entries(guardado.dias || {})) {
