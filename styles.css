@@ -1781,13 +1781,17 @@ textarea:focus { outline: none; border-color: var(--acc2); }
    que ahora usa el ayuno. */
 .titulo { min-width: 0; flex: 1 1 auto; display: flex; align-items: center; gap: 3px; }
 
-/* El color de los casilleros dice cómo estuvo el dato, no si lo cargaste.
-   Cargar tres horas de sueño y ocho no puede verse igual. */
-.objetivo.nivel-flojo {
-  border-style: solid; border-color: var(--warn);
-  background: color-mix(in srgb, var(--warn) 12%, transparent); color: var(--txt);
-}
-.objetivo.nivel-flojo b { color: var(--warn); }
+/*
+ * Tres estados y no cuatro: dorado es el optimo, verde es hecho, rojo es que
+ * ese dato estuvo mal.
+ *
+ * El ambar del "flojo" se fue cuando llego el dorado. Seis horas de sueno
+ * cargadas se veian ambar con un tilde adentro, al lado de un casillero dorado
+ * con una estrella: dos amarillos distintos que querian decir cosas opuestas
+ * —"esto estuvo justito" y "esto estuvo perfecto"— y a un metro de distancia no
+ * se distinguen. Lo que estuvo mal de verdad sigue en rojo, que es la unica
+ * senal que vale la pena interrumpir.
+ */
 
 .objetivo.nivel-mal {
   border-style: solid; border-color: var(--bad);
