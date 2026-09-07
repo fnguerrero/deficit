@@ -5518,3 +5518,42 @@ test('una celda con estrella se dibuja dorada aunque el dia no este completo', (
   esperarQue(tiraDelDiaPNG(base) !== tiraDelDiaPNG(conEstrella),
     'la estrella dorada de una celda cambia el dibujo');
 });
+
+test('una comida fuera del modo saca la estrella, aunque las cuentas cierren', () => {
+  /* La app marcaba el snack en rojo en la pantalla y le daba la estrella en la
+     notificacion, al mismo tiempo. En un modo que juzga QUE se come, el numero
+     de comidas y las calorias no alcanzan. */
+  const calcularPrevio = globalThis.calcular;
+  globalThis.calcular = () => ({ objetivo: 2000 });
+  try {
+    const ok = (kcal, carb) => ({ kcal, carb, fibra: 0, prot: 20, gras: 10, ts: Date.now() });
+    const cuatro = [ok(400, 2), ok(500, 3), ok(300, 2), ok(400, 3)];
+    esperarQue(esOptimo('comidas', { comidas: cuatro }, { modo: 'keto' }),
+      'cuatro comidas keto dentro del tope: estrella');
+
+    /* El snack de la prueba de Nico: 33 g de carbos netos con el techo en 30. */
+    const conSnack = [...cuatro, ok(200, 33)];
+    esperarQue(!esOptimo('comidas', { comidas: conSnack }, { modo: 'keto' }),
+      'con una sola comida que no entra en el modo, no hay estrella');
+
+    /* Y el mismo dia en un modo que no juzga el contenido sigue estando bien. */
+    esperarQue(esOptimo('comidas', { comidas: conSnack }, { modo: 'mantenimiento' }),
+      'en mantenimiento ese mismo dia entra');
+  } finally {
+    if (calcularPrevio === undefined) delete globalThis.calcular;
+    else globalThis.calcular = calcularPrevio;
+  }
+});
+
+test('el texto de comidas nombra las tres condiciones', () => {
+  const t = textoOptimo('comidas');
+  esperarQue(/4 comidas/.test(t) && /calorías/.test(t) && /modo/.test(t), t);
+});
+
+test('el dia dorado no dora las comidas si no llegaron a su optimo', () => {
+  const estrella = (n) => ({ icono: '👟', nombre: n, valor: '1', listo: true, optimo: true });
+  const comidasFlojas = { icono: '🍽', nombre: 'Comidas', valor: '5', listo: true, opcional: true };
+  const conOptimo = { ...comidasFlojas, optimo: true };
+  esperarQue(tiraDelDiaPNG([estrella('Pasos'), comidasFlojas]) !== tiraDelDiaPNG([estrella('Pasos'), conOptimo]),
+    'la celda de comidas no se ve igual con estrella que sin ella');
+});

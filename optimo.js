@@ -59,7 +59,7 @@ function topeDelDia(d) {
  * Devuelve false, y no null, cuando no se puede saber: el ejercicio cargado
  * como total a mano no dice cuanto duro, y una estrella no se da por las dudas.
  */
-function esOptimo(id, d) {
+function esOptimo(id, d, { modo = null } = {}) {
   if (!d) return false;
 
   if (id === 'sueno') {
@@ -89,6 +89,23 @@ function esOptimo(id, d) {
     if ((d.comidas || []).length < OPTIMO_COMIDAS) return false;
     const tope = topeDelDia(d);
     if (!tope) return false;
+
+    /*
+     * Y ninguna comida afuera del modo.
+     *
+     * Cuatro comidas dentro del tope de calorias con un snack que rompe la
+     * cetosis no son un dia optimo: la app lo estaba marcando en rojo en la
+     * pantalla y dandole la estrella en la notificacion, al mismo tiempo. El
+     * numero y las calorias no alcanzan cuando se eligio un modo que juzga QUE
+     * se come, no cuanto.
+     */
+    const idModo = modo
+      || (typeof state !== 'undefined' ? state?.perfil?.modo : null)
+      || (typeof MODO_DEFECTO !== 'undefined' ? MODO_DEFECTO : null);
+    if (idModo && typeof comidasQueEntran === 'function'
+      && comidasQueEntran(d.comidas, idModo, tope) !== d.comidas.length) {
+      return false;
+    }
     /* Las kcal salen del dia que llega, NO de totalesDia(), que devuelve las del
        dia que la pantalla esta mostrando. El aviso pregunta siempre por hoy
        mientras la app puede estar abierta en el martes pasado, y ahi la estrella
@@ -117,6 +134,6 @@ function textoOptimo(id, metaAgua = null) {
     sueno: `Óptimo: entre ${OPTIMO_SUENO_MIN} y ${OPTIMO_SUENO_MAX} horas, y haberte levantado de normal para arriba.`,
     pasos: `Óptimo: ${OPTIMO_PASOS.toLocaleString('es-AR')} pasos o más.`,
     ejercicio: `Óptimo: ${OPTIMO_EJERCICIO_MINUTOS} minutos o más y ${OPTIMO_EJERCICIO_KCAL} kcal o más, sumando todo lo del día.`,
-    comidas: `Óptimo: ${OPTIMO_COMIDAS} comidas cargadas y sin pasarte de las calorías del día.`
+    comidas: `Óptimo: ${OPTIMO_COMIDAS} comidas cargadas, sin pasarte de las calorías del día y ninguna fuera del modo.`
   }[id] || '';
 }
