@@ -32,7 +32,9 @@ const TIRA_COLORES = {
  */
 const TIRA_NIVEL = {
   bien: { texto: '#4ade80', celda: '#16341f', borde: '#2f7d4a' },
-  flojo: { texto: '#fbbf24', celda: '#33290f', borde: '#8a6a17' },
+  /* Sin ambar, igual que la app: un dato flojo pero cargado se ve cumplido, y
+     ver ambar en la notificacion y verde en la app para el mismo dato es lo que
+     mas confunde de las dos superficies. */
   mal: { texto: '#f87171', celda: '#3a1d1d', borde: '#8f3b3b' }
 };
 

@@ -27,6 +27,16 @@ const OPTIMO_SUENO_MIN = 7;
 const OPTIMO_SUENO_MAX = 9;
 const OPTIMO_COMIDAS = 4;
 
+/*
+ * Dormir bien no son solo las horas.
+ *
+ * Ocho horas dando vueltas en la cama no son un sueno optimo, y el unico que
+ * sabe eso es el que se levanto: por eso el animo entra en la cuenta. De
+ * `normal` para arriba, que es "no me levante mal"; sin el animo cargado no se
+ * puede saber, y la estrella no se da por las dudas.
+ */
+const ANIMOS_OPTIMOS = ['normal', 'bien', 'genial'];
+
 /** Los minutos anotados de un dia. Un total puesto a mano no tiene. */
 function minutosDeMovimientos(d) {
   const movs = typeof movimientosDe === 'function' ? movimientosDe(d) : [];
@@ -54,7 +64,8 @@ function esOptimo(id, d) {
 
   if (id === 'sueno') {
     const h = Number(d.sueno?.horas) || 0;
-    return h >= OPTIMO_SUENO_MIN && h <= OPTIMO_SUENO_MAX;
+    return h >= OPTIMO_SUENO_MIN && h <= OPTIMO_SUENO_MAX
+      && ANIMOS_OPTIMOS.includes(d.animo);
   }
 
   if (id === 'agua') {
@@ -103,7 +114,7 @@ function textoOptimo(id, metaAgua = null) {
     return meta ? `Óptimo: llegar a los ${meta} vasos del día.` : 'Óptimo: llegar a la meta del día.';
   }
   return {
-    sueno: `Óptimo: entre ${OPTIMO_SUENO_MIN} y ${OPTIMO_SUENO_MAX} horas.`,
+    sueno: `Óptimo: entre ${OPTIMO_SUENO_MIN} y ${OPTIMO_SUENO_MAX} horas, y haberte levantado de normal para arriba.`,
     pasos: `Óptimo: ${OPTIMO_PASOS.toLocaleString('es-AR')} pasos o más.`,
     ejercicio: `Óptimo: ${OPTIMO_EJERCICIO_MINUTOS} minutos o más y ${OPTIMO_EJERCICIO_KCAL} kcal o más, sumando todo lo del día.`,
     comidas: `Óptimo: ${OPTIMO_COMIDAS} comidas cargadas y sin pasarte de las calorías del día.`

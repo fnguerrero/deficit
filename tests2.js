@@ -5345,12 +5345,23 @@ test('sin bajada, el perfil de aca no se toca', () => {
 
 test('el sueno optimo es una franja, no un minimo', () => {
   /* Dormir doce horas no es mejor que dormir ocho: la franja tiene tope. */
-  esperarQue(esOptimo('sueno', { sueno: { horas: 8 } }), '8 h entra');
-  esperarQue(esOptimo('sueno', { sueno: { horas: 7 } }), '7 h es el borde de abajo');
-  esperarQue(esOptimo('sueno', { sueno: { horas: 9 } }), '9 h es el borde de arriba');
-  esperarQue(!esOptimo('sueno', { sueno: { horas: 6.5 } }), '6,5 h no');
-  esperarQue(!esOptimo('sueno', { sueno: { horas: 11 } }), '11 h tampoco');
+  const con = (horas, animo = 'bien') => ({ sueno: { horas }, animo });
+  esperarQue(esOptimo('sueno', con(8)), '8 h entra');
+  esperarQue(esOptimo('sueno', con(7)), '7 h es el borde de abajo');
+  esperarQue(esOptimo('sueno', con(9)), '9 h es el borde de arriba');
+  esperarQue(!esOptimo('sueno', con(6.5)), '6,5 h no');
+  esperarQue(!esOptimo('sueno', con(11)), '11 h tampoco');
   esperarQue(!esOptimo('sueno', {}), 'sin cargar no se regala');
+});
+
+test('ocho horas dando vueltas en la cama no son un sueno optimo', () => {
+  /* Las horas no alcanzan: el unico que sabe como durmio es el que se levanto. */
+  esperarQue(esOptimo('sueno', { sueno: { horas: 8 }, animo: 'normal' }), 'normal ya entra');
+  esperarQue(esOptimo('sueno', { sueno: { horas: 8 }, animo: 'genial' }), 'genial obvio');
+  esperarQue(!esOptimo('sueno', { sueno: { horas: 8 }, animo: 'flojo' }), 'flojo no');
+  esperarQue(!esOptimo('sueno', { sueno: { horas: 8 }, animo: 'mal' }), 'mal menos');
+  esperarQue(!esOptimo('sueno', { sueno: { horas: 8 } }),
+    'sin animo cargado no se puede saber, y no se da por las dudas');
 });
 
 test('los pasos optimos son un piso', () => {
@@ -5414,6 +5425,7 @@ test('un id que no es un objetivo del dia no da estrella', () => {
 
 test('el texto dice como se gana la estrella', () => {
   esperarQue(/7 y 9/.test(textoOptimo('sueno')), textoOptimo('sueno'));
+  esperarQue(/normal/.test(textoOptimo('sueno')), 'el del sueno nombra el animo');
   esperarQue(/30/.test(textoOptimo('ejercicio')) && /300/.test(textoOptimo('ejercicio')),
     'el de ejercicio nombra las dos condiciones');
   esperar(textoOptimo('peso'), '', 'lo que no tiene optimo no inventa una regla');
@@ -5474,4 +5486,13 @@ test('reencolar la misma foto no la duplica', () => {
   const uno = encolarAnalisis([], { id: 'c1', imagenes: ['A'], momento: 'cena' }, 1000);
   const dos = encolarAnalisis(uno, { id: 'c1', imagenes: ['A'], momento: 'cena' }, 2000);
   esperar(dos.length, 1);
+});
+
+test('un dato flojo pero cargado se ve cumplido, no ambar', () => {
+  /* Tres estados y no cuatro: dorado el optimo, verde hecho, rojo lo que estuvo
+     mal. Dos amarillos distintos —"justito" y "perfecto"— no se distinguen a un
+     metro de distancia. */
+  esperar(TIRA_NIVEL.flojo, undefined, 'el ambar ya no existe en la tira');
+  esperarQue(!!TIRA_NIVEL.mal, 'lo que estuvo mal sigue teniendo su color');
+  esperarQue(!!TIRA_NIVEL.bien, 'y lo cumplido tambien');
 });
