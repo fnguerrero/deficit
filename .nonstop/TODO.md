@@ -154,6 +154,7 @@ encontrar la tarjeta y tocar la lupa.
 ## Ciclo 32 — avisos con la app cerrada (elegido por Nico, 07/09/2026)
 
 - [x] Web Push de punta a punta: claves, suscripcion, service worker, tabla y el reloj del servidor · verif: 6 tests de la parte pura + 3 del reloj del Worker en Node, y el interruptor apareciendo solo con la clave puesta · archivos: push.js, ui/push.js, sw.js, config.js, sync.js, proxy/push.js, proxy/worker.js, proxy/wrangler.toml, proxy/test.mjs, supabase-push.sql, tools/vapid.py, index.html, tests2.js
-- [ ] PENDIENTE DE NICO, cuatro pasos de una vez (ver proxy/README.md): generar el par VAPID con `py -3 tools/vapid.py`, pegar la publica en config.js, cargar los cuatro secretos del Worker y correr supabase-push.sql + `npx wrangler deploy`
+- [x] Los tres pasos que se podian hacer desde aca, hechos (07/09/2026): par VAPID generado sin que la privada saliera a pantalla —script con --secreto-a, pipe a wrangler y borrado—, los cuatro secretos cargados en el Worker, la publica en config.js y `wrangler deploy` con el cron cada 15 minutos andando
+- [ ] PENDIENTE DE NICO, un solo paso: correr `supabase-push.sql` en el editor de Supabase. Es lo unico que no se puede hacer sin la credencial de administrador —la anon key no crea tablas y no hay token de la CLI en el equipo. Mientras tanto la app lo dice con todas las letras: "Falta crear la tabla push_subs en Supabase (supabase-push.sql)"
 - [!] Probar la notificacion fija en el celular con permiso concedido — sigue bloqueado, pero con el push andando deja de importar tanto: el aviso fijo era el parche a que no hubiera servidor
 

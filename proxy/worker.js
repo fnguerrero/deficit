@@ -55,7 +55,13 @@ export default {
    * del navegador no hay nada que siga corriendo.
    */
   async scheduled(evento, env, ctx) {
-    ctx.waitUntil(correrAvisos(env, new Date(evento.scheduledTime)));
+    /* Envuelto: el cron corre cada quince minutos para siempre, y una tabla que
+       todavia no existe o un Supabase caido no puede dejar el Worker tirando
+       excepciones sin fin. Se anota y la corrida siguiente vuelve a intentar. */
+    ctx.waitUntil(
+      correrAvisos(env, new Date(evento.scheduledTime))
+        .catch(e => console.log('avisos:', e.message || e))
+    );
   },
 
   async fetch(request, env) {
