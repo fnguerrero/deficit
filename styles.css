@@ -1822,8 +1822,11 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* Y el dia entero, marco incluido: la fila deja de ser cuatro casilleros
    sueltos y pasa a ser una sola cosa terminada. */
+/* El marco sobresale a los lados, donde hay aire, pero NO hacia arriba: el
+   -8px de arriba se comia la linea de texto que viene justo antes —el aviso de
+   la foto esperando senal— y quedaba escrita encima del borde dorado. */
 .objetivos.dia-completo {
-  padding: 8px; margin: -8px -8px 4px; border-radius: 18px;
+  padding: 8px; margin: 0 -8px 4px; border-radius: 18px;
   background: color-mix(in srgb, var(--oro) 10%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--oro) 45%, transparent);
 }

@@ -123,7 +123,11 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
        estrella adentro de una celda verde.
        Despues el nivel manda sobre el tilde: un casillero cargado con un dato
        malo se ve malo. Sin nivel, cumplido es verde. */
-    const tono = (oro || it.optimo)
+    /* El dia dorado no dora las celdas que no cuentan para el: las Comidas
+       viajan en el aviso pero no deciden el dia, y pintarlas de oro sin haber
+       llegado a su optimo decia que estaban bien justo cuando la app las
+       mostraba en rojo. */
+    const tono = (it.optimo || (oro && !it.opcional))
       ? TIRA_ORO
       : (TIRA_NIVEL[it.nivel] || (it.listo ? TIRA_NIVEL.bien : null));
 
