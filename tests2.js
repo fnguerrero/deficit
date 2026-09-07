@@ -5070,3 +5070,42 @@ test('sin nada anotado no pasa nada', async () => {
   await tomarPendiente();
   esperar(await tomarPendiente(), null);
 });
+
+/* ---------------- compartir una comida ---------------- */
+
+const MOMENTO_MERIENDA = {
+  id: 'merienda',
+  nombre: 'Merienda',
+  comidas: [
+    { id: 'm1', titulo: 'Yogur con granola', kcal: 320, items: [
+      { nombre: 'Yogur natural', porcion: '200 g' },
+      { nombre: 'Granola', porcion: '40 g' }
+    ] },
+    { id: 'm2', titulo: 'Café con leche', kcal: 90, items: [{ nombre: 'Café con leche', porcion: '1 taza' }] }
+  ]
+};
+
+test('la comida se comparte como lista de cocina, sin calorias', () => {
+  const t = textoDeMomento(MOMENTO_MERIENDA);
+  esperarQue(t.startsWith('Merienda'), 'arranca por el nombre de la comida');
+  esperarQue(t.includes('Yogur natural (200 g)'), 'con la cantidad al lado');
+  esperarQue(t.includes('Café con leche'), 'los dos platos');
+  esperarQue(!/kcal|\d+ g de/.test(t), 'sin calorias ni macros: no le dicen nada a quien cocina');
+});
+
+test('un plato de un solo alimento no se repite', () => {
+  /* "Café con leche" seguido de "  Café con leche (1 taza)" es escribir dos
+     veces lo mismo. */
+  const t = textoDeMomento(MOMENTO_MERIENDA);
+  esperar((t.match(/Café con leche/g) || []).length, 1);
+});
+
+test('una comida vacia no arma ningun mensaje', () => {
+  esperar(textoDeMomento({ nombre: 'Cena', comidas: [] }), '');
+  esperar(textoDeMomento(null), '');
+});
+
+test('la comida de otro dia lleva su fecha', () => {
+  const t = textoDeMomento(MOMENTO_MERIENDA, { fecha: 'el lun, 31 ago' });
+  esperarQue(t.startsWith('Merienda del el lun, 31 ago') || t.startsWith('Merienda del'), t.split('\n')[0]);
+});

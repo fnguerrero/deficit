@@ -61,3 +61,33 @@ async function compartirTexto(texto, { navegador = typeof navigator !== 'undefin
     return 'sin-via';
   }
 }
+
+/**
+ * Un momento del dia como mensaje: que comiste (o vas a comer) en esa comida.
+ *
+ * Mismo criterio que la sugerencia: los alimentos con su cantidad y nada de
+ * calorias ni macros. Quien lo recibe casi siempre es quien cocina, y "410
+ * kcal, 18 g de proteina" no le dice que poner en la olla.
+ */
+function textoDeMomento(grupo, { fecha = '' } = {}) {
+  const comidas = (grupo?.comidas || []).filter(Boolean);
+  if (!comidas.length) return '';
+
+  const lineas = [fecha ? `${grupo.nombre} del ${fecha}` : grupo.nombre, ''];
+
+  for (const c of comidas) {
+    lineas.push(c.titulo || 'Comida');
+
+    /* Los alimentos van indentados debajo de su plato, y solo si son mas de
+       uno: con un solo item que se llama igual que el plato, repetirlo es
+       escribir dos veces lo mismo. */
+    const items = (c.items || []).filter(i => i && i.nombre);
+    if (items.length > 1) {
+      for (const i of items) {
+        lineas.push(i.porcion ? `  ${i.nombre} (${i.porcion})` : `  ${i.nombre}`);
+      }
+    }
+  }
+
+  return lineas.join('\n');
+}

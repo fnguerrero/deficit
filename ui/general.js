@@ -100,7 +100,8 @@ function tabActiva() {
 }
 
 function hayAlgoQueCerrar() {
-  return hayModalAbierto() || modosBarraAbierta || !$('recortador').hidden || tabActiva() !== 'hoy';
+  return hayModalAbierto() || modosBarraAbierta || !$('recortador').hidden ||
+    !$('menuMomento').hidden || tabActiva() !== 'hoy';
 }
 
 /** Cierra la capa de más arriba. Devuelve false si no había nada. */
@@ -109,6 +110,7 @@ function cerrarLoDeArriba() {
      modal de análisis, y las pestañas están abajo de todo. */
   /* El recortador tapa todo: se abre sobre el modal de la comida y con el atras
      se cancela la foto, que es lo que espera quien se equivoco de imagen. */
+  if (!$('menuMomento').hidden) { cerrarMenuMomento(); return true; }
   if (!$('recortador').hidden) { cerrarRecorte(null); return true; }
   if (modosBarraAbierta) { cerrarModosBarra(); return true; }
   if (!$('visorFoto').hidden) { cerrarVisor(); return true; }

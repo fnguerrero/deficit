@@ -106,7 +106,26 @@ function pintarComidasDelDia(comidas, cont) {
       card.appendChild(n);
     }
 
-    card.onclick = (e) => abrirMomento(g, e);
+    /* Mantener apretado abre el menu de ESA comida —ideas y compartir—, igual
+       que en los deportes. El click de despues se ignora: al soltar el dedo el
+       navegador lo dispara igual y abriria la comida encima del menu. */
+    let largo = null;
+    let abrio = false;
+    const empezar = () => {
+      abrio = false;
+      clearTimeout(largo);
+      largo = setTimeout(() => { abrio = true; abrirMenuMomento(g); }, DEMORA_LARGO);
+    };
+    const soltar = () => clearTimeout(largo);
+
+    card.addEventListener('pointerdown', empezar);
+    for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) card.addEventListener(ev, soltar);
+    card.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    card.onclick = (e) => {
+      if (abrio) { abrio = false; return; }
+      abrirMomento(g, e);
+    };
     fila.appendChild(card);
   }
 
@@ -331,3 +350,72 @@ function nivelDelMomento(comidas, niveles) {
   }
   return peor;
 }
+
+/* ---------------- el menu de un momento ---------------- */
+
+let momentoDelMenu = null;
+
+/*
+ * Que se puede hacer con una comida sin abrirla.
+ *
+ * Las dos cosas que se piden desde afuera: pedir ideas para ESE momento —no
+ * para el que corresponda a la hora— y mandarle a alguien lo que hay cargado.
+ * Compartir vive aca y no adentro de la comida porque casi siempre se comparte
+ * la comida entera, no un plato suelto.
+ */
+function abrirMenuMomento(g) {
+  const caja = $('menuMomento');
+  if (!caja) return;
+
+  momentoDelMenu = g;
+  $('menuMomentoTitulo').textContent = g.nombre;
+
+  /* El modo, escrito en el boton: las ideas salen filtradas por el —dos veces,
+     en el pedido y al recibirlas— y verlo antes de tocar evita la pregunta de
+     si lo que va a proponer se puede comer. */
+  const m = modoDe(state.perfil.modo || MODO_DEFECTO);
+  $('menuIdeas').querySelector('small').textContent =
+    `Opciones de ${m.nombre.toLowerCase()} que entran en lo que te queda del día`;
+
+  /* Sin nada cargado no hay nada que mandar: el boton se apaga en vez de
+     desaparecer, para que se entienda que existe y por que no se puede. */
+  const hay = !!(g.comidas || []).length;
+  $('menuCompartir').disabled = !hay;
+  $('menuCompartir').querySelector('small').textContent = hay
+    ? 'Lo que hay cargado, para quien cocina'
+    : 'Todavía no cargaste nada en esta comida';
+
+  caja.hidden = false;
+  marcarAtras();
+}
+
+function cerrarMenuMomento() {
+  const caja = $('menuMomento');
+  if (!caja || caja.hidden) return;
+  caja.hidden = true;
+  momentoDelMenu = null;
+  marcarAtras();
+}
+
+$('menuMomentoCerrar').onclick = cerrarMenuMomento;
+$('menuMomento').onclick = (e) => { if (e.target.id === 'menuMomento') cerrarMenuMomento(); };
+
+$('menuIdeas').onclick = () => {
+  const g = momentoDelMenu;
+  cerrarMenuMomento();
+  if (g) pedirSugerencias(g.id);
+};
+
+$('menuCompartir').onclick = async () => {
+  const g = momentoDelMenu;
+  if (!g) return;
+
+  const texto = textoDeMomento(g, { fecha: fecha === hoyISO() ? '' : etiquetaFecha(fecha) });
+  cerrarMenuMomento();
+  if (!texto) return;
+
+  const via = await compartirTexto(texto, { titulo: g.nombre });
+  if (via === 'copiado') toast('Copiado: pegálo donde quieras');
+  else if (via === 'sin-via') toast('No pude compartirlo desde este navegador');
+};
+
