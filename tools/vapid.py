@@ -25,6 +25,16 @@ def b64(datos: bytes) -> str:
 
 
 def main() -> None:
+    """Con `--secreto-a ARCHIVO` la privada NO se imprime: va al archivo y de
+    ahi directo al prompt de wrangler. Es la forma de generarla sin que quede en
+    una pantalla, un log o un historial de consola."""
+    import argparse
+    import sys
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--secreto-a', default='')
+    args = ap.parse_args()
+
     clave = ec.generate_private_key(ec.SECP256R1())
     numeros = clave.private_numbers()
     publica = clave.public_key().public_numbers()
@@ -32,6 +42,13 @@ def main() -> None:
     # La publica va en formato "punto sin comprimir": 0x04 + X + Y, 65 bytes.
     crudo = b'\x04' + publica.x.to_bytes(32, 'big') + publica.y.to_bytes(32, 'big')
     privada = numeros.private_value.to_bytes(32, 'big')
+
+    if args.secreto_a:
+        with open(args.secreto_a, 'w', encoding='utf-8') as f:
+            f.write(b64(privada))
+        print(b64(crudo))
+        print('privada escrita en ' + args.secreto_a, file=sys.stderr)
+        return
 
     print('VAPID_PUBLICA  (va en el codigo de la app, es publica):')
     print(b64(crudo))

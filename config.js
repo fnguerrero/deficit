@@ -33,5 +33,5 @@ const CONFIG_APP = {
    * Vacia = la app no ofrece los avisos de fondo y sigue con los de siempre,
    * que solo corren con la app abierta.
    */
-  vapidPublica: ''
+  vapidPublica: 'BOVgUc-abWUttskgzSkdccB6zfq4U-G-wBLnh5g1Yl0yqB5tX2PW7HA3txhGG2b8IhaAGpRB_XnsyIB92IckkkQ'
 };

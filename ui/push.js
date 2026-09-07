@@ -79,8 +79,9 @@ async function guardarSuscripcion(sub) {
     return { ok: true };
   } catch (e) {
     /* El caso mas probable: la tabla todavia no existe. Se dice con todas las
-       letras en vez de "error de red", que manda a buscar donde no es. */
-    const falta = /push_subs|does not exist|relation/i.test(e.message || '');
+       letras —y nombrando el archivo correcto— en vez del error generico del
+       cliente, que habla de supabase.sql y manda a buscar donde no es. */
+    const falta = /push_subs|does not exist|relation|no encontré las tablas|404/i.test(e.message || '');
     return {
       ok: false,
       motivo: falta
