@@ -24,7 +24,11 @@ function mostrarResultado(r) {
   conf.className = 'conf';
   conf.innerHTML = '';
   if (r.thumb) {
-    const c = { alta: 'Estimación confiable', media: 'Estimación aproximada', baja: 'Estimación poco confiable' };
+    /* Con la confianza baja, el cartel dice ademas que hacer: "poco confiable"
+       a secas deja a la persona mirando un numero que sabe que esta mal y sin
+       el paso siguiente, que es corregir los gramos o contarle lo que la foto
+       no muestra. */
+    const c = { alta: 'Estimación confiable', media: 'Estimación aproximada', baja: 'Estimación poco confiable · revisá los gramos' };
     const b = document.createElement('b');
     b.className = r.confianza || 'media';
     b.textContent = c[r.confianza] || 'Estimación aproximada';
