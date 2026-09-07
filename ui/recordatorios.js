@@ -133,35 +133,22 @@ function textoObjetivos() {
   const { total, hechas, faltan } = faltanteDelDia();
   const hora = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  const titulo = faltan.length
-    ? `Déficit · ${hechas.length} de ${total}`
-    : 'Déficit · día completo ✨';
-
   /*
-   * El cuerpo dice lo que la IMAGEN no puede decir.
+   * Todo en el titulo y el cuerpo VACIO: abajo va la fila dibujada, que dice
+   * lo mismo mejor.
    *
-   * La fila de casilleros va dibujada abajo —ver tiraDelDiaPNG—, asi que
-   * repetirla aca en emojis era decir dos veces lo mismo y encima peor. Con la
-   * notificacion contraida el cuerpo es lo unico que se ve, asi que lleva las
-   * dos cosas que se miran de reojo: que falta y cuanto queda para comer.
+   * El texto que habia —que falta y cuanto queda— era lo mismo que la imagen
+   * con menos informacion, y desplegada quedaban las dos cosas peleandose. La
+   * hora se muda al titulo porque es lo unico que la imagen no puede decir y
+   * hace falta: este aviso lo escribe la app, asi que muestra el estado de la
+   * ultima vez que corrio, y un cartel viejo que se hace pasar por actual es
+   * peor que no tenerlo.
    */
-  const calc = calcular();
-  const d = dia(hoyISO());
-  const quedan = calc
-    ? objetivoEfectivo(calc.objetivo, d.ejercicio) - sumarComidas(d.comidas || []).kcal
-    : null;
+  const titulo = faltan.length
+    ? `Déficit · ${hechas.length} de ${total} · ${hora}`
+    : `Déficit · día completo ✨ · ${hora}`;
 
-  const nombres = faltan.map(r => r.nombre.toLowerCase());
-  const queFalta = nombres.length > 2
-    ? `Faltan ${nombres.length} de ${total}`
-    : (nombres.length ? 'Falta ' + nombres.join(' y ') : 'Día completo');
-
-  const cuerpo = quedan != null
-    ? `${queFalta} · quedan ${fmtNum(Math.round(quedan))} kcal`
-    : queFalta;
-
-  return { titulo, cuerpo: `${cuerpo}
-Al ${hora}`, faltan: faltan.length };
+  return { titulo, cuerpo: '', faltan: faltan.length };
 }
 
 /* Lo ultimo que se mostro, para no repintar el mismo cartel en cada render.
