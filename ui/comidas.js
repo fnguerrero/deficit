@@ -335,7 +335,15 @@ async function correrAnalisis(intento) {
     frenar();
     registrarUso(r, modo === 'etiqueta' ? 'etiqueta' : 'foto');
     if (r.deCache) toast('Esta foto ya la habías analizado: no gastaste API');
-    pendiente = { ...r, thumb, foto, momento: momentoPedido || momentoDe(Date.now()), kcalIA: sumarItems(r.items).calorias };
+    pendiente = {
+      ...r, thumb, foto,
+      /* El momento y el dia de la foto mandan sobre la hora de ahora: ver como
+         se arma el intento, mas abajo. `momentoPedido` sigue ganando cuando se
+         toco un momento vacio de la fila, que es un pedido explicito. */
+      momento: momentoPedido || intento.momento || momentoDe(Date.now()),
+      fechaFoto: intento.fecha || null,
+      kcalIA: sumarItems(r.items).calorias
+    };
     momentoPedido = null;
 
     /*
@@ -413,9 +421,12 @@ async function vaciarCola() {
   if (vaciando || !navigator.onLine || !(state.colaAnalisis || []).length) return;
   vaciando = true;
 
+  let vaciadas = 0;
+
   try {
     while ((state.colaAnalisis || []).length && navigator.onLine) {
       const siguiente = state.colaAnalisis[state.colaAnalisis.length - 1];   // la más vieja
+      vaciadas++;
       /* Se saca ANTES de analizar: si el análisis falla de nuevo, el catch la
          vuelve a encolar. Dejarla puesta mientras corre es la receta para que
          una foto que siempre falla trabe la cola para siempre. */
@@ -426,6 +437,14 @@ async function vaciarCola() {
   } finally {
     vaciando = false;
     pintarCola();
+    /* Que se sepa POR QUE aparecio esa comida. Se guarda sola, que es lo que se
+       prometio al encolarla, pero sin decirlo desde afuera se ve como que la app
+       carga cosas por su cuenta. */
+    if (vaciadas) {
+      toast(vaciadas === 1
+        ? 'Cargué la foto que había quedado esperando señal'
+        : `Cargué las ${vaciadas} fotos que habían quedado esperando señal`);
+    }
   }
 }
 
@@ -483,7 +502,14 @@ const recibirFotos = async (e) => {
     varias: archivos.length > 1,
     foto: procesadas[0].foto,
     thumb: procesadas[0].thumb,
-    preview: procesadas[0].grande
+    preview: procesadas[0].grande,
+    /* De cuando es la foto, decidido ACA y no cuando termina el analisis.
+       Sin senal la foto se encola y se analiza sola horas despues: con la hora
+       del analisis, un almuerzo fotografiado a las 13 aparecia en la merienda,
+       y una foto de anoche aparecia hoy. Desde afuera eso es una comida que se
+       cargo sola. */
+    fecha,
+    momento: momentoPedido || momentoDe(Date.now())
   });
 };
 

@@ -343,10 +343,23 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
   const nuevoId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   ultimaComidaId = nuevoId;
 
-  dia().comidas.push({
+  /*
+   * El dia de la FOTO, no el que la pantalla este mostrando.
+   *
+   * Casi siempre son el mismo. Se separan cuando la foto quedo esperando senal:
+   * se analiza sola cuando la red vuelve, y si eso pasa despues de medianoche
+   * —o con la app abierta en otro dia— la comida caia en el dia equivocado y
+   * aparecia como cargada sola. Se acepta solo un dia que exista en el
+   * historial: un valor raro guardado en la cola no puede crear dias sueltos.
+   */
+  const fechaDeLaFoto = pendiente.fechaFoto && state.dias[pendiente.fechaFoto]
+    ? pendiente.fechaFoto
+    : fecha;
+
+  dia(fechaDeLaFoto).comidas.push({
     id: nuevoId,
     // en un día pasado se usa la hora típica del momento, no la hora actual
-    ts: tsParaFecha(fecha, pendiente.momento || momentoDe(Date.now())),
+    ts: tsParaFecha(fechaDeLaFoto, pendiente.momento || momentoDe(Date.now())),
     titulo: pendiente.titulo?.trim() || items[0].nombre || 'Comida',
     items,
     momento: pendiente.momento || momentoDe(Date.now()),

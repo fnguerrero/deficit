@@ -5449,3 +5449,29 @@ test('la estrella entra en la firma del cache de la tira', () => {
   const conEstrella = [{ ...base[0], optimo: true }];
   esperarQue(tiraDelDiaPNG(base) !== tiraDelDiaPNG(conEstrella), 'la estrella cambia el dibujo');
 });
+
+/* ---------------- la foto que quedo esperando senal ---------------- */
+
+test('la cola se acuerda de cuando se saco la foto', () => {
+  /* Sin esto, un almuerzo fotografiado a las 13 sin senal se analizaba solo a
+     las 18 y entraba como merienda: desde afuera, una comida cargada sola. */
+  const cola = encolarAnalisis([], {
+    imagenes: ['AAA'], modo: 'foto', fecha: '2026-09-06', momento: 'almuerzo'
+  }, 1000);
+  esperar(cola.length, 1);
+  esperar(cola[0].momento, 'almuerzo');
+  esperar(cola[0].fecha, '2026-09-06');
+});
+
+test('la mas vieja es la primera que se analiza al volver la senal', () => {
+  /* encolarAnalisis pone las nuevas adelante, y vaciarCola saca del final. */
+  let cola = encolarAnalisis([], { imagenes: ['A'], momento: 'desayuno' }, 1000);
+  cola = encolarAnalisis(cola, { imagenes: ['B'], momento: 'cena' }, 2000);
+  esperar(cola[cola.length - 1].momento, 'desayuno');
+});
+
+test('reencolar la misma foto no la duplica', () => {
+  const uno = encolarAnalisis([], { id: 'c1', imagenes: ['A'], momento: 'cena' }, 1000);
+  const dos = encolarAnalisis(uno, { id: 'c1', imagenes: ['A'], momento: 'cena' }, 2000);
+  esperar(dos.length, 1);
+});
