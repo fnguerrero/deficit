@@ -168,8 +168,8 @@ esta sesion.
 - [x] Un contacto guardado para mandar directo por wa.me, sin pasar por el selector · verif: 3 tests del armado del link y el campo en Ajustes · archivos: compartir.js, ui/ajustes.js, core.js, index.html, tests2.js
 - [x] La imagen del aviso, cacheada: 61 KB regenerados en cada render · verif: test de que la misma fila no vuelve a dibujar · archivos: tira-aviso.js, ui/recordatorios.js, tests2.js
 - [x] La configuracion viaja entre dispositivos (11 tests; y de paso: el perfil bajado se perdia si no habia comidas nuevas) (el tiempo de un deporte, las metas, el personaje) · verif: tests de ida y vuelta + SQL listo, tolerante a que la columna no exista · archivos: sync-perfil.js, ui/sincronizacion.js, supabase-cfg.sql, tests2.js
-- [ ] Test de humo: abrir las cinco pestañas sin un solo error de consola · verif: el propio test, corrido en la app viva
-- [ ] Accesibilidad de lo nuevo: menu de momento, recortador y tira de peso · verif: roles y aria-label presentes, y el foco atrapado en las hojas
+- [x] Test de humo: las cinco pestañas, en blanco y con 101 dias cargados, cero errores de consola
+- [x] Accesibilidad de lo nuevo: menu de momento, recortador y tira de peso · verificado en la app viva (foco que entra y vuelve, Escape, Tab atrapado, aria-label)
 - [x] Partir core.js (1528 -> 1315): salieron fechas.js y frecuentes.js · verif: guardas y tamanos OK, 1147 tests en verde
 - [x] Partir analisis.js (926 -> 759): salio informe.js (926/900) · verif: idem
 - [x] Partir modos.js (835 -> 730): salio patrones.js

@@ -47,7 +47,7 @@ function hayModalAbierto() {
     $('modalOrigenFoto').classList.contains('open') ||
     $('modalResumen').classList.contains('open') ||
     !$('visorFoto').hidden ||
-    !$('onboarding').hidden;
+    !$('onboarding').hidden || !$('menuMomento').hidden || !$('recortador').hidden;
 }
 
 document.addEventListener('keydown', (e) => {
@@ -55,6 +55,8 @@ document.addEventListener('keydown', (e) => {
 
   // Escape cierra lo que esté abierto, incluso desde un campo de texto
   if (e.key === 'Escape') {
+    if (!$('menuMomento').hidden) { cerrarMenuMomento(); e.preventDefault(); return; }
+    if (!$('recortador').hidden) { cerrarRecorte(null); e.preventDefault(); return; }
     if (!$('visorFoto').hidden) { cerrarVisor(); e.preventDefault(); return; }
     if ($('modalResumen').classList.contains('open')) { cerrarResumen(); e.preventDefault(); return; }
     if ($('modalOrigenFoto').classList.contains('open')) { cerrarOrigenFoto(); e.preventDefault(); return; }
@@ -508,6 +510,11 @@ function enfocables(cont) {
 
 /** El contenedor de modal visible en este momento, si hay alguno. */
 function modalActivo() {
+  /* En el mismo orden que cerrarLoDeArriba(): las dos hojas nuevas tapan todo
+     lo demas, asi que el Tab tiene que quedar adentro de ELLAS y no del modal
+     que quedo abierto abajo. */
+  if (!$('menuMomento').hidden) return $('menuMomento');
+  if (!$('recortador').hidden) return $('recortador');
   if (!$('visorFoto').hidden) return $('visorFoto');
   if ($('modalResumen').classList.contains('open')) return $('modalResumen');
   if ($('modalOrigenFoto').classList.contains('open')) return $('modalOrigenFoto');

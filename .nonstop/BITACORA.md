@@ -774,3 +774,5 @@ Nico sumo despues el veredicto honesto de si va bien.
 #273 — parti analisis.js (926->759) sacando informe.js (el resumen del mes en HTML) — guardas OK, 1155 tests en verde tras mover tambien el export window.__informe
 #274 — parti modos.js (835->730, salio patrones.js) y juego.js (618->545, salio logros.js); subi el limite de sw.js a 300 documentando que lo que crece es la lista SHELL — guardas y tamanos sin nada pasado, 1155 tests en verde
 #275 — la configuracion (vasos, pasos, figura, minutos por deporte, horarios, tope, whatsapp, tema) viaja en una columna cfg jsonb del perfil, con su propio reloj y lista explicita de que entra; y encontre que el perfil bajado se perdia cuando no habia comidas ni dias nuevos — 1166 tests en verde
+#276 — humo de las cinco pestañas (vacio y con 101 dias de datos de prueba): cero errores de consola; despues restaure el localStorage que habia
+#277 — accesibilidad de lo nuevo: el menu de momento y el recortador entran en modalActivo() (Tab atrapado) y en Escape, se llevan el foco al abrir y lo devuelven al cerrar con su propio 'de donde'; la tira del peso estrena aria-label — verificado en la app viva
