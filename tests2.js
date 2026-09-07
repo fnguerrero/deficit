@@ -4999,8 +4999,8 @@ test('los horarios de aviso viejos se actualizan si nunca se tocaron', () => {
     { momento: 'cena', hora: '21:30' }
   ] } };
   const h = migrar(guardado).cfg.horarios;
-  esperar(h[0].hora, '10:30');
-  esperar(h[2].hora, '23:00');
+  esperar(h.find(r => r.momento === 'desayuno').hora, '10:30');
+  esperar(h.find(r => r.momento === 'cena').hora, '23:00');
 });
 
 test('unos horarios elegidos a mano no se tocan', () => {
@@ -5010,4 +5010,43 @@ test('unos horarios elegidos a mano no se tocan', () => {
     { momento: 'cena', hora: '21:30' }
   ] } };
   esperar(migrar(guardado).cfg.horarios[1].hora, '12:00', 'el que cambio uno decidio los tres');
+});
+
+test('la merienda se suma apagada al que ya tenia sus horarios', () => {
+  /* Agregarle un aviso nuevo PRENDIDO a alguien que ya tenia los suyos es
+     decidir por el: se suma, se ve, y lo prende si quiere. */
+  const guardado = { cfg: { horarios: [
+    { momento: 'desayuno', hora: '10:00' },
+    { momento: 'almuerzo', hora: '14:00' },
+    { momento: 'cena', hora: '22:00' }
+  ] } };
+  const h = migrar(guardado).cfg.horarios;
+  esperar(h.length, 4);
+  const m = h.find(r => r.momento === 'merienda');
+  esperar(!!m, true);
+  esperar(m.activo, false, 'apagada hasta que la prenda');
+  esperar(h[2].momento, 'merienda', 'y en su lugar: antes de la cena');
+  esperar(h[0].activo, true, 'los que ya estaban siguen prendidos');
+});
+
+test('un aviso apagado no se programa ni viaja al servidor', () => {
+  const horarios = [
+    { momento: 'desayuno', hora: '10:30', activo: true },
+    { momento: 'merienda', hora: '18:00', activo: false }
+  ];
+  const proximos = proximosRecordatorios(horarios, new Date(2026, 8, 7, 8, 0), []);
+  esperar(proximos.length, 1);
+  esperar(proximos[0].momento, 'desayuno');
+
+  const fila = filaDeSuscripcion({ endpoint: 'https://x' }, { llave: 'K'.repeat(32), horarios });
+  esperar(fila.horarios.length, 1, 'al servidor solo van los prendidos');
+});
+
+test('los horarios viejos sin la marca cuentan como prendidos', () => {
+  /* Los guardados de antes no tienen `activo`: si eso valiera apagado, a quien
+     actualice la app se le apagan todos los avisos sin que haya tocado nada. */
+  const horarios = [{ momento: 'cena', hora: '23:00' }];
+  esperar(proximosRecordatorios(horarios, new Date(2026, 8, 7, 8, 0), []).length, 1);
+  const migrados = migrar({ cfg: { horarios } }).cfg.horarios;
+  esperar(migrados.find(r => r.momento === 'cena').activo, true);
 });

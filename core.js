@@ -176,6 +176,18 @@ function migrar(guardado) {
   const sinTocar = s.cfg.horarios.length === viejos.length &&
     viejos.every(([m, h], i) => s.cfg.horarios[i]?.momento === m && s.cfg.horarios[i]?.hora === h);
   if (sinTocar) s.cfg.horarios = clonar(RECORDATORIOS_DEFAULT);
+
+  /* La merienda se agrego despues, y cada aviso puede prenderse y apagarse
+     aparte. Al que ya tenia sus tres horarios se le suma la merienda apagada:
+     agregarle un aviso nuevo prendido seria decidir por el. */
+  s.cfg.horarios = s.cfg.horarios.map(r => ({ ...r, activo: r.activo !== false }));
+  if (!s.cfg.horarios.some(r => r.momento === 'merienda')) {
+    const base = RECORDATORIOS_DEFAULT.find(r => r.momento === 'merienda');
+    const i = s.cfg.horarios.findIndex(r => r.momento === 'cena');
+    const nueva = { ...base, activo: false };
+    if (i >= 0) s.cfg.horarios.splice(i, 0, nueva);
+    else s.cfg.horarios.push(nueva);
+  }
   s.dias = {};
 
   for (const [f, d] of Object.entries(guardado.dias || {})) {
@@ -956,9 +968,10 @@ function msHastaMedianoche(ahora = new Date(), margenMs = 2000) {
    deberias haber cargado. Salen de HORA_SUGERIDA —ver platos.js— para que no
    haya dos horarios distintos para la misma comida. */
 const RECORDATORIOS_DEFAULT = [
-  { momento: 'desayuno', hora: '10:30' },
-  { momento: 'almuerzo', hora: '14:30' },
-  { momento: 'cena', hora: '23:00' }
+  { momento: 'desayuno', hora: '10:30', activo: true },
+  { momento: 'almuerzo', hora: '14:30', activo: true },
+  { momento: 'merienda', hora: '18:00', activo: true },
+  { momento: 'cena', hora: '23:00', activo: true }
 ];
 
 /* La hora de dormir no es un momento de comida, pero es el mismo mecanismo:
@@ -997,6 +1010,10 @@ function proximosRecordatorios(horarios, ahora = new Date(), momentosCargados = 
   const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
 
   return (horarios || [])
+    /* Apagado es apagado: un aviso que no se quiere no se programa, ni se manda
+       al servidor. `activo` puede no estar en los guardados viejos, y ahi vale
+       prendido, que es como venian funcionando. */
+    .filter(r => r && r.activo !== false)
     .map(r => ({ ...r, minutos: minutosDeHora(r.hora) }))
     .filter(r => r.minutos != null)
     .filter(r => r.minutos > minutosAhora)

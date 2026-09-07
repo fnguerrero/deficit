@@ -58,9 +58,9 @@ function filaDeSuscripcion(sub, { llave, horarios = [], tz = '', ahora = Date.no
     endpoint,
     p256dh: sub?.keys?.p256dh || '',
     auth: sub?.keys?.auth || '',
-    /* Solo los que estan prendidos y con hora valida: mandar basura al servidor
-       es pedirle que decida con basura. */
-    horarios: (horarios || []).filter(h => h && /^\d{2}:\d{2}$/.test(h.hora)),
+    /* Solo los prendidos y con hora valida: mandar al servidor un aviso apagado
+       es pedirle que despierte el telefono para nada. */
+    horarios: (horarios || []).filter(h => h && h.activo !== false && /^\d{2}:\d{2}$/.test(h.hora)),
     tz: tz || '',
     act: ahora
   };

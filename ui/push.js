@@ -153,3 +153,13 @@ if ($('chkPush')) {
     renderPush();
   };
 }
+
+/*
+ * Los horarios cambiaron: si los avisos de fondo estan prendidos, el servidor
+ * tiene que enterarse. Sin esto, apagar la merienda la seguia mandando hasta la
+ * proxima vez que alguien tocara el interruptor grande.
+ */
+async function actualizarPushSiEstaPrendido() {
+  const sub = await suscripcionActual();
+  if (sub) await guardarSuscripcion(sub.toJSON());
+}
