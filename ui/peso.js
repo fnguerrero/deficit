@@ -58,6 +58,7 @@ function renderPesoTira() {
     $('pesoTiraDelta').textContent = '';
     $('pesoTiraDelta').className = 'peso-tira-delta';
     $('pesoTiraCargar').textContent = '⚖️+';
+    el.setAttribute('aria-label', 'Cargar tu peso');
     el.classList.add('sin-pesar');
     return;
   }
@@ -116,6 +117,11 @@ function renderPesoTira() {
     d.textContent = (r.cambio > 0 ? '+' : '') + fmtNum(r.cambio, 1) + ' kg';
     d.className = 'peso-tira-delta ' + (r.mejora === 0 ? '' : (bueno ? 'bien' : 'mal'));
   }
+
+  /* Un lector de pantalla leia "88,9 kg objetivo 75 IMC 27,4 -0,4 kg" sin
+     saber que era un boton ni para que: cuatro numeros sueltos. */
+  el.setAttribute('aria-label',
+    `Peso: ${fmtNum(kg, 1)} kilos. ${el2.textContent}. Tocá para cargar tu peso`);
 
   el.title = r.faltan != null
     ? `Te faltan ${fmtNum(Math.abs(r.faltan), 1)} kg · ${r.mediciones} mediciones`

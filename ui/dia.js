@@ -386,14 +386,24 @@ function abrirMenuMomento(g) {
     : 'Todavía no cargaste nada en esta comida';
 
   caja.hidden = false;
+  /* El foco entra a la hoja y vuelve de donde salio. Guarda su propio "de
+     donde": la hoja se abre manteniendo apretada una tarjeta, a veces con el
+     modal de la comida abierto abajo, y compartir el focoPrevio de las capas
+     dejaria a ese modal sin a donde volver. */
+  focoAntesDelMenu = document.activeElement;
+  (enfocables(caja)[0] || caja).focus();
   marcarAtras();
 }
+
+let focoAntesDelMenu = null;
 
 function cerrarMenuMomento() {
   const caja = $('menuMomento');
   if (!caja || caja.hidden) return;
   caja.hidden = true;
   momentoDelMenu = null;
+  if (focoAntesDelMenu && document.body.contains(focoAntesDelMenu)) focoAntesDelMenu.focus();
+  focoAntesDelMenu = null;
   marcarAtras();
 }
 

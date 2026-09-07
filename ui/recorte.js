@@ -33,6 +33,11 @@ function pedirRecorte(dataUrl) {
     $('recMarco').hidden = true;
     $('recortador').hidden = false;
 
+    /* El foco entra al recortador: se abre encima del modal de la comida, y sin
+       esto el Tab seguia recorriendo los botones de abajo, que estan tapados. */
+    focoAntesDelRecorte = document.activeElement;
+    $('recOk').focus();
+
     img.onload = () => {
       mostradoRec = { ancho: img.clientWidth, alto: img.clientHeight };
       marcoActual = encuadreInicial(mostradoRec.ancho, mostradoRec.alto);
@@ -57,6 +62,8 @@ function pintarMarco() {
   $('recTodo').hidden = esRecorteEntero(marcoActual, mostradoRec.ancho, mostradoRec.alto);
 }
 
+let focoAntesDelRecorte = null;
+
 function cerrarRecorte(resultado) {
   const pendiente = esperandoRecorte;
   esperandoRecorte = null;
@@ -64,6 +71,8 @@ function cerrarRecorte(resultado) {
 
   $('recortador').hidden = true;
   $('recImg').src = '';
+  if (focoAntesDelRecorte && document.body.contains(focoAntesDelRecorte)) focoAntesDelRecorte.focus();
+  focoAntesDelRecorte = null;
   marcarAtras();
 
   if (pendiente) pendiente.resolver(resultado);
