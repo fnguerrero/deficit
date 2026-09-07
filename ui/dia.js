@@ -406,6 +406,29 @@ $('menuIdeas').onclick = () => {
   if (g) pedirSugerencias(g.id);
 };
 
+/*
+ * El dia entero, para "que comiste hoy" y para pasarle el dia a quien cocina.
+ *
+ * Vive en el mismo menu que compartir una comida: es la misma intencion con
+ * distinto alcance, y separarlas en dos lugares obligaria a acordarse de cual
+ * esta donde.
+ */
+$('menuCompartirDia').onclick = async () => {
+  const grupos = agruparPorMomento(dia().comidas || [], { todos: true });
+  const total = sumarComidas(dia().comidas || []).kcal;
+  const texto = textoDelDia(grupos, {
+    fecha: fecha === hoyISO() ? '' : etiquetaFecha(fecha),
+    kcal: total
+  });
+
+  cerrarMenuMomento();
+  if (!texto) { toast('Todavía no cargaste nada hoy'); return; }
+
+  const via = await compartirTexto(texto, { titulo: 'Lo que comí', numero: state.cfg.whatsapp });
+  if (via === 'copiado') toast('Copiado: pegálo donde quieras');
+  else if (via === 'sin-via') toast('No pude compartirlo desde este navegador');
+};
+
 $('menuCompartir').onclick = async () => {
   const g = momentoDelMenu;
   if (!g) return;
@@ -414,7 +437,7 @@ $('menuCompartir').onclick = async () => {
   cerrarMenuMomento();
   if (!texto) return;
 
-  const via = await compartirTexto(texto, { titulo: g.nombre });
+  const via = await compartirTexto(texto, { titulo: g.nombre, numero: state.cfg.whatsapp });
   if (via === 'copiado') toast('Copiado: pegálo donde quieras');
   else if (via === 'sin-via') toast('No pude compartirlo desde este navegador');
 };

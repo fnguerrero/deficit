@@ -5109,3 +5109,80 @@ test('la comida de otro dia lleva su fecha', () => {
   const t = textoDeMomento(MOMENTO_MERIENDA, { fecha: 'el lun, 31 ago' });
   esperarQue(t.startsWith('Merienda del el lun, 31 ago') || t.startsWith('Merienda del'), t.split('\n')[0]);
 });
+
+/* ---------------- compartir el dia entero ---------------- */
+
+const DIA_PARA_COMPARTIR = [
+  { id: 'desayuno', nombre: 'Desayuno', comidas: [
+    { id: 'd1', titulo: 'Café con leche y tostadas', items: [
+      { nombre: 'Café con leche', porcion: '1 taza' },
+      { nombre: 'Tostadas integrales', porcion: '2 rebanadas' }
+    ] }
+  ] },
+  { id: 'almuerzo', nombre: 'Almuerzo', comidas: [] },
+  { id: 'merienda', nombre: 'Merienda', comidas: [
+    { id: 'm1', titulo: 'Yogur con granola', items: [] }
+  ] }
+];
+
+test('el dia se comparte con las comidas que tienen algo', () => {
+  const t = textoDelDia(DIA_PARA_COMPARTIR, { kcal: 1240 });
+  esperarQue(t.includes('Desayuno'), 'la comida cargada aparece');
+  esperarQue(t.includes('Merienda'), 'y la otra tambien');
+  esperarQue(!t.includes('Almuerzo'), 'el momento vacio no se nombra: no hay nada que decir');
+  esperarQue(t.includes('Total del dia: 1240 kcal'), 'el total al final, que es lo unico numerico');
+});
+
+test('un dia sin nada cargado no arma mensaje', () => {
+  esperar(textoDelDia([{ nombre: 'Cena', comidas: [] }]), '');
+  esperar(textoDelDia([]), '');
+  esperar(textoDelDia(null), '');
+});
+
+test('el dia de otra fecha lo dice en la primera linea', () => {
+  const t = textoDelDia(DIA_PARA_COMPARTIR, { fecha: 'lun, 31 ago' });
+  esperar(t.split('\n')[0], 'Lo que comi el lun, 31 ago');
+  esperar(textoDelDia(DIA_PARA_COMPARTIR).split('\n')[0], 'Lo que comi hoy');
+});
+
+/* ---------------- mandar directo por WhatsApp ---------------- */
+
+test('el numero se limpia como lo pide wa.me', () => {
+  /* Sin espacios, guiones, parentesis ni "+": solo digitos con el pais. */
+  esperar(numeroWhatsApp('11 2345-6789'), '5491123456789');
+  esperar(numeroWhatsApp('(011) 2345 6789'), '5491123456789');
+  esperar(numeroWhatsApp('+54 9 11 2345 6789'), '5491123456789');
+});
+
+test('el 15 de los celulares argentinos no va en el numero internacional', () => {
+  /* 11 15 2345-6789 es +54 9 11 2345-6789: el 15 se saca y entra el 9. */
+  esperar(numeroWhatsApp('11 15 2345 6789'), '5491123456789');
+  esperar(numeroWhatsApp('0351 15 234 5678'), '5493512345678', 'y con codigo de area de tres');
+});
+
+test('sin numero no hay link, y el compartir vuelve al selector', () => {
+  esperar(numeroWhatsApp(''), '');
+  esperar(numeroWhatsApp('no es un telefono'), '');
+  esperar(linkWhatsApp('', 'hola'), '');
+});
+
+test('el link lleva el texto listo para mandar', () => {
+  const l = linkWhatsApp('11 2345-6789', 'Merienda\nYogur');
+  esperarQue(l.startsWith('https://wa.me/5491123456789?text='), l);
+  esperarQue(l.includes('Merienda%0AYogur'), 'el salto de linea va codificado');
+});
+
+test('la fila del aviso no se vuelve a dibujar si dice lo mismo', () => {
+  /* Son 60 KB de PNG y el aviso se refresca en cada cambio del dia: sin cache,
+     un dia con veinte toques dibuja veinte veces la misma imagen. */
+  const fila = [
+    { icono: '💧', nombre: 'Agua', valor: '2/4', nivel: 'flojo', listo: false },
+    { icono: '👟', nombre: 'Pasos', valor: '8.000', nivel: 'bien', listo: true }
+  ];
+  const a = tiraDelDiaPNG(fila);
+  const b = tiraDelDiaPNG(fila.map(x => ({ ...x })));
+  esperarQue(a === b, 'la misma fila devuelve exactamente el mismo dataURL');
+
+  const otra = tiraDelDiaPNG([{ ...fila[0], valor: '3/4' }, fila[1]]);
+  esperarQue(otra !== a, 'un valor distinto vuelve a dibujar');
+});
