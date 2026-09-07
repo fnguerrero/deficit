@@ -80,5 +80,11 @@ async function aplicarPendiente() {
 
 aplicarPendiente();
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') aplicarPendiente();
+  if (document.visibilityState !== 'visible') return;
+  aplicarPendiente();
+  /* Y el aviso fijo vuelve a estar, si no esta: es el momento en que se puede
+     comprobar, porque con la app en primer plano el service worker esta
+     despierto seguro. Ver actualizarObjetivosFijos(), que ahora mira si el
+     cartel sigue puesto antes de saltear por firma repetida. */
+  if (typeof refrescarAvisoFijo === 'function') refrescarAvisoFijo();
 });
