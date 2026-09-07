@@ -4915,3 +4915,26 @@ test('el rango de sueño recomendado es el mismo que pinta el casillero', () => 
   esperar(nivelSueno(HORAS_SUENO_OK[0] - 1), 'flojo');
   esperar(nivelSueno(HORAS_SUENO_OK[1] + 1), 'flojo');
 });
+
+test('los horarios se redondean al cuarto de hora', () => {
+  /* "16:37" se lee como una medicion; "16:30", como una costumbre. */
+  esperar(redondearHora(16 * 60 + 37), 16 * 60 + 30);
+  esperar(redondearHora(19 * 60 + 41), 19 * 60 + 45);
+  esperar(redondearHora(5 * 60 + 40), 5 * 60 + 45);
+  esperar(redondearHora(10 * 60), 10 * 60, 'lo que ya es redondo no se mueve');
+});
+
+test('redondear no se pasa del dia', () => {
+  esperar(redondearHora(23 * 60 + 58), 0, 'las 23:58 redondean a medianoche, no a las 24:00');
+  esperar(redondearHora(null), null);
+});
+
+test('la hora tipica que se muestra ya viene redondeada', () => {
+  const dias = {};
+  // cinco meriendas a las 16:37
+  for (let i = 1; i <= 5; i++) {
+    dias['2026-09-0' + i] = { comidas: [{ id: 'm' + i, momento: 'merienda', ts: new Date(2026, 8, i, 16, 37).getTime(), kcal: 300 }] };
+  }
+  esperar(horasTipicas(dias).merienda, 16 * 60 + 37, 'la mediana queda fina para los cortes');
+  esperar(horaDelMomento('merienda', dias), 16 * 60 + 30, 'y lo que se muestra, redondo');
+});
