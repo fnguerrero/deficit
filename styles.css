@@ -708,10 +708,30 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* ---------- recordatorios ---------- */
 .switch { flex-direction: row; align-items: center; gap: 10px; color: var(--txt); font-size: 14px; cursor: pointer; }
 .switch input { width: 20px; height: 20px; accent-color: var(--acc2); flex: 0 0 auto; }
-.horarios { display: grid; gap: 8px; margin-top: 12px; }
-.horarios .fila { display: flex; align-items: center; gap: 10px; }
-.horarios .fila span { flex: 1; font-size: 13.5px; }
-.horarios .fila input { width: 118px; font-size: 14px; padding: 7px 9px; }
+/*
+ * Los horarios de los avisos: una fila por comida, en una linea.
+ *
+ * Estaban en tres renglones cada uno —el tilde arriba, el nombre en el medio,
+ * la hora abajo, todo centrado— y cuatro comidas ocupaban 400 px. No era el
+ * diseno: es que la regla global de `label` las pone en columna, y ninguna de
+ * las reglas de aca declaraba la direccion. Con cuatro comidas, la hora de
+ * dormir y el estado fijo, el bloque no entraba en ninguna pantalla.
+ */
+.horarios { display: grid; gap: 2px; margin-top: 8px; }
+/* Grilla y no flex: tres columnas fijas —tilde, nombre, hora— que no dependen
+   de como negocie el ancho cada item. Con flex el nombre terminaba en 0 px de
+   ancho, invisible, mientras la hora se quedaba con todo. */
+.horarios .fila {
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 10px; text-align: left;
+}
+.horarios .fila span {
+  min-width: 0; font-size: 13.5px; color: var(--txt);
+  /* Un renglon: el nombre se recorta antes de empujar a la hora, que es el
+     dato que hay que poder tocar. */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.horarios .fila input[type="time"] { width: 102px; font-size: 13px; padding: 5px 8px; }
 
 /* ---------- atajos ---------- */
 .tecla {
@@ -1504,9 +1524,18 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 .act-nombre small { display: block; font-size: 10.5px; color: var(--dim); font-weight: 400; }
 .act-min { width: 62px; text-align: center; }
 
-.fila-dormir { display: flex; align-items: center; gap: 9px; margin-top: 10px; font-size: 13px; }
-.fila-dormir span { flex: 1; }
-.fila-dormir input[type="time"] { width: auto; }
+/* La hora de dormir y el estado fijo: la misma fila de una linea que los
+   horarios de arriba, para que el bloque se lea como una sola lista. */
+.fila-dormir {
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 10px; text-align: left;
+  margin-top: 2px; font-size: 13px; min-height: 34px;
+}
+.fila-dormir span {
+  min-width: 0; color: var(--txt);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fila-dormir input[type="time"] { width: 102px; font-size: 13px; padding: 5px 8px; }
 
 
 /* ---------------- nivel, rachas grandes y logros ---------------- */
@@ -2178,7 +2207,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 
 /* Cada aviso con su interruptor. Apagado se ve, en gris: esconderlo obligaria a
    buscar donde volver a prenderlo. */
-.fila-aviso { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.fila-aviso { display: flex; flex-direction: row; align-items: center; gap: 9px; cursor: pointer; min-height: 34px; }
 .fila-aviso span { flex: 1 1 auto; min-width: 0; }
 .fila-aviso.apagada span { color: var(--dim); }
 .fila-aviso.apagada input[type="time"] { opacity: .5; }

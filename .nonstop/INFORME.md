@@ -153,3 +153,76 @@ pedido explícito de Nico, ciclo por ciclo, y la bitácora va por #275.
   configuración empiece a viajar. Hasta que se corra, la app anda igual: si el
   POST se queja de que la columna no existe, reintenta sin ella y el perfil
   viaja como hasta ahora.
+
+---
+
+# Ciclo 35 — las cuatro mejoras, el aviso irrompible y los recordatorios
+
+## Qué se hizo
+
+1. **La fila del día se calcula una vez por render**, no cuatro. Cada llamada
+   juzga todas las comidas contra el modo: eran dieciséis evaluaciones para
+   pintar cuatro casilleros, en cada vaso de agua.
+2. **La cola de fotos suelta una foto después de tres intentos.** La que fallaba
+   siempre volvía a la cola en cada vuelta y se reintentaba cada vez que
+   aparecía la conexión, para siempre.
+3. **El service worker se registra con `updateViaCache: 'none'`** y pregunta por
+   una versión nueva al abrir la app, no solo al volver a ella.
+4. **Limpieza**: `vasosObjetivo` se quedó sin el peso, que no usaba, y `esOptimo`
+   recibe modo, meta y tope por parámetro en vez de leerlos de globales.
+5. **La barra de notificaciones no se puede cerrar**: si la descartan, vuelve.
+6. **Los recordatorios entran en pantalla**: de 791 a 421 px.
+
+## Cómo se verificó
+
+- **1197 tests en verde**, guardas OK (75 scripts) y ningún archivo pasado.
+- La fila: espía sobre `objetivosDelDia()` en la app viva — 4 llamadas antes, 1
+  después.
+- El service worker: `updateViaCache` en `'none'` y la versión nueva tomada en
+  el primer arranque, sin banner.
+- Los recordatorios: alto del bloque medido en 375×812, antes y después, con
+  las filas de 97 px a 34 px y el nombre completo sin recortarse.
+
+## Lo que apareció en el camino
+
+**El runner contaba en verde los tests `async` escritos con `test()`.** Un
+try/catch no ve un rechazo que llega después, así que esos tests fallaban en la
+consola como "Uncaught (in promise)" y el resumen decía que todo estaba bien.
+Al arreglarlo salieron dos rojos reales:
+
+- **Un byte backspace (0x08) dentro de tres expresiones regulares**, cortesía
+  del escape del heredoc con el que se escribió el código: `/cfg/` no
+  matcheaba nunca, así que el reintento sin la columna `cfg` jamás corrió. Una
+  base sin migrar habría dejado de subir el perfil entero, en silencio.
+- **Una carrera entre tres tests** que escriben la misma clave de IndexedDB,
+  causada por el propio arreglo del runner: ahora las funciones `async` se
+  encolan sin ejecutarse, como hacía `testAsync()`.
+
+También salió `ui/ayuno.js` de `ui/objetivos.js`, que se había pasado de largo.
+
+## Decisiones tomadas por criterio propio
+
+- **La notificación se repone en `notificationclose`.** Android no tiene avisos
+  web "ongoing" —eso es solo para apps nativas—, así que lo más cerca de una
+  que no se cierra es volver a ponerla cuando la descartan. El interruptor de
+  Ajustes le avisa al service worker antes de cerrarla, para que ese cierre no
+  se lea como un descarte y el único modo de sacarla siga siendo pedirlo.
+- **Las filas de recordatorios pasaron a grilla y no a flex.** Con flex el
+  nombre terminaba en 0 px de ancho mientras la hora se quedaba con todo; tres
+  columnas fijas no dependen de cómo negocie cada item.
+- **El descarte manual de una foto de la cola quedó afuera**: con el tope de
+  tres intentos y el aviso alcanza, y agregar un botón de borrar sumaba
+  superficie para un caso que ya se resuelve solo.
+
+## Desvíos de la SPEC
+
+Los criterios de aceptación de `SPEC.md` siguen siendo los del muñeco. De ellos
+este ciclo tocaba dos y los dos pasan: la suite en verde con las herramientas OK
+y Hoy sin scroll en 375×812. El presupuesto de 40 iteraciones quedó atrás hace
+varios ciclos; la bitácora va por #290.
+
+## Qué queda bloqueado
+
+Probar en el celular la notificación que ya no se puede cerrar y el push. Es lo
+único que no se puede simular desde el escritorio.
+
