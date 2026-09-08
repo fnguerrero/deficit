@@ -48,9 +48,11 @@ const TIRA_NIVEL = {
  */
 const TIRA_ORO = {
   fondo: '#241d08',
+  fondoClaro: '#332708',
   texto: '#fcd34d',
   celda: '#3a2e0b',
-  borde: '#b08900'
+  celdaClara: '#584410',
+  borde: '#d4a017'
 };
 
 /*
@@ -119,7 +121,17 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
 
   const oro = todoOptimo(lista);
 
-  c.fillStyle = oro ? TIRA_ORO.fondo : TIRA_COLORES.fondo;
+  /* El fondo del dia completo no es un color plano: se aclara hacia el centro,
+     que es lo que hace que la fila entera parezca tener luz adentro. */
+  if (oro) {
+    const fondo = c.createLinearGradient(0, 0, ancho, alto);
+    fondo.addColorStop(0, TIRA_ORO.fondo);
+    fondo.addColorStop(0.5, TIRA_ORO.fondoClaro);
+    fondo.addColorStop(1, TIRA_ORO.fondo);
+    c.fillStyle = fondo;
+  } else {
+    c.fillStyle = TIRA_COLORES.fondo;
+  }
   c.fillRect(0, 0, ancho, alto);
 
   const margen = 14;
@@ -144,7 +156,17 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
       ? TIRA_ORO
       : (TIRA_NIVEL[it.nivel] || (it.listo ? TIRA_NIVEL.bien : null));
 
-    c.fillStyle = tono ? tono.celda : TIRA_COLORES.celda;
+    /* La celda dorada lleva su propio degradado: claro arriba, oscuro abajo. Es
+       la diferencia entre un rectangulo amarillo y algo que parece metal. */
+    if (tono === TIRA_ORO) {
+      const g = c.createLinearGradient(x, y, x + anchoCelda, y + altoCelda);
+      g.addColorStop(0, TIRA_ORO.celdaClara);
+      g.addColorStop(0.55, TIRA_ORO.celda);
+      g.addColorStop(1, TIRA_ORO.celdaClara);
+      c.fillStyle = g;
+    } else {
+      c.fillStyle = tono ? tono.celda : TIRA_COLORES.celda;
+    }
     c.strokeStyle = tono ? tono.borde : TIRA_COLORES.borde;
     c.lineWidth = 2;
     /* roundRect no esta en todos lados: si falta, el cuadrado sirve igual. */
@@ -177,6 +199,36 @@ function tiraDelDiaPNG(items, { ancho = TIRA_ANCHO, alto = TIRA_ALTO } = {}) {
     c.font = '600 23px system-ui, sans-serif';
     c.fillText(it.valor || (it.listo ? '✓' : '—'), centro, y + altoCelda * 0.93);
   });
+
+  /*
+   * El destello, quieto.
+   *
+   * En la app la luz barre la fila cada nueve segundos; una notificacion es una
+   * imagen y no se puede animar —Android muestra un bitmap y punto—. Asi que el
+   * barrido va congelado en el momento en que cruza, que es el fotograma que
+   * vale: una banda diagonal ancha y muy suave, apenas un 14% de blanco, para
+   * que se lea como brillo y no como una mancha encima de los numeros.
+   */
+  if (oro) {
+    const luz = c.createLinearGradient(ancho * 0.05, -alto * 0.3, ancho * 0.75, alto * 1.3);
+    luz.addColorStop(0, 'rgba(255,255,255,0)');
+    luz.addColorStop(0.30, 'rgba(255,255,255,0.03)');
+    luz.addColorStop(0.44, 'rgba(255,255,255,0.13)');
+    luz.addColorStop(0.50, 'rgba(255,255,255,0.24)');
+    luz.addColorStop(0.56, 'rgba(255,255,255,0.13)');
+    luz.addColorStop(0.70, 'rgba(255,255,255,0.03)');
+    luz.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = luz;
+    c.fillRect(0, 0, ancho, alto);
+
+    /* Y el filo de luz de arriba, que es lo que termina de leerse como metal
+       pulido: una linea clara en el borde superior de la fila. */
+    const filo = c.createLinearGradient(0, 0, 0, 3);
+    filo.addColorStop(0, 'rgba(255,255,255,0.22)');
+    filo.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = filo;
+    c.fillRect(0, 0, ancho, 3);
+  }
 
   try {
     const png = cv.toDataURL('image/png');
