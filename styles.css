@@ -1861,34 +1861,41 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 
 /*
- * El destello que lo hace resplandecer.
+ * El destello que lo hace resplandecer. SOLO con el dia completo.
  *
- * Una banda de luz en diagonal que cruza el casillero cada tanto, no todo el
- * tiempo: un brillo continuo en una pantalla que se mira quince veces por dia
- * cansa a la tercera. Va escalonado por casillero, asi que la luz recorre la
- * fila de izquierda a derecha en vez de prenderse en los cuatro a la vez.
+ * Un casillero suelto en su optimo ya se ve dorado y con su estrella; el
+ * resplandor es del dia entero, y repartirlo entre casilleros sueltos le sacaba
+ * lo que tiene de premio. Por eso el selector cuelga de `.dia-completo`.
+ *
+ * Una banda de luz difusa que cruza en diagonal cada tanto, no todo el tiempo:
+ * un brillo continuo en una pantalla que se mira quince veces por dia cansa a
+ * la tercera. Va escalonada por casillero, asi que la luz recorre la fila de
+ * izquierda a derecha en vez de prenderse en los cuatro a la vez.
  */
-.objetivo.optimo::after {
-  content: ''; position: absolute; inset: -40% -60%;
-  background: linear-gradient(105deg,
-    transparent 38%,
-    color-mix(in srgb, #fff 30%, transparent) 46%,
-    color-mix(in srgb, #fff 78%, transparent) 50%,
-    color-mix(in srgb, #fff 30%, transparent) 54%,
-    transparent 62%);
+.objetivos.dia-completo .objetivo.optimo::after {
+  content: ''; position: absolute; inset: -40% -75%;
+  /* Paradas separadas y un blur encima: lo que se busca es una zona de luz que
+     pasa, no un reflejo con filo. Con la banda angosta parecia un escaner. */
+  background: linear-gradient(102deg,
+    transparent 30%,
+    color-mix(in srgb, #fff 14%, transparent) 40%,
+    color-mix(in srgb, #fff 46%, transparent) 50%,
+    color-mix(in srgb, #fff 14%, transparent) 60%,
+    transparent 70%);
+  filter: blur(7px);
   transform: translateX(-120%);
-  animation: brillo-oro 4.5s ease-in-out infinite;
+  animation: brillo-oro 9s ease-in-out infinite;
   pointer-events: none;
 }
-.objetivo.optimo:nth-child(2)::after { animation-delay: .18s; }
-.objetivo.optimo:nth-child(3)::after { animation-delay: .36s; }
-.objetivo.optimo:nth-child(4)::after { animation-delay: .54s; }
+.objetivos.dia-completo .objetivo.optimo:nth-child(2)::after { animation-delay: .5s; }
+.objetivos.dia-completo .objetivo.optimo:nth-child(3)::after { animation-delay: 1s; }
+.objetivos.dia-completo .objetivo.optimo:nth-child(4)::after { animation-delay: 1.5s; }
 
 @keyframes brillo-oro {
-  0%, 62% { transform: translateX(-120%); }
-  /* El barrido dura menos de un segundo del ciclo: el resto es espera, que es
-     lo que lo mantiene discreto. */
-  92%, 100% { transform: translateX(120%); }
+  /* Casi tres segundos de barrido sobre nueve de ciclo: la luz se toma su
+     tiempo en cruzar y despues no vuelve por un rato largo. */
+  0%, 68% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
 }
 
 /* La estrella, con su propia luz. */
@@ -1898,7 +1905,7 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .objetivo.optimo::after { animation: none; opacity: 0; }
+  .objetivos.dia-completo .objetivo.optimo::after { animation: none; opacity: 0; }
 }
 .objetivo.optimo b { color: var(--oro-txt); }
 .objetivo.optimo small { color: var(--oro-txt); opacity: .85; }
