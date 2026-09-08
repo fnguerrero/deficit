@@ -190,3 +190,4 @@ esta sesion.
 - [x] Segunda red del aviso fijo: se repone si no esta, no solo cuando lo descartan · verif: 2 tests de hayQueRepintarAviso + el enganche al volver al frente
 - [x] El dorado, como oro resplandeciente · verif: capturas en claro y oscuro con la animacion congelada a mitad del barrido
 - [x] El ejercicio optimo con 450 kcal, sin minutos · verif: 4 tests nuevos, 1199 en verde
+- [x] El dorado tambien en la notificacion · verif: las dos tiras dibujadas lado a lado, dorada y normal

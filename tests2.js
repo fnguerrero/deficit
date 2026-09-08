@@ -5654,3 +5654,11 @@ test('la primera vez siempre se muestra', () => {
   esperarQue(hayQueRepintarAviso('lo que sea', '', 0));
   esperarQue(hayQueRepintarAviso('lo que sea', '', 1));
 });
+
+test('el oro de la tira tiene sus dos tonos, para el degradado', () => {
+  /* Sin `celdaClara` y `fondoClaro` el createLinearGradient recibe undefined y
+     el canvas tira: la fila dorada dejaria de dibujarse entera. */
+  esperarQue(!!TIRA_ORO.celda && !!TIRA_ORO.celdaClara, 'los dos tonos de la celda');
+  esperarQue(!!TIRA_ORO.fondo && !!TIRA_ORO.fondoClaro, 'los dos del fondo');
+  esperarQue(TIRA_ORO.celda !== TIRA_ORO.celdaClara, 'y distintos, o no hay degradado');
+});
