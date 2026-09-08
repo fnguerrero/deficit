@@ -21,8 +21,17 @@
  * los dias de media hora, o la estrella se ganaba con cinco minutos.
  */
 const OPTIMO_PASOS = 6000;
-const OPTIMO_EJERCICIO_MINUTOS = 30;
-const OPTIMO_EJERCICIO_KCAL = 300;
+/*
+ * El ejercicio se mide en calorias y nada mas.
+ *
+ * Estuvo pedido en dos condiciones —30 minutos Y 300 kcal— para que ni una
+ * caminata larga y floja ni cinco minutos muy intensos alcanzaran solos. El
+ * problema practico es que la mitad de lo que se carga no tiene minutos
+ * anotados: un total puesto a mano no dice cuanto duro, y ahi la estrella no
+ * llegaba nunca por una cuestion de formato, no de esfuerzo. Un numero solo,
+ * mas alto, dice lo mismo y se puede cumplir siempre. Pedido de Nico.
+ */
+const OPTIMO_EJERCICIO_KCAL = 450;
 const OPTIMO_SUENO_MIN = 7;
 const OPTIMO_SUENO_MAX = 9;
 const OPTIMO_COMIDAS = 4;
@@ -36,12 +45,6 @@ const OPTIMO_COMIDAS = 4;
  * puede saber, y la estrella no se da por las dudas.
  */
 const ANIMOS_OPTIMOS = ['normal', 'bien', 'genial'];
-
-/** Los minutos anotados de un dia. Un total puesto a mano no tiene. */
-function minutosDeMovimientos(d) {
-  const movs = typeof movimientosDe === 'function' ? movimientosDe(d) : [];
-  return movs.reduce((a, m) => a + (Number(m.minutos) || 0), 0);
-}
 
 /** Cuantas kcal se pueden comer hoy, ya contando lo que se quemo entrenando. */
 function topeDelDia(d) {
@@ -75,11 +78,8 @@ function esOptimo(id, d, { modo = null, metaAgua = null, tope = null } = {}) {
 
   if (id === 'pasos') return (Number(d.pasos) || 0) >= OPTIMO_PASOS;
 
-  /* Las dos juntas: cada una sola se cumple sin entrenar. Una caminata larga
-     junta el tiempo y un rato corto muy intenso junta las calorias. */
   if (id === 'ejercicio') {
-    return minutosDeMovimientos(d) >= OPTIMO_EJERCICIO_MINUTOS
-      && (Number(d.ejercicio) || 0) >= OPTIMO_EJERCICIO_KCAL;
+    return (Number(d.ejercicio) || 0) >= OPTIMO_EJERCICIO_KCAL;
   }
 
   /* Comer bien no es comer poco: cuatro comidas Y dentro del tope. Solo el
@@ -157,7 +157,7 @@ function textoOptimo(id, metaAgua = null) {
   return {
     sueno: `Óptimo: entre ${OPTIMO_SUENO_MIN} y ${OPTIMO_SUENO_MAX} horas, y haberte levantado de normal para arriba.`,
     pasos: `Óptimo: ${OPTIMO_PASOS.toLocaleString('es-AR')} pasos o más.`,
-    ejercicio: `Óptimo: ${OPTIMO_EJERCICIO_MINUTOS} minutos o más y ${OPTIMO_EJERCICIO_KCAL} kcal o más, sumando todo lo del día.`,
+    ejercicio: `Óptimo: ${OPTIMO_EJERCICIO_KCAL} kcal o más, sumando todo lo que te moviste en el día.`,
     comidas: `Óptimo: ${OPTIMO_COMIDAS} comidas cargadas, sin pasarte de las calorías del día y ninguna fuera del modo.`
   }[id] || '';
 }
