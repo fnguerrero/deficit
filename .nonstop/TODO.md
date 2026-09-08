@@ -188,3 +188,5 @@ esta sesion.
 - [x] El runner contaba EN VERDE los tests async escritos con test() en vez de testAsync(): ahora los encola y los espera · verif: aparecieron 2 rojos que estaban ocultos, los dos arreglados
 - [x] Bytes backspace (0x08) en tres regex, por el escape del heredoc: /cfg/ nunca matcheaba y el reintento sin la columna cfg no corria · verif: 0 bytes 0x08 en el repo, y el test de la columna en verde
 - [x] Segunda red del aviso fijo: se repone si no esta, no solo cuando lo descartan · verif: 2 tests de hayQueRepintarAviso + el enganche al volver al frente
+- [x] El dorado, como oro resplandeciente · verif: capturas en claro y oscuro con la animacion congelada a mitad del barrido
+- [x] El ejercicio optimo con 450 kcal, sin minutos · verif: 4 tests nuevos, 1199 en verde

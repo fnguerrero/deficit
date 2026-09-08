@@ -5375,19 +5375,21 @@ test('los pasos optimos son un piso', () => {
   esperarQue(!esOptimo('pasos', {}), 'sin cargar no');
 });
 
-test('el ejercicio pide tiempo Y calorias', () => {
-  /* Cada condicion sola se cumple sin entrenar: una caminata larga junta el
-     tiempo, y un rato corto muy intenso junta las calorias. */
-  const conMov = (minutos, kcal) => ({ ejercicio: kcal, movimientos: [{ minutos, kcal }] });
-  esperarQue(esOptimo('ejercicio', conMov(30, 300)), '30 min y 300 kcal');
-  esperarQue(!esOptimo('ejercicio', conMov(90, 200)), 'mucho tiempo flojo no alcanza');
-  esperarQue(!esOptimo('ejercicio', conMov(10, 400)), 'diez minutos intensos tampoco');
+test('el ejercicio optimo se mide en calorias', () => {
+  /* La regla cambio por pedido de Nico: eran 30 minutos Y 300 kcal, y la mitad
+     de lo que se carga no tiene minutos anotados —un total a mano no dice
+     cuanto duro—, asi que la estrella no llegaba por una cuestion de formato.
+     Ahora es un numero solo, mas alto. */
+  esperarQue(esOptimo('ejercicio', { ejercicio: 450 }), '450 justo alcanza');
+  esperarQue(esOptimo('ejercicio', { ejercicio: 900 }), 'de mas obvio');
+  esperarQue(!esOptimo('ejercicio', { ejercicio: 449 }), 'por poco no es');
+  esperarQue(!esOptimo('ejercicio', {}), 'sin cargar no');
 });
 
-test('un ejercicio cargado a mano no da la estrella', () => {
-  /* Un total escrito a mano no dice cuanto duro, y la estrella no se da por las
-     dudas: es la diferencia entre no saber y saber que si. */
-  esperarQue(!esOptimo('ejercicio', { ejercicio: 500 }), 'sin minutos anotados, no');
+test('un ejercicio cargado a mano ahora si da la estrella', () => {
+  /* Antes hacian falta los minutos anotados y un total escrito a mano no los
+     tiene: quedaba afuera por como se cargo, no por lo que se hizo. */
+  esperarQue(esOptimo('ejercicio', { ejercicio: 500 }), 'sin minutos, con calorias alcanza');
 });
 
 test('el optimo de comidas mira el dia que le pasan, no el que esta en pantalla', () => {
@@ -5417,8 +5419,7 @@ test('un id que no es un objetivo del dia no da estrella', () => {
 test('el texto dice como se gana la estrella', () => {
   esperarQue(/7 y 9/.test(textoOptimo('sueno')), textoOptimo('sueno'));
   esperarQue(/normal/.test(textoOptimo('sueno')), 'el del sueno nombra el animo');
-  esperarQue(/30/.test(textoOptimo('ejercicio')) && /300/.test(textoOptimo('ejercicio')),
-    'el de ejercicio nombra las dos condiciones');
+  esperarQue(/450/.test(textoOptimo('ejercicio')), 'el de ejercicio dice las calorias');
   esperar(textoOptimo('peso'), '', 'lo que no tiene optimo no inventa una regla');
   esperar(textoOptimo('agua', 6), 'Óptimo: llegar a los 6 vasos del día.');
   esperarQue(/la meta del día/.test(textoOptimo('agua', 0)), 'sin meta lo dice sin numero');
