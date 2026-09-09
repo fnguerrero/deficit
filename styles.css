@@ -346,16 +346,33 @@ input:focus, select:focus { outline: none; border-color: var(--acc2); }
 .conf .media { background: rgba(251,191,36,.15); color: var(--warn); }
 .conf .baja { background: rgba(248,113,113,.15); color: var(--bad); }
 
-.items { list-style: none; margin: 0 0 10px; padding: 0; }
-.items li { border-top: 1px solid var(--line); padding: 10px 0; }
-.items li:first-child { border-top: 0; }
-.item-top { display: flex; gap: 8px; align-items: center; }
-.item-top input.nombre { flex: 1; font-size: 14px; padding: 7px 9px; }
-.item-top input.kcal { width: 78px; text-align: right; font-size: 14px; padding: 7px 9px; }
-.item-top .del { background: none; border: 0; color: var(--dim); font-size: 17px; cursor: pointer; }
-.item-sub { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
-.item-sub input { font-size: 12px; padding: 6px 7px; }
-.item-sub label { font-size: 10px; }
+/*
+ * Cada alimento es una tarjeta, no tres franjas sueltas.
+ *
+ * Estaban separados por una linea y nada mas: nombre, cuatro macros y cuatro
+ * multiplicadores, todos del mismo peso visual y uno abajo del otro. Con tres
+ * alimentos son doce campos apilados sin agrupacion, y desde afuera se lee como
+ * un solo bloque de controles mezclados. La caja dice donde empieza y termina
+ * cada alimento, que es lo que faltaba.
+ */
+.items { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
+.items li {
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card2); padding: 8px;
+}
+.item-top { display: flex; gap: 6px; align-items: center; }
+.item-top input.nombre { flex: 1; min-width: 0; font-size: 13.5px; padding: 6px 8px; }
+.item-top input.kcal { width: 62px; text-align: right; font-size: 13.5px; padding: 6px 6px; }
+.item-top .del { background: none; border: 0; color: var(--dim); font-size: 16px; cursor: pointer; padding: 0 2px; }
+
+/* Los macros: la etiqueta va pegada arriba del campo y en el tamano mas chico
+   que se sigue leyendo. Cuatro columnas iguales, que es como se comparan. */
+/* La porcion es texto libre y larga —"120 g (4 tortillas)"— y los otros tres
+   son numeros de dos digitos: partir el ancho en cuatro iguales cortaba lo
+   unico que hay que leer entero. */
+.item-sub { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 5px; margin-top: 6px; }
+.item-sub input { font-size: 12px; padding: 5px 6px; width: 100%; }
+.item-sub label { font-size: 9.5px; gap: 2px; text-transform: uppercase; letter-spacing: .2px; }
 
 .total-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 0; border-top: 1px solid var(--line); margin-top: 10px; }
 .total-row b { font-size: 20px; color: var(--acc); }
@@ -386,7 +403,14 @@ input:focus, select:focus { outline: none; border-color: var(--acc2); }
 .lista li.grupo + li { border-top: 0; }
 
 /* ---------- selector de momento ---------- */
-.momento-sel { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+/* Los momentos, en UNA fila que se desliza: envueltos ocupaban dos renglones
+   completos arriba de la comida, que es donde menos lugar hay. */
+.momento-sel {
+  display: flex; gap: 6px; flex-wrap: nowrap; margin-bottom: 10px;
+  overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+}
+.momento-sel::-webkit-scrollbar { display: none; }
+.momento-sel button { flex: 0 0 auto; }
 .momento-sel button {
   background: var(--card2); border: 1px solid var(--line); color: var(--dim);
   border-radius: 20px; padding: 6px 12px; font-size: 12.5px; cursor: pointer;
@@ -417,10 +441,12 @@ input:focus, select:focus { outline: none; border-color: var(--acc2); }
 }
 
 /* ---------- multiplicador de porcion ---------- */
-.escalas { display: flex; gap: 5px; margin-top: 7px; }
+/* Los multiplicadores son un ajuste fino, no un control principal: van mas
+   chicos que todo lo demas de la tarjeta. */
+.escalas { display: flex; gap: 4px; margin-top: 6px; }
 .escalas button {
   flex: 1; background: var(--bg2); border: 1px solid var(--line); color: var(--dim);
-  border-radius: 8px; padding: 5px 0; font-size: 12px; cursor: pointer;
+  border-radius: 7px; padding: 3px 0; font-size: 11px; cursor: pointer;
 }
 .escalas button.sel { background: rgba(74,222,128,.14); border-color: var(--acc2); color: var(--acc); }
 
@@ -578,8 +604,13 @@ h3.sub {
 .quick button { white-space: nowrap; }
 
 /* ---------- mover de dia ---------- */
-.fecha-comida { margin: 0 0 12px; }
-.fecha-comida input { font-size: 14px; padding: 8px 10px; }
+/* El dia, en linea: su etiqueta y su campo ocupaban dos renglones para un dato
+   que casi nunca se toca. */
+.fecha-comida {
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+  margin: 0 0 10px; font-size: 12px;
+}
+.fecha-comida input { flex: 1 1 auto; min-width: 0; font-size: 13px; padding: 6px 8px; }
 
 /* ---------- nota del dia ---------- */
 textarea {
