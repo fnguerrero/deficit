@@ -29,7 +29,32 @@ function renderProgreso() {
   pintarAdherencia(s);
   pintarDelModo(s);
   pintarSueno(objetivo);
+  pintarDiasCompletos();
   abrirLoQueSeMira();
+}
+
+/*
+ * Los dias completos: cuantos, cuantos seguidos y el record.
+ *
+ * La estrella de la pantalla de Hoy dura un dia. Sin un lugar donde se acumulen,
+ * el premio se olvida al dia siguiente, y lo que hace que valga la pena
+ * perseguirlo es justamente ver que van sumando.
+ *
+ * Se esconde entero mientras no haya ninguno: un cartel con tres ceros al lado
+ * de las rachas es ruido hasta que el primero llega.
+ */
+function pintarDiasCompletos() {
+  const caja = $('oroResumen');
+  if (!caja || typeof diasCompletos !== 'function') return;
+
+  const op = { metaAgua: metaVasos() };
+  const total = diasCompletos(state.dias, op);
+  caja.hidden = !total;
+  if (!total) return;
+
+  $('oroTotal').textContent = fmtNum(total);
+  $('oroRacha').textContent = fmtNum(rachaDiasCompletos(state.dias, hoyISO(), op));
+  $('oroMejor').textContent = fmtNum(mejorRachaCompletos(state.dias, op));
 }
 
 /* Se hace una sola vez: si corriera en cada render, una tarjeta que cerraste

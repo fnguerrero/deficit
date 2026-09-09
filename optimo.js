@@ -203,3 +203,27 @@ function rachaDiasCompletos(dias, hoy = hoyISO(), opciones = {}) {
   return racha;
 }
 
+/*
+ * La mejor racha de dias completos que hubo.
+ *
+ * Se recorre el historial ordenado y se cuentan los tramos seguidos: es la
+ * marca a superar, y sin ella la racha actual no dice nada —tres dias puede ser
+ * un record o la mitad de lo que ya se logro—.
+ */
+function mejorRachaCompletos(dias, opciones = {}) {
+  const fechas = Object.keys(dias || {}).sort();
+  let mejor = 0;
+  let seguidos = 0;
+  let anterior = null;
+
+  for (const f of fechas) {
+    if (!diaEstaCompleto(dias[f], opciones)) { seguidos = 0; anterior = f; continue; }
+    /* Dos dias completos con un hueco SIN CARGAR en el medio no son seguidos:
+       el dia que no existe en el historial tampoco estuvo completo. */
+    seguidos = (anterior && sumarDias(anterior, 1) === f) ? seguidos + 1 : 1;
+    anterior = f;
+    if (seguidos > mejor) mejor = seguidos;
+  }
+  return mejor;
+}
+

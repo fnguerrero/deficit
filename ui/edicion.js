@@ -100,6 +100,24 @@ function pintarMomentos(r) {
   }
 }
 
+/*
+ * Enter pasa al campo siguiente en vez de no hacer nada.
+ *
+ * Corregir un analisis es escribir en ocho campos seguidos, y en el celular
+ * cerrar el teclado, tocar el campo de al lado y volver a abrirlo es la mitad
+ * del trabajo. En el ultimo, Enter cierra el teclado y listo.
+ */
+function saltarAlSiguiente(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+
+  const campos = [...$('resItems').querySelectorAll('input')];
+  const i = campos.indexOf(e.target);
+  const siguiente = campos[i + 1];
+  if (siguiente) siguiente.focus();
+  else e.target.blur();
+}
+
 function pintarItems(r) {
   const ul = $('resItems');
   ul.innerHTML = '';
@@ -152,6 +170,7 @@ function pintarItems(r) {
       sugeridos.hidden = false;
     };
 
+    nom.onkeydown = saltarAlSiguiente;
     nom.oninput = () => { it.nombre = nom.value; mostrarSugerencias(); };
     nom.onfocus = mostrarSugerencias;
     nom.onblur = () => setTimeout(cerrarSugerencias, 120);
@@ -159,6 +178,7 @@ function pintarItems(r) {
     const kcal = document.createElement('input');
     kcal.className = 'kcal'; kcal.type = 'number'; kcal.inputMode = 'numeric';
     kcal.value = Math.round(it.calorias); kcal.placeholder = 'kcal';
+    kcal.onkeydown = saltarAlSiguiente;
     kcal.oninput = () => { it.calorias = Number(kcal.value) || 0; actualizarTotal(r); };
 
     const fav = document.createElement('button');
@@ -182,7 +202,21 @@ function pintarItems(r) {
     del.className = 'del'; del.textContent = '×';
     del.onclick = () => { r.items.splice(i, 1); pintarItems(r); };
 
-    top.append(nom, kcal, fav, del);
+    /* Duplicar: dos tostadas iguales, dos cafes, la misma guarnicion dos veces.
+       Volver a escribir nombre, porcion y cuatro macros para repetir algo que
+       ya esta ahi es la parte mas tediosa de corregir un analisis. */
+    const clon = document.createElement('button');
+    clon.type = 'button';
+    clon.className = 'del';
+    clon.textContent = '⧉';
+    clon.title = 'Duplicar';
+    clon.setAttribute('aria-label', 'Duplicar ' + (it.nombre || 'alimento'));
+    clon.onclick = () => {
+      r.items.splice(i + 1, 0, clonar({ ...it, factor: undefined, base: undefined }));
+      pintarItems(r);
+    };
+
+    top.append(nom, kcal, fav, clon, del);
 
     const sub = document.createElement('div');
     sub.className = 'item-sub';
@@ -198,7 +232,12 @@ function pintarItems(r) {
       const inp = document.createElement('input');
       inp.type = tipo;
       inp.value = tipo === 'number' ? Math.round(it[key]) : it[key];
-      inp.oninput = () => { it[key] = tipo === 'number' ? (Number(inp.value) || 0) : inp.value; };
+      inp.onkeydown = saltarAlSiguiente;
+      inp.oninput = () => {
+        it[key] = tipo === 'number' ? (Number(inp.value) || 0) : inp.value;
+        /* Los macros tambien suman: antes solo las kcal repintaban el total. */
+        if (tipo === 'number') actualizarTotal(r);
+      };
       l.appendChild(inp);
       sub.appendChild(l);
     }
@@ -230,6 +269,15 @@ function pintarItems(r) {
 function actualizarTotal(r) {
   const total = r.items.reduce((a, i) => a + (Number(i.calorias) || 0), 0);
   $('resTotal').textContent = fmtKcal(total);
+
+  /* Y los macros, que es lo que se corrige a mano cuando el analisis se
+     equivoca: sin la suma hay que hacerla de cabeza para saber si el plato
+     tiene la proteina que parece. */
+  const caja = $('resTotalMacros');
+  if (!caja) return;
+  const suma = (k) => Math.round(r.items.reduce((a, i) => a + (Number(i[k]) || 0), 0));
+  const p = suma('proteinas'), c = suma('carbohidratos'), g = suma('grasas');
+  caja.textContent = (p || c || g) ? `${p} g proteína · ${c} g carbos · ${g} g grasas` : '';
 }
 
 $('btnGuardarReceta').onclick = () => {

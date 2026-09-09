@@ -466,7 +466,20 @@ function pintarCola() {
   if (!el) return;
   const txt = textoCola(state.colaAnalisis);
   el.hidden = !txt;
-  el.textContent = txt + (txt ? ' Tocá para probar ahora.' : '');
+  el.textContent = '';
+  if (!txt) return;
+
+  /* La miniatura de lo que espera: "hay 1 foto" no dice CUAL, y con dos platos
+     encolados uno no sabe si el que falta es el almuerzo o el postre. */
+  const thumb = (state.colaAnalisis[state.colaAnalisis.length - 1] || {}).thumb;
+  if (thumb) {
+    const img = document.createElement('img');
+    img.className = 'cola-thumb';
+    img.src = thumb;
+    img.alt = '';
+    el.appendChild(img);
+  }
+  el.appendChild(document.createTextNode(txt + ' Tocá para probar ahora.'));
 }
 
 /* La cola se vacia sola cuando vuelve la red, pero el navegador no siempre
@@ -482,8 +495,16 @@ addEventListener('online', vaciarCola);
 
 /* Los dos inputs hacen exactamente lo mismo con lo que devuelven: uno trae la
    foto de la cámara y el otro de la galería, pero de ahí en adelante es igual. */
+/*
+ * Recibe fotos: del selector, de la camara, o compartidas desde la galeria.
+ *
+ * Acepta el evento del input o directamente una lista de archivos, que es como
+ * llegan cuando Android comparte una foto A la app. Ver el share_target del
+ * manifest y el POST que atiende el service worker.
+ */
 const recibirFotos = async (e) => {
-  const archivos = [...(e.target.files || [])].slice(0, 4);   // 4 fotos ya es de sobra
+  const crudos = Array.isArray(e) ? e : [...(e?.target?.files || [])];
+  const archivos = crudos.slice(0, 4);   // 4 fotos ya es de sobra
   if (!archivos.length) return;
 
   const modo = modoAnalisis;

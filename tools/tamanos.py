@@ -12,11 +12,17 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 LIMITES = [
     ('app.js', 400),
-    ('arranque.js', 100),
+    # +40 por la foto que llega compartida desde otra app: es un tercer camino
+    # de entrada, como la accion pendiente y el parametro de la URL, y los tres
+    # viven aca
+    ('arranque.js', 140),
     ('core.js', 1400),
     ('calibracion.js', 250),
     ('config.js', 40),
     ('claude.js', 900),
+    # las sugerencias salieron de claude.js: todo lo demas de ahi mira una foto
+    # de algo que ya se comio, y esto es la pregunta al reves
+    ('ideas.js', 250),
     ('analisis.js', 900),
     # el informe del mes salio de analisis.js: es lo unico de ahi que no calcula
     # para la pantalla, sino que arma un documento aparte
@@ -89,7 +95,7 @@ LIMITES = [
     # +35 porque lo que crece no es la logica sino la lista SHELL: cada archivo
     # que sale de una particion suma una linea aca. Partir el sw seria pagar un
     # importScripts mas en el arranque para ahorrar lineas de datos.
-    ('sw.js', 340),
+    ('sw.js', 380),
     # +40 por el editor de pasos. Va con la grilla y no en ui/hoy.js, que ya
     # esta en 660: los pasos son el sexto casillero y su editor es el mismo
     # patron que el del sueño y el del animo, que ya viven aca.

@@ -60,3 +60,33 @@ function tomarPendiente({ ahora = Date.now(), vence = 10 * 60 * 1000 } = {}) {
     })
     .catch(() => null);
 }
+
+/* ---------------- la foto que llego compartida ---------------- */
+
+/*
+ * Una foto que Android le paso a la app desde otra —la galeria, WhatsApp— con
+ * el boton Compartir.
+ *
+ * Va por el mismo camino que la accion pendiente y por el mismo motivo: el
+ * service worker atiende ese POST sin que la app exista todavia, y IndexedDB es
+ * lo unico que los dos comparten. Se guarda el Blob entero: pasarlo por la URL
+ * no entra, y por postMessage se pierde si la app tarda en arrancar.
+ */
+function anotarFotoCompartida(blob, ahora = Date.now()) {
+  return usarTienda('readwrite', t => t.put({ blob, ts: ahora }, 'foto')).catch(() => null);
+}
+
+/** La devuelve y la borra: una foto compartida se analiza una sola vez. */
+function tomarFotoCompartida({ ahora = Date.now(), vence = 10 * 60 * 1000 } = {}) {
+  return usarTienda('readonly', t => t.get('foto'))
+    .then(g => usarTienda('readwrite', t => t.delete('foto')).then(() => g))
+    .then(g => {
+      if (!g || !g.blob) return null;
+      /* Vieja no vale, igual que la accion: una foto compartida hace horas es de
+         un plato que ya no existe. */
+      if (ahora - (g.ts || 0) > vence) return null;
+      return g.blob;
+    })
+    .catch(() => null);
+}
+

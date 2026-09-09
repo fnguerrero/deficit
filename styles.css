@@ -1996,10 +1996,32 @@ textarea:focus { outline: none; border-color: var(--acc2); }
 /* El aviso de la cola es un boton, pero tiene que seguir leyendose como un
    renglon de ayuda y no como algo que grita. */
 .aviso-cola {
-  display: block; width: 100%; text-align: left; cursor: pointer;
-  background: none; border: 0; padding: 0; font: inherit; color: var(--dim);
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  cursor: pointer; background: none; border: 0; padding: 0; font: inherit; color: var(--dim);
+}
+.cola-thumb {
+  flex: 0 0 auto; width: 34px; height: 34px; object-fit: cover;
+  border-radius: 7px; border: 1px solid var(--line);
 }
 .aviso-cola:hover { color: var(--txt); }
+
+.total-macros { margin: 2px 0 8px; font-size: 12px; color: var(--dim); text-align: right; }
+
+.filtro-oro {
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+  margin: 0 0 8px; font-size: 12.5px; color: var(--dim);
+}
+
+/* Los dias completos acumulados, en Progreso: el mismo oro, en tres numeros. */
+.oro-resumen {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin: 4px 0 12px; padding: 10px 8px; border-radius: 12px;
+  background: color-mix(in srgb, var(--oro) 9%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--oro) 40%, transparent);
+  text-align: center;
+}
+.oro-resumen b { display: block; font-size: 21px; color: var(--oro-txt); line-height: 1.15; }
+.oro-resumen small { font-size: 10.5px; color: var(--dim); }
 
 /* El dia completo, en la lista del historial: el mismo oro, sin el resplandor.
    Una lista de treinta renglones con treinta destellos seria una fiesta que no

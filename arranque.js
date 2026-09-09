@@ -15,10 +15,29 @@ sincronizarAlArrancar();
 // si volvemos de Google, la sesion viene en el fragmento de la URL
 volverDeGoogle();
 
-// acceso directo "Analizar foto" del ícono de la app
-if (new URLSearchParams(location.search).get('accion') === 'foto') {
+/*
+ * Los accesos directos del icono de la app.
+ *
+ * En Android se abren manteniendo apretado el icono. Son los tres atajos del
+ * manifest, y cada uno tiene que hacer algo aca: un atajo que abre la app y no
+ * hace nada es peor que no tenerlo, porque promete.
+ */
+const atajo = new URLSearchParams(location.search).get('accion');
+if (atajo && atajo !== 'compartida') {
   history.replaceState(null, '', location.pathname);
-  setTimeout(() => $('btnFoto').click(), 200);
+
+  if (atajo === 'foto') setTimeout(() => $('btnFoto').click(), 200);
+
+  if (atajo === 'agua') setTimeout(() => {
+    ponerAgua((dia().agua || 0) + 1);
+    toast('Vaso anotado');
+  }, 250);
+
+  /* Las ideas piden el momento que toca por hora, que es lo que quiere quien
+     abre la app con hambre a las nueve de la noche. */
+  if (atajo === 'ideas') setTimeout(() => {
+    if (typeof pedirSugerencias === 'function') pedirSugerencias(nombreMomento(momentoDe(Date.now())));
+  }, 300);
 }
 
 /*
@@ -78,6 +97,27 @@ async function aplicarPendiente() {
   if (accion) hacerDesdeElAviso(accion);
 }
 
+/*
+ * La foto que llego compartida desde otra app.
+ *
+ * El service worker la dejo en IndexedDB y mando a la app con ?accion=compartida.
+ * Se analiza como cualquier otra: recibirFotos() acepta una lista de archivos
+ * ademas del evento del input.
+ */
+async function aplicarFotoCompartida() {
+  if (new URLSearchParams(location.search).get('accion') !== 'compartida') return;
+  if (typeof tomarFotoCompartida !== 'function') return;
+
+  const blob = await tomarFotoCompartida().catch(() => null);
+  if (!blob) return;
+
+  const file = blob instanceof File
+    ? blob
+    : new File([blob], 'compartida.jpg', { type: blob.type || 'image/jpeg' });
+  if (typeof recibirFotos === 'function') recibirFotos([file]);
+}
+
+aplicarFotoCompartida();
 aplicarPendiente();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible') return;

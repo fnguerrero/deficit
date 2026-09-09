@@ -16,11 +16,31 @@
     { "src": "icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
     { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
+  "share_target": {
+    "action": "./compartir-foto",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [{ "name": "foto", "accept": ["image/*"] }]
+    }
+  },
   "shortcuts": [
     {
       "name": "Analizar foto",
       "short_name": "Foto",
       "url": "./index.html?accion=foto",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sumar un vaso de agua",
+      "short_name": "Agua",
+      "url": "./index.html?accion=agua",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ideas para comer",
+      "short_name": "Ideas",
+      "url": "./index.html?accion=ideas",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ]

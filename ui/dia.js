@@ -427,6 +427,8 @@ $('menuCompartirDia').onclick = async () => {
   const grupos = agruparPorMomento(dia().comidas || [], { todos: true });
   const total = sumarComidas(dia().comidas || []).kcal;
   const texto = textoDelDia(grupos, {
+    completo: typeof diaEstaCompleto === 'function'
+      && diaEstaCompleto(dia(), { metaAgua: metaVasos() }),
     fecha: fecha === hoyISO() ? '' : etiquetaFecha(fecha),
     kcal: total
   });
