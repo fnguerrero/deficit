@@ -191,3 +191,17 @@ esta sesion.
 - [x] El dorado, como oro resplandeciente · verif: capturas en claro y oscuro con la animacion congelada a mitad del barrido
 - [x] El ejercicio optimo con 450 kcal, sin minutos · verif: 4 tests nuevos, 1199 en verde
 - [x] El dorado tambien en la notificacion · verif: las dos tiras dibujadas lado a lado, dorada y normal
+
+## Ciclo 36 — diez mejoras
+
+- [x] El dia completo se festeja una vez (⭐ con frase propia en voz.js; arranca en null para no festejar al abrir la app): hoy el oro aparece y no pasa nada mas · verif: test de la deteccion + el festejo en la app viva · archivos: ui/objetivos.js, juego.js, tests2.js
+- [x] La racha de dias completos (rachaDiasCompletos + diasCompletos, 6 tests), que hoy no existe · verif: tests de la cuenta sobre un historial armado · archivos: optimo.js o juego.js, tests2.js
+- [x] Tres logros por dias completos (1, 5 y 3 al hilo) seguidos · verif: test del catalogo · archivos: logros.js, tests2.js
+- [x] El historial marca los dias completos (verificado con 3 dias) en dorado · verif: en la app viva con datos de prueba · archivos: ui/historial.js, styles.css
+- [x] El aviso de la foto en cola se toca y reintenta (es un boton) se toca y reintenta ya · verif: el boton existe y llama a vaciarCola · archivos: index.html, ui/comidas.js, styles.css
+- [x] El aviso fijo dice '⭐ Dia completo' en el titulo en el titulo cuando lo esta · verif: test de textoObjetivos · archivos: ui/recordatorios.js, optimo.js, tests2.js
+- [x] El editor del ejercicio dice cuanto falta ('Te faltan 350 kcal para la estrella') para las 450 kcal · verif: en la app viva, con y sin ejercicio cargado · archivos: ui/actividades.js, deportes.js
+- [x] Accesibilidad del dia completo (role=group + aria-label): que un lector de pantalla lo diga · verif: aria-label presente en la app viva · archivos: ui/objetivos.js
+- [x] Partir chequeos.js (450 -> 413): salio macros.js, clavado en 450/450 · verif: guardas y tamanos OK, tests en verde
+- [x] Medido: esOptimo corre 9 veces por rachasDelDia y 5 por render. No duele, no se toca una vez por item y cada llamada juzga las comidas: medir y arreglar si duele · verif: espia en la app viva · archivos: ui/recordatorios.js
+

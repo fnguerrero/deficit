@@ -460,14 +460,23 @@ async function vaciarCola() {
   }
 }
 
-/** El aviso de que hay fotos esperando. */
+/** El aviso de que hay fotos esperando. Se toca para reintentar ahora. */
 function pintarCola() {
   const el = $('avisoCola');
   if (!el) return;
   const txt = textoCola(state.colaAnalisis);
   el.hidden = !txt;
-  el.textContent = txt;
+  el.textContent = txt + (txt ? ' Tocá para probar ahora.' : '');
 }
+
+/* La cola se vacia sola cuando vuelve la red, pero el navegador no siempre
+   avisa que volvio —wifi de bar, datos que van y vienen— y ahi el aviso se
+   queda puesto sin que nada lo empuje. */
+$('avisoCola').onclick = () => {
+  if (!(state.colaAnalisis || []).length) return;
+  if (!navigator.onLine) { toast('Sigue sin haber conexión'); return; }
+  vaciarCola();
+};
 
 addEventListener('online', vaciarCola);
 

@@ -199,7 +199,16 @@ function textoObjetivos() {
   const margen = !objetivo ? 'Déficit'
     : (sobra >= 0 ? `Quedan ${fmtNum(sobra)} kcal` : `${fmtNum(-sobra)} kcal de más`);
 
-  return { titulo: `${margen} · ${hora}`, cuerpo: '', faltan: faltan.length };
+  /* Con el dia completo, eso manda sobre las calorias: pasa poco y es la unica
+     linea del aviso que se lee sin desplegar la imagen. */
+  const completo = typeof diaEstaCompleto === 'function'
+    && diaEstaCompleto(d, { metaAgua: typeof metaVasos === 'function' ? metaVasos() : 0 });
+
+  return {
+    titulo: completo ? `⭐ Día completo · ${margen} · ${hora}` : `${margen} · ${hora}`,
+    cuerpo: '',
+    faltan: faltan.length
+  };
 }
 
 /* Lo ultimo que se mostro, para no repintar el mismo cartel en cada render.

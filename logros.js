@@ -39,6 +39,16 @@ const LOGROS = [
   { id: 'entreno-racha', nombre: 'Semana completa', detalle: '7 días seguidos entrenando', icono: '⚡',
     cumple: (c) => c.mejores.entrenamiento >= 7 },
 
+  /* Los dias completos: los cuatro casilleros en su OPTIMO, que es bastante mas
+     que registrarlos. Por eso los numeros son chicos al lado de los de arriba —
+     uno solo ya es un logro. */
+  { id: 'completo-1', nombre: 'Día en dorado', detalle: 'Un día con los cuatro en su óptimo', icono: '⭐',
+    cumple: (c) => c.completos >= 1 },
+  { id: 'completo-5', nombre: 'Cinco veces perfecto', detalle: '5 días con los cuatro en su óptimo', icono: '🌟',
+    cumple: (c) => c.completos >= 5 },
+  { id: 'completo-racha-3', nombre: 'Tres al hilo', detalle: '3 días completos seguidos', icono: '✨',
+    cumple: (c) => c.rachaCompletos >= 3 },
+
   { id: 'sueno-7', nombre: 'Dormido', detalle: '7 días seguidos durmiendo bien', icono: '😴',
     cumple: (c) => c.mejores.sueno >= 7 },
 
@@ -64,6 +74,14 @@ function contextoLogros(dias, juego, { hoy = hoyISO(), vasos = 8, pasos = PASOS_
     entrenamientos: valores.filter(d => (d?.ejercicio || 0) > 0).length,
     pesadas: valores.filter(d => Number(d?.peso) > 0).length,
     perfectos: pasadas.filter(([f, d]) => diaPerfecto(d, f, { vasos, pasos, modo, objetivo, fecha: f })).length,
+    /* El dia completo es otra cosa que el dia perfecto: perfecto es haber
+       cumplido las rachas, completo es haber llegado al OPTIMO en los cuatro. */
+    completos: typeof diasCompletos === 'function'
+      ? diasCompletos(diasPasados(dias, hoy), { metaAgua: vasos, tope: objetivo?.objetivo || objetivo })
+      : 0,
+    rachaCompletos: typeof rachaDiasCompletos === 'function'
+      ? rachaDiasCompletos(dias, hoy, { metaAgua: vasos, tope: objetivo?.objetivo || objetivo })
+      : 0,
     mejores,
     nivel: nivelDe(juego?.xp || 0).nivel
   };

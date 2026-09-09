@@ -216,15 +216,23 @@ function renderListaDias() {
 
   for (const f of fechas) {
     const t = totalesDia(f);
+    /* Los dias completos se marcan: la estrella de la pantalla de Hoy dura un
+       dia y despues no queda rastro de ella en ningun lado. Aca es donde se
+       puede mirar el mes y ver cuantos hubo. */
+    const completo = typeof diaEstaCompleto === 'function'
+      && diaEstaCompleto(state.dias[f], { metaAgua: metaVasos() });
+
     const li = document.createElement('li');
-    li.className = 'clicable';
+    li.className = 'clicable' + (completo ? ' dia-dorado' : '');
     li.tabIndex = 0;
     li.setAttribute('role', 'button');
-    li.setAttribute('aria-label', 'Abrir ' + etiquetaFecha(f));
+    /* La estrella no puede ser solo un dibujo, igual que en la grilla. */
+    li.setAttribute('aria-label', 'Abrir ' + etiquetaFecha(f) + (completo ? ', día completo' : ''));
 
     const info = document.createElement('div');
     info.className = 'info';
-    const b = document.createElement('b'); b.textContent = etiquetaFecha(f);
+    const b = document.createElement('b');
+    b.textContent = (completo ? '⭐ ' : '') + etiquetaFecha(f);
     const sm = document.createElement('small');
     sm.textContent = plural(state.dias[f].comidas.length, 'comida') +
       (objetivo ? ` · ${fmtDelta(t.kcal - objetivo)} vs objetivo` : '') +
