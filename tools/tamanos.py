@@ -22,11 +22,17 @@ LIMITES = [
     # para la pantalla, sino que arma un documento aparte
     ('informe.js', 250),
     ('chequeos.js', 450),
+    # la lectura de macros salio de chequeos.js: es lo unico de ahi que traduce
+    # un numero a una frase, el resto son colores y avisos del dia
+    ('macros.js', 100),
     # el optimo salio de chequeos.js: es la otra pregunta —el techo y no el
     # piso— y el archivo ya estaba en el limite
     # +50 por textoCumplido(): la otra mitad de la explicacion —que pone el
     # casillero en verde— vive al lado de la que dice que da la estrella
-    ('optimo.js', 200),
+    # +50 por el dia completo y su racha: la regla de que cuenta como completo
+    # vive donde vive el optimo de cada casillero, y separarlas las dejaria
+    # desincronizarse
+    ('optimo.js', 250),
     ('modos.js', 800),
     # las reglas por patron salieron de modos.js: miran las banderas del plato,
     # no sus numeros

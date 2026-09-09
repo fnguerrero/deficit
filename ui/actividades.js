@@ -168,7 +168,17 @@ function renderEjercicio() {
   if (cajaRef) {
     cajaRef.hidden = !ref;
     if (ref) {
-      cajaRef.textContent = `La OMS pide ${ref.minutos[0]} a ${ref.minutos[1]} minutos de ejercicio ` +
+      /* Primero lo de hoy, que es lo accionable: cuanto falta para la estrella.
+         La referencia de la OMS queda atras, que explica de donde sale el
+         numero pero no se mira dos veces. */
+      const hecho = Number(dia().ejercicio) || 0;
+      const falta = (typeof OPTIMO_EJERCICIO_KCAL === 'number' ? OPTIMO_EJERCICIO_KCAL : 0) - hecho;
+      const linea = falta > 0
+        ? `Te faltan ${fmtNum(Math.round(falta))} kcal para la estrella del día.`
+        : '⭐ Llegaste al óptimo del día.';
+
+      cajaRef.textContent = linea +
+        ` La OMS pide ${ref.minutos[0]} a ${ref.minutos[1]} minutos de ejercicio ` +
         `por semana: para tu peso son ${fmtNum(ref.semana[0])} a ${fmtNum(ref.semana[1])} kcal semanales, ` +
         `unas ${fmtNum(ref.dia[0])} a ${fmtNum(ref.dia[1])} por día.`;
     }

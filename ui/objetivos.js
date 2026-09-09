@@ -194,6 +194,31 @@ function renderObjetivos() {
      sueno se doraba entero, con un casillero en rojo adentro del marco. */
   const completo = delDia.length > 0 && delDia.every(o => o.optimo);
   cont.classList.toggle('dia-completo', completo);
+  /* Y se DICE: el dorado y el resplandor no existen para un lector de pantalla,
+     que es justo a quien mas le falta la senal de que el dia se cerro bien. */
+  cont.setAttribute('role', 'group');
+  cont.setAttribute('aria-label', completo
+    ? 'Objetivos del día: día completo, los cuatro en su óptimo'
+    : 'Objetivos del día');
+
+  /*
+   * Y se festeja UNA vez, cuando se cierra.
+   *
+   * Arranca en null y no en false a proposito: al abrir la app con el dia ya
+   * completo no hay nada que festejar —eso ya paso—, solo estado que mostrar.
+   * La fecha va en la marca para que cruzar la medianoche no dispare el cartel
+   * del dia de ayer.
+   */
+  const antes = diaCompletoAntes;
+  diaCompletoAntes = { fecha, completo };
+  if (completo && antes && antes.fecha === fecha && !antes.completo
+    && typeof festejar === 'function') {
+    festejar({
+      icono: '⭐',
+      titulo: 'Día completo',
+      texto: (typeof decir === 'function' ? decir('diaCompleto') : '') || 'Los cuatro en su óptimo.'
+    });
+  }
   /* Y la fila de comidas acompaña. Es solo el festejo: las comidas no deciden
      si el dia esta completo —no tienen casillero en la grilla— pero que la
      pantalla se dore por la mitad hacia arriba y siga verde abajo hacia que el
@@ -241,6 +266,9 @@ function renderObjetivos() {
 /* Los cumplidos del render anterior. Arranca vacío a propósito: en la primera
    pintada del día no hay nada que festejar, solo estado que mostrar. */
 let listosAhora = new Set();
+
+/* Lo mismo para el dia completo: `null` es "todavia no se miro". */
+let diaCompletoAntes = null;
 
 /* La fase del render anterior, para saber cuándo saltar. */
 let faseAnterior = null;

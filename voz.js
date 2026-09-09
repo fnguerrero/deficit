@@ -33,6 +33,16 @@ const VOZ = {
     'El agua sigue en {n} de {meta}. Sin comentarios.'
   ],
 
+  /* El dia completo: los cuatro casilleros en su optimo. Pasa poco, asi que se
+     puede festejar sin que canse. */
+  diaCompleto: [
+    'Día completo. Los cuatro en su mejor versión.',
+    'Cuatro de cuatro. Así se ve un día bien hecho.',
+    'Día perfecto: pasos, ejercicio, agua y sueño, todo en su punto.',
+    'No le falta nada a este día. Ni uno.',
+    'Los cuatro en dorado. No es fácil y lo hiciste.'
+  ],
+
   comida: [
     'No registraste nada todavía. ¿Comiste? ¿Estás bien?',
     'Una foto. Un plato. Algo. Dale algo con qué trabajar.',

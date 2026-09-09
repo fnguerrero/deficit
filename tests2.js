@@ -5662,3 +5662,66 @@ test('el oro de la tira tiene sus dos tonos, para el degradado', () => {
   esperarQue(!!TIRA_ORO.fondo && !!TIRA_ORO.fondoClaro, 'los dos del fondo');
   esperarQue(TIRA_ORO.celda !== TIRA_ORO.celdaClara, 'y distintos, o no hay degradado');
 });
+
+/* ---------------- el dia completo y su racha ---------------- */
+
+const DIA_PERFECTO = { pasos: 9000, ejercicio: 600, agua: 4, sueno: { horas: 8 }, animo: 'bien' };
+
+test('un dia completo es los cuatro casilleros en su optimo', () => {
+  const o = { metaAgua: 4 };
+  esperarQue(diaEstaCompleto(DIA_PERFECTO, o), 'los cuatro');
+  esperarQue(!diaEstaCompleto({ ...DIA_PERFECTO, pasos: 3000 }, o), 'con los pasos flojos no');
+  esperarQue(!diaEstaCompleto({ ...DIA_PERFECTO, sueno: { horas: 5 } }, o), 'ni durmiendo poco');
+  esperarQue(!diaEstaCompleto({}, o), 'un dia vacio menos');
+  esperarQue(!diaEstaCompleto(null, o), 'y sin dia, false y no un error');
+});
+
+test('las comidas no deciden si el dia esta completo', () => {
+  /* No tienen casillero en la grilla: es la misma regla que el marco dorado. */
+  esperarQue(diaEstaCompleto({ ...DIA_PERFECTO, comidas: [] }, { metaAgua: 4 }),
+    'sin una sola comida cargada, los cuatro casilleros siguen estando');
+});
+
+test('la racha de dias completos se cuenta hacia atras', () => {
+  const dias = {
+    '2026-09-05': DIA_PERFECTO,
+    '2026-09-06': DIA_PERFECTO,
+    '2026-09-07': DIA_PERFECTO
+  };
+  esperar(rachaDiasCompletos(dias, '2026-09-07', { metaAgua: 4 }), 3);
+});
+
+test('el dia en curso no rompe la racha', () => {
+  /* A las diez de la manana el dia de hoy no esta completo y todavia puede
+     estarlo: mostrar cero seria mentir sobre lo que paso ayer. */
+  const dias = { '2026-09-05': DIA_PERFECTO, '2026-09-06': DIA_PERFECTO, '2026-09-07': {} };
+  esperar(rachaDiasCompletos(dias, '2026-09-07', { metaAgua: 4 }), 2);
+});
+
+test('un hueco corta la racha', () => {
+  const dias = {
+    '2026-09-04': DIA_PERFECTO,
+    '2026-09-05': { ...DIA_PERFECTO, agua: 0 },
+    '2026-09-06': DIA_PERFECTO,
+    '2026-09-07': DIA_PERFECTO
+  };
+  esperar(rachaDiasCompletos(dias, '2026-09-07', { metaAgua: 4 }), 2);
+});
+
+test('cuenta los dias completos de todo el historial', () => {
+  const dias = { a: DIA_PERFECTO, b: {}, c: DIA_PERFECTO, d: { ...DIA_PERFECTO, pasos: 0 } };
+  esperar(diasCompletos(dias, { metaAgua: 4 }), 2);
+  esperar(diasCompletos({}, { metaAgua: 4 }), 0);
+});
+
+test('los logros del dia completo estan en el catalogo', () => {
+  const ids = LOGROS.map(l => l.id);
+  esperarQue(ids.includes('completo-1') && ids.includes('completo-5') && ids.includes('completo-racha-3'), ids.join(','));
+
+  const con = (completos, rachaCompletos) => ({ completos, rachaCompletos, mejores: {}, registrados: 0, entrenamientos: 0, pesadas: 0, perfectos: 0, nivel: 1 });
+  const uno = LOGROS.find(l => l.id === 'completo-1');
+  esperarQue(uno.cumple(con(1, 1)), 'con un dia completo ya se gana');
+  esperarQue(!uno.cumple(con(0, 0)), 'sin ninguno no');
+  esperarQue(LOGROS.find(l => l.id === 'completo-racha-3').cumple(con(9, 3)), 'tres al hilo');
+  esperarQue(!LOGROS.find(l => l.id === 'completo-racha-3').cumple(con(9, 2)), 'con dos todavia no');
+});

@@ -161,3 +161,45 @@ function textoOptimo(id, metaAgua = null) {
     comidas: `Óptimo: ${OPTIMO_COMIDAS} comidas cargadas, sin pasarte de las calorías del día y ninguna fuera del modo.`
   }[id] || '';
 }
+
+/* ---------------- el dia completo ---------------- */
+
+/*
+ * Los cuatro casilleros de la grilla, y solo esos.
+ *
+ * Las comidas viajan en el aviso pero no tienen casillero en la pantalla, asi
+ * que no deciden si el dia esta completo: es la misma regla que usa el marco
+ * dorado, escrita una sola vez para que la app, el aviso y el historial no
+ * puedan desincronizarse.
+ */
+const OBJETIVOS_DE_LA_GRILLA = ['pasos', 'ejercicio', 'agua', 'sueno'];
+
+/** Si ese dia llego a su optimo en los cuatro. */
+function diaEstaCompleto(d, opciones = {}) {
+  if (!d) return false;
+  return OBJETIVOS_DE_LA_GRILLA.every(id => esOptimo(id, d, opciones));
+}
+
+/** Cuantos dias completos hay en todo el historial. */
+function diasCompletos(dias, opciones = {}) {
+  return Object.values(dias || {}).filter(d => diaEstaCompleto(d, opciones)).length;
+}
+
+/*
+ * La racha de dias completos que termina hoy.
+ *
+ * El dia en curso no la rompe: hasta que termine todavia se puede completar, y
+ * mostrar la racha en cero a las diez de la manana seria mentir sobre lo que
+ * paso ayer. Si hoy ya esta completo, cuenta; si no, se empieza a contar desde
+ * ayer.
+ */
+function rachaDiasCompletos(dias, hoy = hoyISO(), opciones = {}) {
+  let fecha = diaEstaCompleto((dias || {})[hoy], opciones) ? hoy : sumarDias(hoy, -1);
+  let racha = 0;
+  while (diaEstaCompleto((dias || {})[fecha], opciones)) {
+    racha++;
+    fecha = sumarDias(fecha, -1);
+  }
+  return racha;
+}
+

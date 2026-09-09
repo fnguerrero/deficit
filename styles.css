@@ -1962,6 +1962,23 @@ textarea:focus { outline: none; border-color: var(--acc2); }
   border-color: color-mix(in srgb, var(--oro) 55%, transparent);
 }
 
+/* El aviso de la cola es un boton, pero tiene que seguir leyendose como un
+   renglon de ayuda y no como algo que grita. */
+.aviso-cola {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: none; border: 0; padding: 0; font: inherit; color: var(--dim);
+}
+.aviso-cola:hover { color: var(--txt); }
+
+/* El dia completo, en la lista del historial: el mismo oro, sin el resplandor.
+   Una lista de treinta renglones con treinta destellos seria una fiesta que no
+   deja leer nada. */
+.lista li.dia-dorado {
+  background: color-mix(in srgb, var(--oro) 8%, transparent);
+  box-shadow: inset 3px 0 0 var(--oro);
+}
+.lista li.dia-dorado .info b { color: var(--oro-txt); }
+
 /* El renglon que dice como se gana la estrella, arriba del editor. */
 .optimo-obj {
   margin: 0 0 12px; padding: 8px 11px; border-radius: 10px;
