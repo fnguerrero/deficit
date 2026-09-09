@@ -204,4 +204,4 @@ esta sesion.
 - [x] Accesibilidad del dia completo (role=group + aria-label): que un lector de pantalla lo diga · verif: aria-label presente en la app viva · archivos: ui/objetivos.js
 - [x] Partir chequeos.js (450 -> 413): salio macros.js, clavado en 450/450 · verif: guardas y tamanos OK, tests en verde
 - [x] Medido: esOptimo corre 9 veces por rachasDelDia y 5 por render. No duele, no se toca una vez por item y cada llamada juzga las comidas: medir y arreglar si duele · verif: espia en la app viva · archivos: ui/recordatorios.js
-
+- [x] El editor de comida, mas compacto y prolijo (pedido de Nico sobre la captura) · verif: alto por alimento y de la lista, medidos antes y despues en 375x812
