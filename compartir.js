@@ -110,7 +110,7 @@ function textoDeMomento(grupo, { fecha = '' } = {}) {
  * pasa el dia a quien cocina. Los momentos vacios no se nombran: una lista con
  * "Merienda: nada" ocupa lugar para decir que no hay nada que decir.
  */
-function textoDelDia(grupos, { fecha = '', kcal = 0 } = {}) {
+function textoDelDia(grupos, { fecha = '', kcal = 0, completo = false } = {}) {
   const conComida = (grupos || []).filter(g => (g?.comidas || []).length);
   if (!conComida.length) return '';
 
@@ -124,6 +124,10 @@ function textoDelDia(grupos, { fecha = '', kcal = 0 } = {}) {
   /* El total va al final y es lo unico numerico que se manda: sirve para quien
      lleva la cuenta, y al final no le estorba a quien solo quiere la lista. */
   if (kcal > 0) partes.push('', `Total del dia: ${Math.round(kcal)} kcal`);
+
+  /* Y el dia completo, que es lo unico del mensaje que no habla de comida: si
+     estuvo, se dice, porque es la parte que uno quiere contar. */
+  if (completo) partes.push('Dia completo: pasos, ejercicio, agua y sueno, todo en su optimo.');
 
   return partes.join('\n');
 }

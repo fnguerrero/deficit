@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/favicon.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="styles.css?v=665">
+<link rel="stylesheet" href="styles.css?v=674">
 </head>
 <body>
 
@@ -257,6 +257,12 @@
       </div>
       <p id="resumenBusqueda" class="hint"></p>
       <ul id="resultadosBusqueda" class="lista"></ul>
+      <!-- Ver solo los dias completos: con treinta renglones, los dorados se
+           pierden entre los demas justo cuando lo que se quiere es contarlos. -->
+      <label class="filtro-oro" id="filtroOro" hidden>
+        <input type="checkbox" id="chkSoloCompletos">
+        <span>Solo los días completos</span>
+      </label>
       <ul id="listaDias" class="lista dias"></ul>
       <p id="diasVacio" class="vacio">Sin registros todavía.</p>
     </div>
@@ -335,6 +341,14 @@
       <summary class="card-head"><h2>Nivel y logros</h2><span id="nivelPill" class="pill"></span></summary>
       <div class="nivel-barra"><i id="nivelBarra"></i></div>
       <p class="hint" id="nivelNota"></p>
+
+      <!-- Los dias completos: los cuatro casilleros en su optimo. Va arriba de
+           las rachas porque es lo mas dificil de las dos cosas. -->
+      <div class="oro-resumen" id="oroResumen" hidden>
+        <div><b id="oroTotal">0</b><small>días completos</small></div>
+        <div><b id="oroRacha">0</b><small>seguidos ahora</small></div>
+        <div><b id="oroMejor">0</b><small>tu récord</small></div>
+      </div>
 
       <div class="rachas-grande" id="rachasGrande"></div>
       <p class="hint" id="escudosNota"></p>
@@ -997,6 +1011,9 @@
           <button id="btnGuardarReceta" class="ghost small">★ Guardar como receta</button>
         </div>
         <div class="total-row"><span>Total</span><b id="resTotal">0 kcal</b></div>
+        <!-- Los macros sumados: el total en kcal no dice si el plato tiene
+             proteina, que es lo que mas se corrige a mano. -->
+        <p class="total-macros" id="resTotalMacros"></p>
         <p id="resNotas" class="hint"></p>
         <p id="resCosto" class="hint costo"></p>
         <div class="correccion" id="cajaCorreccion">
@@ -1193,81 +1210,82 @@
      mueva el foco: cambiar de pestaña, abrir un modal. -->
 <div id="anuncios" class="solo-lectores" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=665"></script>
-<script src="fechas.js?v=665"></script>
-<script src="frecuentes.js?v=665"></script>
-<script src="core.js?v=665"></script>
-<script src="platos.js?v=665"></script>
-<script src="animar.js?v=665"></script>
-<script src="fotos.js?v=665"></script>
-<script src="calibracion.js?v=665"></script>
-<script src="modos.js?v=665"></script>
-<script src="patrones.js?v=665"></script>
-<script src="arreglos.js?v=665"></script>
-<script src="consecuencias.js?v=665"></script>
-<script src="recorte.js?v=665"></script>
-<script src="push.js?v=665"></script>
-<script src="tira-aviso.js?v=665"></script>
-<script src="pendiente.js?v=665"></script>
-<script src="deportes.js?v=665"></script>
-<script src="habitos.js?v=665"></script>
-<script src="mascota.js?v=665"></script>
-<script src="cuerpo.js?v=665"></script>
-<script src="cintura.js?v=665"></script>
-<script src="figura.js?v=665"></script>
-<script src="cara.js?v=665"></script>
-<script src="personaje.js?v=665"></script>
-<script src="relieve.js?v=665"></script>
-<script src="sprite-datos.js?v=665"></script>
-<script src="sprite.js?v=665"></script>
-<script src="transformacion.js?v=665"></script>
-<script src="aura.js?v=665"></script>
-<script src="logros.js?v=665"></script>
-<script src="juego.js?v=665"></script>
-<script src="sonidos.js?v=665"></script>
-<script src="voz.js?v=665"></script>
-<script src="graficos.js?v=665"></script>
-<script src="plazo.js?v=665"></script>
-<script src="compartir.js?v=665"></script>
-<script src="sugerencias.js?v=665"></script>
-<script src="analisis.js?v=665"></script>
-<script src="informe.js?v=665"></script>
-<script src="chequeos.js?v=665"></script>
-<script src="macros.js?v=665"></script>
-<script src="optimo.js?v=665"></script>
-<script src="claude.js?v=665"></script>
-<script src="productos.js?v=665"></script>
-<script src="sync-perfil.js?v=665"></script>
-<script src="fusion-dia.js?v=665"></script>
-<script src="sync.js?v=665"></script>
-<script src="estado-sync.js?v=665"></script>
-<script src="auth.js?v=665"></script>
-<script src="app.js?v=665"></script>
-<script src="ui/general.js?v=665"></script>
-<script src="ui/hoy.js?v=665"></script>
-<script src="ui/peso.js?v=665"></script>
-<script src="ui/dia.js?v=665"></script>
-<script src="ui/objetivos.js?v=665"></script>
-<script src="ui/ayuno.js?v=665"></script>
-<script src="ui/barra.js?v=665"></script>
-<script src="ui/recorte.js?v=665"></script>
-<script src="ui/push.js?v=665"></script>
-<script src="ui/tarjeta.js?v=665"></script>
-<script src="ui/logros.js?v=665"></script>
-<script src="ui/comidas.js?v=665"></script>
-<script src="ui/edicion.js?v=665"></script>
-<script src="ui/resumen.js?v=665"></script>
-<script src="ui/escaner.js?v=665"></script>
-<script src="ui/asistente.js?v=665"></script>
-<script src="ui/historial.js?v=665"></script>
-<script src="ui/progreso.js?v=665"></script>
-<script src="ui/perfil.js?v=665"></script>
-<script src="ui/sincronizacion.js?v=665"></script>
-<script src="ui/cuenta.js?v=665"></script>
-<script src="ui/calibracion.js?v=665"></script>
-<script src="ui/actividades.js?v=665"></script>
-<script src="ui/recordatorios.js?v=665"></script>
-<script src="ui/ajustes.js?v=665"></script>
-<script src="arranque.js?v=665"></script>
+<script src="config.js?v=674"></script>
+<script src="fechas.js?v=674"></script>
+<script src="frecuentes.js?v=674"></script>
+<script src="core.js?v=674"></script>
+<script src="platos.js?v=674"></script>
+<script src="animar.js?v=674"></script>
+<script src="fotos.js?v=674"></script>
+<script src="calibracion.js?v=674"></script>
+<script src="modos.js?v=674"></script>
+<script src="patrones.js?v=674"></script>
+<script src="arreglos.js?v=674"></script>
+<script src="consecuencias.js?v=674"></script>
+<script src="recorte.js?v=674"></script>
+<script src="push.js?v=674"></script>
+<script src="tira-aviso.js?v=674"></script>
+<script src="pendiente.js?v=674"></script>
+<script src="deportes.js?v=674"></script>
+<script src="habitos.js?v=674"></script>
+<script src="mascota.js?v=674"></script>
+<script src="cuerpo.js?v=674"></script>
+<script src="cintura.js?v=674"></script>
+<script src="figura.js?v=674"></script>
+<script src="cara.js?v=674"></script>
+<script src="personaje.js?v=674"></script>
+<script src="relieve.js?v=674"></script>
+<script src="sprite-datos.js?v=674"></script>
+<script src="sprite.js?v=674"></script>
+<script src="transformacion.js?v=674"></script>
+<script src="aura.js?v=674"></script>
+<script src="logros.js?v=674"></script>
+<script src="juego.js?v=674"></script>
+<script src="sonidos.js?v=674"></script>
+<script src="voz.js?v=674"></script>
+<script src="graficos.js?v=674"></script>
+<script src="plazo.js?v=674"></script>
+<script src="compartir.js?v=674"></script>
+<script src="sugerencias.js?v=674"></script>
+<script src="analisis.js?v=674"></script>
+<script src="informe.js?v=674"></script>
+<script src="chequeos.js?v=674"></script>
+<script src="macros.js?v=674"></script>
+<script src="optimo.js?v=674"></script>
+<script src="claude.js?v=674"></script>
+<script src="ideas.js?v=674"></script>
+<script src="productos.js?v=674"></script>
+<script src="sync-perfil.js?v=674"></script>
+<script src="fusion-dia.js?v=674"></script>
+<script src="sync.js?v=674"></script>
+<script src="estado-sync.js?v=674"></script>
+<script src="auth.js?v=674"></script>
+<script src="app.js?v=674"></script>
+<script src="ui/general.js?v=674"></script>
+<script src="ui/hoy.js?v=674"></script>
+<script src="ui/peso.js?v=674"></script>
+<script src="ui/dia.js?v=674"></script>
+<script src="ui/objetivos.js?v=674"></script>
+<script src="ui/ayuno.js?v=674"></script>
+<script src="ui/barra.js?v=674"></script>
+<script src="ui/recorte.js?v=674"></script>
+<script src="ui/push.js?v=674"></script>
+<script src="ui/tarjeta.js?v=674"></script>
+<script src="ui/logros.js?v=674"></script>
+<script src="ui/comidas.js?v=674"></script>
+<script src="ui/edicion.js?v=674"></script>
+<script src="ui/resumen.js?v=674"></script>
+<script src="ui/escaner.js?v=674"></script>
+<script src="ui/asistente.js?v=674"></script>
+<script src="ui/historial.js?v=674"></script>
+<script src="ui/progreso.js?v=674"></script>
+<script src="ui/perfil.js?v=674"></script>
+<script src="ui/sincronizacion.js?v=674"></script>
+<script src="ui/cuenta.js?v=674"></script>
+<script src="ui/calibracion.js?v=674"></script>
+<script src="ui/actividades.js?v=674"></script>
+<script src="ui/recordatorios.js?v=674"></script>
+<script src="ui/ajustes.js?v=674"></script>
+<script src="arranque.js?v=674"></script>
 </body>
 </html>

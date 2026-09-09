@@ -5725,3 +5725,30 @@ test('los logros del dia completo estan en el catalogo', () => {
   esperarQue(LOGROS.find(l => l.id === 'completo-racha-3').cumple(con(9, 3)), 'tres al hilo');
   esperarQue(!LOGROS.find(l => l.id === 'completo-racha-3').cumple(con(9, 2)), 'con dos todavia no');
 });
+
+test('la mejor racha de dias completos mira todo el historial', () => {
+  const P = DIA_PERFECTO, o = { metaAgua: 4 };
+  const dias = {
+    '2026-08-01': P, '2026-08-02': P, '2026-08-03': P,   // tres seguidos
+    '2026-08-05': P,                                      // suelto
+    '2026-09-01': P, '2026-09-02': P                      // dos seguidos
+  };
+  esperar(mejorRachaCompletos(dias, o), 3);
+});
+
+test('un hueco sin cargar corta la mejor racha', () => {
+  /* El dia que no existe en el historial tampoco estuvo completo: si no,
+     bastaria con no abrir la app para que la racha siguiera. */
+  const P = DIA_PERFECTO, o = { metaAgua: 4 };
+  esperar(mejorRachaCompletos({ '2026-08-01': P, '2026-08-03': P }, o), 1);
+  esperar(mejorRachaCompletos({}, o), 0);
+});
+
+test('el mensaje del dia dice si estuvo completo', () => {
+  const grupos = [{ nombre: 'Almuerzo', comidas: [{ titulo: 'Milanesa', kcal: 600, items: [] }] }];
+  const normal = textoDelDia(grupos, { kcal: 600 });
+  const oro = textoDelDia(grupos, { kcal: 600, completo: true });
+  esperarQue(!/Dia completo/.test(normal), 'un dia comun no lo menciona');
+  esperarQue(/Dia completo/.test(oro), oro);
+  esperarQue(oro.indexOf('Dia completo') > oro.indexOf('Total del dia'), 'va al final, despues del total');
+});

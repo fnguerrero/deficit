@@ -205,3 +205,17 @@ esta sesion.
 - [x] Partir chequeos.js (450 -> 413): salio macros.js, clavado en 450/450 · verif: guardas y tamanos OK, tests en verde
 - [x] Medido: esOptimo corre 9 veces por rachasDelDia y 5 por render. No duele, no se toca una vez por item y cada llamada juzga las comidas: medir y arreglar si duele · verif: espia en la app viva · archivos: ui/recordatorios.js
 - [x] El editor de comida, mas compacto y prolijo (pedido de Nico sobre la captura) · verif: alto por alimento y de la lista, medidos antes y despues en 375x812
+
+## Ciclo 37 — diez mejoras
+
+- [x] Progreso: cuantos dias completos, la racha y la mejor (3 · 2 · 2 verificado) llevas, la racha y la mejor · verif: tests de mejorRachaCompletos + el bloque en la app viva · archivos: optimo.js, ui/progreso.js, index.html, tests2.js
+- [x] Historial: ver solo los dias completos (4 dias -> 3, todos dorados) · verif: en la app viva con dias mezclados · archivos: ui/historial.js, index.html
+- [x] Compartir el dia dice si fue completo (1 test) · verif: test de textoDelDia · archivos: compartir.js, tests2.js
+- [x] El editor suma los macros ('49 g proteina · 57 g carbos · 16 g grasas'), no solo las kcal · verif: en la app viva con 3 alimentos · archivos: ui/edicion.js, index.html, styles.css
+- [x] El editor: duplicar un alimento (verificado, y los macros se recalculan) · verif: en la app viva, el duplicado aparece igual · archivos: ui/edicion.js
+- [x] Tres atajos del icono: foto, agua e ideas, los tres enchufados (agua verificado): sacar foto y ver hoy · verif: el manifest valida y los atajos aparecen · archivos: manifest.json, arranque.js
+- [x] Compartir una foto DESDE la galeria (share_target): el POST llega al SW y la foto queda guardada a Deficit (share_target) · verif: el POST llega al service worker y la foto se analiza · archivos: manifest.json, sw.js, arranque.js
+- [x] La cola de fotos muestra la miniatura de lo que espera · verif: en la app viva con una foto encolada · archivos: ui/comidas.js, index.html, styles.css
+- [x] Partir claude.js (836 -> 646): salio ideas.js de tamano · verif: guardas y tamanos OK, tests en verde
+- [x] En el editor, Enter salta al campo siguiente · verif: en la app viva, con foco
+

@@ -211,16 +211,26 @@ function renderListaDias() {
   if (titulo) titulo.textContent = hayBusqueda() ? 'Resultados' : r.detalle;
   const ul = $('listaDias');
   ul.innerHTML = '';
-  $('diasVacio').hidden = fechas.length > 0;
+
+  /* El filtro de dias completos solo existe si hay alguno: un interruptor que
+     deja la lista vacia no le sirve a nadie. */
+  const esCompleto = (f) => typeof diaEstaCompleto === 'function'
+    && diaEstaCompleto(state.dias[f], { metaAgua: metaVasos() });
+  const hayCompletos = todas.some(esCompleto);
+  const filtro = $('filtroOro');
+  if (filtro) filtro.hidden = !hayCompletos || hayBusqueda();
+  const soloCompletos = hayCompletos && $('chkSoloCompletos')?.checked;
+
+  const visibles = soloCompletos ? fechas.filter(esCompleto) : fechas;
+  $('diasVacio').hidden = visibles.length > 0;
   pintarVerMas(todas.length);
 
-  for (const f of fechas) {
+  for (const f of visibles) {
     const t = totalesDia(f);
     /* Los dias completos se marcan: la estrella de la pantalla de Hoy dura un
        dia y despues no queda rastro de ella en ningun lado. Aca es donde se
        puede mirar el mes y ver cuantos hubo. */
-    const completo = typeof diaEstaCompleto === 'function'
-      && diaEstaCompleto(state.dias[f], { metaAgua: metaVasos() });
+    const completo = esCompleto(f);
 
     const li = document.createElement('li');
     li.className = 'clicable' + (completo ? ' dia-dorado' : '');
@@ -571,3 +581,6 @@ function pintarPlazo(caja, proy) {
 
   caja.appendChild(li);
 }
+
+/* El filtro repinta la lista y nada mas: el rango y la busqueda no se tocan. */
+if ($('chkSoloCompletos')) $('chkSoloCompletos').onchange = () => renderListaDias();
