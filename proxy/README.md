@@ -11,20 +11,20 @@ Resultado: la configurás **una sola vez**, y ni el celular ni la compu ni el re
 Necesitás una cuenta de Cloudflare (gratis) y Node instalado.
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler login
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler login
 ```
 
 Se abre el navegador para autorizar. Después:
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler secret put ANTHROPIC_API_KEY
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secret put ANTHROPIC_API_KEY
 ```
 
 Te pide la clave y la pegás ahí. **Ese es el único lugar donde va a existir.** Queda
 guardada cifrada: ni siquiera el dashboard de Cloudflare te la vuelve a mostrar.
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler deploy
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler deploy
 ```
 
 Al terminar imprime la URL, algo como `https://deficit-proxy.TU-SUBDOMINIO.workers.dev`.
@@ -42,7 +42,7 @@ const CONFIG_APP = {
 Subí la versión de los assets y publicá:
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico" && py -3 tools/version.py
+cd "W:\Working Folder Personal\Apps\DeficitCalorico" && py -3 tools/version.py
 ```
 
 Commit y push. Listo: desde ese momento cualquier dispositivo que abra la app analiza
@@ -73,7 +73,7 @@ y ahí sabés cuál es el peor caso posible, sin depender de nada de esto.
 - Los logs en vivo:
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler tail
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler tail
 ```
 
 ## Volver atrás
@@ -93,7 +93,7 @@ Son cuatro pasos y se hacen una vez.
 en pantalla y no tiene que pasar por ningún lado más.
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico" && py -3 tools/vapid.py
+cd "W:\Working Folder Personal\Apps\DeficitCalorico" && py -3 tools/vapid.py
 ```
 
 **2. Pegá la pública en `config.js`**, en `vapidPublica`. Es pública de verdad:
@@ -104,7 +104,7 @@ vacía, la app no ofrece la opción.
 de Supabase, que es de donde salen las suscripciones):
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler secret put VAPID_PRIVADA
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secret put VAPID_PRIVADA
 ```
 
 Y lo mismo con `VAPID_PUBLICA`, `SUPABASE_URL` y `SUPABASE_ANON`.
@@ -113,7 +113,7 @@ Y lo mismo con `VAPID_PUBLICA`, `SUPABASE_URL` y `SUPABASE_ANON`.
 el editor de Supabase. Después:
 
 ```bash
-cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler deploy
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler deploy
 ```
 
 El cron queda andando cada quince minutos (está en `wrangler.toml`). Desde ahí,

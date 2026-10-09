@@ -5,7 +5,7 @@
 $escritorio = [Environment]::GetFolderPath('Desktop')
 $destino    = Join-Path $escritorio 'Deficit.lnk'
 $chrome     = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
-$icono      = 'W:\Working Folder Personal\DeficitCalorico\icons\deficit.ico'
+$icono      = 'W:\Working Folder Personal\Apps\DeficitCalorico\icons\deficit.ico'
 $url        = 'https://fnguerrero.github.io/deficit/'
 
 if (-not (Test-Path $chrome)) { throw "No encontre Chrome en $chrome" }

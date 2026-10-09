@@ -57,7 +57,7 @@ def main() -> None:
     print(b64(privada))
     print()
     print('Cargala con:')
-    print(r'  cd "W:\Working Folder Personal\DeficitCalorico\proxy" && npx wrangler secret put VAPID_PRIVADA')
+    print(r'  cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secret put VAPID_PRIVADA')
 
 
 if __name__ == '__main__':
