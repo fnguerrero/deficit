@@ -38,11 +38,25 @@ function pedirRecorte(dataUrl) {
     focoAntesDelRecorte = document.activeElement;
     $('recOk').focus();
 
+    /* El marco de la foto anterior no sirve para esta: si se tocaba Analizar
+       antes de que cargara la nueva, se la recortaba con el encuadre de la otra. */
+    marcoActual = null;
+    mostradoRec = { ancho: 0, alto: 0 };
+
     img.onload = () => {
       mostradoRec = { ancho: img.clientWidth, alto: img.clientHeight };
       marcoActual = encuadreInicial(mostradoRec.ancho, mostradoRec.alto);
       pintarMarco();
       $('recMarco').hidden = false;
+    };
+    /* Una foto que el navegador no sabe abrir —un HEIC, un archivo cortado— no
+       dispara onload nunca: el recortador quedaba en blanco y Analizar no hacia
+       nada. El chequeo de `esperandoRecorte` es porque el `src = ''` de
+       cerrarRecorte() tambien dispara este error. */
+    img.onerror = () => {
+      if (!esperandoRecorte) return;
+      toast('No pude abrir esa foto. Probá con otra o sacala con la cámara.');
+      cerrarRecorte(null);
     };
     img.src = dataUrl;
     marcarAtras();

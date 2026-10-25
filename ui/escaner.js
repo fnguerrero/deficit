@@ -7,6 +7,11 @@
 let escanerActivo = null;      // { stream, detector, timer }
 let productoActual = null;
 
+/* Sube cada vez que se pide parar. Mientras el permiso de la camara esta en
+   pantalla todavia no hay `escanerActivo` que parar: si el modal se cerraba en
+   ese momento, la camara arrancaba despues y quedaba prendida. */
+let vueltaCamara = 0;
+
 /** El cache de productos vive en el state, así sobrevive a recargas. */
 const cacheDeProductos = {
   leer: (codigo) => leerProducto(state.productos, codigo),
@@ -53,10 +58,16 @@ async function arrancarCamara() {
     return;
   }
 
+  const vuelta = vueltaCamara;
+  let stream = null;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment' }
     });
+    if (vuelta !== vueltaCamara) {
+      stream.getTracks().forEach(t => t.stop());
+      return;
+    }
 
     video.hidden = false;
     video.srcObject = stream;
@@ -83,6 +94,8 @@ async function arrancarCamara() {
 
     escanerActivo = { stream, timer };
   } catch (err) {
+    // si fallo despues de abrirla —el detector, el play()—, no queda prendida
+    stream?.getTracks().forEach(t => t.stop());
     video.hidden = true;
     $('escanerEstado').textContent = err.name === 'NotAllowedError'
       ? 'No diste permiso para la cámara. Podés escribir el código a mano.'
@@ -91,6 +104,7 @@ async function arrancarCamara() {
 }
 
 function detenerCamara() {
+  vueltaCamara++;
   if (!escanerActivo) return;
   clearInterval(escanerActivo.timer);
   escanerActivo.stream.getTracks().forEach(t => t.stop());
