@@ -2605,7 +2605,7 @@ test('pareceDuplicada funciona con el titulo suelto', () => {
 /* --- de donde sale el nombre de quien entro (ciclo 12) --- */
 
 test('el nombre de Google gana sobre el mail', () => {
-  esperar(nombreDeUsuario({ email: 'ana.martinez@ejemplo.com', user_metadata: { full_name: 'Nico Guerrero' } }), 'Nico Guerrero');
+  esperar(nombreDeUsuario({ email: 'ana.martinez@ejemplo.com', user_metadata: { full_name: 'Ana Martínez' } }), 'Ana Martínez');
   esperar(nombreDeUsuario({ email: 'a@b.com', user_metadata: { name: 'Ana' } }), 'Ana');
   esperar(nombreDeUsuario({ email: 'a@b.com', user_metadata: { given_name: 'Ana' } }), 'Ana');
 });
@@ -2627,13 +2627,13 @@ testAsync('entrar guarda tambien el nombre', async () => {
     url: 'https://x.supabase.co', anonKey: 'anon', almacen: alm,
     fetchFn: async () => respuestaAuth(200, {
       access_token: 'tok', refresh_token: 'ref', expires_in: 3600,
-      user: { id: 'u1', email: 'nico@gmail.com', user_metadata: { full_name: 'Nico Guerrero' } }
+      user: { id: 'u1', email: 'ana@ejemplo.com', user_metadata: { full_name: 'Ana Martínez' } }
     })
   });
 
-  const s = await a.entrar('nico@gmail.com', 'secreta');
-  esperar(s.usuario.nombre, 'Nico Guerrero');
-  esperar(alm.ver().usuario.nombre, 'Nico Guerrero');
+  const s = await a.entrar('ana@ejemplo.com', 'secreta');
+  esperar(s.usuario.nombre, 'Ana Martínez');
+  esperar(alm.ver().usuario.nombre, 'Ana Martínez');
 });
 
 /* --- que tan bien esta cada dato del dia (ciclo 12) --- */
