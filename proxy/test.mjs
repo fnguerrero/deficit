@@ -5,7 +5,7 @@
    la pena aunque sean cien líneas. */
 
 import worker from './worker.js';
-import { aQuienAvisar } from './push.js';
+import { aQuienAvisar, correrAvisos } from './push.js';
 
 let fallos = 0;
 const PENDIENTES = [];
@@ -35,23 +35,36 @@ function esperar(real, esperado, msg) {
   if (real !== esperado) throw new Error(`${msg || ''} esperaba ${JSON.stringify(esperado)}, dio ${JSON.stringify(real)}`);
 }
 
-const ENV = { ANTHROPIC_API_KEY: 'sk-ant-secreta' };
+const ENV = { ANTHROPIC_API_KEY: 'sk-ant-secreta', SUPABASE_URL: 'https://proyecto.supabase.co', SUPABASE_ANON: 'sb_publishable_x' };
 const ORIGEN = 'https://fnguerrero.github.io';
 
 const CUERPO = { model: 'claude-opus-5', max_tokens: 1000, messages: [] };
 
-function pedido(cuerpo = CUERPO, { origen = ORIGEN, metodo = 'POST' } = {}) {
+/* Los tokens que Supabase reconoce en estos tests, y de quién son. */
+const USUARIOS = { 'tok-nico': 'nico@ejemplo.com', 'tok-otro': 'otro@ejemplo.com', 'tok-repe': 'repe@ejemplo.com' };
+
+function pedido(cuerpo = CUERPO, { origen = ORIGEN, metodo = 'POST', token = 'tok-nico' } = {}) {
+  const headers = origen ? { Origin: origen, 'content-type': 'application/json' } : {};
+  if (token) headers.Authorization = 'Bearer ' + token;
   return new Request('https://proxy.dev/', {
     method: metodo,
-    headers: origen ? { Origin: origen, 'content-type': 'application/json' } : {},
+    headers,
     body: metodo === 'POST' ? JSON.stringify(cuerpo) : undefined
   });
 }
 
-/** Reemplaza el fetch global y devuelve lo que el Worker mandó a la API. */
+/** Reemplaza el fetch global y devuelve lo que el Worker mandó a la API.
+    Las consultas a Supabase por la sesión se contestan con USUARIOS. */
 function espiarFetch(respuesta = new Response('{"ok":true}', { status: 200 })) {
-  const visto = {};
+  const visto = { sesiones: 0 };
   globalThis.fetch = async (url, opts) => {
+    if (String(url).endsWith('/auth/v1/user')) {
+      visto.sesiones++;
+      const email = USUARIOS[String(opts.headers.Authorization || '').replace('Bearer ', '')];
+      return email
+        ? new Response(JSON.stringify({ id: 'u', email }), { status: 200 })
+        : new Response('{"msg":"invalid JWT"}', { status: 401 });
+    }
     visto.url = url;
     visto.headers = opts.headers;
     visto.body = JSON.parse(opts.body);
@@ -111,7 +124,7 @@ test('recorta max_tokens si se pasa del techo', async () => {
 
 test('rechaza un cuerpo que no es JSON', async () => {
   const req = new Request('https://proxy.dev/', {
-    method: 'POST', headers: { Origin: ORIGEN }, body: 'esto no es json'
+    method: 'POST', headers: { Origin: ORIGEN, Authorization: 'Bearer tok-nico' }, body: 'esto no es json'
   });
   const res = await worker.fetch(req, ENV);
   esperar(res.status, 400);
@@ -136,9 +149,79 @@ test('deja pasar el status y el retry-after de la API', async () => {
 });
 
 test('no rompe si la API no responde', async () => {
-  globalThis.fetch = async () => { throw new Error('sin red'); };
+  espiarFetch();
+  const conSupabase = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    if (String(url).endsWith('/auth/v1/user')) return conSupabase(url, opts);
+    throw new Error('sin red');
+  };
   const res = await worker.fetch(pedido(), ENV);
   esperar(res.status, 502);
+});
+
+/* ---------------- la sesión ---------------- */
+
+test('sin token no llega a la API: el Origin solo se escribe con curl', async () => {
+  const visto = espiarFetch();
+  const res = await worker.fetch(pedido(CUERPO, { token: '' }), ENV);
+  esperar(res.status, 401);
+  esperar(visto.url, undefined, 'no se llamó a Anthropic');
+});
+
+test('un token que Supabase no reconoce se rechaza', async () => {
+  const visto = espiarFetch();
+  const res = await worker.fetch(pedido(CUERPO, { token: 'tok-inventado' }), ENV);
+  esperar(res.status, 401);
+  esperar(visto.url, undefined, 'no se llamó a Anthropic');
+});
+
+test('si Supabase no contesta, no se deja pasar', async () => {
+  globalThis.fetch = async () => { throw new Error('sin red'); };
+  const res = await worker.fetch(pedido(CUERPO, { token: 'tok-sin-red' }), ENV);
+  esperar(res.status, 401);
+});
+
+test('con EMAILS_PERMITIDOS, otra cuenta no pasa', async () => {
+  const visto = espiarFetch();
+  const env = { ...ENV, EMAILS_PERMITIDOS: 'Nico@Ejemplo.com, alguien@ejemplo.com' };
+  esperar((await worker.fetch(pedido(CUERPO, { token: 'tok-otro' }), env)).status, 403);
+  esperar(visto.url, undefined, 'no se llamó a Anthropic');
+  esperar((await worker.fetch(pedido(CUERPO, { token: 'tok-nico' }), env)).status, 200, 'el de la lista sí, sin importar mayúsculas');
+});
+
+test('la sesión se recuerda: el segundo pedido no vuelve a preguntar', async () => {
+  const visto = espiarFetch();
+  await worker.fetch(pedido(CUERPO, { token: 'tok-repe' }), ENV);
+  await worker.fetch(pedido(CUERPO, { token: 'tok-repe' }), ENV);
+  esperar(visto.sesiones, 1);
+});
+
+test('sin Supabase configurado avisa en vez de dejar pasar', async () => {
+  const res = await worker.fetch(pedido(), { ANTHROPIC_API_KEY: 'sk-ant-secreta' });
+  esperar(res.status, 500);
+});
+
+test('el freno por IP va antes de preguntarle a Supabase', async () => {
+  const visto = espiarFetch();
+  const env = { ...ENV, LIMITE: { limit: async () => ({ success: false }) } };
+  const res = await worker.fetch(pedido(CUERPO, { token: 'tok-nuevo' }), env);
+  esperar(res.status, 429);
+  esperar(visto.sesiones, 0);
+});
+
+test('el preflight deja pasar el header de la sesión', async () => {
+  const res = await worker.fetch(pedido(CUERPO, { metodo: 'OPTIONS' }), ENV);
+  esperar(/authorization/i.test(res.headers.get('Access-Control-Allow-Headers')), true);
+});
+
+test('el cron lee las suscripciones con la service_role si está cargada', async () => {
+  const vistos = [];
+  globalThis.fetch = async (url, opts) => { vistos.push(opts.headers); return new Response('[]', { status: 200 }); };
+  const env = { ...ENV, VAPID_PRIVADA: 'x', VAPID_PUBLICA: 'y' };
+  await correrAvisos({ ...env, SUPABASE_SERVICE_ROLE: 'sb_secret_z' });
+  esperar(vistos[0].apikey, 'sb_secret_z');
+  await correrAvisos(env);
+  esperar(vistos[1].apikey, 'sb_publishable_x', 'sin service_role sigue con la anon, para la tabla vieja');
 });
 
 await correr();

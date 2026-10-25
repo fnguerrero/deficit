@@ -23,6 +23,19 @@ cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secre
 Te pide la clave y la pegás ahí. **Ese es el único lugar donde va a existir.** Queda
 guardada cifrada: ni siquiera el dashboard de Cloudflare te la vuelve a mostrar.
 
+El proxy solo atiende a quien tiene sesión iniciada en la app, así que también
+necesita saber dónde preguntar (son la URL y la anon key de `config.js`), y a quién
+dejar pasar:
+
+```bash
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secret put SUPABASE_URL
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secret put SUPABASE_ANON
+cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secret put EMAILS_PERMITIDOS
+```
+
+En `EMAILS_PERMITIDOS` va tu mail (o varios, separados por coma). Sin esa lista, a
+cualquiera que se cree una cuenta en tu Supabase el proxy le pagaría los análisis.
+
 ```bash
 cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler deploy
 ```
@@ -50,21 +63,28 @@ fotos sin que le cargues nada.
 
 ## Qué lo protege
 
-La URL del Worker no es secreta, así que hay tres frenos:
+La URL del Worker no es secreta, así que hay estos frenos:
 
+- **Sesión de Supabase**: la app manda el token de tu sesión y el Worker le pregunta
+  a Supabase de quién es antes de llamar a la API. Sin sesión, 401.
+- **Lista de mails** (`EMAILS_PERMITIDOS`): de todas las cuentas con sesión, solo
+  esas. Otra cuenta recibe 403.
 - **Lista de orígenes**: solo responde a `fnguerrero.github.io` y a `localhost:5599`.
-  Un pedido desde cualquier otro lado se rechaza sin llegar a la API.
+  Frena a un navegador ajeno, pero no a `curl`, que escribe el `Origin` a mano: por
+  eso no alcanzaba solo y hizo falta la sesión.
 - **Freno por IP**: 30 pedidos por minuto. Un análisis es un pedido.
 - **Modelos y tamaño acotados**: solo los tres modelos de la app, `max_tokens` con techo
   y un límite de cuerpo, para que nadie use tu cuenta para otra cosa.
 
-El chequeo de origen frena a un navegador ajeno, pero no a alguien decidido con `curl`
-—el header `Origin` se puede escribir a mano—. Por eso, la red de contención de verdad
-es el **límite de gasto en la consola de Anthropic**: ponelo en *Billing → Usage limits*
-y ahí sabés cuál es el peor caso posible, sin depender de nada de esto.
+Igual conviene el **límite de gasto en la consola de Anthropic** (*Billing → Usage
+limits*): es lo que fija el peor caso posible, pase lo que pase con todo lo de arriba.
 
 ## Si algo no anda
 
+- **401 "hay que iniciar sesión"**: la app no tiene sesión en ese dispositivo. Entrá en
+  Ajustes → Cuenta. Con una clave propia cargada en Ajustes no hace falta.
+- **403 "Esta cuenta no tiene permiso"**: el mail de la sesión no está en
+  `EMAILS_PERMITIDOS`.
 - **403 "Origen no permitido"**: estás abriendo la app desde una URL que no está en
   `ORIGENES`, dentro de `worker.js`. Agregala y volvé a desplegar.
 - **500 "El proxy no tiene la clave configurada"**: faltó el `wrangler secret put`.
@@ -107,7 +127,10 @@ de Supabase, que es de donde salen las suscripciones):
 cd "W:\Working Folder Personal\Apps\DeficitCalorico\proxy" && npx wrangler secret put VAPID_PRIVADA
 ```
 
-Y lo mismo con `VAPID_PUBLICA`, `SUPABASE_URL` y `SUPABASE_ANON`.
+Y lo mismo con `VAPID_PUBLICA`, `SUPABASE_URL`, `SUPABASE_ANON` y
+`SUPABASE_SERVICE_ROLE` (Project Settings → API keys → la secreta). La service_role
+saltea RLS, así que **solo va acá**, nunca en `config.js` ni en el repo: el cron la
+necesita porque la tabla de suscripciones ya no se puede leer con la anon key.
 
 **4. Creá la tabla y desplegá.** El SQL está en `supabase-push.sql`, se pega en
 el editor de Supabase. Después:
@@ -121,7 +144,8 @@ en Ajustes → Recordatorios aparece **"Avisarme aunque tenga la app cerrada"**.
 
 ### Qué viaja y qué no
 
-A Supabase va la dirección que da el navegador, los horarios y el huso. **No va
+A Supabase va la dirección que da el navegador, los horarios y el huso, a nombre de
+tu cuenta: hace falta tener la sesión iniciada para prender los avisos. **No va
 ninguna comida, ni el peso, ni el mail.** El aviso sale vacío —sin texto— y el
 teléfono arma la frase según la hora: además de ser menos código, evita que el
 contenido de los recordatorios pase por un tercero.

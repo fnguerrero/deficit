@@ -8,6 +8,13 @@
 
    La app le pega a este Worker exactamente como le pegaría a la API,
    sin el header de autenticación. El Worker lo agrega y reenvía.
+
+   Solo atiende a quien tiene sesión en Supabase: el Origin solo no
+   alcanza, porque con curl se escribe a mano. La app manda su token
+   en `Authorization: Bearer` y el Worker le pregunta a Supabase de
+   quién es antes de gastar un centavo. Con EMAILS_PERMITIDOS cargado,
+   además tiene que ser uno de esos mails: sin eso, cualquiera que se
+   cree una cuenta podría usar la clave.
    ============================================================ */
 
 const API_URL = 'https://api.anthropic.com/v1/messages';
@@ -32,7 +39,7 @@ function cors(origen) {
   return {
     'Access-Control-Allow-Origin': origen,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'content-type, anthropic-version',
+    'Access-Control-Allow-Headers': 'content-type, anthropic-version, authorization',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin'
   };
@@ -47,6 +54,40 @@ function error(mensaje, status, origen) {
 }
 
 import { correrAvisos } from './push.js';
+
+/* Un análisis son varios pedidos seguidos con el mismo token: preguntarle a
+   Supabase en cada uno es sumar latencia sin ganar nada. Vive lo que vive la
+   instancia del Worker, y un token revocado deja de servir en cinco minutos. */
+const SESIONES = new Map();
+const VIGENCIA_SESION = 5 * 60 * 1000;
+
+/** El mail de quien manda el token, o null si Supabase no lo reconoce. */
+async function usuarioDelToken(token, env) {
+  const guardado = SESIONES.get(token);
+  if (guardado && guardado.hasta > Date.now()) return guardado.email;
+
+  let res;
+  try {
+    res = await fetch(`${env.SUPABASE_URL.replace(/\/+$/, '')}/auth/v1/user`, {
+      headers: { apikey: env.SUPABASE_ANON, Authorization: `Bearer ${token}` }
+    });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+
+  let email = '';
+  try { email = String((await res.json())?.email || '').toLowerCase(); } catch { return null; }
+  if (SESIONES.size > 500) SESIONES.clear();
+  SESIONES.set(token, { email, hasta: Date.now() + VIGENCIA_SESION });
+  return email;
+}
+
+function emailPermitido(email, env) {
+  const lista = String(env.EMAILS_PERMITIDOS || '')
+    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  return !lista.length || lista.includes(email);
+}
 
 export default {
   /*
@@ -83,6 +124,17 @@ export default {
       const { success } = await env.LIMITE.limit({ key: ip });
       if (!success) return error('Demasiados pedidos seguidos. Esperá un minuto.', 429, origen);
     }
+
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON) {
+      return error('El proxy no tiene Supabase configurado para validar la sesión.', 500, origen);
+    }
+
+    // Recién acá, con el freno por IP ya pasado, se le pregunta a Supabase.
+    const token = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    if (!token) return error('Para analizar con la IA de la app hay que iniciar sesión (Ajustes → Cuenta).', 401, origen);
+    const email = await usuarioDelToken(token, env);
+    if (email === null) return error('La sesión venció o no es válida. Volvé a iniciar sesión (Ajustes → Cuenta).', 401, origen);
+    if (!emailPermitido(email, env)) return error('Esta cuenta no tiene permiso para usar la IA de la app.', 403, origen);
 
     const crudo = await request.text();
     if (crudo.length > MAX_CUERPO) return error('El pedido es demasiado grande.', 413, origen);

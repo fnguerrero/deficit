@@ -104,10 +104,21 @@ export function aQuienAvisar(filas, ahora = new Date()) {
   });
 }
 
+/*
+ * La tabla ya no se abre con la anon key (supabase-push.sql): cada cuenta ve
+ * solo lo suyo, y el cron necesita verlas todas. Para eso está la service_role,
+ * que saltea RLS y por eso vive solo acá, como secreto del Worker. Mientras no
+ * esté cargada se sigue usando la anon, que anda con la tabla vieja.
+ */
+function claveServidor(env) {
+  return env.SUPABASE_SERVICE_ROLE || env.SUPABASE_ANON;
+}
+
 async function traerSuscripciones(env) {
   const url = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/push_subs?select=*`;
+  const clave = claveServidor(env);
   const res = await fetch(url, {
-    headers: { apikey: env.SUPABASE_ANON, Authorization: `Bearer ${env.SUPABASE_ANON}` }
+    headers: { apikey: clave, Authorization: `Bearer ${clave}` }
   });
   if (!res.ok) throw new Error('Supabase respondio ' + res.status);
   return res.json();
@@ -116,9 +127,10 @@ async function traerSuscripciones(env) {
 /** Una suscripcion muerta se borra: el fabricante devuelve 404 o 410. */
 async function borrarSuscripcion(env, endpoint) {
   const url = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/push_subs?endpoint=eq.${encodeURIComponent(endpoint)}`;
+  const clave = claveServidor(env);
   await fetch(url, {
     method: 'DELETE',
-    headers: { apikey: env.SUPABASE_ANON, Authorization: `Bearer ${env.SUPABASE_ANON}`, Prefer: 'return=minimal' }
+    headers: { apikey: clave, Authorization: `Bearer ${clave}`, Prefer: 'return=minimal' }
   }).catch(() => { /* que no corte la corrida */ });
 }
 

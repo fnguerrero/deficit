@@ -60,11 +60,23 @@ async function prenderAvisosDeFondo() {
   return { ok: true };
 }
 
+/** El token de la sesión, o '' si no hay o no se pudo renovar. */
+async function tokenDeLaCuenta() {
+  const a = typeof auth === 'function' ? auth() : null;
+  if (!a) return '';
+  try { return (await a.token()) || ''; } catch { return ''; }
+}
+
 async function guardarSuscripcion(sub) {
   const cfg = configSync();
   if (!cfg.url || !cfg.anonKey) {
     return { ok: false, motivo: 'Hace falta la sincronización configurada: el aviso lo manda el servidor.' };
   }
+
+  /* La tabla solo deja guardar a una cuenta, y la fila queda a su nombre: sin
+     sesión el servidor la rechazaría con un error que no dice qué hacer. */
+  const token = await tokenDeLaCuenta();
+  if (!token) return { ok: false, motivo: 'Hace falta iniciar sesión (Ajustes → Cuenta): el aviso queda a nombre de tu cuenta.' };
 
   const fila = filaDeSuscripcion(sub, {
     llave: llaveDeEsteDispositivo(),
@@ -74,7 +86,7 @@ async function guardarSuscripcion(sub) {
   if (!fila) return { ok: false, motivo: 'La suscripción vino incompleta.' };
 
   try {
-    const cliente = clienteSupabase({ url: cfg.url, anonKey: cfg.anonKey, fetchFn: fetch.bind(window) });
+    const cliente = clienteSupabase({ url: cfg.url, anonKey: cfg.anonKey, fetchFn: fetch.bind(window), token });
     await cliente.guardar('push_subs', [fila]);
     return { ok: true };
   } catch (e) {
@@ -98,8 +110,9 @@ async function apagarAvisosDeFondo() {
 
   const cfg = configSync();
   try {
-    if (cfg.url && cfg.anonKey) {
-      const cliente = clienteSupabase({ url: cfg.url, anonKey: cfg.anonKey, fetchFn: fetch.bind(window) });
+    const token = await tokenDeLaCuenta();
+    if (cfg.url && cfg.anonKey && token) {
+      const cliente = clienteSupabase({ url: cfg.url, anonKey: cfg.anonKey, fetchFn: fetch.bind(window), token });
       await cliente.borrar('push_subs', { endpoint: sub.endpoint });
     }
   } catch { /* si no se puede borrar alla, igual se cancela aca */ }
