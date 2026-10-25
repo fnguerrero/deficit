@@ -372,6 +372,9 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
 
       // si cambió el momento dentro del mismo día, la hora acompaña
       if (c.momento !== momentoAntes) c.ts = tsEnMomento(origen, c.momento);
+      /* Cuando se toco: es lo que mira el sync para subirla. Sin esto, corregir
+         lo que estimo la foto no llegaba nunca a la nube. */
+      c.act = Date.now();
 
       const destino = pendiente.fechaDestino || origen;
       let movida = false;
@@ -408,6 +411,10 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
     id: nuevoId,
     // en un día pasado se usa la hora típica del momento, no la hora actual
     ts: tsParaFecha(fechaDeLaFoto, pendiente.momento || momentoDe(Date.now())),
+    /* Y `act` es la de ahora: el sync sube lo tocado despues del ultimo sync,
+       y con el `ts` de un dia pasado la cena cargada a la mañana siguiente
+       quedaba solo en este telefono. */
+    act: Date.now(),
     titulo: pendiente.titulo?.trim() || items[0].nombre || 'Comida',
     items,
     momento: pendiente.momento || momentoDe(Date.now()),
