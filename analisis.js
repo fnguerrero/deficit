@@ -674,7 +674,7 @@ function resumenPeriodo(dias, { hasta = hoyISO(), largo = 7, objetivo = null } =
     if (!f) continue;
     const comidas = dias?.[f]?.comidas || [];
     if (!comidas.length) continue;
-    puntos.push({ fecha: f, kcal: kcalDe(comidas), ...totalesDe(comidas) });
+    puntos.push({ fecha: f, kcal: kcalDe(comidas), ...totalesDe(comidas), ejercicio: Number(dias[f].ejercicio) || 0 });
   }
 
   if (!puntos.length) {
@@ -685,7 +685,10 @@ function resumenPeriodo(dias, { hasta = hoyISO(), largo = 7, objetivo = null } =
   const promedio = Math.round(suma / puntos.length);
 
   const orden = [...puntos].sort((a, b) => a.kcal - b.kcal);
-  const dentro = objetivo ? puntos.filter(p => p.kcal <= objetivo * 1.05).length : 0;
+  /* El ejercicio se suma al objetivo, como en todo el resto de la app: sin
+     eso, un dia de 2.400 kcal con 500 quemadas y objetivo 2.000 contaba como
+     pasado aca y como cumplido en el grafico de adherencia de la misma pantalla. */
+  const dentro = objetivo ? puntos.filter(p => p.kcal <= (objetivo + p.ejercicio) * 1.05).length : 0;
 
   return {
     hay: true,

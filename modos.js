@@ -253,6 +253,37 @@ function listaModos() {
  * actividad— y no de una constante. Si el modo pide bajar más de lo que es
  * sano, el piso gana y se dice por qué.
  */
+/**
+ * El reparto de macros del modo para unas calorías dadas.
+ *
+ * Vive aparte para que un objetivo puesto a mano tenga macros que sumen ESE
+ * número: antes se quedaban los del modo, y con 1.600 kcal manuales los
+ * gramos sumaban casi 2.200.
+ */
+function macrosParaKcal(perfil, idModo, kcal) {
+  const modo = modoDe(idModo);
+
+  // La proteína se calcula por kilo de peso, que es como se prescribe de verdad;
+  // el porcentaje del modo se usa solo si eso diera un disparate.
+  const protPorKg = Math.round(perfil.peso * modo.proteinaPorKg);
+  const protPorPct = Math.round((kcal * modo.macros.prot) / 4);
+  const prot = Math.round(Math.min(Math.max(protPorKg, protPorPct * 0.8), (kcal * 0.45) / 4));
+
+  let carb;
+  let gras;
+
+  if (modo.carbosMaxDia) {
+    // keto: los carbohidratos son un tope duro y la grasa absorbe el resto
+    carb = modo.carbosMaxDia;
+    gras = Math.max(0, Math.round((kcal - prot * 4 - carb * 4) / 9));
+  } else {
+    carb = Math.round((kcal * modo.macros.carb) / 4);
+    gras = Math.max(0, Math.round((kcal - prot * 4 - carb * 4) / 9));
+  }
+
+  return { prot, carb, gras };
+}
+
 function objetivoDeModo(perfil, idModo = MODO_DEFECTO) {
   if (!perfil || !perfil.edad || !perfil.altura || !perfil.peso) return null;
 
@@ -275,23 +306,7 @@ function objetivoDeModo(perfil, idModo = MODO_DEFECTO) {
     motivo = `Tu objetivo se ajustó a ${kcal} kcal: bajar más rápido que esto haría perder músculo, no grasa.`;
   }
 
-  // La proteína se calcula por kilo de peso, que es como se prescribe de verdad;
-  // el porcentaje del modo se usa solo si eso diera un disparate.
-  const protPorKg = Math.round(perfil.peso * modo.proteinaPorKg);
-  const protPorPct = Math.round((kcal * modo.macros.prot) / 4);
-  const prot = Math.round(Math.min(Math.max(protPorKg, protPorPct * 0.8), (kcal * 0.45) / 4));
-
-  let carb;
-  let gras;
-
-  if (modo.carbosMaxDia) {
-    // keto: los carbohidratos son un tope duro y la grasa absorbe el resto
-    carb = modo.carbosMaxDia;
-    gras = Math.max(0, Math.round((kcal - prot * 4 - carb * 4) / 9));
-  } else {
-    carb = Math.round((kcal * modo.macros.carb) / 4);
-    gras = Math.max(0, Math.round((kcal - prot * 4 - carb * 4) / 9));
-  }
+  const { prot, carb, gras } = macrosParaKcal(perfil, modo.id, kcal);
 
   const deficitReal = tdee - kcal;
   const kgSemana = +((deficitReal * 7) / 7700).toFixed(2);
@@ -651,9 +666,11 @@ function veredictoProgreso(dias, objetivo, hoy = hoyISO()) {
   const kgSemanaEsperado = objetivo.kgSemana;
 
   // 3) qué tan seguido se cumplió el objetivo de calorías
+  /* Con el ejercicio sumado al objetivo, igual que adherencia() y la pantalla
+     del dia: si no, el veredicto decia un porcentaje y el grafico otro. */
   const dentro = registrados.filter(f => {
     const total = kcalDe(dias[f].comidas);
-    return total <= objetivo.kcal * 1.05;
+    return total <= (objetivo.kcal + (Number(dias[f].ejercicio) || 0)) * 1.05;
   }).length;
   const adherencia = Math.round((dentro / registrados.length) * 100);
 

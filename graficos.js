@@ -79,7 +79,9 @@ function claveDePeriodo(fecha, periodo) {
     const d = new Date(fecha + 'T00:00:00');
     const dia = (d.getDay() + 6) % 7;   // lunes = 0
     d.setDate(d.getDate() - dia);
-    return d.toISOString().slice(0, 10);
+    // hoyISO y no toISOString: la medianoche local pasada a UTC cambia de dia
+    // en cualquier huso al este de Greenwich
+    return hoyISO(d);
   }
   return fecha;
 }
