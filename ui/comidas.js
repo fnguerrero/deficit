@@ -379,10 +379,17 @@ async function correrAnalisis(intento) {
     const raros = revisarAnalisis(r);
     const dudoso = raros[0] || (r.confianza === 'baja' ? 'No se vio del todo bien: revisá si está OK' : '');
 
+    /* Si venia de la cola, sale de la cola: un reintento a mano desde la
+       pantalla de error, con la foto todavia encolada, la cargaba dos veces. */
+    if (intento.id) {
+      state.colaAnalisis = sacarDeCola(state.colaAnalisis, intento.id);
+      pintarCola();
+    }
     guardarComidaPendiente({ avisar: true, dudoso });
+    return 'ok';
   } catch (err) {
     frenar();
-    if (err.name === 'AbortError') return;   // lo canceló la persona: el modal ya se cerró
+    if (err.name === 'AbortError') return 'cancelado';   // lo canceló la persona: el modal ya se cerró
 
     /*
      * Sin señal la foto NO se pierde: se guarda y se analiza cuando vuelva.
@@ -403,20 +410,21 @@ async function correrAnalisis(intento) {
         cerrarModal(true);
         toast('Esa foto falló ' + MAX_INTENTOS + ' veces: la saqué de la cola');
         pintarCola();
-        return;
+        return 'descartado';
       }
       state.colaAnalisis = encolarAnalisis(state.colaAnalisis, otraVez);
       save();
       cerrarModal(true);
       toast(textoCola(state.colaAnalisis));
       pintarCola();
-      return;
+      return 'encolado';
     }
 
     $('modalTitle').textContent = 'No salió';
     $('errorTxt').textContent = err.message;
     $('btnReintentar').hidden = false;
     mostrarEstado('error');
+    return 'error';
   }
 }
 
@@ -438,13 +446,29 @@ async function vaciarCola() {
   try {
     while ((state.colaAnalisis || []).length && navigator.onLine) {
       const siguiente = state.colaAnalisis[state.colaAnalisis.length - 1];   // la más vieja
-      vaciadas++;
       /* Se saca ANTES de analizar: si el análisis falla de nuevo, el catch la
          vuelve a encolar. Dejarla puesta mientras corre es la receta para que
          una foto que siempre falla trabe la cola para siempre. */
       state.colaAnalisis = sacarDeCola(state.colaAnalisis, siguiente.id);
       save();
-      await correrAnalisis(siguiente);
+      const resultado = await correrAnalisis(siguiente);
+      if (resultado === 'ok') { vaciadas++; continue; }
+
+      /* Cancelada a mano o con un error que no es de red —un 500, un 529—: el
+         catch no la vuelve a encolar, y antes la foto se perdia sin aviso. Vuelve
+         con un intento mas, asi una que falla siempre igual se termina soltando. */
+      if (resultado === 'cancelado' || resultado === 'error') {
+        const otraVez = conUnIntentoMas(siguiente);
+        if (!reintentosAgotados(otraVez)) {
+          state.colaAnalisis = encolarAnalisis(state.colaAnalisis, otraVez);
+          save();
+        }
+      }
+      /* Y cualquier cosa que no salio bien corta la vuelta. Con wifi sin
+         internet `onLine` sigue en true, y la misma foto gastaba sus tres
+         intentos en seis segundos; con un error en pantalla, la foto siguiente
+         lo tapaba y "Reintentar" pasaba a ser de otra. */
+      break;
     }
   } finally {
     vaciando = false;
@@ -509,33 +533,46 @@ const recibirFotos = async (e) => {
 
   const modo = modoAnalisis;
 
+  /* Los inputs se limpian cada vez que la foto no sigue de largo: si no,
+     elegir de nuevo la MISMA foto no vuelve a disparar onchange, y quien
+     cancela por error se queda sin poder reintentar. Los dos y no `e.target`:
+     una foto compartida llega como lista, sin evento. */
+  const soltarInputs = () => { $('fileInput').value = ''; $('camaraInput').value = ''; };
+
   const procesadas = [];
-  for (const file of archivos) {
-    const pesa = avisoPorPeso(file.size);
-    if (pesa) { toast(pesa); return; }
+  try {
+    for (const file of archivos) {
+      const pesa = avisoPorPeso(file.size);
+      if (pesa) { toast(pesa); soltarInputs(); return; }
 
-    const leida = await leerArchivo(file);
+      const leida = await leerArchivo(file);
 
-    /* Con una sola foto se pasa por el encuadre: se ve lo que se va a mandar y
-       se puede dejar solo el plato. Con varias no, que serian cuatro pantallas
-       de recorte seguidas para algo que casi siempre es una foto de cada cosa. */
-    const original = archivos.length === 1 ? await pedirRecorte(leida) : leida;
-    if (!original) {
-      /* Cancelo: la foto se tira antes de gastar el analisis. El input se
-         limpia o elegir de nuevo la MISMA foto no vuelve a disparar onchange,
-         y quien cancela por error se queda sin poder reintentar. */
-      e.target.value = '';
-      return;
+      /* Con una sola foto se pasa por el encuadre: se ve lo que se va a mandar y
+         se puede dejar solo el plato. Con varias no, que serian cuatro pantallas
+         de recorte seguidas para algo que casi siempre es una foto de cada cosa. */
+      const original = archivos.length === 1 ? await pedirRecorte(leida) : leida;
+      if (!original) {
+        /* Cancelo: la foto se tira antes de gastar el analisis. */
+        soltarInputs();
+        return;
+      }
+
+      procesadas.push({
+        /* 768 px alcanza para ver un plato: la porción se estima por el tamaño
+           relativo a los cubiertos, no por el detalle fino. Bajar de 1024 a 768
+           recorta casi la mitad de los tokens de entrada de cada análisis. */
+        grande: await redimensionar(original, 768, 0.78),
+        foto: await redimensionar(original, 384, 0.62),   // para el visor
+        thumb: await redimensionar(original, 128, 0.55)   // para la lista
+      });
     }
-
-    procesadas.push({
-      /* 768 px alcanza para ver un plato: la porción se estima por el tamaño
-         relativo a los cubiertos, no por el detalle fino. Bajar de 1024 a 768
-         recorta casi la mitad de los tokens de entrada de cada análisis. */
-      grande: await redimensionar(original, 768, 0.78),
-      foto: await redimensionar(original, 384, 0.62),   // para el visor
-      thumb: await redimensionar(original, 128, 0.55)   // para la lista
-    });
+  } catch {
+    /* Una foto que no se puede leer ni achicar —un formato que el navegador no
+       abre— rechazaba la promesa sin que nadie la atendiera: no pasaba nada en
+       pantalla y el error solo quedaba en el diagnostico. */
+    toast('No pude abrir esa foto. Probá con otra o sacala con la cámara.');
+    soltarInputs();
+    return;
   }
 
   await correrAnalisis({
