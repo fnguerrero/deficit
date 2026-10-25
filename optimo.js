@@ -103,7 +103,10 @@ function esOptimo(id, d, { modo = null, metaAgua = null, tope = null } = {}) {
       || (typeof state !== 'undefined' ? state?.perfil?.modo : null)
       || (typeof MODO_DEFECTO !== 'undefined' ? MODO_DEFECTO : null);
     if (idModo && typeof comidasQueEntran === 'function'
-      && comidasQueEntran(d.comidas, idModo, topeHoy) !== d.comidas.length) {
+      /* El objetivo va como objeto, igual que en el resto de la app:
+         comidaApta() lee `objetivo.kcal`, y con el numero suelto la regla de
+         "una sola comida no puede ser el 60% del dia" no corria nunca aca. */
+      && comidasQueEntran(d.comidas, idModo, { kcal: topeHoy }) !== d.comidas.length) {
       return false;
     }
     /* Las kcal salen del dia que llega, NO de totalesDia(), que devuelve las del

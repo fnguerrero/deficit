@@ -20,7 +20,12 @@ function avisarComidaGuardada({ titulo, kcal, comida, id }) {
   /* El resto del día ya incluye esta comida, así que para juzgarla se descuenta:
      si no, en keto una comida se compararía contra sus propios carbohidratos. */
   const hoy = totalesDia();
-  const previo = { carb: Math.max(0, (hoy.carb || 0) - (comida.carb || 0)) };
+  /* Con la fibra: sin ella, carbosNetos() contaba como netos los carbohidratos
+     brutos de las comidas anteriores, y la lista del dia decia otra cosa. */
+  const previo = {
+    carb: Math.max(0, (hoy.carb || 0) - (comida.carb || 0)),
+    fibra: Math.max(0, (hoy.fibra || 0) - (comida.fibra || 0))
+  };
 
   const v = comidaApta(comida, state.perfil.modo, calcular(), previo);
   /* La comida viaja con el veredicto: el consejo necesita los alimentos, y sin

@@ -307,20 +307,24 @@ $('btnGuardarComida').onclick = () => {
   if (pendiente && !pendiente.avisado) {
     const items = (pendiente.items || []).filter(i => i.nombre?.trim() || i.calorias);
     const suma = (k) => items.reduce((a, i) => a + (Number(i[k]) || 0), 0);
+    /* El resto del dia SIN esta comida: al editar una ya guardada, totalesDia()
+       la incluye, y en keto se comparaba contra sus propios carbohidratos —una
+       comida de 18 g, guardada sin tocar, daba "te quedaban 12"—. */
+    const resto = sumarComidas(dia().comidas.filter(c => c.id !== pendiente.editandoId));
 
     const v = comidaApta({
       kcal: suma('calorias'), prot: suma('proteinas'),
-      carb: suma('carbohidratos'), gras: suma('grasas'),
+      carb: suma('carbohidratos'), gras: suma('grasas'), fibra: suma('fibra'),
       sodio: suma('sodio'), perfil: perfilDeItems(items, pendiente.perfil)
-    }, state.perfil.modo, calcular(), totalesDia());
+    }, state.perfil.modo, calcular(), resto);
 
     if (v.nivel === 'no') {
       pendiente.avisado = true;   // al segundo toque guarda sin repetir el aviso
       const arreglo = comoHacerlaApta({
         kcal: suma('calorias'), prot: suma('proteinas'), carb: suma('carbohidratos'),
-        gras: suma('grasas'), sodio: suma('sodio'),
+        gras: suma('grasas'), fibra: suma('fibra'), sodio: suma('sodio'),
         perfil: perfilDeItems(items, pendiente.perfil), items
-      }, state.perfil.modo, calcular(), totalesDia());
+      }, state.perfil.modo, calcular(), resto);
 
       $('avisoModo').textContent = `${etiquetaApta(v, state.perfil.modo)}: ${v.motivo}` +
         (arreglo.texto ? ` ${arreglo.texto}` : '') + ' Tocá Guardar de nuevo si va igual.';

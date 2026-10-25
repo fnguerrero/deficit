@@ -309,15 +309,19 @@ function calcular() {
     semanas = Math.ceil((p.peso - p.pesoObj) / kgSemana);
   }
 
+  /* Con objetivo manual, los macros salen de ESE numero y no del del modo. */
+  const m = manual > 0 ? macrosParaKcal(p, p.modo, kcal) : { prot: o.prot, carb: o.carb, gras: o.gras };
+
   return {
     ...o,
+    ...m,
     kcal,
     objetivo: kcal,
     deficitReal,
     kgSemana,
     semanas,
     piso: Math.max(o.tmb, PISO_KCAL[p.sexo === 'f' ? 'f' : 'm']),
-    macros: { prot: o.prot, carb: o.carb, gras: o.gras }
+    macros: m
   };
 }
 

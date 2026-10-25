@@ -234,12 +234,23 @@ function escalarComida(comida, factor) {
   const etiqueta = (PORCIONES.find(p => p.f === f) || {}).txt;
   const nombre = sinPrefijoDePorcion(comida.titulo);
 
+  /* La fibra, el azucar y el sodio escalan con el plato, igual que los macros.
+     Sin esto, media porcion de una ensalada dejaba la fibra entera: los
+     carbohidratos netos daban cero, y keto la daba por buena. Solo se tocan
+     si estan, para no agregarle campos a un alimento que no los traia. */
+  const extras = (o) => {
+    const salida = {};
+    for (const k of ['fibra', 'azucar', 'sodio']) if (o[k] != null) salida[k] = num(o[k]);
+    return salida;
+  };
+
   return {
     ...comida,
     kcal: Math.round((Number(comida.kcal) || 0) * f),
     prot: num(comida.prot),
     carb: num(comida.carb),
     gras: num(comida.gras),
+    ...extras(comida),
     porcionFactor: f,
     titulo: f === 1 ? nombre : `${etiqueta || f + '×'} ${nombre}`.trim(),
     items: (comida.items || []).map(it => ({
@@ -247,7 +258,8 @@ function escalarComida(comida, factor) {
       calorias: Math.round((Number(it.calorias) || 0) * f),
       proteinas: num(it.proteinas),
       carbohidratos: num(it.carbohidratos),
-      grasas: num(it.grasas)
+      grasas: num(it.grasas),
+      ...extras(it)
     }))
   };
 }

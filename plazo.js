@@ -90,7 +90,10 @@ function planParaFecha(perfil, fecha, desde = hoyISO()) {
   if (ritmo == null) return null;
 
   const max = ritmoMaximoSeguro(perfil);
-  const plan = calcularPlan({ ...perfil, ritmo: Math.abs(ritmo), manual: null });
+  /* Con el signo: para subir el ritmo es negativo y calcularPlan() suma en vez
+     de restar. Con Math.abs, quien queria subir 5 kg veia "2.006 kcal por dia",
+     un deficit, en vez de las ~3.100 que hacen falta. */
+  const plan = calcularPlan({ ...perfil, ritmo, manual: null });
 
   /* Subir de peso no tiene piso de seguridad que controlar acá: el piso existe
      para no comer de menos. */
