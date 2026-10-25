@@ -129,6 +129,17 @@ bug que ya estaba arreglado.
 Los tests corren en el navegador (`tests.html`). El resumen se pinta dos veces
 porque hay tests asíncronos: lo confiable es esperar a `window.__listo`.
 
+Hay además una tanda chica que corre sin navegador:
+
+```bash
+node --test
+```
+
+Carga la lógica pura en un contexto de `vm`, en el mismo orden que
+`tests.html`, con la hora de Buenos Aires fija (`test/cargar.js`): las fechas y
+el cambio de día se prueban donde se usa la app y no en el UTC de la máquina.
+De paso corre también `proxy/test.mjs`.
+
 ## Lo que se decidió no hacer, y por qué
 
 - **Push real con servidor.** Los avisos son `setTimeout` + `Notification`: solo
