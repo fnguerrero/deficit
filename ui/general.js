@@ -178,9 +178,12 @@ function programarCambioDeDia() {
   }, msHastaMedianoche());
 }
 
-function cruzarMedianoche() {
+/* `enHoy` lo dice quien llama cuando lo sabe: al volver a la app se anoto al
+   irse. Sin ese dato se deduce de la fecha, que solo sirve para el reloj de
+   las 00:00 —un dia justo de diferencia—. */
+function cruzarMedianoche(enHoy = null) {
   const hoy = hoyISO();
-  const estabaEnHoy = fecha < hoy && diasEntre(fecha, hoy) === 1;
+  const estabaEnHoy = fecha < hoy && (enHoy ?? diasEntre(fecha, hoy) === 1);
 
   if (estabaEnHoy) {
     fecha = hoy;
@@ -223,10 +226,24 @@ addEventListener('storage', (e) => {
   }
 });
 
-/* la pestaña dormida no ejecuta timers: al volver se revisa la fecha */
+/*
+ * La pestaña dormida no ejecuta timers: al volver se revisa la fecha.
+ *
+ * Lo que decide es si la vista estaba en HOY cuando la app se fue al fondo, no
+ * cuantos dias hay de diferencia. Mirar solo `diasEntre === 1` fallaba para los
+ * dos lados: quien estaba en AYER a proposito y salia a la camara para cargar
+ * la cena de anoche volvia con la vista en hoy —y la foto se guardaba en hoy—;
+ * y quien dejaba la app dos o mas dias en el fondo volvia a un dia viejo que
+ * todavia decia "Hoy".
+ */
+let enHoyAlIrse = true;
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState !== 'visible') return;
-  if (fecha !== hoyISO() && diasEntre(fecha, hoyISO()) === 1) cruzarMedianoche();
+  if (document.visibilityState !== 'visible') {
+    enHoyAlIrse = fecha === hoyISO();
+    return;
+  }
+  if (enHoyAlIrse && fecha !== hoyISO()) cruzarMedianoche(true);
   programarCambioDeDia();
 });
 
