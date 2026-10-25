@@ -132,16 +132,26 @@ function guardarYa() {
 
     localStorage.setItem(KEY, texto);
   } catch (e) {
-    // almacenamiento lleno: primero se sueltan las miniaturas viejas
-    purgarThumbs();
+    /*
+     * Almacenamiento lleno: lo primero que se sacrifica es la copia de
+     * respaldo, que es el estado de hace un vaso de agua y ocupa tanto como
+     * todo lo demas.
+     *
+     * Antes iba al reves, y era caro: con la copia ocupando la mitad del
+     * espacio, un historial de seis meses ya no entraba dos veces y
+     * purgarThumbs() borraba las fotos de todo lo anterior a la ultima semana,
+     * para siempre, cuando sacando la copia entraba holgado.
+     */
     try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      toast('Liberé espacio borrando fotos viejas');
-    } catch {
-      // si sigue sin entrar, la copia de respaldo es lo primero que se sacrifica
       localStorage.removeItem(KEY_BACKUP);
-      try { localStorage.setItem(KEY, JSON.stringify(state)); }
-      catch { toast('No entra más: probá borrar las fotos viejas desde Ajustes → Datos'); }
+      localStorage.setItem(KEY, texto);
+    } catch {
+      // si ni sin la copia entra, ahi si se sueltan las miniaturas viejas
+      purgarThumbs();
+      try {
+        localStorage.setItem(KEY, JSON.stringify(state));
+        toast('Liberé espacio borrando fotos viejas');
+      } catch { toast('No entra más: probá borrar las fotos viejas desde Ajustes → Datos'); }
     }
   }
 
