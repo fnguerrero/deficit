@@ -297,8 +297,12 @@ function aplicarEscudos(dias, juego, { hoy = hoyISO(), vasos = 8, pasos = PASOS_
     const usados = juego.escudosUsados[r.id] || [];
     if (usados.includes(ayer)) continue;
 
-    /* La racha que había hasta anteayer: si era corta, no se gasta el escudo. */
-    const previa = rachaDe(dias, r.id, { hoy: sumarDias(hoy, -2), vasos, juego }).actual;
+    /* La racha que había hasta anteayer: si era corta, no se gasta el escudo. Y
+       anteayer tiene que haberla sostenido, o el escudo "salvaba" una ya cortada. */
+    const anteayer = sumarDias(hoy, -2);
+    const hasta = rachaDe(dias, r.id, { hoy: anteayer, vasos, pasos, juego, modo, objetivo });
+    const sostuvo = hasta.hoyCumplido || usados.includes(anteayer);
+    const previa = sostuvo ? hasta.actual : 0;
     if (previa < RACHA_MINIMA_ESCUDO) continue;
 
     juego.escudosUsados[r.id] = usados.concat([ayer]);

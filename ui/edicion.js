@@ -307,20 +307,24 @@ $('btnGuardarComida').onclick = () => {
   if (pendiente && !pendiente.avisado) {
     const items = (pendiente.items || []).filter(i => i.nombre?.trim() || i.calorias);
     const suma = (k) => items.reduce((a, i) => a + (Number(i[k]) || 0), 0);
+    /* El resto del dia SIN esta comida: al editar una ya guardada, totalesDia()
+       la incluye, y en keto se comparaba contra sus propios carbohidratos —una
+       comida de 18 g, guardada sin tocar, daba "te quedaban 12"—. */
+    const resto = sumarComidas(dia().comidas.filter(c => c.id !== pendiente.editandoId));
 
     const v = comidaApta({
       kcal: suma('calorias'), prot: suma('proteinas'),
-      carb: suma('carbohidratos'), gras: suma('grasas'),
+      carb: suma('carbohidratos'), gras: suma('grasas'), fibra: suma('fibra'),
       sodio: suma('sodio'), perfil: perfilDeItems(items, pendiente.perfil)
-    }, state.perfil.modo, calcular(), totalesDia());
+    }, state.perfil.modo, calcular(), resto);
 
     if (v.nivel === 'no') {
       pendiente.avisado = true;   // al segundo toque guarda sin repetir el aviso
       const arreglo = comoHacerlaApta({
         kcal: suma('calorias'), prot: suma('proteinas'), carb: suma('carbohidratos'),
-        gras: suma('grasas'), sodio: suma('sodio'),
+        gras: suma('grasas'), fibra: suma('fibra'), sodio: suma('sodio'),
         perfil: perfilDeItems(items, pendiente.perfil), items
-      }, state.perfil.modo, calcular(), totalesDia());
+      }, state.perfil.modo, calcular(), resto);
 
       $('avisoModo').textContent = `${etiquetaApta(v, state.perfil.modo)}: ${v.motivo}` +
         (arreglo.texto ? ` ${arreglo.texto}` : '') + ' Tocá Guardar de nuevo si va igual.';
@@ -372,6 +376,9 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
 
       // si cambió el momento dentro del mismo día, la hora acompaña
       if (c.momento !== momentoAntes) c.ts = tsEnMomento(origen, c.momento);
+      /* Cuando se toco: es lo que mira el sync para subirla. Sin esto, corregir
+         lo que estimo la foto no llegaba nunca a la nube. */
+      c.act = Date.now();
 
       const destino = pendiente.fechaDestino || origen;
       let movida = false;
@@ -408,6 +415,10 @@ function guardarComidaPendiente({ avisar = false, dudoso = '' } = {}) {
     id: nuevoId,
     // en un día pasado se usa la hora típica del momento, no la hora actual
     ts: tsParaFecha(fechaDeLaFoto, pendiente.momento || momentoDe(Date.now())),
+    /* Y `act` es la de ahora: el sync sube lo tocado despues del ultimo sync,
+       y con el `ts` de un dia pasado la cena cargada a la mañana siguiente
+       quedaba solo en este telefono. */
+    act: Date.now(),
     titulo: pendiente.titulo?.trim() || items[0].nombre || 'Comida',
     items,
     momento: pendiente.momento || momentoDe(Date.now()),

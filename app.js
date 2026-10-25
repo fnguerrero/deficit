@@ -132,16 +132,26 @@ function guardarYa() {
 
     localStorage.setItem(KEY, texto);
   } catch (e) {
-    // almacenamiento lleno: primero se sueltan las miniaturas viejas
-    purgarThumbs();
+    /*
+     * Almacenamiento lleno: lo primero que se sacrifica es la copia de
+     * respaldo, que es el estado de hace un vaso de agua y ocupa tanto como
+     * todo lo demas.
+     *
+     * Antes iba al reves, y era caro: con la copia ocupando la mitad del
+     * espacio, un historial de seis meses ya no entraba dos veces y
+     * purgarThumbs() borraba las fotos de todo lo anterior a la ultima semana,
+     * para siempre, cuando sacando la copia entraba holgado.
+     */
     try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      toast('Liberé espacio borrando fotos viejas');
-    } catch {
-      // si sigue sin entrar, la copia de respaldo es lo primero que se sacrifica
       localStorage.removeItem(KEY_BACKUP);
-      try { localStorage.setItem(KEY, JSON.stringify(state)); }
-      catch { toast('No entra más: probá borrar las fotos viejas desde Ajustes → Datos'); }
+      localStorage.setItem(KEY, texto);
+    } catch {
+      // si ni sin la copia entra, ahi si se sueltan las miniaturas viejas
+      purgarThumbs();
+      try {
+        localStorage.setItem(KEY, JSON.stringify(state));
+        toast('Liberé espacio borrando fotos viejas');
+      } catch { toast('No entra más: probá borrar las fotos viejas desde Ajustes → Datos'); }
     }
   }
 
@@ -299,15 +309,19 @@ function calcular() {
     semanas = Math.ceil((p.peso - p.pesoObj) / kgSemana);
   }
 
+  /* Con objetivo manual, los macros salen de ESE numero y no del del modo. */
+  const m = manual > 0 ? macrosParaKcal(p, p.modo, kcal) : { prot: o.prot, carb: o.carb, gras: o.gras };
+
   return {
     ...o,
+    ...m,
     kcal,
     objetivo: kcal,
     deficitReal,
     kgSemana,
     semanas,
     piso: Math.max(o.tmb, PISO_KCAL[p.sexo === 'f' ? 'f' : 'm']),
-    macros: { prot: o.prot, carb: o.carb, gras: o.gras }
+    macros: m
   };
 }
 

@@ -141,8 +141,6 @@ test('no rompe si la API no responde', async () => {
   esperar(res.status, 502);
 });
 
-await correr();
-
 /* ---------------- el reloj de los avisos ---------------- */
 
 const SUB = (tz, horas) => ({
@@ -180,3 +178,7 @@ test('una suscripcion sin horarios o con huso invalido no molesta a nadie', asyn
   esperar(aQuienAvisar([], ahora).length, 0);
   esperar(aQuienAvisar(null, ahora).length, 0);
 });
+
+/* Al final y no en el medio: con el await antes, los tests de abajo se
+   anotaban recién cuando la corrida ya había terminado, y no corrían nunca. */
+await correr();

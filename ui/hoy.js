@@ -235,6 +235,7 @@ function sumaRapida(kcal) {
   const comida = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     ts: tsParaFecha(fecha, momento),
+    act: Date.now(),   // para que el sync la suba aunque sea de un día pasado
     titulo: 'Suma rápida',
     items: [],
     momento,
@@ -291,6 +292,7 @@ function cargarFavorito(f) {
   const comida = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     ts: tsParaFecha(fecha, momento),
+    act: Date.now(),   // para que el sync la suba aunque sea de un día pasado
     titulo: f.nombre,
     items: [item],
     momento,

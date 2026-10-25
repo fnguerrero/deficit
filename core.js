@@ -239,7 +239,9 @@ function migrar(guardado) {
       act: Number(d.act) || 0,
       comidas: (d.comidas || []).map(c => ({
         id: c.id || (f + '-' + Math.random().toString(36).slice(2, 8)),
-        ts: c.ts || Date.parse(f) || Date.now(),
+        /* Con la hora local: `Date.parse('2026-08-27')` lee la fecha como UTC,
+           y en Argentina eso son las 21:00 del dia ANTERIOR. */
+        ts: c.ts || Date.parse(f + 'T00:00:00') || Date.now(),
         titulo: c.titulo || 'Comida',
         items: c.items || [],
         kcal: Number(c.kcal) || 0,
@@ -396,8 +398,23 @@ function fusionarEstados(actual, importado) {
     // los escalares solo se completan si acá no había nada
     if (dActual.peso == null && dOtro.peso != null) dActual.peso = dOtro.peso;
     if (!dActual.agua && dOtro.agua) dActual.agua = dOtro.agua;
-    if (!dActual.ejercicio && dOtro.ejercicio) dActual.ejercicio = dOtro.ejercicio;
+    /* El ejercicio viaja con su desglose: el total sin los movimientos que lo
+       explican se veia como un numero cargado a mano. */
+    if (!dActual.ejercicio && dOtro.ejercicio) {
+      dActual.ejercicio = dOtro.ejercicio;
+      if (!(dActual.movimientos || []).length && (dOtro.movimientos || []).length) {
+        dActual.movimientos = clonar(dOtro.movimientos);
+      }
+    }
     if (!dActual.nota && dOtro.nota) dActual.nota = dOtro.nota;
+    /* Lo mismo para los campos que se fueron sumando despues: sin estas lineas,
+       un dia que existia de los dos lados volvia del archivo sin pasos, sin
+       cintura, sin sueño, sin animo y sin ayuno. */
+    if (!dActual.pasos && dOtro.pasos) dActual.pasos = dOtro.pasos;
+    if (dActual.cintura == null && dOtro.cintura != null) dActual.cintura = dOtro.cintura;
+    if (!dActual.sueno && dOtro.sueno) dActual.sueno = clonar(dOtro.sueno);
+    if (!dActual.animo && dOtro.animo) dActual.animo = dOtro.animo;
+    if (!dActual.ayuno && dOtro.ayuno) dActual.ayuno = clonar(dOtro.ayuno);
   }
 
   // --- frecuentes: se suman los usos ---
@@ -876,7 +893,10 @@ function comidasCopiadas(comidas, fechaDestino, ts = Date.now()) {
       // siempre la hora típica del momento, aunque el destino sea hoy: copiar un
       // desayuno a las 22 lo dejaría con la hora al revés que su propio momento.
       // El minuto por índice mantiene el orden entre comidas del mismo momento.
-      ts: tsEnMomento(fechaDestino, momento, i)
+      ts: tsEnMomento(fechaDestino, momento, i),
+      /* La copia es nueva: sin esto heredaba el `act` del original, y el sync
+         —que sube lo tocado despues del ultimo— no la subia nunca. */
+      act: ts
     };
   });
 }
