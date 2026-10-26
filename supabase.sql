@@ -1,12 +1,10 @@
 -- ============================================================
 -- Déficit — tablas para sincronizar entre dispositivos.
 --
--- Pegá todo esto en Supabase → SQL Editor → Run.
+-- Pegá todo esto en Supabase → SQL Editor → Run, y después
+-- supabase-auth.sql, que agrega las cuentas y las políticas.
 -- Después, en la app: Ajustes → Sincronización → pegá la URL del
 -- proyecto y la anon key (Project Settings → API).
---
--- No hay login: la llave que genera la app es lo que agrupa tus datos.
--- Es larga y aleatoria (32 caracteres), y solo la tenés vos.
 -- ============================================================
 
 -- ---------- comidas ----------
@@ -57,30 +55,20 @@ create index if not exists dias_llave_subido    on public.dias (llave, subido);
 -- ============================================================
 -- Seguridad
 --
--- La anon key la lleva la app, así que es pública por definición. Lo que
--- protege los datos es la llave: sin ella no se puede leer ni escribir
--- nada, porque toda consulta filtra por `llave` y no existe forma de
--- listar las llaves que hay.
---
--- Estas políticas permiten leer y escribir cualquier fila, pero la app
--- siempre consulta con `llave=eq.<la tuya>`. Si querés algo más cerrado,
--- la alternativa es Supabase Auth con un usuario de verdad.
+-- La anon key la lleva la app, así que es pública por definición: no puede
+-- ser lo que proteja los datos. Lo que los protege es RLS con cuentas de
+-- usuario (supabase-auth.sql).
 -- ============================================================
 
 alter table public.comidas enable row level security;
 alter table public.dias    enable row level security;
 
+-- Acá había dos políticas `for all to anon using (true)`: con la anon key, que
+-- es pública, cualquiera podía leer y escribir todas las filas. Ya no se crean.
+-- Las de verdad están en supabase-auth.sql, que se corre después de este
+-- archivo: hasta entonces las tablas existen pero nadie las puede tocar.
 drop policy if exists comidas_anon on public.comidas;
-create policy comidas_anon on public.comidas
-  for all to anon
-  using (true)
-  with check (true);
-
-drop policy if exists dias_anon on public.dias;
-create policy dias_anon on public.dias
-  for all to anon
-  using (true)
-  with check (true);
+drop policy if exists dias_anon    on public.dias;
 
 -- ============================================================
 -- Para borrar todo y empezar de cero:

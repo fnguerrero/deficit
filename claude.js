@@ -391,6 +391,8 @@ const REINTENTABLES = [429, 500, 502, 503, 504, 529];
 
 function mensajeDeError(status, detalle = '', porProxy = false) {
   // Con el proxy no hay nada que arreglar en Ajustes: la clave vive en el Worker.
+  // Los rechazos de sesión los escribe el Worker y ya dicen qué hacer.
+  if (porProxy && (status === 401 || status === 403) && /sesión|cuenta/i.test(detalle)) return detalle;
   if (status === 401) {
     return porProxy
       ? 'El proxy tiene una clave inválida o vencida. Hay que cargarla de nuevo en Cloudflare.'
@@ -408,16 +410,33 @@ function mensajeDeError(status, detalle = '', porProxy = false) {
 const espera = (ms) => new Promise(r => setTimeout(r, ms));
 
 /**
+ * El token de la sesión de Supabase, o '' si no hay. Sin sesión el pedido sale
+ * igual y el Worker contesta 401 con un mensaje que dice qué hacer: es mejor que
+ * decidirlo acá y que la app y el Worker terminen opinando distinto.
+ */
+async function tokenDeSesion() {
+  const a = typeof auth === 'function' ? auth() : null;
+  if (!a) return '';
+  try { return (await a.token()) || ''; } catch { return ''; }
+}
+
+/**
  * POST a la API reintentando los errores transitorios (429 y 5xx) con backoff.
  * Los errores definitivos (401, 400) no se reintentan: no van a cambiar.
  */
-async function pedirAClaude({ fetchFn, apiKey, proxyUrl = '', body, señal, intentos = 3, dormir = espera, base = 800 }) {
+async function pedirAClaude({ fetchFn, apiKey, proxyUrl = '', body, señal, intentos = 3, dormir = espera, base = 800, tokenFn = tokenDeSesion }) {
   let ultimo = null;
 
-  // Por el proxy no viaja ninguna credencial: la pone el Worker del otro lado.
+  // Por el proxy no viaja la clave de la API: la pone el Worker del otro lado.
+  // Sí viaja el token de la sesión, que es lo que el Worker exige para atender.
   const url = proxyUrl || API_URL;
+  const token = proxyUrl ? await tokenFn() : '';
   const headers = proxyUrl
-    ? { 'content-type': 'application/json', 'anthropic-version': API_VERSION }
+    ? {
+        'content-type': 'application/json',
+        'anthropic-version': API_VERSION,
+        ...(token ? { Authorization: 'Bearer ' + token } : {})
+      }
     : {
         'content-type': 'application/json',
         'x-api-key': apiKey,

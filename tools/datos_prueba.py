@@ -18,7 +18,7 @@ Lo que hace que sirva es lo que sale mal a propósito:
 
     python tools/datos_prueba.py            -> deficit-prueba.json, 180 días
     python tools/datos_prueba.py --dias 90  -> tres meses
-    python tools/datos_prueba.py --peso-inicial 92 --peso-final 82.5
+    python tools/datos_prueba.py --peso-inicial 95 --peso-final 85
 """
 import argparse
 import json
@@ -279,13 +279,13 @@ def generar(dias, peso_inicial, peso_final, altura, cintura_inicial, cintura_fin
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--dias', type=int, default=180)
-    ap.add_argument('--peso-inicial', type=float, default=92.0)
-    ap.add_argument('--peso-final', type=float, default=82.5)
-    ap.add_argument('--peso-objetivo', type=float, default=75.0)
-    ap.add_argument('--altura', type=int, default=178)
-    ap.add_argument('--edad', type=int, default=36)
-    ap.add_argument('--cintura-inicial', type=float, default=104)
-    ap.add_argument('--cintura-final', type=float, default=94)
+    ap.add_argument('--peso-inicial', type=float, default=88.0)
+    ap.add_argument('--peso-final', type=float, default=79.0)
+    ap.add_argument('--peso-objetivo', type=float, default=72.0)
+    ap.add_argument('--altura', type=int, default=172)
+    ap.add_argument('--edad', type=int, default=40)
+    ap.add_argument('--cintura-inicial', type=float, default=100)
+    ap.add_argument('--cintura-final', type=float, default=91)
     ap.add_argument('--salida', default=os.path.join(RAIZ, 'deficit-prueba.json'))
     args = ap.parse_args()
 

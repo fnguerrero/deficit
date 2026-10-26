@@ -22,5 +22,10 @@ simple = { limit = 30, period = 60 }
 #   npx wrangler secret put VAPID_PUBLICA
 #   npx wrangler secret put SUPABASE_URL
 #   npx wrangler secret put SUPABASE_ANON
+#   npx wrangler secret put SUPABASE_SERVICE_ROLE   (para que el cron lea push_subs)
+#   npx wrangler secret put EMAILS_PERMITIDOS       (tu mail; separados por coma si son varios)
+#
+# SUPABASE_URL y SUPABASE_ANON también los usa el proxy de Claude para validar
+# la sesión: sin ellos no atiende a nadie.
 [triggers]
 crons = ["*/15 * * * *"]

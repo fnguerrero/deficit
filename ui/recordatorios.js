@@ -623,7 +623,7 @@ function renderEstadoAcceso() {
   if (det) det.open = !a.proxyUrl && !a.apiKey;
 
   if (a.proxyUrl) {
-    el.textContent = 'Los análisis ya salen por el proxy, que tiene la clave del lado servidor. No tenés que cargar nada.';
+    el.textContent = 'Los análisis ya salen por el proxy, que tiene la clave del lado servidor. No tenés que cargar nada: alcanza con tener la sesión iniciada.';
   } else if (a.apiKey) {
     el.textContent = 'Los análisis salen con esta clave, directo desde este navegador.';
   } else {

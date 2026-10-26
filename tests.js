@@ -3993,6 +3993,29 @@ testAsync('por el proxy no viaja la clave', async () => {
   esperar(JSON.parse(capturado.opts.body).messages[0].content[0].source.data, 'BASE64');
 });
 
+testAsync('por el proxy viaja el token de la sesión, que es lo que el Worker exige', async () => {
+  let capturado = null;
+  const fetchFn = async (url, opts) => { capturado = opts; return respuestaOk(COMIDA_OK); };
+
+  await pedirAClaude({ fetchFn, proxyUrl: 'https://mi-proxy.dev', body: {}, tokenFn: async () => 'tok-1' });
+  esperar(capturado.headers.Authorization, 'Bearer tok-1');
+
+  await pedirAClaude({ fetchFn, proxyUrl: 'https://mi-proxy.dev', body: {}, tokenFn: async () => '' });
+  esperar(capturado.headers.Authorization, undefined, 'sin sesión no se inventa un header');
+
+  let pedido = false;
+  await pedirAClaude({ fetchFn, apiKey: 'sk-mia', body: {}, tokenFn: async () => { pedido = true; return 'tok-1'; } });
+  esperar(capturado.headers.Authorization, undefined, 'con clave propia el token no sale a la API');
+  esperar(pedido, false);
+});
+
+test('los rechazos de sesión del proxy se muestran tal cual', () => {
+  const msg = 'Para analizar con la IA de la app hay que iniciar sesión (Ajustes → Cuenta).';
+  esperar(mensajeDeError(401, msg, true), msg);
+  esperar(mensajeDeError(403, 'Esta cuenta no tiene permiso para usar la IA de la app.', true), 'Esta cuenta no tiene permiso para usar la IA de la app.');
+  esperarQue(/Cloudflare/.test(mensajeDeError(401, 'invalid x-api-key', true)), 'una clave mala del Worker sigue diciendo eso');
+});
+
 testAsync('sin proxy sigue yendo derecho a la API con la clave', async () => {
   let capturado = null;
   const fetchFn = async (url, opts) => { capturado = { url, opts }; return respuestaOk(COMIDA_OK); };
