@@ -224,7 +224,6 @@ test('el cron lee las suscripciones con la service_role si está cargada', async
   esperar(vistos[1].apikey, 'sb_publishable_x', 'sin service_role sigue con la anon, para la tabla vieja');
 });
 
-await correr();
 
 /* ---------------- el reloj de los avisos ---------------- */
 
@@ -263,3 +262,5 @@ test('una suscripcion sin horarios o con huso invalido no molesta a nadie', asyn
   esperar(aQuienAvisar([], ahora).length, 0);
   esperar(aQuienAvisar(null, ahora).length, 0);
 });
+
+await correr();
